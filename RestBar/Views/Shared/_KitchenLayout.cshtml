@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>@ViewData["Title"] - Cocina</title>
+  <link rel="icon" href="~/images/logo.png" type="image/png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background-color: #111827;
+      color: #f9fafb;
+    }
+    header {
+      background: #1f2937;
+      padding: 20px;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #ffffff;
+      border-bottom: 2px solid #4b5563;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+      padding: 20px;
+    }
+    .card {
+      background-color: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 1.2rem;
+      color: #60a5fa;
+    }
+    .time-since {
+      font-size: 0.9rem;
+      color: #facc15;
+      margin-bottom: 10px;
+    }
+    .items {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 10px;
+    }
+    .items li {
+      padding: 6px 0;
+      border-bottom: 1px dashed #4b5563;
+      font-size: 1rem;
+    }
+    .notes {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      font-style: italic;
+      margin: 10px 0;
+    }
+    .btn-ready {
+      margin-top: auto;
+      background-color: #10b981;
+      border: none;
+      color: white;
+      padding: 10px 15px;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .btn-ready:hover {
+      background-color: #059669;
+    }
+  </style>
+  @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    @{
+        var stationName = ViewData["StationName"] as string ?? "Estación";
+        var stationIcon = ViewData["StationIcon"] as string ?? "fas fa-concierge-bell";
+    }
+    <header>
+        <i class="@stationIcon"></i> Pedidos de @stationName
+    </header>
+    <main>
+        @RenderBody()
+    </main>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html> 

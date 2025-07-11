@@ -1,0 +1,102 @@
+@model RestBar.Models.Station
+
+@{
+    ViewData["Title"] = "Detalles de Estación";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="card-title">Detalles de la Estación</h3>
+                        <div>
+                            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                                <i class="fas fa-edit"></i> Editar
+                            </a>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Volver
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">ID:</dt>
+                                <dd class="col-sm-8">@Model.Id</dd>
+
+                                <dt class="col-sm-4">Nombre:</dt>
+                                <dd class="col-sm-8">@Model.Name</dd>
+
+                                <dt class="col-sm-4">Tipo:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge bg-info">@Model.Type</span>
+                                </dd>
+
+                                <dt class="col-sm-4">Productos Asociados:</dt>
+                                <dd class="col-sm-8">
+                                    @if (Model.Products.Any())
+                                    {
+                                        <span class="badge bg-warning">
+                                            @Model.Products.Count producto(s)
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Sin productos</span>
+                                    }
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            @if (Model.Products.Any())
+                            {
+                                <h5>Productos de esta Estación:</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Producto</th>
+                                                <th>Precio</th>
+                                                <th>Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var product in Model.Products.OrderBy(p => p.Name))
+                                            {
+                                                <tr>
+                                                    <td>@product.Name</td>
+                                                    <td>@product.Price.ToString("C")</td>
+                                                    <td>
+                                                        @if (product.IsActive == true)
+                                                        {
+                                                            <span class="badge bg-success">Activo</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge bg-danger">Inactivo</span>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    Esta estación no tiene productos asociados.
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

@@ -1,0 +1,20 @@
+using System;
+
+namespace RestBar.Models
+{
+    public class OrderCancellationLog
+    {
+        public Guid Id { get; set; } = Guid.NewGuid();
+        public Guid OrderId { get; set; }
+        public Guid? UserId { get; set; } // Quien solicita - ahora nullable
+        public Guid? SupervisorId { get; set; } // Quien autoriza
+        public string Reason { get; set; }
+        public DateTime Date { get; set; } = DateTime.UtcNow; // Cambiado de UtcNow a Now
+        public string Products { get; set; } // JSON de productos afectados
+
+        // Navigation properties
+        public virtual Order Order { get; set; }
+        public virtual User? User { get; set; } // Ahora nullable
+        public virtual User? Supervisor { get; set; }
+    }
+} 

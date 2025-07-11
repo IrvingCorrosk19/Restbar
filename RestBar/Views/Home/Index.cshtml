@@ -1,0 +1,446 @@
+﻿@model IEnumerable<RestBar.Models.Station>
+@{
+    ViewData["Title"] = "Dashboard Principal";
+}
+
+<div class="container mt-4">
+    <h1 class="text-center mb-4">Sistema de Gestión RestBar</h1>
+    
+    <!-- SECCIÓN DE GESTIÓN PRINCIPAL -->
+    <h2 class="mb-3">Gestión Principal</h2>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        <!-- Tarjetas de Gestión Originales -->
+        <div class="col"><div class="card card-elevated card-primary mb-4"><div class="card-body d-flex align-items-center"><i class="fas fa-box-open fa-2x text-primary me-3"></i><div><h5 class="card-title mb-1">Productos</h5><p class="card-text text-muted mb-0">Gestión de productos</p></div></div><div class="card-footer bg-transparent border-0"><a href="@Url.Action("Index", "Product")" class="btn btn-primary w-100"><i class="fas fa-arrow-right me-2"></i>Acceder</a></div></div></div>
+        <div class="col"><div class="card card-elevated card-success mb-4"><div class="card-body d-flex align-items-center"><i class="fas fa-shopping-cart fa-2x text-success me-3"></i><div><h5 class="card-title mb-1">Pedidos</h5><p class="card-text text-muted mb-0">Gestión de pedidos</p></div></div><div class="card-footer bg-transparent border-0"><a href="@Url.Action("Index", "Order")" class="btn btn-success w-100"><i class="fas fa-arrow-right me-2"></i>Acceder</a></div></div></div>
+        <div class="col"><div class="card card-elevated card-info mb-4"><div class="card-body d-flex align-items-center"><i class="fas fa-users fa-2x text-info me-3"></i><div><h5 class="card-title mb-1">Usuarios</h5><p class="card-text text-muted mb-0">Gestión de usuarios</p></div></div><div class="card-footer bg-transparent border-0"><a href="@Url.Action("Index", "User")" class="btn btn-info w-100"><i class="fas fa-arrow-right me-2"></i>Acceder</a></div></div></div>
+        <div class="col"><div class="card card-elevated card-warning mb-4"><div class="card-body d-flex align-items-center"><i class="fas fa-chair fa-2x text-warning me-3"></i><div><h5 class="card-title mb-1">Mesas</h5><p class="card-text text-muted mb-0">Gestión de mesas</p></div></div><div class="card-footer bg-transparent border-0"><a href="@Url.Action("Index", "Table")" class="btn btn-warning w-100"><i class="fas fa-arrow-right me-2"></i>Acceder</a></div></div></div>
+        <div class="col"><div class="card card-elevated card-gray mb-4"><div class="card-body d-flex align-items-center"><i class="fas fa-cogs fa-2x text-gray me-3"></i><div><h5 class="card-title mb-1">Configuración</h5><p class="card-text text-muted mb-0">Configuración del sistema</p></div></div><div class="card-footer bg-transparent border-0"><a href="@Url.Action("Index", "Configuration")" class="btn btn-gray w-100"><i class="fas fa-arrow-right me-2"></i>Acceder</a></div></div></div>
+        <div class="col"><div class="card card-elevated card-purple mb-4"><div class="card-body d-flex align-items-center"><i class="fas fa-th-large fa-2x text-purple me-3"></i><div><h5 class="card-title mb-1">Áreas</h5><p class="card-text text-muted mb-0">Gestión de áreas</p></div></div><div class="card-footer bg-transparent border-0"><a href="@Url.Action("Index", "Area")" class="btn btn-purple w-100"><i class="fas fa-arrow-right me-2"></i>Acceder</a></div></div></div>
+        
+        <!-- Categorías -->
+        <div class="col">
+            <div class="card card-elevated card-category mb-4">
+                <div class="card-body d-flex align-items-center">
+                    <i class="fas fa-tags fa-2x text-category me-3"></i>
+                    <div>
+                        <h5 class="card-title mb-1">Categorías</h5>
+                        <p class="card-text text-muted mb-0">Gestión de categorías</p>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a href="@Url.Action("Index", "Category")" class="btn btn-category w-100">
+                        <i class="fas fa-arrow-right me-2"></i>Acceder
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estaciones -->
+        <div class="col">
+            <div class="card card-elevated card-station mb-4">
+                <div class="card-body d-flex align-items-center">
+                    <i class="fas fa-fire fa-2x text-station me-3"></i>
+                    <div>
+                        <h5 class="card-title mb-1">Estaciones</h5>
+                        <p class="card-text text-muted mb-0">Gestión de estaciones</p>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a href="@Url.Action("Index", "Station")" class="btn btn-station w-100">
+                        <i class="fas fa-arrow-right me-2"></i>Acceder
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Compañías -->
+        <div class="col">
+            <div class="card card-elevated card-company mb-4">
+                <div class="card-body d-flex align-items-center">
+                    <i class="fas fa-building fa-2x text-company me-3"></i>
+                    <div>
+                        <h5 class="card-title mb-1">Compañías</h5>
+                        <p class="card-text text-muted mb-0">Gestión de compañías</p>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a href="@Url.Action("Index", "Company")" class="btn btn-company w-100">
+                        <i class="fas fa-arrow-right me-2"></i>Acceder
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sucursales -->
+        <div class="col">
+            <div class="card card-elevated card-branch mb-4">
+                <div class="card-body d-flex align-items-center">
+                    <i class="fas fa-store fa-2x text-branch me-3"></i>
+                    <div>
+                        <h5 class="card-title mb-1">Sucursales</h5>
+                        <p class="card-text text-muted mb-0">Gestión de sucursales</p>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a href="@Url.Action("Index", "Branch")" class="btn btn-branch w-100">
+                        <i class="fas fa-arrow-right me-2"></i>Acceder
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="my-5" />
+
+    <!-- SECCIÓN DE ESTACIONES DINÁMICAS -->
+    <h2 class="mb-3">Vistas de Estaciones</h2>
+    <div class="row">
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var station in Model)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">@station.Name</h5>
+                            <p class="card-text">Ver pedidos pendientes para @station.Name.</p>
+                            <a asp-controller="StationOrders" asp-action="Index" asp-route-stationName="@station.Name" asp-route-stationType="@station.Type" asp-route-stationIcon="@station.Icon" class="btn btn-primary">
+                                Ir a @station.Name
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <p class="text-center">No hay estaciones con tipos definidos para mostrar.</p>
+            </div>
+        }
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .card-elevated {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            background: white;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            height: 100%;
+            /* Fondo con imagen */
+            background-image: url('/images/background.png');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .card-elevated::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .card-elevated:hover::before {
+            transform: translateX(100%);
+        }
+
+        .card-elevated:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Efectos de color al hover con mayor intensidad */
+        .card-primary:hover {
+            background: linear-gradient(135deg, #fff 0%, #bbdefb 100%);
+        }
+
+        .card-success:hover {
+            background: linear-gradient(135deg, #fff 0%, #c8e6c9 100%);
+        }
+
+        .card-info:hover {
+            background: linear-gradient(135deg, #fff 0%, #b3e5fc 100%);
+        }
+
+        .card-warning:hover {
+            background: linear-gradient(135deg, #fff 0%, #ffecb3 100%);
+        }
+
+        .card-gray:hover {
+            background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+        }
+
+        .card-purple:hover {
+            background: linear-gradient(135deg, #fff 0%, #e1bee7 100%);
+        }
+
+        .card-category:hover {
+            background: linear-gradient(135deg, #fff 0%, #e1bee7 100%);
+        }
+
+        .card-company:hover {
+            background: linear-gradient(135deg, #fff 0%, #b2dfdb 100%);
+        }
+
+        .card-branch:hover {
+            background: linear-gradient(135deg, #fff 0%, #b3e5fc 100%);
+        }
+
+        /* Efecto de brillo adicional */
+        .card-elevated::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent,
+                rgba(255, 255, 255, 0.1),
+                transparent
+            );
+            transform: rotate(45deg);
+            transition: all 0.6s ease;
+            opacity: 0;
+        }
+
+        .card-elevated:hover::after {
+            opacity: 1;
+            transform: rotate(45deg) translate(50%, 50%);
+        }
+
+        .card-body {
+            padding: 1.5rem;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+        }
+
+        .card-elevated:hover .card-body {
+            transform: scale(1.02);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 3;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .fas {
+            width: 24px;
+            text-align: center;
+        }
+
+        .text-purple { color: #6f42c1; }
+        .text-gray { color: #6c757d; }
+        .text-category { color: #6f42c1; }
+        .text-company { color: #20c997; }
+        .text-branch { color: #0dcaf0; }
+        .text-kitchen { color: #10b981; }
+        .text-station { color: #fd7e14; }
+
+        .btn-purple {
+            background-color: #6f42c1;
+            border-color: #6f42c1;
+            color: white;
+        }
+
+        .btn-purple:hover {
+            background-color: #5a32a3;
+            border-color: #5a32a3;
+            color: white;
+        }
+
+        .btn-gray {
+            background-color: #6c757d;
+            border-color: #6c757d;
+            color: white;
+        }
+
+        .btn-gray:hover {
+            background-color: #5a6268;
+            border-color: #545b62;
+            color: white;
+        }
+
+        .btn-info {
+            background-color: #0dcaf0;
+            border-color: #0dcaf0;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background-color: #0bb2d4;
+            border-color: #0bb2d4;
+            color: white;
+        }
+
+        .btn-warning {
+            background-color: #ffc107;
+            border-color: #ffc107;
+        }
+
+        .btn-warning:hover {
+            background-color: #e0a800;
+            border-color: #e0a800;
+        }
+
+        .card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .card-footer {
+            padding: 1rem;
+            background: transparent;
+            border-top: none;
+            position: relative;
+            z-index: 2;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-text {
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        /* Estilos para categorías, compañías y sucursales */
+        .card-category {
+            border-left: 5px solid #6f42c1;
+        }
+
+        .card-company {
+            border-left: 5px solid #20c997;
+        }
+
+        .card-branch {
+            border-left: 5px solid #0dcaf0;
+        }
+
+        .card-station {
+            border-left: 5px solid #fd7e14;
+        }
+
+        .btn-category {
+            background-color: #6f42c1;
+            border-color: #6f42c1;
+            color: white;
+        }
+
+        .btn-category:hover {
+            background-color: #5a32a3;
+            border-color: #5a32a3;
+            color: white;
+        }
+
+        .btn-company {
+            background-color: #20c997;
+            border-color: #20c997;
+            color: white;
+        }
+
+        .btn-company:hover {
+            background-color: #1ba87e;
+            border-color: #1ba87e;
+            color: white;
+        }
+
+        .btn-branch {
+            background-color: #0dcaf0;
+            border-color: #0dcaf0;
+            color: white;
+        }
+
+        .btn-branch:hover {
+            background-color: #0bb2d4;
+            border-color: #0bb2d4;
+            color: white;
+        }
+
+        .btn-station {
+            background-color: #fd7e14;
+            border-color: #fd7e14;
+            color: white;
+        }
+
+        .btn-station:hover {
+            background-color: #e8690b;
+            border-color: #e8690b;
+            color: white;
+        }
+
+        /* Asegurar que los enlaces sean clickeables */
+        .card-footer a {
+            position: relative;
+            z-index: 3;
+            pointer-events: auto;
+        }
+
+        .card-footer a:hover {
+            text-decoration: none;
+        }
+
+        /* Opcional: fondo semitransparente para el contenido de la card */
+        .card-elevated .card-body, .card-elevated .card-footer {
+            background: rgba(255,255,255,0.85);
+            border-radius: 10px;
+        }
+
+        .card-kitchen {
+            border-left: 5px solid #10b981;
+        }
+
+        .btn-kitchen {
+            background-color: #10b981;
+            border-color: #10b981;
+            color: white;
+        }
+
+        .btn-kitchen:hover {
+            background-color: #059669;
+            border-color: #059669;
+            color: white;
+        }
+
+        /* Efecto hover para estaciones */
+        .card-station:hover {
+            background: linear-gradient(135deg, #fff 0%, #ffd8b1 100%);
+        }
+    </style>
+}

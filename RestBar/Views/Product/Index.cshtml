@@ -1,0 +1,850 @@
+@model IEnumerable<RestBar.Models.Product>
+@using System.Globalization
+@{
+    ViewData["Title"] = "Productos";
+}
+
+@section Styles {
+    <style>
+        .product-card {
+            position: relative;
+            z-index: 1;
+        }
+
+        .product-card.dropdown-active {
+            z-index: 2;
+        }
+    </style>
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Gestión de Productos</h1>
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <i class="fas fa-box me-1"></i>
+                Productos
+            </div>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createProductModal">
+                <i class="fas fa-plus"></i> Nuevo Producto
+            </button>
+        </div>
+        <div class="card-body">
+            <!-- Filtros -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Buscar productos...">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select id="categoryFilter" class="form-select">
+                        <option value="">Todas las categorías</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="statusFilter" class="form-select">
+                        <option value="">Todos los estados</option>
+                        <option value="true">Activos</option>
+                        <option value="false">Inactivos</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Grid de Productos -->
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4" id="productsGrid">
+                @foreach (var item in Model)
+                {
+                    <div class="col">
+                        <div class="card h-100 product-card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">@item.Name</h5>
+                                <div class="dropdown">
+                                    <button class="btn btn-link text-dark p-0" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="editProduct('@item.Id')">
+                                            <i class="fas fa-edit me-2"></i>Editar
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="deleteProduct('@item.Id')">
+                                            <i class="fas fa-trash me-2"></i>Eliminar
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="text-center mb-3">
+                                    @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                    {
+                                        <div class="product-image-container">
+                                            <img src="@item.ImageUrl" class="product-image" alt="@item.Name">
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="no-image-placeholder">
+                                            <i class="fas fa-image fa-3x"></i>
+                                        </div>
+                                    }
+                                </div>
+                                <p class="card-text text-muted">@(!string.IsNullOrWhiteSpace(item.Description) ? item.Description : "Sin descripción")</p>
+                                <div class="product-details">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Categoría:</span>
+                                        <span class="badge bg-primary">@(item.Category?.Name ?? "Sin categoría")</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Precio:</span>
+                                        <span class="text-success fw-bold">@string.Format(CultureInfo.InvariantCulture, "${0:0.00}", item.Price)</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Costo:</span>
+                                        <span class="text-danger">@string.Format(CultureInfo.InvariantCulture, "${0:0.00}", item.Cost)</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Estado:</span>
+                                        <span class="badge @(((bool?)item.IsActive).GetValueOrDefault() ? "bg-success" : "bg-danger")">
+                                            @(((bool?)item.IsActive).GetValueOrDefault() ? "Activo" : "Inactivo")
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Creación -->
+<div class="modal fade" id="createProductModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nuevo Producto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createProductForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nombre</label>
+                            <input type="text" class="form-control" name="Name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Categoría</label>
+                            <div class="input-group">
+                                <select class="form-select" name="CategoryId" id="productCategorySelect">
+                                    <option value="">Seleccione una categoría</option>
+                                </select>
+                                <button class="btn btn-outline-primary" type="button" id="btnAddCategory" data-bs-toggle="modal" data-bs-target="#createCategoryModal" title="Agregar categoría">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Estación</label>
+                            <div class="input-group">
+                                <select class="form-select" name="StationId" id="productStationSelect">
+                                    <option value="">Seleccione una estación</option>
+                                </select>
+                                <button class="btn btn-outline-primary" type="button" id="btnAddStation" data-bs-toggle="modal" data-bs-target="#createStationModal" title="Agregar estación">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea class="form-control" name="Description" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Precio</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" name="Price" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Costo</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" name="Cost" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Impuesto (%)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="TaxRate" step="0.01" value="0">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Unidad</label>
+                            <input type="text" class="form-control" name="Unit" placeholder="ej. kg, lt, unidad">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">URL de Imagen</label>
+                            <input type="url" class="form-control" name="ImageUrl">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="IsActive" checked>
+                            <label class="form-check-label">Activo</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="createProduct()">Crear Producto</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Edición -->
+<div class="modal fade" id="editProductModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Producto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editProductForm">
+                    <input type="hidden" name="Id">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nombre</label>
+                            <input type="text" class="form-control" name="Name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Categoría</label>
+                            <select class="form-select" name="CategoryId">
+                                <option value="">Seleccione una categoría</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Estación</label>
+                            <div class="input-group">
+                                <select class="form-select" name="StationId">
+                                    <option value="">Seleccione una estación</option>
+                                </select>
+                                <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#createStationModal" title="Agregar estación">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea class="form-control" name="Description" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Precio</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" name="Price" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Costo</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" name="Cost" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Impuesto (%)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="TaxRate" step="0.01" value="0">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Unidad</label>
+                            <input type="text" class="form-control" name="Unit" placeholder="ej. kg, lt, unidad">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">URL de Imagen</label>
+                            <input type="url" class="form-control" name="ImageUrl">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="IsActive">
+                            <label class="form-check-label">Activo</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="updateProduct()">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para crear categoría -->
+<div class="modal fade" id="createCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nueva Categoría</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createCategoryForm">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" class="form-control" name="Name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea class="form-control" name="Description" rows="2"></textarea>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" name="IsActive" checked>
+                        <label class="form-check-label">Activa</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="saveCategoryBtn">Guardar Categoría</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para crear estación -->
+<div class="modal fade" id="createStationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nueva Estación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createStationForm">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" class="form-control" name="Name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tipo</label>
+                        <input type="text" class="form-control" name="Type" placeholder="Cocina, Bar, Café, etc." required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="saveStationBtn">Guardar Estación</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        (function () {
+            // Estilos visuales dinámicos
+            const styles = `
+                .product-card {
+                    transition: transform 0.2s, box-shadow 0.2s;
+                    border: none;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+                .product-card:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                }
+                .product-image-container {
+                    height: 200px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    overflow: hidden;
+                    background-color: #f8f9fa;
+                    border-radius: 8px;
+                    margin-bottom: 1rem;
+                }
+                .product-image {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: contain;
+                    padding: 0.5rem;
+                }
+                .no-image-placeholder {
+                    height: 200px;
+                    background-color: #f8f9fa;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 8px;
+                    color: #6c757d;
+                }
+                .product-details {
+                    background-color: #f8f9fa;
+                    padding: 1rem;
+                    border-radius: 8px;
+                    margin-top: 1rem;
+                }
+                .badge {
+                    font-size: 0.85em;
+                    padding: 0.5em 0.8em;
+                }
+            `;
+            const styleSheet = document.createElement("style");
+            styleSheet.textContent = styles;
+            document.head.appendChild(styleSheet);
+
+            $(document).ready(function () {
+                loadCategories();
+                loadStations();
+
+                $('#searchInput').on('keyup', filterProducts);
+                $('#categoryFilter').on('change', filterProducts);
+                $('#statusFilter').on('change', filterProducts);
+
+                $('#saveCategoryBtn').on('click', function () {
+                    const form = $('#createCategoryForm');
+                    const data = {
+                        Name: form.find('[name="Name"]').val(),
+                        Description: form.find('[name="Description"]').val(),
+                        IsActive: form.find('[name="IsActive"]').is(':checked')
+                    };
+                    Swal.fire({
+                        title: 'Creando categoría...',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    });
+
+                    try {
+                        $.ajax({
+                            url: '/Product/CreateCategoryAjax',
+                            type: 'POST',
+                            data: data,
+                            success: function (res) {
+                                try {
+                                    Swal.close();
+                                    if (res.success) {
+                                        $('#createCategoryModal').modal('hide');
+                                        form[0].reset();
+                                        loadCategories(function (newId) {
+                                            $('#productCategorySelect').val(res.data.id);
+                                        });
+                                        Swal.fire('¡Éxito!', 'Categoría creada correctamente.', 'success');
+                                    } else {
+                                        Swal.fire('Error', res.message || 'No se pudo crear la categoría.', 'error');
+                                    }
+                                } catch (innerErr) {
+                                    console.error('Error en success:', innerErr);
+                                    Swal.fire('Error', 'Ocurrió un problema al procesar la respuesta.', 'error');
+                                }
+                            },
+                            error: function () {
+                                Swal.close();
+                                Swal.fire('Error', 'No se pudo crear la categoría.', 'error');
+                            }
+                        });
+                    } catch (err) {
+                        console.error('Error externo al ejecutar la solicitud AJAX:', err);
+                        Swal.fire('Error', 'Se produjo un error inesperado.', 'error');
+                    }
+                });
+
+                $('#saveStationBtn').on('click', function () {
+                    const form = $('#createStationForm');
+                    const data = {
+                        Name: form.find('[name="Name"]').val(),
+                        Type: form.find('[name="Type"]').val()
+                    };
+                    Swal.fire({
+                        title: 'Creando estación...',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    });
+                    $.ajax({
+                        url: '/Product/CreateStationAjax',
+                        type: 'POST',
+                        data: data,
+                        success: function (res) {
+                            Swal.close();
+                            if (res.success) {
+                                $('#createStationModal').modal('hide');
+                                form[0].reset();
+                                const select = $('#productStationSelect');
+                                const newOption = $('<option>')
+                                    .val(res.data.id)
+                                    .text(`${res.data.name} (${res.data.type})`);
+                                select.append(newOption);
+                                select.val(res.data.id);
+                                Swal.fire('¡Éxito!', 'Estación creada correctamente.', 'success');
+                            } else {
+                                Swal.fire('Error', res.message || 'No se pudo crear la estación.', 'error');
+                            }
+                        },
+                        error: function () {
+                            Swal.close();
+                            Swal.fire('Error', 'No se pudo crear la estación.', 'error');
+                        }
+                    });
+                });
+
+                $('#createProductModal').on('hidden.bs.modal', function () {
+                    $('#createProductForm')[0].reset();
+                });
+
+                $('#editProductModal').on('hidden.bs.modal', function () {
+                    $('#editProductForm')[0].reset();
+                });
+            });
+
+            function loadCategories(callback) {
+                $.get('/Product/GetCategories', function (res) {
+                    if (res.success) {
+                        const selects = ['#productCategorySelect', '#editProductForm select[name="CategoryId"]'];
+                        selects.forEach(selectId => {
+                            const select = $(selectId);
+                            const current = select.val();
+                            select.empty().append('<option value="">Seleccione una categoría</option>');
+                            res.data.forEach(cat => {
+                                select.append(`<option value="${cat.id || cat.Id}">${cat.name || cat.Name}</option>`);
+                            });
+                            if (callback && selectId === '#productCategorySelect') {
+                                callback(res.data[res.data.length - 1].id || res.data[res.data.length - 1].Id);
+                            } else {
+                                select.val(current);
+                            }
+                        });
+                        // Llenar el filtro de categorías
+                        const filterSelect = $('#categoryFilter');
+                        const filterCurrent = filterSelect.val();
+                        filterSelect.empty().append('<option value="">Todas las categorías</option>');
+                        res.data.forEach(cat => {
+                            filterSelect.append(`<option value="${cat.id || cat.Id}">${cat.name || cat.Name}</option>`);
+                        });
+                        filterSelect.val(filterCurrent);
+                    }
+                });
+            }
+
+            function loadStations(callback) {
+                $.get('/Station/GetStations', function (res) {
+                    if (res.success) {
+                        const selects = ['#productStationSelect', '#editProductForm select[name="StationId"]'];
+                        selects.forEach(selectId => {
+                            const select = $(selectId);
+                            const current = select.val();
+                            select.empty().append('<option value="">Seleccione una estación</option>');
+                            res.data.forEach(st => {
+                                select.append(`<option value="${st.id}">${st.name} (${st.type})</option>`);
+                            });
+                            if (callback && selectId === '#productStationSelect') {
+                                callback(res.data[res.data.length - 1].id);
+                            } else {
+                                select.val(current);
+                            }
+                        });
+                    }
+                });
+            }
+
+            function filterProducts() {
+                const searchTerm = $('#searchInput').val().toLowerCase();
+                const categoryId = $('#categoryFilter').val();
+                const status = $('#statusFilter').val();
+
+                $('.product-card').each(function () {
+                    const card = $(this);
+                    const name = card.find('.card-title').text().toLowerCase();
+                    const category = card.find('.badge.bg-primary').text();
+                    const isActive = card.find('.badge').last().hasClass('bg-success');
+
+                    const matchesSearch = name.includes(searchTerm);
+                    const matchesCategory = categoryId === '' || category === $('#categoryFilter option:selected').text();
+                    const matchesStatus = status === '' || (status === 'true' && isActive) || (status === 'false' && !isActive);
+
+                    card.closest('.col').toggle(matchesSearch && matchesCategory && matchesStatus);
+                });
+            }
+
+            // Exponer funciones globalmente para onclick
+            window.createProduct = function () {
+                const form = $('#createProductForm');
+                const formData = {};
+                let errors = [];
+                form.serializeArray().forEach(item => {
+                    formData[item.name] = item.value;
+                });
+                formData.Price = parseFloat(formData.Price || 0);
+                formData.Cost = parseFloat(formData.Cost || 0);
+                formData.TaxRate = parseFloat(formData.TaxRate || 0);
+                formData.IsActive = form.find('[name="IsActive"]').is(':checked');
+                formData.CategoryId = formData.CategoryId || null;
+                formData.StationId = formData.StationId || null;
+
+                // Validaciones
+                if (!formData.Name || formData.Name.trim() === "") {
+                    errors.push('El nombre es requerido');
+                }
+                if (!formData.Price && formData.Price !== 0) {
+                    errors.push('El precio es requerido');
+                } else if (formData.Price < 0) {
+                    errors.push('El precio debe ser mayor o igual a 0');
+                }
+                if (!formData.Cost && formData.Cost !== 0) {
+                    errors.push('El costo es requerido');
+                } else if (formData.Cost < 0) {
+                    errors.push('El costo debe ser mayor o igual a 0');
+                }
+                if (formData.TaxRate < 0 || formData.TaxRate > 100) {
+                    errors.push('El impuesto debe estar entre 0 y 100');
+                }
+                if (!formData.CategoryId) {
+                    errors.push('La categoría es requerida');
+                }
+                if (errors.length > 0) {
+                    Swal.fire({
+                        title: 'Error de validación',
+                        html: errors.join('<br>'),
+                        icon: 'error'
+                    });
+                    return;
+                }
+                $.ajax({
+                    url: '/Product/Create',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),
+                    success: function (response) {
+                        if (response.success) {
+                            $('#createProductModal').modal('hide');
+                            location.reload();
+                            showSuccess('Producto creado exitosamente');
+                        } else {
+                            showError(response.message);
+                        }
+                    },
+                    error: function () {
+                        showError('Error al crear el producto');
+                    }
+                });
+            }
+
+            window.editProduct = function (id) {
+                // Mostrar indicador de carga
+                Swal.fire({
+                    title: 'Cargando...',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                // Cargar categorías y estaciones
+                Promise.all([
+                    new Promise(resolve => loadCategories(resolve)),
+                    new Promise(resolve => loadStations(resolve))
+                ]).then(() => {
+                    // Obtener los datos del producto
+                    $.ajax({
+                        url: `/Product/Get/${id}`,
+                        method: 'GET',
+                        success: function (response) {
+                            Swal.close();
+                            if (response.success) {
+                                const product = response.data;
+                                if (product) {
+                                    const form = $('#editProductForm');
+                                    
+                                    // Limpiar el formulario primero
+                                    form[0].reset();
+                                    
+                                    // Establecer los valores del formulario
+                                    form.find('[name="Id"]').val(product.id);
+                                    form.find('[name="Name"]').val(product.name);
+                                    form.find('[name="Description"]').val(product.description);
+                                    form.find('[name="Price"]').val(product.price);
+                                    form.find('[name="Cost"]').val(product.cost);
+                                    form.find('[name="TaxRate"]').val(product.taxRate);
+                                    form.find('[name="Unit"]').val(product.unit);
+                                    form.find('[name="ImageUrl"]').val(product.imageUrl);
+                                    form.find('[name="IsActive"]').prop('checked', product.isActive);
+                                    
+                                    // Establecer la categoría
+                                    if (product.categoryId) {
+                                        form.find('[name="CategoryId"]').val(product.categoryId);
+                                    }
+                                    
+                                    // Establecer la estación
+                                    if (product.stationId) {
+                                        form.find('[name="StationId"]').val(product.stationId);
+                                    }
+
+                                    // Mostrar el modal
+                                    const editModal = new bootstrap.Modal(document.getElementById('editProductModal'));
+                                    editModal.show();
+                                } else {
+                                    showError('No se encontró el producto');
+                                }
+                            } else {
+                                showError(response.message || 'Error al cargar el producto');
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            Swal.close();
+                            console.error('Error:', error);
+                            showError('Error al cargar el producto. Por favor, intente nuevamente.');
+                        }
+                    });
+                });
+            }
+
+            window.updateProduct = function () {
+                const form = $('#editProductForm');
+                const formData = {};
+                let errors = [];
+                form.serializeArray().forEach(item => {
+                    formData[item.name] = item.value;
+                });
+                formData.Price = parseFloat(formData.Price || 0);
+                formData.Cost = parseFloat(formData.Cost || 0);
+                formData.TaxRate = parseFloat(formData.TaxRate || 0);
+                formData.IsActive = form.find('[name="IsActive"]').is(':checked');
+                formData.CategoryId = formData.CategoryId || null;
+                formData.StationId = formData.StationId || null;
+
+                // Validaciones
+                if (!formData.Name || formData.Name.trim() === "") {
+                    errors.push('El nombre es requerido');
+                }
+                if (!formData.Price && formData.Price !== 0) {
+                    errors.push('El precio es requerido');
+                } else if (formData.Price < 0) {
+                    errors.push('El precio debe ser mayor o igual a 0');
+                }
+                if (!formData.Cost && formData.Cost !== 0) {
+                    errors.push('El costo es requerido');
+                } else if (formData.Cost < 0) {
+                    errors.push('El costo debe ser mayor o igual a 0');
+                }
+                if (formData.TaxRate < 0 || formData.TaxRate > 100) {
+                    errors.push('El impuesto debe estar entre 0 y 100');
+                }
+                if (!formData.CategoryId) {
+                    errors.push('La categoría es requerida');
+                }
+                if (errors.length > 0) {
+                    Swal.fire({
+                        title: 'Error de validación',
+                        html: errors.join('<br>'),
+                        icon: 'error'
+                    });
+                    return;
+                }
+                Swal.fire({
+                    title: 'Actualizando producto...',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+                $.ajax({
+                    url: `/Product/Edit/${formData.Id}`,
+                    method: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),
+                    success: function (response) {
+                        Swal.close();
+                        if (response.success) {
+                            $('#editProductModal').modal('hide');
+                            showSuccess('Producto actualizado exitosamente');
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1000);
+                        } else {
+                            if (response.errors && response.errors.length > 0) {
+                                const errorMessage = response.errors.join('\n');
+                                Swal.fire({
+                                    title: 'Error de validación',
+                                    html: errorMessage.replace(/\n/g, '<br>'),
+                                    icon: 'error'
+                                });
+                            } else {
+                                showError(response.message || 'Error al actualizar el producto');
+                            }
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        Swal.close();
+                        console.error('Error:', error);
+                        showError('Error al actualizar el producto. Por favor, intente nuevamente.');
+                    }
+                });
+            }
+
+            window.deleteProduct = function (id) {
+                if (confirm('¿Está seguro que desea eliminar este producto?')) {
+                    $.ajax({
+                        url: `/Product/Delete/${id}`,
+                        method: 'DELETE',
+                        success: function (response) {
+                            if (response.success) {
+                                location.reload();
+                                showSuccess('Producto eliminado exitosamente');
+                            } else {
+                                showError(response.message);
+                            }
+                        },
+                        error: function () {
+                            showError('Error al eliminar el producto');
+                        }
+                    });
+                }
+            }
+
+            function showSuccess(message) {
+                Swal.fire('Éxito', message, 'success');
+            }
+
+            function showError(message) {
+                Swal.fire('Error', message, 'error');
+            }
+
+        })();
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const productGrid = document.getElementById('productsGrid');
+
+            if (productGrid) {
+                productGrid.addEventListener('show.bs.dropdown', function (event) {
+                    const card = event.target.closest('.product-card');
+                    if (card) {
+                        card.classList.add('dropdown-active');
+                    }
+                });
+
+                productGrid.addEventListener('hide.bs.dropdown', function (event) {
+                    const card = event.target.closest('.product-card');
+                    if (card) {
+                        card.classList.remove('dropdown-active');
+                    }
+                });
+            }
+        });
+    </script>
+}

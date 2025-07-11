@@ -1,0 +1,84 @@
+@model RestBar.Models.Station
+
+@{
+    ViewData["Title"] = "Editar Estación";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="card-title">Editar Estación</h3>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Volver
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        <input type="hidden" asp-for="Id" />
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Name" class="control-label">Nombre de la Estación</label>
+                                    <input asp-for="Name" class="form-control" placeholder="Ej: Cocina Principal" />
+                                    <span asp-validation-for="Name" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Type" class="control-label">Tipo de Estación</label>
+                                    <select asp-for="Type" class="form-select" id="stationType">
+                                        <option value="">Seleccione un tipo...</option>
+                                        <option value="Cocina">Cocina</option>
+                                        <option value="Bar">Bar</option>
+                                        <option value="Café">Café</option>
+                                        <option value="Postres">Postres</option>
+                                        <option value="Parrilla">Parrilla</option>
+                                        <option value="Sushi">Sushi</option>
+                                        <option value="Pizza">Pizza</option>
+                                        <option value="Otro">Otro</option>
+                                    </select>
+                                    <span asp-validation-for="Type" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Guardar Cambios
+                            </button>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        $(document).ready(function () {
+            // Auto-completar el campo de tipo si se selecciona "Otro"
+            $('#stationType').on('change', function() {
+                if ($(this).val() === 'Otro') {
+                    var customType = prompt('Ingrese el tipo de estación:');
+                    if (customType && customType.trim() !== '') {
+                        $(this).append(new Option(customType, customType, true, true));
+                    } else {
+                        $(this).val('@Model.Type');
+                    }
+                }
+            });
+        });
+    </script>
+} 

@@ -1,0 +1,464 @@
+@model IEnumerable<RestBar.Models.Area>
+@using System.Globalization
+@{
+    ViewData["Title"] = "Áreas";
+}
+
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-th-large me-2"></i>Gestión de Áreas
+        </h1>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createAreaModal">
+            <i class="fas fa-plus me-2"></i>Nueva Área
+        </button>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <!-- Filtros -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" id="searchAreaInput" class="form-control border-start-0" placeholder="Buscar área...">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select id="branchFilter" class="form-select">
+                        <option value="">Todas las sucursales</option>
+                    </select>
+                </div>
+            </div>
+            <!-- Fin Filtros -->
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4" id="areasGrid">
+                @foreach (var item in Model)
+                {
+                    <div class="col">
+                        <div class="card h-100 area-card border-0 shadow-sm">
+                            <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0 text-primary">@item.Name</h5>
+                                <div class="dropdown">
+                                    <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="editArea('@item.Id')">
+                                                <i class="fas fa-edit me-2 text-primary"></i>Editar
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="deleteArea('@item.Id')">
+                                                <i class="fas fa-trash me-2 text-danger"></i>Eliminar
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-store text-muted me-2"></i>
+                                        <span class="text-muted">@(item.Branch?.Name ?? "Sin sucursal")</span>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-info-circle text-muted me-2"></i>
+                                        <span class="text-muted">@(!string.IsNullOrWhiteSpace(item.Description) ? item.Description : "Sin descripción")</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Creación -->
+<div class="modal fade" id="createAreaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0">
+                <h5 class="modal-title">Nueva Área</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createAreaForm">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" class="form-control" name="Name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Sucursal</label>
+                        <select class="form-select" name="BranchId" id="areaBranchSelect">
+                            <option value="">Seleccione una sucursal</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea class="form-control" name="Description" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="createArea()">Crear Área</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Edición -->
+<div class="modal fade" id="editAreaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0">
+                <h5 class="modal-title">Editar Área</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editAreaForm">
+                    <input type="hidden" name="Id">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" class="form-control" name="Name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Sucursal</label>
+                        <select class="form-select" name="BranchId">
+                            <option value="">Seleccione una sucursal</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea class="form-control" name="Description" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="updateArea()">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .area-card {
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .area-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .card-title {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .dropdown-item {
+            padding: 0.5rem 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .dropdown-item i {
+            width: 20px;
+        }
+
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            padding: 0.6rem 1rem;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #2196F3;
+            box-shadow: 0 0 0 0.2rem rgba(33, 150, 243, 0.1);
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background-color: #2196F3;
+            border-color: #2196F3;
+        }
+
+        .btn-primary:hover {
+            background-color: #1976D2;
+            border-color: #1976D2;
+        }
+
+        .btn-light {
+            background-color: #f8f9fa;
+            border-color: #f8f9fa;
+            color: #2c3e50;
+        }
+
+        .btn-light:hover {
+            background-color: #e9ecef;
+            border-color: #e9ecef;
+            color: #2c3e50;
+        }
+
+        .modal-content {
+            border-radius: 15px;
+        }
+
+        .input-group-text {
+            border-radius: 8px 0 0 8px;
+            background-color: #f8f9fa;
+            border: 1px solid #e0e0e0;
+        }
+
+        .input-group .form-control {
+            border-radius: 0 8px 8px 0;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $(document).ready(function () {
+            loadBranches();
+            populateBranchFilter();
+            $('#searchAreaInput').on('keyup', filterAreas);
+            $('#branchFilter').on('change', filterAreas);
+        });
+
+        function loadBranches(callback) {
+            $.get('/Area/GetBranches', function (res) {
+                if (res.success) {
+                    const selects = ['#areaBranchSelect', '#editAreaForm select[name="BranchId"]'];
+                    selects.forEach(selectId => {
+                        const select = $(selectId);
+                        const current = select.val();
+                        select.empty().append('<option value="">Seleccione una sucursal</option>');
+                        res.data.forEach(branch => {
+                            select.append(`<option value="${branch.id}">${branch.name}</option>`);
+                        });
+                        select.val(current);
+                    });
+                    if (callback) callback();
+                }
+            });
+        }
+
+        function populateBranchFilter() {
+            $.get('/Area/GetBranches', function (res) {
+                if (res.success) {
+                    const select = $('#branchFilter');
+                    const current = select.val();
+                    select.empty().append('<option value="">Todas las sucursales</option>');
+                    res.data.forEach(branch => {
+                        select.append(`<option value="${branch.name}">${branch.name}</option>`);
+                    });
+                    select.val(current);
+                }
+            });
+        }
+
+        function filterAreas() {
+            const searchTerm = $('#searchAreaInput').val().toLowerCase();
+            const branch = $('#branchFilter').val();
+            $('.area-card').each(function () {
+                const card = $(this);
+                const name = card.find('.card-title').text().toLowerCase();
+                const branchName = card.find('.mb-2').first().text().replace('Sucursal:', '').trim();
+                const matchesSearch = name.includes(searchTerm);
+                const matchesBranch = branch === '' || branchName === branch;
+                card.closest('.col').toggle(matchesSearch && matchesBranch);
+            });
+        }
+
+        window.createArea = function () {
+            const form = $('#createAreaForm');
+            const formData = {};
+            let errors = [];
+            form.serializeArray().forEach(item => {
+                formData[item.name] = item.value;
+            });
+            formData.BranchId = formData.BranchId || null;
+            // Validaciones
+            if (!formData.Name || formData.Name.trim() === "") {
+                errors.push('El nombre es requerido');
+            }
+            if (!formData.BranchId) {
+                errors.push('La sucursal es requerida');
+            }
+            if (errors.length > 0) {
+                Swal.fire({
+                    title: 'Error de validación',
+                    html: errors.join('<br>'),
+                    icon: 'error'
+                });
+                return;
+            }
+            Swal.fire({
+                title: 'Creando área...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            $.ajax({
+                url: '/Area/Create',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function (response) {
+                    Swal.close();
+                    if (response.success) {
+                        $('#createAreaModal').modal('hide');
+                        location.reload();
+                        showSuccess('Área creada exitosamente');
+                    } else {
+                        showError(response.message);
+                    }
+                },
+                error: function () {
+                    Swal.close();
+                    showError('Error al crear el área');
+                }
+            });
+        }
+
+        window.editArea = function (id) {
+            Swal.fire({
+                title: 'Cargando...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            loadBranches(function () {
+                $.ajax({
+                    url: `/Area/Get/${id}`,
+                    method: 'GET',
+                    success: function (response) {
+                        Swal.close();
+                        if (response.success) {
+                            const area = response.data;
+                            const form = $('#editAreaForm');
+                            form[0].reset();
+                            form.find('[name="Id"]').val(area.id);
+                            form.find('[name="Name"]').val(area.name);
+                            form.find('[name="Description"]').val(area.description);
+                            if (area.branchId) {
+                                form.find('[name="BranchId"]').val(area.branchId);
+                            }
+                            const editModal = new bootstrap.Modal(document.getElementById('editAreaModal'));
+                            editModal.show();
+                        } else {
+                            showError(response.message || 'Error al cargar el área');
+                        }
+                    },
+                    error: function () {
+                        Swal.close();
+                        showError('Error al cargar el área.');
+                    }
+                });
+            });
+        }
+
+        window.updateArea = function () {
+            const form = $('#editAreaForm');
+            const formData = {};
+            let errors = [];
+            form.serializeArray().forEach(item => {
+                formData[item.name] = item.value;
+            });
+            formData.BranchId = formData.BranchId || null;
+            // Validaciones
+            if (!formData.Name || formData.Name.trim() === "") {
+                errors.push('El nombre es requerido');
+            }
+            if (!formData.BranchId) {
+                errors.push('La sucursal es requerida');
+            }
+            if (errors.length > 0) {
+                Swal.fire({
+                    title: 'Error de validación',
+                    html: errors.join('<br>'),
+                    icon: 'error'
+                });
+                return;
+            }
+            Swal.fire({
+                title: 'Actualizando área...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            $.ajax({
+                url: `/Area/Edit/${formData.Id}`,
+                method: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function (response) {
+                    Swal.close();
+                    if (response.success) {
+                        $('#editAreaModal').modal('hide');
+                        showSuccess('Área actualizada exitosamente');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    } else {
+                        showError(response.message || 'Error al actualizar el área');
+                    }
+                },
+                error: function () {
+                    Swal.close();
+                    showError('Error al actualizar el área.');
+                }
+            });
+        }
+
+        window.deleteArea = function (id) {
+            Swal.fire({
+                title: '¿Está seguro que desea eliminar esta área?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `/Area/Delete/${id}`,
+                        method: 'DELETE',
+                        success: function (response) {
+                            if (response.success) {
+                                location.reload();
+                                showSuccess('Área eliminada exitosamente');
+                            } else {
+                                showError(response.message);
+                            }
+                        },
+                        error: function () {
+                            showError('Error al eliminar el área');
+                        }
+                    });
+                }
+            });
+        }
+
+        function showSuccess(message) {
+            Swal.fire('Éxito', message, 'success');
+        }
+
+        function showError(message) {
+            Swal.fire('Error', message, 'error');
+        }
+    </script>
+} 

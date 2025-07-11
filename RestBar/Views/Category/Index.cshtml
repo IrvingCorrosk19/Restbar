@@ -1,0 +1,260 @@
+@model IEnumerable<RestBar.Models.Category>
+
+@{
+    ViewData["Title"] = "Categorías";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Gestión de Categorías</h1>
+    
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <i class="fas fa-table me-1"></i>
+                Categorías
+            </div>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+                <i class="fas fa-plus"></i> Nueva Categoría
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                @foreach (var category in Model)
+                {
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100 category-card">
+                            <div class="card-body">
+                                <h5 class="card-title">@category.Name</h5>
+                                <p class="card-text">@(!string.IsNullOrWhiteSpace(category.Description) ? category.Description : "Sin descripción")</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge @(category.IsActive ? "bg-success" : "bg-danger")">
+                                        @(category.IsActive ? "Activa" : "Inactiva")
+                                    </span>
+                                    <div class="btn-group">
+                                        <a asp-action="Edit" asp-route-id="@category.Id" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                onclick="confirmDelete('@category.Id', '@category.Name')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Creación -->
+<div class="modal fade" id="createModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nueva Categoría</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createCategoryForm">
+                <div class="modal-body">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    
+                    <div class="mb-3">
+                        <label for="Name" class="form-label">Nombre</label>
+                        <input type="text" class="form-control" id="Name" name="Name" required />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="Description" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="Description" name="Description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="IsActive" name="IsActive" checked />
+                        <label class="form-check-label" for="IsActive">Activa</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="saveCategoryBtn">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación de Eliminación -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                ¿Está seguro que desea eliminar la categoría <span id="categoryName"></span>?
+            </div>
+            <div class="modal-footer">
+                <form id="deleteForm" asp-action="Delete" method="post">
+                    <input type="hidden" id="categoryId" name="id" />
+                    @Html.AntiForgeryToken()
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function confirmDelete(id, name) {
+            document.getElementById('categoryId').value = id;
+            document.getElementById('categoryName').textContent = name;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+
+        // Limpiar el formulario cuando se cierra el modal
+        document.getElementById('createModal').addEventListener('hidden.bs.modal', function () {
+            this.querySelector('form').reset();
+        });
+
+        // Manejar la creación de categoría vía AJAX
+        $('#saveCategoryBtn').on('click', function () {
+            const form = $('#createCategoryForm');
+            const data = {
+                Name: form.find('[name="Name"]').val(),
+                Description: form.find('[name="Description"]').val(),
+                IsActive: form.find('[name="IsActive"]').is(':checked')
+            };
+
+            if (!data.Name) {
+                Swal.fire('Error', 'El nombre es requerido', 'error');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Creando categoría...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            $.ajax({
+                url: '/Category/CreateAjax',
+                type: 'POST',
+                data: data,
+                success: function (res) {
+                    Swal.close();
+                    if (res.success) {
+                        $('#createModal').modal('hide');
+                        form[0].reset();
+                        
+                        // Crear el nuevo elemento de categoría
+                        const newCategory = `
+                            <div class="col-md-4 mb-4">
+                                <div class="card h-100 category-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">${data.Name}</h5>
+                                        <p class="card-text">${data.Description || ''}</p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="badge ${data.IsActive ? 'bg-success' : 'bg-danger'}">
+                                                ${data.IsActive ? 'Activa' : 'Inactiva'}
+                                            </span>
+                                            <div class="btn-group">
+                                                <a href="/Category/Edit/${res.data.id}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                        onclick="confirmDelete('${res.data.id}', '${data.Name}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Agregar la nueva categoría al inicio de la lista
+                        $('.row').prepend(newCategory);
+                        
+                        Swal.fire({
+                            title: '¡Éxito!',
+                            text: 'Categoría creada correctamente.',
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        Swal.fire('Error', res.message || 'No se pudo crear la categoría.', 'error');
+                    }
+                },
+                error: function () {
+                    Swal.close();
+                    Swal.fire('Error', 'No se pudo crear la categoría.', 'error');
+                }
+            });
+        });
+    </script>
+}
+
+<style>
+    .category-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        cursor: pointer;
+    }
+
+    .category-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        background-color: #f8f9fa;
+    }
+
+    .card-title {
+        color: #2c3e50;
+        font-weight: 600;
+    }
+
+    .card-text {
+        color: #7f8c8d;
+    }
+
+    .btn-group .btn {
+        padding: 0.25rem 0.5rem;
+    }
+
+    .badge {
+        font-size: 0.8rem;
+        padding: 0.5em 0.8em;
+    }
+
+    .modal-content {
+        border: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .modal-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .modal-footer {
+        background-color: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+    }
+</style> 

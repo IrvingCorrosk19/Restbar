@@ -1,0 +1,572 @@
+@model IEnumerable<RestBar.Models.Branch>
+@using System.Globalization
+@{
+    ViewData["Title"] = "Sucursales";
+}
+
+<div class="container-fluid px-4 dark-theme">
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+        <h1 class="h3 mb-0 text-white">
+            <i class="fas fa-store-alt me-2"></i>Gestión de Sucursales
+        </h1>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createBranchModal">
+            <i class="fas fa-plus me-2"></i>Nueva Sucursal
+        </button>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4 bg-dark">
+        <div class="card-body">
+            <!-- Filtros -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark border-end-0">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" id="searchBranchInput" class="form-control border-start-0 bg-dark text-white" placeholder="Buscar sucursal...">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select id="statusFilter" class="form-select bg-dark text-white">
+                        <option value="">Todos los estados</option>
+                        <option value="true">Activa</option>
+                        <option value="false">Inactiva</option>
+                    </select>
+                </div>
+            </div>
+            <!-- Fin Filtros -->
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4" id="branchesGrid">
+                @foreach (var item in Model)
+                {
+                    <div class="col">
+                        <div class="card h-100 branch-card border-0 shadow-sm bg-dark">
+                            <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0 text-primary">@item.Name</h5>
+                                <div class="dropdown">
+                                    <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end bg-dark">
+                                        <li>
+                                            <a class="dropdown-item text-white" href="#" onclick="editBranch('@item.Id')">
+                                                <i class="fas fa-edit me-2 text-primary"></i>Editar
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item text-white" href="#" onclick="deleteBranch('@item.Id')">
+                                                <i class="fas fa-trash me-2 text-danger"></i>Eliminar
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-map-marker-alt text-muted me-2"></i>
+                                        <span class="text-muted">@(!string.IsNullOrWhiteSpace(item.Address) ? item.Address : "Sin dirección")</span>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-phone text-muted me-2"></i>
+                                        <span class="text-muted">@(!string.IsNullOrWhiteSpace(item.Phone) ? item.Phone : "Sin teléfono")</span>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-building text-muted me-2"></i>
+                                        <span class="text-muted">@(item.Company?.Name ?? "Sin compañía")</span>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge @(item.IsActive == true ? "bg-success" : "bg-danger")">
+                                            @(item.IsActive == true ? "Activa" : "Inactiva")
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Creación -->
+<div class="modal fade" id="createBranchModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow bg-dark">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-white">Nueva Sucursal</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createBranchForm">
+                    <div class="mb-3">
+                        <label class="form-label text-white">Compañía *</label>
+                        <select class="form-select bg-dark text-white" name="CompanyId" id="createCompanyId" required></select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-white">Nombre</label>
+                        <input type="text" class="form-control bg-dark text-white" name="Name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-white">Dirección</label>
+                        <input type="text" class="form-control bg-dark text-white" name="Address">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-white">Teléfono</label>
+                        <input type="text" class="form-control bg-dark text-white" name="Phone">
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="IsActive" checked>
+                            <label class="form-check-label text-white">Activa</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="createBranch()">Crear Sucursal</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Edición -->
+<div class="modal fade" id="editBranchModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow bg-dark">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-white">Editar Sucursal</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editBranchForm">
+                    <input type="hidden" name="Id">
+                    <div class="mb-3">
+                        <label class="form-label text-white">Compañía *</label>
+                        <select class="form-select bg-dark text-white" name="CompanyId" id="editCompanyId" required></select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-white">Nombre</label>
+                        <input type="text" class="form-control bg-dark text-white" name="Name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-white">Dirección</label>
+                        <input type="text" class="form-control bg-dark text-white" name="Address">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-white">Teléfono</label>
+                        <input type="text" class="form-control bg-dark text-white" name="Phone">
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="IsActive">
+                            <label class="form-check-label text-white">Activa</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="updateBranch()">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        body {
+            background-color: #121212;
+        }
+
+        .dark-theme {
+            background-color: #121212;
+            min-height: 100vh;
+        }
+
+        .branch-card {
+            transition: all 0.3s ease;
+            background: #1e1e1e !important;
+        }
+
+        .branch-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        .card-title {
+            font-weight: 600;
+            color: #2196F3;
+        }
+
+        .dropdown-item {
+            padding: 0.5rem 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background-color: #2c2c2c;
+        }
+
+        .dropdown-item i {
+            width: 20px;
+        }
+
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 1px solid #333;
+            padding: 0.6rem 1rem;
+            background-color: #1e1e1e !important;
+            color: white !important;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #2196F3;
+            box-shadow: 0 0 0 0.2rem rgba(33, 150, 243, 0.1);
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background-color: #2196F3;
+            border-color: #2196F3;
+        }
+
+        .btn-primary:hover {
+            background-color: #1976D2;
+            border-color: #1976D2;
+        }
+
+        .btn-secondary {
+            background-color: #424242;
+            border-color: #424242;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #616161;
+            border-color: #616161;
+            color: white;
+        }
+
+        .modal-content {
+            border-radius: 15px;
+            background-color: #1e1e1e !important;
+        }
+
+        .input-group-text {
+            border-radius: 8px 0 0 8px;
+            background-color: #1e1e1e !important;
+            border: 1px solid #333;
+            color: #666;
+        }
+
+        .input-group .form-control {
+            border-radius: 0 8px 8px 0;
+        }
+
+        .badge {
+            padding: 0.5em 1em;
+            font-weight: 500;
+            border-radius: 6px;
+        }
+
+        .form-check-input:checked {
+            background-color: #2196F3;
+            border-color: #2196F3;
+        }
+
+        .form-check-label {
+            color: #fff;
+        }
+
+        .dropdown-menu {
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+        }
+
+        .dropdown-item {
+            color: #fff;
+        }
+
+        .dropdown-item:hover {
+            background-color: #2c2c2c;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #424242;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #616161;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $(document).ready(function () {
+            $('#searchBranchInput').on('keyup', filterBranches);
+            $('#statusFilter').on('change', filterBranches);
+        });
+
+        function filterBranches() {
+            const searchTerm = $('#searchBranchInput').val().toLowerCase();
+            const status = $('#statusFilter').val();
+            $('.branch-card').each(function () {
+                const card = $(this);
+                const name = card.find('.card-title').text().toLowerCase();
+                const isActive = card.find('.badge').hasClass('bg-success');
+                const matchesSearch = name.includes(searchTerm);
+                const matchesStatus = status === '' || (status === 'true' && isActive) || (status === 'false' && !isActive);
+                card.closest('.col').toggle(matchesSearch && matchesStatus);
+            });
+        }
+
+        function loadCompaniesSelect(selectId, selectedId) {
+            $.get('/Company/GetCompanies', function (res) {
+                var select = $(selectId);
+                if (res.success) {
+                    select.empty();
+                    select.append('<option value="">Seleccione una compañía</option>');
+                    res.data.forEach(function (c) {
+                        select.append('<option value="' + c.id + '">' + c.name + '</option>');
+                    });
+                    select.prop('disabled', false);
+                    // Seleccionar la compañía después de poblar el select
+                    if (selectedId) {
+                        setTimeout(function() {
+                            select.val(selectedId);
+                        }, 0);
+                    }
+                    if (selectId === '#createCompanyId') {
+                        $('#createBranchModal').find('button.btn-primary').prop('disabled', false);
+                    }
+                } else {
+                    select.empty().append('<option value="">No hay compañías disponibles</option>');
+                }
+            });
+        }
+
+        $('#createBranchModal').on('show.bs.modal', function () {
+            var select = $('#createCompanyId');
+            var btn = $(this).find('button.btn-primary');
+            select.empty().append('<option>Cargando compañías...</option>').prop('disabled', true);
+            btn.prop('disabled', true);
+            loadCompaniesSelect('#createCompanyId');
+            // Limpiar selección previa
+            select.val('');
+        });
+
+        $('#editBranchModal').on('show.bs.modal', function () {
+            var selectedId = $('#editBranchForm [name="CompanyId"]').val();
+            loadCompaniesSelect('#editCompanyId', selectedId);
+        });
+
+        window.createBranch = function () {
+            const form = $('#createBranchForm');
+            const formData = {};
+            let errors = [];
+            form.serializeArray().forEach(item => {
+                formData[item.name] = item.value;
+            });
+            formData.IsActive = form.find('[name="IsActive"]').is(':checked');
+            // Validaciones
+            if (!formData.Name || formData.Name.trim() === "") {
+                errors.push('El nombre es requerido');
+            }
+            if (!formData.CompanyId) {
+                errors.push('La compañía es requerida');
+            }
+            if (errors.length > 0) {
+                Swal.fire({
+                    title: 'Error de validación',
+                    html: errors.join('<br>'),
+                    icon: 'error'
+                });
+                return;
+            }
+            Swal.fire({
+                title: 'Creando sucursal...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            $.ajax({
+                url: '/Branch/Create',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function (response) {
+                    Swal.close();
+                    if (response.success) {
+                        $('#createBranchModal').modal('hide');
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Sucursal creada correctamente!',
+                            showConfirmButton: false,
+                            timer: 1200
+                        }).then(() => location.reload());
+                    } else {
+                        showError(response.message);
+                    }
+                },
+                error: function () {
+                    Swal.close();
+                    showError('Error al crear la sucursal');
+                }
+            });
+        }
+
+        window.editBranch = function (id) {
+            Swal.fire({
+                title: 'Cargando...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            $.ajax({
+                url: `/Branch/Get/${id}`,
+                method: 'GET',
+                success: function (response) {
+                    Swal.close();
+                    if (response.success) {
+                        const branch = response.data;
+                        const form = $('#editBranchForm');
+                        form[0].reset();
+                        form.find('[name="Id"]').val(branch.id);
+                        form.find('[name="Name"]').val(branch.name);
+                        form.find('[name="Address"]').val(branch.address);
+                        form.find('[name="Phone"]').val(branch.phone);
+                        form.find('[name="IsActive"]').prop('checked', branch.isActive);
+                        form.find('[name="CompanyId"]').val(branch.companyId);
+                        loadCompaniesSelect('#editCompanyId', branch.companyId);
+                        const editModal = new bootstrap.Modal(document.getElementById('editBranchModal'));
+                        editModal.show();
+                    } else {
+                        showError(response.message || 'Error al cargar la sucursal');
+                    }
+                },
+                error: function () {
+                    Swal.close();
+                    showError('Error al cargar la sucursal.');
+                }
+            });
+        }
+
+        window.updateBranch = function () {
+            const form = $('#editBranchForm');
+            const formData = {};
+            let errors = [];
+            form.serializeArray().forEach(item => {
+                formData[item.name] = item.value;
+            });
+            formData.IsActive = form.find('[name="IsActive"]').is(':checked');
+            // Validaciones
+            if (!formData.Name || formData.Name.trim() === "") {
+                errors.push('El nombre es requerido');
+            }
+            if (!formData.CompanyId) {
+                errors.push('La compañía es requerida');
+            }
+            if (errors.length > 0) {
+                Swal.fire({
+                    title: 'Error de validación',
+                    html: errors.join('<br>'),
+                    icon: 'error'
+                });
+                return;
+            }
+            Swal.fire({
+                title: 'Actualizando sucursal...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            $.ajax({
+                url: `/Branch/Edit/${formData.Id}`,
+                method: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function (response) {
+                    Swal.close();
+                    if (response.success) {
+                        $('#editBranchModal').modal('hide');
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Sucursal editada correctamente!',
+                            showConfirmButton: false,
+                            timer: 1200
+                        }).then(() => location.reload());
+                    } else {
+                        showError(response.message || 'Error al actualizar la sucursal');
+                    }
+                },
+                error: function () {
+                    Swal.close();
+                    showError('Error al actualizar la sucursal.');
+                }
+            });
+        }
+
+        window.deleteBranch = function (id) {
+            Swal.fire({
+                title: '¿Está seguro que desea eliminar esta sucursal?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Eliminando sucursal...',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    });
+                    $.ajax({
+                        url: `/Branch/Delete/${id}`,
+                        method: 'DELETE',
+                        success: function (response) {
+                            Swal.close();
+                            if (response.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: '¡Sucursal eliminada correctamente!',
+                                    showConfirmButton: false,
+                                    timer: 1200
+                                }).then(() => location.reload());
+                            } else {
+                                showError(response.message);
+                            }
+                        },
+                        error: function () {
+                            Swal.close();
+                            showError('Error al eliminar la sucursal');
+                        }
+                    });
+                }
+            });
+        }
+
+        function showSuccess(message) {
+            Swal.fire('Éxito', message, 'success');
+        }
+
+        function showError(message) {
+            Swal.fire('Error', message, 'error');
+        }
+    </script>
+} 

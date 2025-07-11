@@ -1,0 +1,83 @@
+@model RestBar.Models.Station
+
+@{
+    ViewData["Title"] = "Eliminar Estación";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="card-title">Confirmar Eliminación</h3>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Volver
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (ViewBag.HasProducts)
+                    {
+                        <div class="alert alert-danger">
+                            <h4 class="alert-heading">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                ¡No se puede eliminar esta estación!
+                            </h4>
+                            <p>
+                                La estación <strong>@Model.Name</strong> tiene @ViewBag.ProductCount producto(s) asociado(s).
+                            </p>
+                            <hr>
+                            <p class="mb-0">
+                                Para poder eliminar esta estación, primero debe:
+                                <ul>
+                                    <li>Reasignar los productos a otra estación, o</li>
+                                    <li>Eliminar los productos asociados</li>
+                                </ul>
+                            </p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <h4 class="alert-heading">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                ¿Está seguro de que desea eliminar esta estación?
+                            </h4>
+                            <p>
+                                Esta acción no se puede deshacer. La estación <strong>@Model.Name</strong> será eliminada permanentemente.
+                            </p>
+                        </div>
+
+                        <dl class="row">
+                            <dt class="col-sm-3">Nombre:</dt>
+                            <dd class="col-sm-9">@Model.Name</dd>
+
+                            <dt class="col-sm-3">Tipo:</dt>
+                            <dd class="col-sm-9">
+                                <span class="badge bg-info">@Model.Type</span>
+                            </dd>
+
+                            <dt class="col-sm-3">Productos Asociados:</dt>
+                            <dd class="col-sm-9">
+                                <span class="badge bg-secondary">Sin productos</span>
+                            </dd>
+                        </dl>
+
+                        <form asp-action="Delete" method="post">
+                            <input type="hidden" asp-for="Id" />
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-trash"></i> Confirmar Eliminación
+                                </button>
+                                <a asp-action="Index" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </a>
+                            </div>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

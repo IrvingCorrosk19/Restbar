@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>@ViewData["Title"] - RestBar</title>
+    <link rel="icon" href="~/images/logo.png" type="image/png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f4f6f9;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        h2 {
+            color: #2c3e50;
+        }
+
+        .mesa-btn {
+            min-width: 100px;
+            padding: 10px;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .mesa-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .mesa-disponible {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+
+        .mesa-ocupada {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+
+        .mesa-en-pedido {
+            background-color: #fcf8e3;
+            color: #8a6d3b;
+        }
+
+        .categoria-btn {
+            min-width: 140px;
+            margin-bottom: 10px;
+        }
+
+        .producto-card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .producto-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .producto-card .btn {
+            margin-top: 10px;
+        }
+
+        .resumen-card {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .table th, .table td {
+            vertical-align: middle;
+        }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <h2 class="fw-bold mb-4">@ViewData["Title"]</h2>
+        @RenderBody()
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html> 

@@ -1,0 +1,610 @@
+@model IEnumerable<RestBar.Models.Table>
+@using System.Globalization
+@{
+    ViewData["Title"] = "Mesas";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Gestión de Mesas</h1>
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <i class="fas fa-chair me-1"></i>
+                Mesas
+            </div>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTableModal">
+                <i class="fas fa-plus"></i> Nueva Mesa
+            </button>
+        </div>
+        <div class="card-body">
+            <!-- Filtros -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" id="searchTableInput" class="form-control" placeholder="Buscar número de mesa...">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select id="areaFilter" class="form-select">
+                        <option value="">Todas las áreas</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="statusFilter" class="form-select">
+                        <option value="">Todos los estados</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="number" id="capacityFilter" class="form-control" placeholder="Capacidad mínima">
+                </div>
+            </div>
+            <!-- Fin Filtros -->
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4" id="tablesGrid">
+                @foreach (var item in Model)
+                {
+                    <div class="col">
+                        <div class="card h-100 table-card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">Mesa @item.TableNumber</h5>
+                                <div class="dropdown">
+                                    <button class="btn btn-link text-dark p-0" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="editTable('@item.Id')">
+                                            <i class="fas fa-edit me-2"></i>Editar
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="deleteTable('@item.Id')">
+                                            <i class="fas fa-trash me-2"></i>Eliminar
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="status-dot me-2" data-status="@(item.Status ?? "")" title="@(item.Status ?? "")"></span>
+                                    <span class="fw-bold">Área:</span> @(item.Area?.Name ?? "Sin área")
+                                </div>
+                                <div class="mb-2">
+                                    <span class="fw-bold">Capacidad:</span> @(item.Capacity ?? 0)
+                                </div>
+                                <div class="mb-2">
+                                    <span class="fw-bold">Estado:</span> @(item.Status ?? "Sin estado")
+                                </div>
+                                <div>
+                                    <span class="badge @(item.IsActive == true ? "bg-success" : "bg-danger")">
+                                        @(item.IsActive == true ? "Activa" : "Inactiva")
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Creación -->
+<div class="modal fade" id="createTableModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nueva Mesa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createTableForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Número de Mesa</label>
+                            <input type="number" class="form-control" name="TableNumber" min="1" step="1" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Área</label>
+                            <div class="input-group">
+                                <select class="form-select" name="AreaId" id="tableAreaSelect">
+                                    <option value="">Seleccione un área</option>
+                                </select>
+                                <button class="btn btn-outline-primary" type="button" id="btnAddArea" data-bs-toggle="modal" data-bs-target="#createAreaModal" title="Agregar área">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Capacidad</label>
+                            <input type="number" class="form-control" name="Capacity" min="1" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Estado</label>
+                            <select class="form-select" name="Status" required>
+                                <option value="Disponible">Disponible</option>
+                                <option value="Ocupada">Ocupada</option>
+                                <option value="Reservada">Reservada</option>
+                                <option value="EnEspera">En espera</option>
+                                <option value="Atendida">Atendida</option>
+                                <option value="EnPreparacion">En preparación</option>
+                                <option value="Servida">Servida</option>
+                                <option value="ParaPago">Para pago</option>
+                                <option value="Pagada">Pagada</option>
+                                <option value="Bloqueada">Bloqueada</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="IsActive" checked>
+                            <label class="form-check-label">Activa</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="createTable()">Crear Mesa</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Edición -->
+<div class="modal fade" id="editTableModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Mesa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editTableForm">
+                    <input type="hidden" name="Id">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Número de Mesa</label>
+                            <input type="number" class="form-control" name="TableNumber" min="1" step="1" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Área</label>
+                            <div class="input-group">
+                                <select class="form-select" name="AreaId">
+                                    <option value="">Seleccione un área</option>
+                                </select>
+                                <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#createAreaModal" title="Agregar área">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Capacidad</label>
+                            <input type="number" class="form-control" name="Capacity" min="1" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Estado</label>
+                            <select class="form-select" name="Status" required>
+                                <option value="Disponible">Disponible</option>
+                                <option value="Ocupada">Ocupada</option>
+                                <option value="Reservada">Reservada</option>
+                                <option value="EnEspera">En espera</option>
+                                <option value="Atendida">Atendida</option>
+                                <option value="EnPreparacion">En preparación</option>
+                                <option value="Servida">Servida</option>
+                                <option value="ParaPago">Para pago</option>
+                                <option value="Pagada">Pagada</option>
+                                <option value="Bloqueada">Bloqueada</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="IsActive">
+                            <label class="form-check-label">Activa</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="updateTable()">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para crear área -->
+<div class="modal fade" id="createAreaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nueva Área</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createAreaForm">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" class="form-control" name="Name" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="saveAreaBtn">Guardar Área</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $(document).ready(function () {
+            loadAreas(populateAreaFilter);
+            populateStatusFilter();
+            $('#searchTableInput').on('keyup', filterTables);
+            $('#areaFilter').on('change', filterTables);
+            $('#statusFilter').on('change', filterTables);
+            $('#capacityFilter').on('input', filterTables);
+            // Limpiar el formulario al cerrar el modal de área
+            $('#createAreaModal').on('hidden.bs.modal', function () {
+                $('#createAreaForm')[0].reset();
+            });
+            // Guardar nueva área
+            $('#saveAreaBtn').on('click', function () {
+                const form = $('#createAreaForm');
+                const data = {
+                    Name: form.find('[name="Name"]').val()
+                };
+                if (!data.Name || data.Name.trim() === "") {
+                    Swal.fire('Error', 'El nombre es requerido', 'error');
+                    return;
+                }
+                Swal.fire({
+                    title: 'Creando área...',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+                $.ajax({
+                    url: '/Area/CreateAjax',
+                    type: 'POST',
+                    data: data,
+                    success: function (res) {
+                        Swal.close();
+                        if (res.success) {
+                            $('#createAreaModal').modal('hide');
+                            form[0].reset();
+                            // Recargar áreas y seleccionar la nueva
+                            loadAreas(function () {
+                                $('#tableAreaSelect').val(res.data.id);
+                                $('#editTableForm select[name="AreaId"]').val(res.data.id);
+                            });
+                            Swal.fire('¡Éxito!', 'Área creada correctamente.', 'success');
+                        } else {
+                            Swal.fire('Error', res.message || 'No se pudo crear el área.', 'error');
+                        }
+                    },
+                    error: function () {
+                        Swal.close();
+                        Swal.fire('Error', 'No se pudo crear el área.', 'error');
+                    }
+                });
+            });
+        });
+
+        function loadAreas(callback) {
+            $.get('/Table/GetAreas', function (res) {
+                if (res.success) {
+                    const selects = ['#tableAreaSelect', '#editTableForm select[name="AreaId"]'];
+                    selects.forEach(selectId => {
+                        const select = $(selectId);
+                        const current = select.val();
+                        select.empty().append('<option value="">Seleccione un área</option>');
+                        res.data.forEach(area => {
+                            select.append(`<option value="${area.id}">${area.name}</option>`);
+                        });
+                        select.val(current);
+                    });
+                    if (callback) callback();
+                }
+            });
+        }
+
+        function populateAreaFilter() {
+            $.get('/Table/GetAreas', function (res) {
+                if (res.success) {
+                    const select = $('#areaFilter');
+                    const current = select.val();
+                    select.empty().append('<option value="">Todas las áreas</option>');
+                    res.data.forEach(area => {
+                        select.append(`<option value="${area.name}">${area.name}</option>`);
+                    });
+                    select.val(current);
+                }
+            });
+        }
+
+        function populateStatusFilter() {
+            const estados = [
+                'Disponible', 'Ocupada', 'Reservada', 'En espera', 'Atendida', 'En preparación', 'Servida', 'Para pago', 'Pagada', 'Bloqueada'
+            ];
+            const select = $('#statusFilter');
+            const current = select.val();
+            select.empty().append('<option value="">Todos los estados</option>');
+            estados.forEach(e => {
+                select.append(`<option value="${e}">${e}</option>`);
+            });
+            select.val(current);
+        }
+
+        function filterTables() {
+            const searchTerm = $('#searchTableInput').val().toLowerCase();
+            const area = $('#areaFilter').val();
+            const status = $('#statusFilter').val();
+            const minCapacity = parseInt($('#capacityFilter').val() || 0);
+
+            $('.table-card').each(function () {
+                const card = $(this);
+                const tableNumber = card.find('.card-title').text().replace('Mesa', '').trim().toLowerCase();
+                const areaName = card.find('.mb-2').first().text().replace('Área:', '').trim();
+                const estado = card.find('.mb-2').eq(2).text().replace('Estado:', '').trim();
+                const capacidad = parseInt(card.find('.mb-2').eq(1).text().replace('Capacidad:', '').trim()) || 0;
+
+                const matchesSearch = tableNumber.includes(searchTerm);
+                const matchesArea = area === '' || areaName === area;
+                const matchesStatus = status === '' || estado === status;
+                const matchesCapacity = isNaN(minCapacity) || capacidad >= minCapacity;
+
+                card.closest('.col').toggle(matchesSearch && matchesArea && matchesStatus && matchesCapacity);
+            });
+        }
+
+        window.createTable = function () {
+            const form = $('#createTableForm');
+            const formData = {};
+            let errors = [];
+            form.serializeArray().forEach(item => {
+                formData[item.name] = item.value;
+            });
+            formData.TableNumber = parseInt(formData.TableNumber || 0);
+            formData.Capacity = parseInt(formData.Capacity || 0);
+            formData.IsActive = form.find('[name="IsActive"]').is(':checked');
+            formData.AreaId = formData.AreaId || null;
+            formData.Status = formData.Status || null;
+
+            // Validaciones
+            if (!formData.TableNumber || isNaN(formData.TableNumber) || formData.TableNumber <= 0) {
+                errors.push('El número de mesa es requerido y debe ser un número entero mayor a 0');
+            }
+            if (!formData.Capacity || formData.Capacity <= 0) {
+                errors.push('La capacidad debe ser mayor a 0');
+            }
+            if (!formData.AreaId) {
+                errors.push('El área es requerida');
+            }
+            if (!formData.Status) {
+                errors.push('El estado es requerido');
+            }
+            if (errors.length > 0) {
+                Swal.fire({
+                    title: 'Error de validación',
+                    html: errors.join('<br>'),
+                    icon: 'error'
+                });
+                return;
+            }
+            // Antes de enviar, convertir TableNumber a string
+            formData.TableNumber = formData.TableNumber.toString();
+            Swal.fire({
+                title: 'Creando mesa...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            $.ajax({
+                url: '/Table/Create',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function (response) {
+                    Swal.close();
+                    if (response.success) {
+                        $('#createTableModal').modal('hide');
+                        location.reload();
+                        showSuccess('Mesa creada exitosamente');
+                    } else {
+                        showError(response.message);
+                    }
+                },
+                error: function () {
+                    Swal.close();
+                    showError('Error al crear la mesa');
+                }
+            });
+        }
+
+        window.editTable = function (id) {
+            Swal.fire({
+                title: 'Cargando...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            loadAreas(function () {
+                $.ajax({
+                    url: `/Table/Get/${id}`,
+                    method: 'GET',
+                    success: function (response) {
+                        Swal.close();
+                        if (response.success) {
+                            const table = response.data;
+                            const form = $('#editTableForm');
+                            form[0].reset();
+                            form.find('[name="Id"]').val(table.id);
+                            form.find('[name="TableNumber"]').val(table.tableNumber);
+                            form.find('[name="Capacity"]').val(table.capacity);
+                            form.find('[name="Status"]').val(table.status);
+                            form.find('[name="IsActive"]').prop('checked', table.isActive);
+                            if (table.areaId) {
+                                form.find('[name="AreaId"]').val(table.areaId);
+                            }
+                            const editModal = new bootstrap.Modal(document.getElementById('editTableModal'));
+                            editModal.show();
+                        } else {
+                            showError(response.message || 'Error al cargar la mesa');
+                        }
+                    },
+                    error: function () {
+                        Swal.close();
+                        showError('Error al cargar la mesa.');
+                    }
+                });
+            });
+        }
+
+        window.updateTable = function () {
+            const form = $('#editTableForm');
+            const formData = {};
+            let errors = [];
+            form.serializeArray().forEach(item => {
+                formData[item.name] = item.value;
+            });
+            formData.TableNumber = parseInt(formData.TableNumber || 0);
+            formData.Capacity = parseInt(formData.Capacity || 0);
+            formData.IsActive = form.find('[name="IsActive"]').is(':checked');
+            formData.AreaId = formData.AreaId || null;
+            formData.Status = formData.Status || null;
+
+            // Validaciones
+            if (!formData.TableNumber || isNaN(formData.TableNumber) || formData.TableNumber <= 0) {
+                errors.push('El número de mesa es requerido y debe ser un número entero mayor a 0');
+            }
+            if (!formData.Capacity || formData.Capacity <= 0) {
+                errors.push('La capacidad debe ser mayor a 0');
+            }
+            if (!formData.AreaId) {
+                errors.push('El área es requerida');
+            }
+            if (!formData.Status) {
+                errors.push('El estado es requerido');
+            }
+            if (errors.length > 0) {
+                Swal.fire({
+                    title: 'Error de validación',
+                    html: errors.join('<br>'),
+                    icon: 'error'
+                });
+                return;
+            }
+            // Antes de enviar, convertir TableNumber a string
+            formData.TableNumber = formData.TableNumber.toString();
+            Swal.fire({
+                title: 'Actualizando mesa...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            $.ajax({
+                url: `/Table/Edit/${formData.Id}`,
+                method: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function (response) {
+                    Swal.close();
+                    if (response.success) {
+                        $('#editTableModal').modal('hide');
+                        showSuccess('Mesa actualizada exitosamente');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    } else {
+                        showError(response.message || 'Error al actualizar la mesa');
+                    }
+                },
+                error: function () {
+                    Swal.close();
+                    showError('Error al actualizar la mesa.');
+                }
+            });
+        }
+
+        window.deleteTable = function (id) {
+            Swal.fire({
+                title: '¿Está seguro que desea eliminar esta mesa?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `/Table/Delete/${id}`,
+                        method: 'DELETE',
+                        success: function (response) {
+                            if (response.success) {
+                                location.reload();
+                                showSuccess('Mesa eliminada exitosamente');
+                            } else {
+                                showError(response.message);
+                            }
+                        },
+                        error: function () {
+                            showError('Error al eliminar la mesa');
+                        }
+                    });
+                }
+            });
+        }
+
+        function showSuccess(message) {
+            Swal.fire('Éxito', message, 'success');
+        }
+
+        function showError(message) {
+            Swal.fire('Error', message, 'error');
+        }
+    </script>
+}
+
+@section Styles {
+    <style>
+        .status-dot {
+            display: inline-block;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 3px double #fff;
+            box-shadow: 0 0 8px rgba(0,0,0,0.18);
+            vertical-align: middle;
+            position: relative;
+            transition: box-shadow 0.2s, border 0.2s;
+        }
+        .status-dot[data-status="Disponible"],
+        .status-dot[data-status="Ocupada"],
+        .status-dot[data-status="En espera"],
+        .status-dot[data-status="Atendida"],
+        .status-dot[data-status="En preparación"],
+        .status-dot[data-status="Servida"],
+        .status-dot[data-status="Para pago"] {
+            animation: status-pulse 1.2s infinite alternate;
+        }
+        .status-dot[data-status="Disponible"] { background: #28a745; }
+        .status-dot[data-status="Ocupada"] { background: #dc3545; }
+        .status-dot[data-status="Reservada"] { background: #ffc107; }
+        .status-dot[data-status="En espera"] { background: #fd7e14; }
+        .status-dot[data-status="Atendida"] { background: #007bff; }
+        .status-dot[data-status="En preparación"] { background: #6f42c1; }
+        .status-dot[data-status="Servida"] { background: #795548; }
+        .status-dot[data-status="Para pago"] { background: #212529; }
+        .status-dot[data-status="Pagada"] { background: #adb5bd; }
+        .status-dot[data-status="Bloqueada"] { background: #343a40; }
+        .status-dot:hover {
+            border: 3px solid #fff;
+            box-shadow: 0 0 16px 6px rgba(0,0,0,0.25);
+        }
+        @@keyframes status-pulse {
+            0% { box-shadow: 0 0 8px 2px rgba(0,0,0,0.18); }
+            100% { box-shadow: 0 0 16px 6px rgba(0,0,0,0.22); }
+        }
+    </style>
+} 

@@ -1,0 +1,68 @@
+## Archivos de compilación
+bin/
+obj/
+
+## Archivos de usuario
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Carpetas de configuración local de VS
+.vs/
+.vscode/
+
+## Archivos de depuración
+*.pdb
+*.cache
+*.log
+
+## Paquetes
+packages/
+*.nupkg
+*.snupkg
+
+## Archivos generados por build
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Archivos temporales del sistema
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+## Archivos de backup
+*.bak
+*.tmp
+*.temp
+*.old
+
+## Archivos relacionados a IIS/hosting local
+*.vspscc
+*.vssscc
+*.dbmdl
+
+## Configuración de Rider/ReSharper
+.idea/
+*.DotSettings.user
+_ReSharper*/
+*_ReSharper*/
+
+## Archivos de Test
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+## Archivos de publicación
+publish/
+app.publish/
+
+## Archivos secretos / locales
+secrets.json
+.env
+.env.*
+
+## Archivos globales de configuración de Visual Studio
+global.json
