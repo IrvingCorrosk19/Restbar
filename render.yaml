@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: restbar-api
+    env: docker
+    plan: free
+    region: oregon
+    branch: main
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: DOTNET_RUNNING_IN_CONTAINER
+        value: true
