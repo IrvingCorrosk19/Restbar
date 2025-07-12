@@ -39,7 +39,7 @@ namespace RestBar.Services
                 Console.WriteLine($"[PaymentService] Amount: ${payment.Amount}");
                 Console.WriteLine($"[PaymentService] Method: {payment.Method}");
                 
-                payment.PaidAt = DateTime.UtcNow;
+                payment.PaidAt = DateTime.Now;
                 Console.WriteLine($"[PaymentService] PaidAt configurado como UTC: {payment.PaidAt}");
                 
                 // Validación de desarrollo para asegurar que las fechas sean UTC

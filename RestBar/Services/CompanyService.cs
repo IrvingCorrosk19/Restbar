@@ -29,7 +29,7 @@ namespace RestBar.Services
 
         public async Task<Company> CreateAsync(Company company)
         {
-            company.CreatedAt = DateTime.UtcNow;
+            company.CreatedAt = DateTime.Now;
             _context.Companies.Add(company);
             await _context.SaveChangesAsync();
             return company;

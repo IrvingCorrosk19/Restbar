@@ -31,7 +31,7 @@ namespace RestBar.Services
 
         public async Task<AuditLog> CreateAsync(AuditLog auditLog)
         {
-            auditLog.Timestamp = DateTime.UtcNow;
+            auditLog.Timestamp = DateTime.Now;
             _context.AuditLogs.Add(auditLog);
             await _context.SaveChangesAsync();
             return auditLog;

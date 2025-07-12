@@ -151,7 +151,7 @@ namespace RestBar.Controllers
 
                 // Limpiar campos que no deben ser establecidos por el cliente
                 user.Id = Guid.NewGuid();
-                user.CreatedAt = DateTime.UtcNow;
+                user.CreatedAt = DateTime.Now;
                 user.IsActive = true;
 
                 var createdUser = await _userService.CreateAsync(user);

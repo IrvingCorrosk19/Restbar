@@ -34,7 +34,7 @@ namespace RestBar.Services
 
         public async Task<Branch> CreateAsync(Branch branch)
         {
-            branch.CreatedAt = DateTime.UtcNow;
+            branch.CreatedAt = DateTime.Now;
             _context.Branches.Add(branch);
             await _context.SaveChangesAsync();
             return branch;

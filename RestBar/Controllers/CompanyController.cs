@@ -59,7 +59,7 @@ namespace RestBar.Controllers
             if (string.IsNullOrWhiteSpace(model.Name))
                 return Json(new { success = false, message = "El nombre es requerido" });
             if (model.CreatedAt == null)
-                model.CreatedAt = DateTime.UtcNow;
+                model.CreatedAt = DateTime.Now;
             var created = await _companyService.CreateAsync(model);
             return Json(new { success = true, data = created });
         }

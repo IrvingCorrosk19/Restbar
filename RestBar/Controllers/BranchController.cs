@@ -61,7 +61,7 @@ namespace RestBar.Controllers
                 return Json(new { success = false, message = "El nombre es requerido" });
             if (model.CompanyId == null)
                 return Json(new { success = false, message = "La compañía es requerida" });
-            model.CreatedAt = DateTime.UtcNow;
+            model.CreatedAt = DateTime.Now;
             var created = await _branchService.CreateAsync(model);
             return Json(new { success = true, data = created });
         }
