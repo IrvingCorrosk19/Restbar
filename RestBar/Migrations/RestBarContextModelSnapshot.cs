@@ -636,7 +636,7 @@ namespace RestBar.Migrations
 
                     b.Property<DateTime?>("PaidAt")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("paid_at")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -770,6 +770,9 @@ namespace RestBar.Migrations
                         .HasPrecision(10, 2)
                         .HasColumnType("numeric(10,2)")
                         .HasColumnName("amount");
+
+                    b.Property<string>("Method")
+                        .HasColumnType("text");
 
                     b.Property<Guid?>("PaymentId")
                         .HasColumnType("uuid")

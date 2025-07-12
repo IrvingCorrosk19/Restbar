@@ -109,6 +109,29 @@
 
                 <!-- Formulario de pago -->
                 <form id="paymentForm">
+                    <!-- Tipo de pago -->
+                    <div class="mb-3">
+                        <label class="form-label">Tipo de Pago</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="paymentType" id="paymentTypeIndividual" value="individual" checked onchange="togglePaymentType()">
+                                    <label class="form-check-label" for="paymentTypeIndividual">
+                                        <i class="fas fa-user"></i> Individual
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="paymentType" id="paymentTypeShared" value="shared" onchange="togglePaymentType()">
+                                    <label class="form-check-label" for="paymentTypeShared">
+                                        <i class="fas fa-users"></i> Compartido
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -118,22 +141,35 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="paymentMethod" class="form-label">Método de Pago</label>
+                                <label for="paymentMethod" class="form-label">
+                                    Método de Pago
+                                    <span id="paymentMethodLockIcon" class="text-muted ms-1" style="display: none;">
+                                        <i class="fas fa-lock" title="Campo bloqueado para pagos compartidos"></i>
+                                    </span>
+                                </label>
                                 <select class="form-control" id="paymentMethod" required>
                                     <option value="">Seleccionar método</option>
                                     <option value="Efectivo">Efectivo</option>
                                     <option value="Tarjeta">Tarjeta</option>
                                     <option value="Transferencia">Transferencia</option>
+                                    <option value="Compartido">Compartido</option>
                                     <option value="Otro">Otro</option>
                                 </select>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Pagos divididos -->
-                    <div class="mb-3">
+                    <!-- Campo para nombre del pagador (solo para pagos individuales) -->
+                    <div id="payerNameSection" class="mb-3">
+                        <label for="payerName" class="form-label">Nombre del Pagador (Opcional)</label>
+                        <input type="text" class="form-control" id="payerName" placeholder="Ej: Juan Pérez, Mesa 5, etc.">
+                        <small class="form-text text-muted">Opcional: Identificar quién realiza el pago</small>
+                    </div>
+
+                    <!-- Pagos divididos (solo para pagos compartidos) -->
+                    <div id="splitPaymentsSection" class="mb-3" style="display: none;">
                         <div class="d-flex justify-content-between align-items-center">
-                            <label class="form-label">Pagos Divididos (Opcional)</label>
+                            <label class="form-label">Pagos Divididos</label>
                             <button type="button" class="btn btn-sm btn-outline-primary" onclick="addSplitPayment()">
                                 <i class="fas fa-plus"></i> Agregar Persona
                             </button>
@@ -146,15 +182,24 @@
                     <!-- Información de validación y saldo pendiente -->
                     <div class="row">
                         <div class="col-md-8">
-                            <div class="alert alert-info">
+                            <div id="individualPaymentInfo" class="alert alert-info">
                                 <small>
                                     <i class="fas fa-info-circle"></i> 
-                                    Puedes dividir el pago entre varias personas. La suma debe ser igual al monto total.
+                                    <strong>Pago Individual:</strong> Una sola persona paga el monto completo.<br>
+                                    Opcionalmente puedes agregar el nombre del pagador para identificación.
+                                </small>
+                            </div>
+                            <div id="sharedPaymentInfo" class="alert alert-info" style="display: none;">
+                                <small>
+                                    <i class="fas fa-info-circle"></i> 
+                                    <strong>Pago Compartido:</strong> Divide el pago entre varias personas.<br>
+                                    La suma debe ser igual al monto total. Cada persona puede usar un método diferente.<br>
+                                    <strong>Nota:</strong> Si no ingresas nombres, se asignarán automáticamente (Persona 1, Persona 2, etc.).
                                 </small>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="alert alert-warning">
+                            <div id="remainingBalanceSection" class="alert alert-warning" style="display: none;">
                                 <small>
                                     <i class="fas fa-exclamation-triangle"></i> 
                                     <strong>Saldo pendiente:</strong><br>

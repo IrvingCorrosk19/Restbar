@@ -36,57 +36,137 @@ namespace RestBar.Controllers
         {
             try
             {
+                Console.WriteLine($"[PaymentController] === INICIANDO PROCESAMIENTO DE PAGO ===");
+                Console.WriteLine($"[PaymentController] OrderId: {request.OrderId}");
+                Console.WriteLine($"[PaymentController] Amount: ${request.Amount}");
+                Console.WriteLine($"[PaymentController] Method: {request.Method}");
+                Console.WriteLine($"[PaymentController] IsShared: {request.IsShared}");
+                Console.WriteLine($"[PaymentController] PayerName: {request.PayerName}");
+                Console.WriteLine($"[PaymentController] Split Payments Count: {request.SplitPayments?.Count ?? 0}");
+                
+                // Validar lógica de pagos compartidos
+                if (request.IsShared)
+                {
+                    Console.WriteLine($"[PaymentController] Validando pago compartido...");
+                    
+                    if (request.Method != "Compartido")
+                    {
+                        Console.WriteLine($"[PaymentController] ERROR: Pago compartido debe tener método 'Compartido', recibido: {request.Method}");
+                        return BadRequest("Para pagos compartidos, el método debe ser 'Compartido'");
+                    }
+                    
+                    if (request.SplitPayments == null || request.SplitPayments.Count == 0)
+                    {
+                        Console.WriteLine($"[PaymentController] ERROR: Pago compartido debe tener al menos un split payment");
+                        return BadRequest("Para pagos compartidos, debe especificar al menos una persona");
+                    }
+                    
+                    Console.WriteLine($"[PaymentController] ✅ Validación de pago compartido exitosa");
+                }
+                else
+                {
+                    Console.WriteLine($"[PaymentController] Validando pago individual...");
+                    
+                    if (request.Method == "Compartido")
+                    {
+                        Console.WriteLine($"[PaymentController] ERROR: Pago individual no puede tener método 'Compartido'");
+                        return BadRequest("Para pagos individuales, no se puede usar el método 'Compartido'");
+                    }
+                    
+                    Console.WriteLine($"[PaymentController] ✅ Validación de pago individual exitosa");
+                }
+
                 // Validar que la orden existe
+                Console.WriteLine($"[PaymentController] Validando que la orden existe...");
                 var order = await _orderService.GetOrderWithDetailsAsync(request.OrderId);
                 if (order == null)
                 {
+                    Console.WriteLine($"[PaymentController] ERROR: Orden no encontrada");
                     return NotFound("Orden no encontrada");
                 }
+                Console.WriteLine($"[PaymentController] ✅ Orden encontrada - Items: {order.OrderItems?.Count ?? 0}");
 
                 // Validar que el monto no exceda el total de la orden
+                Console.WriteLine($"[PaymentController] Calculando montos de la orden...");
                 var totalPaid = await _paymentService.GetTotalPaymentsByOrderAsync(request.OrderId);
                 var orderTotal = order.OrderItems?.Sum(i => i.Quantity * i.UnitPrice) ?? 0;
                 var remainingAmount = orderTotal - totalPaid;
+                
+                Console.WriteLine($"[PaymentController] Total orden: ${orderTotal:F2}");
+                Console.WriteLine($"[PaymentController] Total pagado: ${totalPaid:F2}");
+                Console.WriteLine($"[PaymentController] Monto restante: ${remainingAmount:F2}");
 
                 if (request.Amount > remainingAmount)
                 {
+                    Console.WriteLine($"[PaymentController] ERROR: El monto ${request.Amount:F2} excede el saldo pendiente ${remainingAmount:F2}");
                     return BadRequest($"El monto excede el saldo pendiente. Saldo: ${remainingAmount:F2}");
                 }
 
-                // Crear el pago
+                // Validar split payments antes de crear el pago principal
+                if (request.SplitPayments != null && request.SplitPayments.Any())
+                {
+                    Console.WriteLine($"[PaymentController] Validando pagos divididos...");
+                    var splitTotal = request.SplitPayments.Sum(sp => sp.Amount);
+                    Console.WriteLine($"[PaymentController] Suma de split payments: ${splitTotal:F2}");
+                    Console.WriteLine($"[PaymentController] Monto total del pago: ${request.Amount:F2}");
+                    
+                    for (int i = 0; i < request.SplitPayments.Count; i++)
+                    {
+                        var split = request.SplitPayments[i];
+                        Console.WriteLine($"[PaymentController] Split {i + 1}: {split.PersonName} - ${split.Amount:F2}");
+                    }
+                    
+                    if (Math.Abs(splitTotal - request.Amount) > 0.01m)
+                    {
+                        Console.WriteLine($"[PaymentController] ERROR: La suma de split payments ${splitTotal:F2} no coincide con el monto total ${request.Amount:F2}");
+                        return BadRequest("La suma de los pagos divididos debe ser igual al monto total");
+                    }
+                    Console.WriteLine($"[PaymentController] ✅ Validación de split payments exitosa");
+                }
+
+                // Crear el pago principal
+                Console.WriteLine($"[PaymentController] Creando pago principal...");
                 var payment = new Payment
                 {
                     Id = Guid.NewGuid(),
                     OrderId = request.OrderId,
                     Amount = request.Amount,
                     Method = request.Method,
+                    IsShared = request.IsShared,
+                    PayerName = request.PayerName,
                     PaidAt = DateTime.UtcNow,
                     IsVoided = false
                 };
+                Console.WriteLine($"[PaymentController] Pago principal creado con ID: {payment.Id}");
 
                 var createdPayment = await _paymentService.CreateAsync(payment);
+                Console.WriteLine($"[PaymentController] ✅ Pago principal guardado exitosamente");
 
-                // Crear pagos divididos si se proporcionan
-                if (request.SplitPayments != null && request.SplitPayments.Any())
+                // Crear pagos divididos si es pago compartido
+                if (request.IsShared && request.SplitPayments != null && request.SplitPayments.Any())
                 {
-                    var splitTotal = request.SplitPayments.Sum(sp => sp.Amount);
-                    if (Math.Abs(splitTotal - request.Amount) > 0.01m)
+                    Console.WriteLine($"[PaymentController] Creando {request.SplitPayments.Count} pagos divididos...");
+                    
+                    for (int i = 0; i < request.SplitPayments.Count; i++)
                     {
-                        return BadRequest("La suma de los pagos divididos debe ser igual al monto total");
-                    }
-
-                    foreach (var splitRequest in request.SplitPayments)
-                    {
+                        var splitRequest = request.SplitPayments[i];
+                        Console.WriteLine($"[PaymentController] Creando split payment {i + 1}: {splitRequest.PersonName} - ${splitRequest.Amount:F2} - {splitRequest.Method}");
+                        
                         var splitPayment = new SplitPayment
                         {
                             Id = Guid.NewGuid(),
                             PaymentId = createdPayment.Id,
                             PersonName = splitRequest.PersonName,
-                            Amount = splitRequest.Amount
+                            Amount = splitRequest.Amount,
+                            Method = splitRequest.Method
                         };
+                        Console.WriteLine($"[PaymentController] Split payment creado con ID: {splitPayment.Id}");
 
                         await _splitPaymentService.CreateAsync(splitPayment);
+                        Console.WriteLine($"[PaymentController] ✅ Split payment {i + 1} guardado exitosamente");
                     }
+                    
+                    Console.WriteLine($"[PaymentController] ✅ Todos los split payments creados exitosamente");
                 }
 
                 // Verificar si la orden está completamente pagada
@@ -192,18 +272,35 @@ namespace RestBar.Controllers
                     Method = paymentWithSplits.Method!,
                     PaidAt = paymentWithSplits.PaidAt!.Value,
                     IsVoided = paymentWithSplits.IsVoided ?? false,
+                    IsShared = paymentWithSplits.IsShared,
+                    PayerName = paymentWithSplits.PayerName,
                     SplitPayments = paymentWithSplits.SplitPayments.Select(sp => new SplitPaymentResponseDto
                     {
                         Id = sp.Id,
                         PersonName = sp.PersonName!,
-                        Amount = sp.Amount!.Value
+                        Amount = sp.Amount!.Value,
+                        Method = sp.Method!
                     }).ToList()
                 };
 
+                Console.WriteLine($"[PaymentController] ✅ Pago procesado exitosamente");
+                Console.WriteLine($"[PaymentController] === FIN PROCESAMIENTO DE PAGO EXITOSO ===");
                 return Ok(response);
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[PaymentController] ❌ ERROR CRÍTICO en CreatePartialPayment:");
+                Console.WriteLine($"[PaymentController] Error Type: {ex.GetType().Name}");
+                Console.WriteLine($"[PaymentController] Error Message: {ex.Message}");
+                Console.WriteLine($"[PaymentController] Stack Trace: {ex.StackTrace}");
+                
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"[PaymentController] Inner Exception: {ex.InnerException.Message}");
+                    Console.WriteLine($"[PaymentController] Inner Stack Trace: {ex.InnerException.StackTrace}");
+                }
+                
+                Console.WriteLine($"[PaymentController] === FIN ERROR CRÍTICO ===");
                 return StatusCode(500, $"Error interno del servidor: {ex.Message}");
             }
         }

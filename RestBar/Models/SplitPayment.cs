@@ -13,5 +13,7 @@ public partial class SplitPayment
 
     public decimal? Amount { get; set; }
 
+    public string? Method { get; set; }
+
     public virtual Payment? Payment { get; set; }
 }

@@ -31,16 +31,49 @@ namespace RestBar.Services
 
         public async Task<Payment> CreateAsync(Payment payment)
         {
-            payment.PaidAt = DateTime.UtcNow;
-            
-            // Validación de desarrollo para asegurar que las fechas sean UTC
-            if (payment.PaidAt.HasValue && payment.PaidAt.Value.Kind == DateTimeKind.Unspecified)
-                throw new InvalidOperationException("PaidAt no debe ser Unspecified para columnas timestamp with time zone");
-            
-            payment.IsVoided = false;
-            _context.Payments.Add(payment);
-            await _context.SaveChangesAsync();
-            return payment;
+            try
+            {
+                Console.WriteLine($"[PaymentService] Creando payment:");
+                Console.WriteLine($"[PaymentService] Id: {payment.Id}");
+                Console.WriteLine($"[PaymentService] OrderId: {payment.OrderId}");
+                Console.WriteLine($"[PaymentService] Amount: ${payment.Amount}");
+                Console.WriteLine($"[PaymentService] Method: {payment.Method}");
+                
+                payment.PaidAt = DateTime.UtcNow;
+                Console.WriteLine($"[PaymentService] PaidAt configurado como UTC: {payment.PaidAt}");
+                
+                // Validación de desarrollo para asegurar que las fechas sean UTC
+                if (payment.PaidAt.HasValue && payment.PaidAt.Value.Kind == DateTimeKind.Unspecified)
+                {
+                    Console.WriteLine($"[PaymentService] ERROR: PaidAt tiene Kind Unspecified");
+                    throw new InvalidOperationException("PaidAt no debe ser Unspecified para columnas timestamp with time zone");
+                }
+                
+                payment.IsVoided = false;
+                Console.WriteLine($"[PaymentService] Payment configurado - IsVoided: {payment.IsVoided}");
+                
+                _context.Payments.Add(payment);
+                Console.WriteLine($"[PaymentService] Payment agregado al contexto");
+                
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"[PaymentService] ✅ Payment guardado exitosamente");
+                
+                return payment;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PaymentService] ❌ ERROR al crear payment:");
+                Console.WriteLine($"[PaymentService] Error Type: {ex.GetType().Name}");
+                Console.WriteLine($"[PaymentService] Error Message: {ex.Message}");
+                Console.WriteLine($"[PaymentService] Stack Trace: {ex.StackTrace}");
+                
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"[PaymentService] Inner Exception: {ex.InnerException.Message}");
+                }
+                
+                throw; // Re-lanzar la excepción para que sea manejada por el controlador
+            }
         }
 
         public async Task UpdateAsync(Payment payment)

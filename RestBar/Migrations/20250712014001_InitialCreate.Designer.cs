@@ -12,8 +12,8 @@ using RestBar.Models;
 namespace RestBar.Migrations
 {
     [DbContext(typeof(RestBarContext))]
-    [Migration("20250624205657_MakeOrderCancellationLogUserIdNullable")]
-    partial class MakeOrderCancellationLogUserIdNullable
+    [Migration("20250712014001_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -433,7 +433,7 @@ namespace RestBar.Migrations
                         .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<DateTime?>("ClosedAt")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("closed_at");
 
                     b.Property<Guid?>("CustomerId")
@@ -447,7 +447,7 @@ namespace RestBar.Migrations
 
                     b.Property<DateTime?>("OpenedAt")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("opened_at")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -551,6 +551,9 @@ namespace RestBar.Migrations
                         .HasColumnName("discount")
                         .HasDefaultValueSql("0");
 
+                    b.Property<int>("KitchenStatus")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Notes")
                         .HasColumnType("text")
                         .HasColumnName("notes");
@@ -558,6 +561,14 @@ namespace RestBar.Migrations
                     b.Property<Guid?>("OrderId")
                         .HasColumnType("uuid")
                         .HasColumnName("order_id");
+
+                    b.Property<DateTime?>("PreparedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("prepared_at");
+
+                    b.Property<Guid?>("PreparedByStationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("prepared_by_station_id");
 
                     b.Property<Guid?>("ProductId")
                         .HasColumnType("uuid")
@@ -567,6 +578,17 @@ namespace RestBar.Migrations
                         .HasPrecision(10, 2)
                         .HasColumnType("numeric(10,2)")
                         .HasColumnName("quantity");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("StationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
 
                     b.Property<decimal>("UnitPrice")
                         .HasPrecision(10, 2)
@@ -578,7 +600,11 @@ namespace RestBar.Migrations
 
                     b.HasIndex("OrderId");
 
+                    b.HasIndex("PreparedByStationId");
+
                     b.HasIndex("ProductId");
+
+                    b.HasIndex("StationId");
 
                     b.ToTable("order_items", (string)null);
                 });
@@ -613,7 +639,7 @@ namespace RestBar.Migrations
 
                     b.Property<DateTime?>("PaidAt")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("paid_at")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -747,6 +773,9 @@ namespace RestBar.Migrations
                         .HasPrecision(10, 2)
                         .HasColumnType("numeric(10,2)")
                         .HasColumnName("amount");
+
+                    b.Property<string>("Method")
+                        .HasColumnType("text");
 
                     b.Property<Guid?>("PaymentId")
                         .HasColumnType("uuid")
@@ -1037,12 +1066,23 @@ namespace RestBar.Migrations
                         .HasForeignKey("OrderId")
                         .HasConstraintName("order_items_order_id_fkey");
 
+                    b.HasOne("RestBar.Models.Station", "PreparedByStation")
+                        .WithMany()
+                        .HasForeignKey("PreparedByStationId")
+                        .HasConstraintName("order_items_prepared_by_station_id_fkey");
+
                     b.HasOne("RestBar.Models.Product", "Product")
                         .WithMany("OrderItems")
                         .HasForeignKey("ProductId")
                         .HasConstraintName("order_items_product_id_fkey");
 
+                    b.HasOne("RestBar.Models.Station", null)
+                        .WithMany("PreparedItems")
+                        .HasForeignKey("StationId");
+
                     b.Navigation("Order");
+
+                    b.Navigation("PreparedByStation");
 
                     b.Navigation("Product");
                 });
@@ -1171,6 +1211,8 @@ namespace RestBar.Migrations
 
             modelBuilder.Entity("RestBar.Models.Station", b =>
                 {
+                    b.Navigation("PreparedItems");
+
                     b.Navigation("Products");
                 });
 

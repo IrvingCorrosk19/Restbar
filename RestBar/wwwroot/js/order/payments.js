@@ -1,6 +1,7 @@
 // Variables globales para pagos
 let paymentSummary = null;
 let splitPayments = [];
+let isSharedPayment = false;
 
 // Función para mostrar el modal de pagos
 function showPaymentModal() {
@@ -16,9 +17,81 @@ function showPaymentModal() {
     // Cargar información de pagos
     loadPaymentSummary();
     
+    // Resetear el tipo de pago a individual
+    document.getElementById('paymentTypeIndividual').checked = true;
+    isSharedPayment = false;
+    togglePaymentType();
+    
     // Mostrar el modal
     const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
     paymentModal.show();
+}
+
+// Función para alternar entre tipos de pago
+function togglePaymentType() {
+    const individualRadio = document.getElementById('paymentTypeIndividual');
+    const sharedRadio = document.getElementById('paymentTypeShared');
+    
+    isSharedPayment = sharedRadio.checked;
+    
+    // Elementos del DOM a mostrar/ocultar
+    const payerNameSection = document.getElementById('payerNameSection');
+    const splitPaymentsSection = document.getElementById('splitPaymentsSection');
+    const individualPaymentInfo = document.getElementById('individualPaymentInfo');
+    const sharedPaymentInfo = document.getElementById('sharedPaymentInfo');
+    const remainingBalanceSection = document.getElementById('remainingBalanceSection');
+    
+    console.log(`[Frontend] Cambiando tipo de pago a: ${isSharedPayment ? 'Compartido' : 'Individual'}`);
+    
+    const paymentMethodSelect = document.getElementById('paymentMethod');
+    const paymentMethodLockIcon = document.getElementById('paymentMethodLockIcon');
+    
+    if (isSharedPayment) {
+        // Pago compartido
+        payerNameSection.style.display = 'none';
+        splitPaymentsSection.style.display = 'block';
+        individualPaymentInfo.style.display = 'none';
+        sharedPaymentInfo.style.display = 'block';
+        remainingBalanceSection.style.display = 'block';
+        
+        // Bloquear y establecer método de pago como "Compartido"
+        paymentMethodSelect.value = 'Compartido';
+        paymentMethodSelect.disabled = true;
+        paymentMethodSelect.style.backgroundColor = '#e9ecef';
+        paymentMethodLockIcon.style.display = 'inline';
+        
+        // Limpiar campo de nombre del pagador
+        document.getElementById('payerName').value = '';
+        
+        // Si no hay split payments, agregar uno automáticamente
+        if (splitPayments.length === 0) {
+            addSplitPayment();
+        }
+    } else {
+        // Pago individual
+        payerNameSection.style.display = 'block';
+        splitPaymentsSection.style.display = 'none';
+        individualPaymentInfo.style.display = 'block';
+        sharedPaymentInfo.style.display = 'none';
+        remainingBalanceSection.style.display = 'none';
+        
+        // Desbloquear método de pago y resetear valor
+        paymentMethodSelect.disabled = false;
+        paymentMethodSelect.value = '';
+        paymentMethodSelect.style.backgroundColor = '';
+        paymentMethodLockIcon.style.display = 'none';
+        
+        // Limpiar split payments
+        splitPayments = [];
+        document.getElementById('splitPaymentsContainer').innerHTML = '';
+        hideSplitPaymentSummary();
+        
+        // Limpiar alertas de validación
+        const validationAlert = document.getElementById('splitValidationAlert');
+        if (validationAlert) {
+            validationAlert.remove();
+        }
+    }
 }
 
 // Función para cargar el resumen de pagos
@@ -94,6 +167,10 @@ function showPaymentHistory() {
                 <div>
                     <span><strong>$${payment.amount.toFixed(2)}</strong> - ${payment.method}</span>
                     <small class="text-muted d-block">${new Date(payment.paidAt).toLocaleTimeString()}</small>
+                    ${payment.isShared ? 
+                        '<span class="badge bg-info me-1">Compartido</span>' : 
+                        (payment.payerName ? `<span class="badge bg-success me-1">${payment.payerName}</span>` : '<span class="badge bg-secondary me-1">Individual</span>')
+                    }
                 </div>
                 <div class="d-flex align-items-center">
                     ${payment.isVoided ? 
@@ -106,7 +183,7 @@ function showPaymentHistory() {
                 <div class="mt-1">
                     <small class="text-muted">Dividido entre:</small>
                     ${payment.splitPayments.map(split => `
-                        <div class="ms-2">${split.personName}: $${split.amount.toFixed(2)}</div>
+                        <div class="ms-2">${split.personName}: $${split.amount.toFixed(2)} (${split.method})</div>
                     `).join('')}
                 </div>
             ` : ''}
@@ -219,18 +296,28 @@ async function voidPayment(paymentId, amount, method) {
 function addSplitPayment() {
     const container = document.getElementById('splitPaymentsContainer');
     const splitIndex = splitPayments.length;
+    const placeholder = `Nombre de la persona (opcional: se usará "Persona ${splitIndex + 1}")`;
     
     const splitDiv = document.createElement('div');
     splitDiv.className = 'split-payment-item mb-2 p-2 border rounded';
     splitDiv.innerHTML = `
         <div class="row">
-            <div class="col-md-5">
-                <input type="text" class="form-control" placeholder="Nombre de la persona" 
+            <div class="col-md-4">
+                <input type="text" class="form-control" placeholder="${placeholder}" 
                        oninput="updateSplitPayment(${splitIndex}, 'personName', this.value)">
             </div>
-            <div class="col-md-5">
+            <div class="col-md-3">
                 <input type="number" class="form-control" placeholder="Monto" step="0.01" min="0.01"
                        oninput="updateSplitPayment(${splitIndex}, 'amount', parseFloat(this.value) || 0)">
+            </div>
+            <div class="col-md-3">
+                <select class="form-control" onchange="updateSplitPayment(${splitIndex}, 'method', this.value)">
+                    <option value="">Método de pago</option>
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Tarjeta">Tarjeta</option>
+                    <option value="Transferencia">Transferencia</option>
+                    <option value="Otro">Otro</option>
+                </select>
             </div>
             <div class="col-md-2">
                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeSplitPayment(${splitIndex})">
@@ -242,11 +329,14 @@ function addSplitPayment() {
     
     container.appendChild(splitDiv);
     
-    // Agregar al array
+    // Agregar al array con método de pago
     splitPayments.push({
         personName: '',
-        amount: 0
+        amount: 0,
+        method: ''
     });
+    
+    console.log(`[Frontend] Agregada persona ${splitIndex + 1} con placeholder: "${placeholder}"`);
 }
 
 // Función para actualizar pago dividido
@@ -267,17 +357,31 @@ function removeSplitPayment(index) {
     container.innerHTML = '';
     
     splitPayments.forEach((split, idx) => {
+        const displayName = split.personName && split.personName.trim().length > 0 
+            ? split.personName 
+            : '';
+        const placeholder = `Nombre de la persona (opcional: se usará "Persona ${idx + 1}")`;
+        
         const splitDiv = document.createElement('div');
         splitDiv.className = 'split-payment-item mb-2 p-2 border rounded';
         splitDiv.innerHTML = `
             <div class="row">
-                <div class="col-md-5">
-                    <input type="text" class="form-control" placeholder="Nombre de la persona" 
-                           value="${split.personName}" oninput="updateSplitPayment(${idx}, 'personName', this.value)">
+                <div class="col-md-4">
+                    <input type="text" class="form-control" placeholder="${placeholder}" 
+                           value="${displayName}" oninput="updateSplitPayment(${idx}, 'personName', this.value)">
                 </div>
-                <div class="col-md-5">
+                <div class="col-md-3">
                     <input type="number" class="form-control" placeholder="Monto" step="0.01" min="0.01"
                            value="${split.amount}" oninput="updateSplitPayment(${idx}, 'amount', parseFloat(this.value) || 0)">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-control" onchange="updateSplitPayment(${idx}, 'method', this.value)">
+                        <option value="">Método de pago</option>
+                        <option value="Efectivo" ${split.method === 'Efectivo' ? 'selected' : ''}>Efectivo</option>
+                        <option value="Tarjeta" ${split.method === 'Tarjeta' ? 'selected' : ''}>Tarjeta</option>
+                        <option value="Transferencia" ${split.method === 'Transferencia' ? 'selected' : ''}>Transferencia</option>
+                        <option value="Otro" ${split.method === 'Otro' ? 'selected' : ''}>Otro</option>
+                    </select>
                 </div>
                 <div class="col-md-2">
                     <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeSplitPayment(${idx})">
@@ -297,8 +401,18 @@ function validateSplitPayments() {
     const totalAmount = parseFloat(document.getElementById('paymentAmount').value) || 0;
     const splitTotal = splitPayments.reduce((sum, split) => sum + (parseFloat(split.amount) || 0), 0);
     
-    const difference = Math.abs(totalAmount - splitTotal);
+    // Usar el mismo redondeo que en el procesamiento
+    const roundedTotalAmount = Math.round(totalAmount * 100) / 100;
+    const roundedSplitTotal = Math.round(splitTotal * 100) / 100;
+    
+    const difference = Math.abs(roundedTotalAmount - roundedSplitTotal);
     const isValid = difference < 0.01; // Tolerancia de 1 centavo
+    
+    console.log('[Frontend] === VALIDACIÓN DE SPLIT PAYMENTS ===');
+    console.log('[Frontend] Total amount:', roundedTotalAmount);
+    console.log('[Frontend] Split total:', roundedSplitTotal);
+    console.log('[Frontend] Diferencia:', difference);
+    console.log('[Frontend] Es válido:', isValid);
     
     // Actualizar saldo pendiente
     updateRemainingBalance();
@@ -317,10 +431,10 @@ function validateSplitPayments() {
     if (splitPayments.length > 0) {
         if (isValid) {
             validationAlert.className = 'alert alert-success mt-2';
-            validationAlert.innerHTML = `<i class="fas fa-check"></i> Montos válidos ($${splitTotal.toFixed(2)})`;
+            validationAlert.innerHTML = `<i class="fas fa-check"></i> Montos válidos ($${roundedSplitTotal.toFixed(2)})`;
         } else {
             validationAlert.className = 'alert alert-warning mt-2';
-            validationAlert.innerHTML = `<i class="fas fa-exclamation-triangle"></i> La suma debe ser $${totalAmount.toFixed(2)}. Actual: $${splitTotal.toFixed(2)}`;
+            validationAlert.innerHTML = `<i class="fas fa-exclamation-triangle"></i> La suma debe ser $${roundedTotalAmount.toFixed(2)}. Actual: $${roundedSplitTotal.toFixed(2)} (Diferencia: $${difference.toFixed(2)})`;
         }
         
         // Mostrar resumen de pagos divididos
@@ -337,7 +451,11 @@ function validateSplitPayments() {
 function updateRemainingBalance() {
     const totalAmount = parseFloat(document.getElementById('paymentAmount').value) || 0;
     const splitTotal = splitPayments.reduce((sum, split) => sum + (parseFloat(split.amount) || 0), 0);
-    const remaining = totalAmount - splitTotal;
+    
+    // Usar el mismo redondeo que en el procesamiento
+    const roundedTotalAmount = Math.round(totalAmount * 100) / 100;
+    const roundedSplitTotal = Math.round(splitTotal * 100) / 100;
+    const remaining = Math.round((roundedTotalAmount - roundedSplitTotal) * 100) / 100;
     
     const remainingDisplay = document.getElementById('remainingBalanceDisplay');
     if (remainingDisplay) {
@@ -356,14 +474,26 @@ function updateRemainingBalance() {
 
 // Función para mostrar resumen de pagos divididos
 function showSplitPaymentSummary() {
-    const summaryHtml = splitPayments.map((split, index) => `
-        <div class="d-flex justify-content-between align-items-center mb-1">
-            <span>${split.personName || `Persona ${index + 1}`}</span>
-            <span class="fw-bold">$${(parseFloat(split.amount) || 0).toFixed(2)}</span>
-        </div>
-    `).join('');
+    const summaryHtml = splitPayments.map((split, index) => {
+        const amount = parseFloat(split.amount) || 0;
+        const roundedAmount = Math.round(amount * 100) / 100;
+        const displayName = split.personName && split.personName.trim().length > 0 
+            ? split.personName.trim() 
+            : `Persona ${index + 1}`;
+        const displayMethod = split.method || 'Sin especificar';
+        return `
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <div>
+                    <span class="fw-bold">${displayName}</span>
+                    <small class="text-muted d-block">${displayMethod}</small>
+                </div>
+                <span class="fw-bold">$${roundedAmount.toFixed(2)}</span>
+            </div>
+        `;
+    }).join('');
     
     const totalSplit = splitPayments.reduce((sum, split) => sum + (parseFloat(split.amount) || 0), 0);
+    const roundedTotalSplit = Math.round(totalSplit * 100) / 100;
     
     const summaryDiv = document.getElementById('splitPaymentSummary');
     if (summaryDiv) {
@@ -378,7 +508,7 @@ function showSplitPaymentSummary() {
                     <hr>
                     <div class="d-flex justify-content-between align-items-center">
                         <strong>Total:</strong>
-                        <strong>$${totalSplit.toFixed(2)}</strong>
+                        <strong>$${roundedTotalSplit.toFixed(2)}</strong>
                     </div>
                 </div>
             </div>
@@ -400,6 +530,7 @@ async function processPayment() {
         // Validar formulario
         const amount = parseFloat(document.getElementById('paymentAmount').value);
         const method = document.getElementById('paymentMethod').value;
+        const payerName = document.getElementById('payerName').value.trim();
         
         if (!amount || amount <= 0) {
             Swal.fire({
@@ -419,23 +550,181 @@ async function processPayment() {
             return;
         }
         
-        // Validar pagos divididos si existen
-        if (splitPayments.length > 0 && !validateSplitPayments()) {
+        // Validar que si es compartido, el método sea "Compartido"
+        if (isSharedPayment && method !== 'Compartido') {
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                text: 'Los montos de los pagos divididos no coinciden'
+                text: 'Para pagos compartidos, el método debe ser "Compartido"'
             });
             return;
         }
         
-        // Preparar datos del pago
+        console.log(`[Frontend] Procesando pago ${isSharedPayment ? 'COMPARTIDO' : 'INDIVIDUAL'}`);
+        console.log(`[Frontend] Monto: $${amount}, Método: ${method}`);
+        if (!isSharedPayment && payerName) {
+            console.log(`[Frontend] Pagador: ${payerName}`);
+        }
+        
+        // Validar pagos divididos si es pago compartido
+        if (isSharedPayment) {
+            // Validar que hay al menos un split payment
+            if (splitPayments.length === 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Para pagos compartidos, debe agregar al menos una persona'
+                });
+                return;
+            }
+            console.log('[Frontend] Validando split payments...');
+            
+            // Verificar que todos los split payments tengan datos válidos
+            const invalidSplits = [];
+            splitPayments.forEach((split, index) => {
+                console.log(`[Frontend] Validando split ${index}:`, split);
+                
+                if (!split.amount || split.amount <= 0) {
+                    invalidSplits.push(`Split ${index + 1}: Monto inválido (${split.amount})`);
+                }
+                
+                if (!split.method || split.method.trim().length === 0) {
+                    const personName = split.personName && split.personName.trim().length > 0 
+                        ? split.personName.trim() 
+                        : `Persona ${index + 1}`;
+                    invalidSplits.push(`${personName}: Debe seleccionar un método de pago`);
+                }
+            });
+            
+            if (invalidSplits.length > 0) {
+                console.log('[Frontend] ERROR: Split payments inválidos:', invalidSplits);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error en Pagos Divididos',
+                    html: `Corrige los siguientes problemas:<br><br>${invalidSplits.join('<br>')}<br><br><small>Nota: Los nombres se asignarán automáticamente si están vacíos (Persona 1, Persona 2, etc.)</small>`
+                });
+                return;
+            }
+            
+            // Validar que los montos coincidan
+            if (!validateSplitPayments()) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Los montos de los pagos divididos no coinciden'
+                });
+                return;
+            }
+            
+            console.log('[Frontend] ✅ Split payments válidos');
+        }
+        
+        // DEBUGGING: Verificar datos antes de preparar el pago
+        console.log('[Frontend] === DATOS ANTES DE PREPARAR PAGO ===');
+        console.log('[Frontend] currentOrder:', currentOrder);
+        console.log('[Frontend] amount:', amount, 'tipo:', typeof amount);
+        console.log('[Frontend] method:', method, 'tipo:', typeof method);
+        console.log('[Frontend] splitPayments array:', splitPayments);
+        console.log('[Frontend] splitPayments length:', splitPayments.length);
+        
+        // Verificar cada split payment individualmente
+        if (splitPayments.length > 0) {
+            splitPayments.forEach((split, index) => {
+                console.log(`[Frontend] Split ${index}:`, split);
+                console.log(`[Frontend] Split ${index} personName:`, split.personName, 'tipo:', typeof split.personName);
+                console.log(`[Frontend] Split ${index} amount:`, split.amount, 'tipo:', typeof split.amount);
+                console.log(`[Frontend] Split ${index} personName válido:`, split.personName && split.personName.trim().length > 0);
+                console.log(`[Frontend] Split ${index} amount válido:`, split.amount && split.amount > 0);
+            });
+        }
+        
+        // Filtrar y limpiar split payments válidos
+        const validSplitPayments = splitPayments.filter(split => {
+            const hasValidAmount = split.amount && split.amount > 0;
+            const hasValidMethod = split.method && split.method.trim().length > 0;
+            console.log(`[Frontend] Split payment validación - amount: ${split.amount}, method: ${split.method}, válido: ${hasValidAmount && hasValidMethod}`);
+            return hasValidAmount && hasValidMethod;
+        }).map((split, index) => {
+            // Asignar nombre por defecto si está vacío
+            const personName = split.personName && split.personName.trim().length > 0 
+                ? split.personName.trim() 
+                : `Persona ${index + 1}`;
+            
+            const amount = Math.round(parseFloat(split.amount) * 100) / 100;
+            const method = split.method.trim();
+            
+            console.log(`[Frontend] Split payment ${index + 1}: nombre="${personName}", monto=${amount}, método="${method}"`);
+            
+            return {
+                personName: personName,
+                amount: amount,
+                method: method
+            };
+        });
+        
+        console.log('[Frontend] Split payments válidos filtrados:', validSplitPayments);
+        
+        // Validar que la suma coincida exactamente
+        if (validSplitPayments.length > 0) {
+            const splitTotal = validSplitPayments.reduce((sum, sp) => sum + sp.amount, 0);
+            const roundedSplitTotal = Math.round(splitTotal * 100) / 100;
+            const roundedAmount = Math.round(amount * 100) / 100;
+            
+            console.log('[Frontend] === VALIDACIÓN DE SUMA ===');
+            console.log('[Frontend] Monto total del pago:', roundedAmount);
+            console.log('[Frontend] Suma de split payments:', roundedSplitTotal);
+            console.log('[Frontend] Diferencia:', Math.abs(roundedSplitTotal - roundedAmount));
+            
+            if (Math.abs(roundedSplitTotal - roundedAmount) > 0.01) {
+                console.log('[Frontend] ERROR: La suma no coincide');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error en Pagos Divididos',
+                    html: `La suma de los pagos divididos ($${roundedSplitTotal.toFixed(2)}) no coincide con el monto total ($${roundedAmount.toFixed(2)}).<br><br>Diferencia: $${Math.abs(roundedSplitTotal - roundedAmount).toFixed(2)}`
+                });
+                return;
+            }
+            
+            console.log('[Frontend] ✅ Suma de split payments válida');
+        }
+        
+        // Preparar datos del pago con montos redondeados
+        const roundedAmount = Math.round(amount * 100) / 100;
         const paymentData = {
             orderId: currentOrder.orderId,
-            amount: amount,
+            amount: roundedAmount,
             method: method,
-            splitPayments: splitPayments.length > 0 ? splitPayments : null
+            isShared: isSharedPayment,
+            payerName: !isSharedPayment && payerName ? payerName : null,
+            splitPayments: isSharedPayment && validSplitPayments.length > 0 ? validSplitPayments : null
         };
+        
+        // LOGGING DETALLADO DE DATOS A ENVIAR
+        console.log('[Frontend] === DATOS DE PAGO A ENVIAR ===');
+        console.log('[Frontend] PaymentData:', paymentData);
+        console.log('[Frontend] OrderId:', paymentData.orderId);
+        console.log('[Frontend] Amount original:', amount);
+        console.log('[Frontend] Amount redondeado:', paymentData.amount);
+        console.log('[Frontend] Method:', paymentData.method);
+        console.log('[Frontend] IsShared:', paymentData.isShared);
+        console.log('[Frontend] PayerName:', paymentData.payerName);
+        console.log('[Frontend] Split Payments Count:', paymentData.splitPayments?.length || 0);
+        
+        if (paymentData.splitPayments && paymentData.splitPayments.length > 0) {
+            console.log('[Frontend] === DETALLE DE SPLIT PAYMENTS ===');
+            paymentData.splitPayments.forEach((split, index) => {
+                console.log(`[Frontend] Split ${index + 1}:`, {
+                    personName: split.personName,
+                    amount: split.amount,
+                    type: typeof split.amount
+                });
+            });
+            
+            const totalSplits = paymentData.splitPayments.reduce((sum, split) => sum + split.amount, 0);
+            console.log('[Frontend] Total suma de splits:', totalSplits);
+            console.log('[Frontend] Diferencia con monto total:', Math.abs(totalSplits - paymentData.amount));
+        }
+        console.log('[Frontend] === FIN DATOS DE PAGO ===');
         
         // Mostrar loading
         Swal.fire({
@@ -447,6 +736,7 @@ async function processPayment() {
         });
         
         // Enviar pago al servidor
+        console.log('[Frontend] Enviando pago al servidor...');
         const response = await fetch('/api/payment/partial', {
             method: 'POST',
             headers: {
@@ -455,19 +745,27 @@ async function processPayment() {
             body: JSON.stringify(paymentData)
         });
         
+        console.log('[Frontend] Respuesta del servidor recibida:', response.status, response.statusText);
+        
         if (!response.ok) {
+            console.log('[Frontend] ❌ Error en la respuesta del servidor');
             let errorMessage = 'Error al procesar el pago';
             try {
                 const errorData = await response.json();
+                console.log('[Frontend] Datos del error:', errorData);
                 errorMessage = errorData.message || errorData.error || errorMessage;
             } catch (e) {
+                console.log('[Frontend] No se pudo parsear JSON del error:', e);
                 // Si no se puede parsear JSON, usar el status y statusText
                 errorMessage = `Error ${response.status}: ${response.statusText}`;
             }
+            console.log('[Frontend] Error final:', errorMessage);
             throw new Error(errorMessage);
         }
         
+        console.log('[Frontend] ✅ Respuesta exitosa del servidor');
         const paymentResult = await response.json();
+        console.log('[Frontend] Resultado del pago:', paymentResult);
         
         // Cerrar loading y mostrar éxito
         Swal.fire({
@@ -487,8 +785,14 @@ async function processPayment() {
         // Actualizar información de pagos en la interfaz
         updatePaymentInfo();
         
+        console.log('[Frontend] ✅ Pago procesado exitosamente');
+        
     } catch (error) {
-        console.error('Error procesando pago:', error);
+        console.error('[Frontend] ❌ ERROR CRÍTICO procesando pago:', error);
+        console.error('[Frontend] Error type:', error.constructor.name);
+        console.error('[Frontend] Error message:', error.message);
+        console.error('[Frontend] Error stack:', error.stack);
+        
         Swal.fire({
             icon: 'error',
             title: 'Error',
@@ -500,9 +804,14 @@ async function processPayment() {
 // Función para limpiar formulario de pago
 function clearPaymentForm() {
     document.getElementById('paymentAmount').value = '';
-    document.getElementById('paymentMethod').value = '';
-    document.getElementById('splitPaymentsContainer').innerHTML = '';
+    document.getElementById('payerName').value = '';
+    document.getElementById('paymentTypeIndividual').checked = true;
+    isSharedPayment = false;
     splitPayments = [];
+    document.getElementById('splitPaymentsContainer').innerHTML = '';
+    
+    // Resetear la visualización (esto configurará el método de pago correctamente)
+    togglePaymentType();
 }
 
 // Función para actualizar información de pagos en la interfaz principal
@@ -567,6 +876,12 @@ async function showPaymentHistoryModal() {
                         <div>
                             <h6 class="mb-1">$${payment.amount.toFixed(2)} - ${payment.method}</h6>
                             <small class="text-muted">${new Date(payment.paidAt).toLocaleString()}</small>
+                            <div class="mt-1">
+                                ${payment.isShared ? 
+                                    '<span class="badge bg-info me-1">Compartido</span>' : 
+                                    (payment.payerName ? `<span class="badge bg-success me-1">${payment.payerName}</span>` : '<span class="badge bg-secondary me-1">Individual</span>')
+                                }
+                            </div>
                         </div>
                         <div class="d-flex align-items-center">
                             ${payment.isVoided ? 
@@ -579,7 +894,7 @@ async function showPaymentHistoryModal() {
                         <div class="mt-2">
                             <small class="text-muted">Dividido entre:</small>
                             ${payment.splitPayments.map(split => `
-                                <div class="ms-2 small">${split.personName}: $${split.amount.toFixed(2)}</div>
+                                <div class="ms-2 small">${split.personName}: $${split.amount.toFixed(2)} (${split.method})</div>
                             `).join('')}
                         </div>
                     ` : ''}
@@ -735,29 +1050,69 @@ function updateSplitPaymentAmounts() {
     const totalAmount = parseFloat(document.getElementById('paymentAmount').value) || 0;
     
     if (splitPayments.length > 0) {
-        // Si hay pagos divididos, distribuir el monto automáticamente
-        const amountPerPerson = totalAmount / splitPayments.length;
+        console.log('[Frontend] Distribuyendo automáticamente los montos...');
+        console.log('[Frontend] Total amount:', totalAmount);
+        console.log('[Frontend] Número de personas:', splitPayments.length);
         
+        // Distribuir el monto automáticamente con redondeo adecuado
+        const amountPerPerson = totalAmount / splitPayments.length;
+        const roundedAmountPerPerson = Math.round(amountPerPerson * 100) / 100;
+        
+        console.log('[Frontend] Monto por persona (sin redondear):', amountPerPerson);
+        console.log('[Frontend] Monto por persona (redondeado):', roundedAmountPerPerson);
+        
+        // Asignar el monto redondeado a cada persona
         splitPayments.forEach((split, index) => {
-            split.amount = amountPerPerson;
+            split.amount = roundedAmountPerPerson;
         });
+        
+        // Calcular diferencia por redondeo y ajustar en la primera persona
+        const totalAssigned = roundedAmountPerPerson * splitPayments.length;
+        const roundedTotalAssigned = Math.round(totalAssigned * 100) / 100;
+        const roundedTotalAmount = Math.round(totalAmount * 100) / 100;
+        const difference = Math.round((roundedTotalAmount - roundedTotalAssigned) * 100) / 100;
+        
+        console.log('[Frontend] Total asignado:', roundedTotalAssigned);
+        console.log('[Frontend] Total esperado:', roundedTotalAmount);
+        console.log('[Frontend] Diferencia por redondeo:', difference);
+        
+        // Ajustar la diferencia en la primera persona
+        if (Math.abs(difference) > 0.001 && splitPayments.length > 0) {
+            splitPayments[0].amount = Math.round((splitPayments[0].amount + difference) * 100) / 100;
+            console.log('[Frontend] Ajustado monto de primera persona a:', splitPayments[0].amount);
+        }
         
         // Recrear la lista visual con los nuevos montos
         const container = document.getElementById('splitPaymentsContainer');
         container.innerHTML = '';
         
         splitPayments.forEach((split, idx) => {
+            // Mostrar placeholder con nombre por defecto
+            const displayName = split.personName && split.personName.trim().length > 0 
+                ? split.personName 
+                : '';
+            const placeholder = `Nombre de la persona (opcional: se usará "Persona ${idx + 1}")`;
+            
             const splitDiv = document.createElement('div');
             splitDiv.className = 'split-payment-item mb-2 p-2 border rounded';
             splitDiv.innerHTML = `
                 <div class="row">
-                    <div class="col-md-5">
-                        <input type="text" class="form-control" placeholder="Nombre de la persona" 
-                               value="${split.personName}" oninput="updateSplitPayment(${idx}, 'personName', this.value)">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" placeholder="${placeholder}" 
+                               value="${displayName}" oninput="updateSplitPayment(${idx}, 'personName', this.value)">
                     </div>
-                    <div class="col-md-5">
+                    <div class="col-md-3">
                         <input type="number" class="form-control" placeholder="Monto" step="0.01" min="0.01"
-                               value="${split.amount.toFixed(2)}" oninput="updateSplitPayment(${idx}, 'amount', parseFloat(this.value) || 0)">
+                               value="${(Math.round(split.amount * 100) / 100).toFixed(2)}" oninput="updateSplitPayment(${idx}, 'amount', parseFloat(this.value) || 0)">
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-control" onchange="updateSplitPayment(${idx}, 'method', this.value)">
+                            <option value="">Método de pago</option>
+                            <option value="Efectivo" ${split.method === 'Efectivo' ? 'selected' : ''}>Efectivo</option>
+                            <option value="Tarjeta" ${split.method === 'Tarjeta' ? 'selected' : ''}>Tarjeta</option>
+                            <option value="Transferencia" ${split.method === 'Transferencia' ? 'selected' : ''}>Transferencia</option>
+                            <option value="Otro" ${split.method === 'Otro' ? 'selected' : ''}>Otro</option>
+                        </select>
                     </div>
                     <div class="col-md-2">
                         <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeSplitPayment(${idx})">

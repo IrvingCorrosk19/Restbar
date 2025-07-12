@@ -58,7 +58,8 @@ public partial class RestBarContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseNpgsql("Host=dpg-d1o87hjipnbc73elplu0-a.oregon-postgres.render.com;Port=5432;Database=restbar;Username=admin;Password=eBX4yz9XMPYuxU30aCWrhpX8JzD10bFy;Ssl Mode=Require;Trust Server Certificate=true");
+        => optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=RestBar;Username=postgres;Password=Panama2020$");
+    //("Host=dpg-d1o87hjipnbc73elplu0-a.oregon-postgres.render.com;Port=5432;Database=restbar;Username=admin;Password=eBX4yz9XMPYuxU30aCWrhpX8JzD10bFy;Ssl Mode=Require;Trust Server Certificate=true");
     //optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=RestBar;Username=postgres;Password=Panama2020$");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -492,6 +493,12 @@ public partial class RestBarContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("timestamp with time zone")
                 .HasColumnName("paid_at");
+            entity.Property(e => e.IsShared)
+                .HasDefaultValue(false)
+                .HasColumnName("is_shared");
+            entity.Property(e => e.PayerName)
+                .HasMaxLength(100)
+                .HasColumnName("payer_name");
 
             entity.HasOne(d => d.Order).WithMany(p => p.Payments)
                 .HasForeignKey(d => d.OrderId)
@@ -599,6 +606,9 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.PersonName)
                 .HasMaxLength(100)
                 .HasColumnName("person_name");
+            entity.Property(e => e.Method)
+                .HasMaxLength(30)
+                .HasColumnName("method");
 
             entity.HasOne(d => d.Payment).WithMany(p => p.SplitPayments)
                 .HasForeignKey(d => d.PaymentId)

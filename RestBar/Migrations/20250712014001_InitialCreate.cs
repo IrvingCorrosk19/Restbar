@@ -7,7 +7,7 @@ using RestBar.Models;
 namespace RestBar.Migrations
 {
     /// <inheritdoc />
-    public partial class NombreDeTuMigracion : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -93,7 +93,8 @@ namespace RestBar.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false)
+                    type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Icon = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -138,6 +139,7 @@ namespace RestBar.Migrations
                     created_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
                     category_id = table.Column<Guid>(type: "uuid", nullable: true),
                     station_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    Stock = table.Column<decimal>(type: "numeric", nullable: true),
                     ProductCategoryId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
@@ -306,8 +308,9 @@ namespace RestBar.Migrations
                     order_type = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     total_amount = table.Column<decimal>(type: "numeric(10,2)", precision: 10, scale: 2, nullable: true),
-                    opened_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    closed_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
+                    opened_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    closed_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -376,6 +379,39 @@ namespace RestBar.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "order_cancellation_logs",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
+                    order_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    supervisor_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    reason = table.Column<string>(type: "text", nullable: false),
+                    date = table.Column<DateTime>(type: "timestamp without time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    products = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("order_cancellation_logs_pkey", x => x.id);
+                    table.ForeignKey(
+                        name: "order_cancellation_logs_order_id_fkey",
+                        column: x => x.order_id,
+                        principalTable: "orders",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "order_cancellation_logs_supervisor_id_fkey",
+                        column: x => x.supervisor_id,
+                        principalTable: "users",
+                        principalColumn: "id");
+                    table.ForeignKey(
+                        name: "order_cancellation_logs_user_id_fkey",
+                        column: x => x.user_id,
+                        principalTable: "users",
+                        principalColumn: "id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "order_items",
                 columns: table => new
                 {
@@ -385,15 +421,31 @@ namespace RestBar.Migrations
                     quantity = table.Column<decimal>(type: "numeric(10,2)", precision: 10, scale: 2, nullable: false),
                     unit_price = table.Column<decimal>(type: "numeric(10,2)", precision: 10, scale: 2, nullable: false),
                     discount = table.Column<decimal>(type: "numeric(10,2)", precision: 10, scale: 2, nullable: true, defaultValueSql: "0"),
-                    notes = table.Column<string>(type: "text", nullable: true)
+                    notes = table.Column<string>(type: "text", nullable: true),
+                    status = table.Column<string>(type: "text", nullable: false),
+                    prepared_by_station_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    prepared_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    KitchenStatus = table.Column<int>(type: "integer", nullable: false),
+                    SentAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    StationId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("order_items_pkey", x => x.id);
                     table.ForeignKey(
+                        name: "FK_order_items_stations_StationId",
+                        column: x => x.StationId,
+                        principalTable: "stations",
+                        principalColumn: "id");
+                    table.ForeignKey(
                         name: "order_items_order_id_fkey",
                         column: x => x.order_id,
                         principalTable: "orders",
+                        principalColumn: "id");
+                    table.ForeignKey(
+                        name: "order_items_prepared_by_station_id_fkey",
+                        column: x => x.prepared_by_station_id,
+                        principalTable: "stations",
                         principalColumn: "id");
                     table.ForeignKey(
                         name: "order_items_product_id_fkey",
@@ -410,7 +462,7 @@ namespace RestBar.Migrations
                     order_id = table.Column<Guid>(type: "uuid", nullable: true),
                     method = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
                     amount = table.Column<decimal>(type: "numeric(10,2)", precision: 10, scale: 2, nullable: false),
-                    paid_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    paid_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
                     is_voided = table.Column<bool>(type: "boolean", nullable: true, defaultValue: false)
                 },
                 constraints: table =>
@@ -430,7 +482,8 @@ namespace RestBar.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     payment_id = table.Column<Guid>(type: "uuid", nullable: true),
                     person_name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    amount = table.Column<decimal>(type: "numeric(10,2)", precision: 10, scale: 2, nullable: true)
+                    amount = table.Column<decimal>(type: "numeric(10,2)", precision: 10, scale: 2, nullable: true),
+                    Method = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -489,14 +542,39 @@ namespace RestBar.Migrations
                 column: "order_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_order_cancellation_logs_order_id",
+                table: "order_cancellation_logs",
+                column: "order_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_order_cancellation_logs_supervisor_id",
+                table: "order_cancellation_logs",
+                column: "supervisor_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_order_cancellation_logs_user_id",
+                table: "order_cancellation_logs",
+                column: "user_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_order_items_order_id",
                 table: "order_items",
                 column: "order_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_order_items_prepared_by_station_id",
+                table: "order_items",
+                column: "prepared_by_station_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_order_items_product_id",
                 table: "order_items",
                 column: "product_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_order_items_StationId",
+                table: "order_items",
+                column: "StationId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_orders_customer_id",
@@ -574,6 +652,9 @@ namespace RestBar.Migrations
 
             migrationBuilder.DropTable(
                 name: "notifications");
+
+            migrationBuilder.DropTable(
+                name: "order_cancellation_logs");
 
             migrationBuilder.DropTable(
                 name: "order_items");

@@ -19,6 +19,10 @@ public partial class Payment
 
     public bool? IsVoided { get; set; }
 
+    public bool IsShared { get; set; } = false;
+
+    public string? PayerName { get; set; }
+
     public virtual Order? Order { get; set; }
 
     public virtual ICollection<SplitPayment> SplitPayments { get; set; } = new List<SplitPayment>();

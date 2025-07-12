@@ -13,6 +13,10 @@ namespace RestBar.ViewModel
         [Required]
         public string Method { get; set; } = string.Empty;
         
+        public bool IsShared { get; set; } = false;
+        
+        public string? PayerName { get; set; }
+        
         public List<SplitPaymentRequestDto>? SplitPayments { get; set; }
     }
 
@@ -23,6 +27,9 @@ namespace RestBar.ViewModel
         
         [Required]
         public decimal Amount { get; set; }
+        
+        [Required]
+        public string Method { get; set; } = string.Empty;
     }
 
     public class PaymentResponseDto
@@ -33,6 +40,8 @@ namespace RestBar.ViewModel
         public string Method { get; set; } = string.Empty;
         public DateTime PaidAt { get; set; }
         public bool IsVoided { get; set; }
+        public bool IsShared { get; set; }
+        public string? PayerName { get; set; }
         public List<SplitPaymentResponseDto> SplitPayments { get; set; } = new();
     }
 
@@ -41,6 +50,7 @@ namespace RestBar.ViewModel
         public Guid Id { get; set; }
         public string PersonName { get; set; } = string.Empty;
         public decimal Amount { get; set; }
+        public string Method { get; set; } = string.Empty;
     }
 
     public class OrderPaymentSummaryDto

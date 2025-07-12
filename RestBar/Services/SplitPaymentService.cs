@@ -30,9 +30,36 @@ namespace RestBar.Services
 
         public async Task<SplitPayment> CreateAsync(SplitPayment splitPayment)
         {
-            _context.SplitPayments.Add(splitPayment);
-            await _context.SaveChangesAsync();
-            return splitPayment;
+            try
+            {
+                Console.WriteLine($"[SplitPaymentService] Creando split payment:");
+                Console.WriteLine($"[SplitPaymentService] Id: {splitPayment.Id}");
+                Console.WriteLine($"[SplitPaymentService] PaymentId: {splitPayment.PaymentId}");
+                Console.WriteLine($"[SplitPaymentService] PersonName: {splitPayment.PersonName}");
+                Console.WriteLine($"[SplitPaymentService] Amount: ${splitPayment.Amount}");
+                
+                _context.SplitPayments.Add(splitPayment);
+                Console.WriteLine($"[SplitPaymentService] Split payment agregado al contexto");
+                
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"[SplitPaymentService] ✅ Split payment guardado exitosamente");
+                
+                return splitPayment;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[SplitPaymentService] ❌ ERROR al crear split payment:");
+                Console.WriteLine($"[SplitPaymentService] Error Type: {ex.GetType().Name}");
+                Console.WriteLine($"[SplitPaymentService] Error Message: {ex.Message}");
+                Console.WriteLine($"[SplitPaymentService] Stack Trace: {ex.StackTrace}");
+                
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"[SplitPaymentService] Inner Exception: {ex.InnerException.Message}");
+                }
+                
+                throw; // Re-lanzar la excepción para que sea manejada por el controlador
+            }
         }
 
         public async Task UpdateAsync(SplitPayment splitPayment)
