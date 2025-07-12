@@ -2,98 +2,539 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>@ViewData["Title"] - Cocina</title>
+  <title>@ViewData["Title"] - Cocina RestBar</title>
   <link rel="icon" href="~/images/logo.png" type="image/png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
   <style>
-    * { box-sizing: border-box; }
+    /* ========================
+       CONFIGURACIÓN GLOBAL MEJORADA
+       ======================== */
+    :root {
+        --kitchen-primary: #1e40af;
+        --kitchen-primary-dark: #1e3a8a;
+        --kitchen-success: #059669;
+        --kitchen-success-light: #10b981;
+        --kitchen-warning: #d97706;
+        --kitchen-warning-light: #f59e0b;
+        --kitchen-danger: #dc2626;
+        --kitchen-danger-light: #ef4444;
+        --kitchen-info: #0891b2;
+        --kitchen-info-light: #06b6d4;
+        
+        --kitchen-bg-primary: #0f172a;
+        --kitchen-bg-secondary: #1e293b;
+        --kitchen-bg-tertiary: #334155;
+        --kitchen-surface: #475569;
+        
+        --kitchen-text-primary: #f8fafc;
+        --kitchen-text-secondary: #cbd5e1;
+        --kitchen-text-muted: #94a3b8;
+        
+        --kitchen-border: #475569;
+        --kitchen-border-light: #64748b;
+        
+        --kitchen-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+        --kitchen-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+        --kitchen-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+        
+        --kitchen-radius-sm: 8px;
+        --kitchen-radius-md: 12px;
+        --kitchen-radius-lg: 16px;
+        
+        --kitchen-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * { 
+        box-sizing: border-box; 
+    }
+
     body {
-      margin: 0;
-      font-family: 'Inter', sans-serif;
-      background-color: #111827;
-      color: #f9fafb;
+        margin: 0;
+        font-family: 'Inter', sans-serif;
+        background: linear-gradient(135deg, var(--kitchen-bg-primary) 0%, #0c1426 50%, var(--kitchen-bg-primary) 100%);
+        color: var(--kitchen-text-primary);
+        min-height: 100vh;
+        position: relative;
+        overflow-x: hidden;
     }
+
+    /* Patrón de fondo animado */
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: 
+            radial-gradient(circle at 20% 80%, rgba(30, 64, 175, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(5, 150, 105, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 40% 40%, rgba(217, 119, 6, 0.05) 0%, transparent 50%);
+        z-index: -1;
+        animation: backgroundShift 20s ease-in-out infinite;
+    }
+
+    @@keyframes backgroundShift {
+        0%, 100% { 
+            transform: translate(0, 0) scale(1); 
+            opacity: 0.3;
+        }
+        50% { 
+            transform: translate(-20px, -20px) scale(1.1); 
+            opacity: 0.5;
+        }
+    }
+
+    /* ========================
+       HEADER MEJORADO
+       ======================== */
     header {
-      background: #1f2937;
-      padding: 20px;
-      text-align: center;
-      font-size: 1.5rem;
-      font-weight: bold;
-      color: #ffffff;
-      border-bottom: 2px solid #4b5563;
+        background: linear-gradient(135deg, var(--kitchen-bg-secondary) 0%, var(--kitchen-bg-tertiary) 100%);
+        padding: 1.5rem 2rem;
+        text-align: center;
+        border-bottom: 3px solid var(--kitchen-border);
+        box-shadow: var(--kitchen-shadow-lg);
+        position: relative;
+        overflow: hidden;
     }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 20px;
-      padding: 20px;
+
+    header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--kitchen-primary) 0%, var(--kitchen-info-light) 50%, var(--kitchen-primary) 100%);
+        background-size: 200% 100%;
+        animation: headerShimmer 3s ease-in-out infinite;
     }
-    .card {
-      background-color: #1f2937;
-      border: 1px solid #374151;
-      border-radius: 12px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+
+    @@keyframes headerShimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
     }
-    .card h3 {
-      margin: 0 0 10px;
-      font-size: 1.2rem;
-      color: #60a5fa;
+
+    header .header-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        flex-wrap: wrap;
     }
-    .time-since {
-      font-size: 0.9rem;
-      color: #facc15;
-      margin-bottom: 10px;
+
+    header .station-icon {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, var(--kitchen-primary) 0%, var(--kitchen-primary-dark) 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        box-shadow: var(--kitchen-shadow-md);
+        animation: iconPulse 3s ease-in-out infinite;
     }
-    .items {
-      list-style: none;
-      padding: 0;
-      margin: 0 0 10px;
+
+        @@keyframes iconPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
     }
-    .items li {
-      padding: 6px 0;
-      border-bottom: 1px dashed #4b5563;
-      font-size: 1rem;
+
+    header .station-info {
+        text-align: left;
     }
-    .notes {
-      font-size: 0.85rem;
-      color: #9ca3af;
-      font-style: italic;
-      margin: 10px 0;
+
+    header h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--kitchen-text-primary);
+        margin: 0 0 0.25rem 0;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        letter-spacing: -0.025em;
     }
-    .btn-ready {
-      margin-top: auto;
-      background-color: #10b981;
-      border: none;
-      color: white;
-      padding: 10px 15px;
-      font-size: 1rem;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.3s;
+
+    header .station-subtitle {
+        font-size: 0.9375rem;
+        color: var(--kitchen-text-secondary);
+        margin: 0;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
     }
-    .btn-ready:hover {
-      background-color: #059669;
+
+    /* ========================
+       NAVEGACIÓN Y CONTROLES
+       ======================== */
+    .kitchen-controls {
+        background: var(--kitchen-bg-secondary);
+        border-bottom: 1px solid var(--kitchen-border);
+        padding: 1rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .status-indicators {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: var(--kitchen-bg-tertiary);
+        border-radius: var(--kitchen-radius-md);
+        border: 1px solid var(--kitchen-border);
+        font-size: 0.875rem;
+        color: var(--kitchen-text-secondary);
+        transition: var(--kitchen-transition);
+    }
+
+    .status-indicator:hover {
+        border-color: var(--kitchen-border-light);
+        background: var(--kitchen-surface);
+    }
+
+    .status-indicator i {
+        font-size: 1rem;
+    }
+
+    .status-online {
+        border-color: var(--kitchen-success);
+        background: linear-gradient(135deg, rgba(5, 150, 105, 0.1) 0%, var(--kitchen-bg-tertiary) 100%);
+    }
+
+    .status-online i {
+        color: var(--kitchen-success-light);
+        animation: pulse 2s infinite;
+    }
+
+        @@keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    .kitchen-actions {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    .kitchen-btn {
+        background: var(--kitchen-bg-tertiary);
+        color: var(--kitchen-text-secondary);
+        border: 1px solid var(--kitchen-border);
+        padding: 0.625rem 1rem;
+        border-radius: var(--kitchen-radius-sm);
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--kitchen-transition);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+    }
+
+    .kitchen-btn:hover {
+        background: var(--kitchen-surface);
+        border-color: var(--kitchen-border-light);
+        color: var(--kitchen-text-primary);
+        transform: translateY(-1px);
+        box-shadow: var(--kitchen-shadow-sm);
+    }
+
+    .kitchen-btn.btn-primary {
+        background: linear-gradient(135deg, var(--kitchen-primary) 0%, var(--kitchen-primary-dark) 100%);
+        color: white;
+        border-color: var(--kitchen-primary);
+    }
+
+    .kitchen-btn.btn-primary:hover {
+        background: linear-gradient(135deg, var(--kitchen-primary-dark) 0%, var(--kitchen-primary) 100%);
+        color: white;
+    }
+
+    /* ========================
+       CONTENIDO PRINCIPAL
+       ======================== */
+    main {
+        flex: 1;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* ========================
+       EFECTOS GLOBALES
+       ======================== */
+    .glass-effect {
+        background: rgba(30, 41, 59, 0.8);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .glow-effect {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .glow-effect::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(30, 64, 175, 0.1) 0%, transparent 70%);
+        animation: rotate 10s linear infinite;
+        pointer-events: none;
+    }
+
+        @@keyframes rotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* ========================
+       SCROLLBAR PERSONALIZADA
+       ======================== */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: var(--kitchen-bg-tertiary);
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, var(--kitchen-primary) 0%, var(--kitchen-info-light) 100%);
+        border-radius: 4px;
+        transition: var(--kitchen-transition);
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, var(--kitchen-primary-dark) 0%, var(--kitchen-primary) 100%);
+    }
+
+    /* ========================
+       RESPONSIVIDAD
+       ======================== */
+        @@media (max-width: 768px) {
+        header {
+            padding: 1rem;
+        }
+
+        header .header-content {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        header .station-info {
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+        }
+
+        .kitchen-controls {
+            padding: 0.75rem 1rem;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .status-indicators {
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .kitchen-actions {
+            justify-content: center;
+        }
+    }
+
+        @@media (max-width: 480px) {
+        header .station-icon {
+            width: 50px;
+            height: 50px;
+            font-size: 1.25rem;
+        }
+
+        header h1 {
+            font-size: 1.25rem;
+        }
+
+        .status-indicator {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.8125rem;
+        }
+
+        .kitchen-btn {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8125rem;
+        }
+    }
+
+    /* ========================
+       MEJORAS DE ACCESIBILIDAD
+       ======================== */
+    .kitchen-btn:focus-visible,
+    .status-indicator:focus-visible {
+        outline: 2px solid var(--kitchen-info-light);
+        outline-offset: 2px;
+    }
+
+    /* ========================
+       ANIMACIONES DE ENTRADA
+       ======================== */
+    header {
+        animation: slideDown 0.6s ease-out;
+    }
+
+        @@keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .kitchen-controls {
+        animation: fadeInUp 0.6s ease-out 0.2s both;
+    }
+
+        @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    main {
+        animation: fadeIn 0.6s ease-out 0.4s both;
+    }
+
+        @@keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
     }
   </style>
   @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
     @{
-        var stationName = ViewData["StationName"] as string ?? "Estación";
+        var stationName = ViewData["StationName"] as string ?? "Estación de Trabajo";
         var stationIcon = ViewData["StationIcon"] as string ?? "fas fa-concierge-bell";
     }
-    <header>
-        <i class="@stationIcon"></i> Pedidos de @stationName
+    
+    <header class="glow-effect">
+        <div class="header-content">
+            <div class="station-icon">
+                <i class="@stationIcon"></i>
+            </div>
+            <div class="station-info">
+                <h1>@stationName</h1>
+                <p class="station-subtitle">Gestión de Pedidos en Tiempo Real</p>
+            </div>
+        </div>
     </header>
+
+    <div class="kitchen-controls">
+        <div class="status-indicators">
+            <div class="status-indicator status-online">
+                <i class="fas fa-wifi"></i>
+                <span>Conectado</span>
+            </div>
+            <div class="status-indicator">
+                <i class="fas fa-clock"></i>
+                <span id="current-time"></span>
+            </div>
+            <div class="status-indicator">
+                <i class="fas fa-server"></i>
+                <span>Sistema Activo</span>
+            </div>
+        </div>
+        
+        <div class="kitchen-actions">
+            <a href="/Home/Index" class="kitchen-btn">
+                <i class="fas fa-home"></i>
+                <span>Inicio</span>
+            </a>
+            <button class="kitchen-btn btn-primary" onclick="location.reload()">
+                <i class="fas fa-sync-alt"></i>
+                <span>Actualizar</span>
+            </button>
+        </div>
+    </div>
+
     <main>
         @RenderBody()
     </main>
+
+    <script>
+        // Actualizar reloj en tiempo real
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('es-ES', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            const timeElement = document.getElementById('current-time');
+            if (timeElement) {
+                timeElement.textContent = timeString;
+            }
+        }
+
+        // Actualizar cada segundo
+        setInterval(updateClock, 1000);
+        updateClock(); // Llamada inicial
+
+        // Efecto de carga suave
+        document.addEventListener('DOMContentLoaded', function() {
+            document.body.style.opacity = '0';
+            document.body.style.transition = 'opacity 0.5s ease-in-out';
+            
+            setTimeout(() => {
+                document.body.style.opacity = '1';
+            }, 100);
+        });
+
+        // Notificación de estado de conexión
+        function showConnectionStatus() {
+            const statusIndicators = document.querySelectorAll('.status-indicator');
+            statusIndicators.forEach(indicator => {
+                indicator.style.animation = 'pulse 0.5s ease-in-out';
+                setTimeout(() => {
+                    indicator.style.animation = '';
+                }, 500);
+            });
+        }
+
+        // Llamar cada 30 segundos para mantener la sensación de actividad
+        setInterval(showConnectionStatus, 30000);
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html> 

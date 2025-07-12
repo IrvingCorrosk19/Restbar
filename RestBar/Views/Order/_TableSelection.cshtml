@@ -4,19 +4,28 @@
 
 <div class="mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0">Selecciona una mesa:</h5>
-        <div class="d-flex gap-2">
+        <h5 class="mb-0 text-primary fw-bold">
+            <i class="fas fa-chair me-2"></i>
+            Selecciona una mesa:
+        </h5>
+        <div class="d-flex gap-2 flex-wrap">
             <div class="btn-group" id="areaFilters">
-                <button class="btn btn-outline-primary active" data-area="all">Todas</button>
+                <button class="btn btn-outline-primary active" data-area="all">
+                    <i class="fas fa-border-all me-1"></i>
+                    Todas
+                </button>
                 <!-- Áreas cargadas dinámicamente -->
             </div>
             <div class="btn-group" id="statusFilters">
-                <button class="btn btn-outline-primary active" data-status="all">Todos los estados</button>
+                <button class="btn btn-outline-primary active" data-status="all">
+                    <i class="fas fa-list-ul me-1"></i>
+                    Todos los estados
+                </button>
                 <!-- Estados cargados dinámicamente -->
             </div>
         </div>
     </div>
-    <div class="d-flex flex-wrap gap-2" id="tables">
+    <div class="d-flex flex-wrap gap-3" id="tables">
         <!-- Mesas cargadas dinámicamente -->
     </div>
 </div> 

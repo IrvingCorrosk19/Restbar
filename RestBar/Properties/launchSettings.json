@@ -16,7 +16,8 @@
             "applicationUrl": "http://localhost:5025",
             "environmentVariables": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
-                "DOTNET_WATCH_AUTO_RELOAD_WS": "false"
+                "DOTNET_WATCH_AUTO_RELOAD_WS": "false",
+                "ASPNETCORE_HOTRELOAD_DISABLE_BROWSER_REFRESH": "true"
             }
         },
         "https": {
@@ -26,7 +27,8 @@
             "applicationUrl": "https://localhost:7247;http://localhost:5025",
             "environmentVariables": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
-                "DOTNET_WATCH_AUTO_RELOAD_WS": "false"
+                "DOTNET_WATCH_AUTO_RELOAD_WS": "false",
+                "ASPNETCORE_HOTRELOAD_DISABLE_BROWSER_REFRESH": "true"
             }
         },
         "IIS Express": {
@@ -34,7 +36,8 @@
             "launchBrowser": true,
             "environmentVariables": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
-                "DOTNET_WATCH_AUTO_RELOAD_WS": "false"
+                "DOTNET_WATCH_AUTO_RELOAD_WS": "false",
+                "ASPNETCORE_HOTRELOAD_DISABLE_BROWSER_REFRESH": "true"
             }
         }
     }
