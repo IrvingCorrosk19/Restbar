@@ -24,9 +24,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="editItemModalLabel">
-                    <i class="fas fa-edit"></i> Editar Producto
-                </h5>
+                <h5 class="modal-title" id="editItemModalLabel">Editar Producto</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -35,16 +33,12 @@
                     <input type="hidden" id="editProductId" />
                     
                     <div class="mb-3">
-                        <label for="editProductName" class="form-label">
-                            <i class="fas fa-utensils"></i> Producto
-                        </label>
+                        <label for="editProductName" class="form-label">Producto</label>
                         <input type="text" class="form-control" id="editProductName" readonly />
                     </div>
                     
                     <div class="mb-3">
-                        <label for="editQuantity" class="form-label">
-                            <i class="fas fa-sort-numeric-up"></i> Cantidad
-                        </label>
+                        <label for="editQuantity" class="form-label">Cantidad</label>
                         <div class="input-group">
                             <button type="button" class="btn btn-outline-secondary" onclick="decreaseModalQuantity()">
                                 <i class="fas fa-minus"></i>
@@ -57,34 +51,24 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="editNotes" class="form-label">
-                            <i class="fas fa-sticky-note"></i> Notas
-                        </label>
+                        <label for="editNotes" class="form-label">Notas</label>
                         <textarea class="form-control" id="editNotes" rows="3" placeholder="Ej: Sin cebolla, bien cocido, extra queso..."></textarea>
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">
-                            <i class="fas fa-dollar-sign"></i> Precio Unitario
-                        </label>
-                        <div class="form-control-plaintext fw-bold text-primary" id="editUnitPrice">$0.00</div>
+                        <label class="form-label">Precio Unitario</label>
+                        <div class="form-control-plaintext" id="editUnitPrice">$0.00</div>
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">
-                            <i class="fas fa-calculator"></i> Total
-                        </label>
-                        <div class="form-control-plaintext fw-bold text-success" id="editTotalPrice">$0.00</div>
+                        <label class="form-label">Total</label>
+                        <div class="form-control-plaintext fw-bold" id="editTotalPrice">$0.00</div>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times"></i> Cancelar
-                </button>
-                <button type="button" class="btn btn-primary" onclick="saveItemChanges()">
-                    <i class="fas fa-save"></i> Guardar Cambios
-                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveItemChanges()">Guardar Cambios</button>
             </div>
         </div>
     </div>
@@ -95,45 +79,30 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="paymentModalLabel">
-                    <i class="fas fa-credit-card"></i> Pago Parcial
-                </h5>
+                <h5 class="modal-title" id="paymentModalLabel">Pago Parcial</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <!-- Resumen de la cuenta -->
                 <div class="order-summary mb-4">
-                    <div class="section-header">
-                        <h5 class="section-title">
-                            <i class="fas fa-receipt"></i> Resumen de la Cuenta
-                        </h5>
+                    <div class="mb-3">
+                        <strong>Resumen de la cuenta:</strong>
                     </div>
                     <div class="mb-3">
-                        <strong>
-                            <i class="fas fa-list"></i> Items en la orden:
-                        </strong>
-                        <div class="order-items-list mt-2" style="max-height: 200px; overflow-y: auto; border: 1px solid #e1e8ed; border-radius: 12px; padding: 1rem;" id="paymentOrderItems">
+                        <strong>Items en la orden:</strong>
+                        <div class="order-items-list mt-2" style="max-height: 200px; overflow-y: auto;" id="paymentOrderItems">
                             <!-- Items cargados dinámicamente -->
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-4">
-                            <div class="text-center p-3 bg-light rounded">
-                                <i class="fas fa-calculator text-primary"></i>
-                                <strong>Total Orden: <span id="paymentOrderTotal" class="text-primary">$0.00</span></strong>
-                            </div>
+                            <strong>Total Orden: <span id="paymentOrderTotal">$0.00</span></strong>
                         </div>
                         <div class="col-md-4">
-                            <div class="text-center p-3 bg-light rounded">
-                                <i class="fas fa-check-circle text-success"></i>
-                                <strong>Ya Pagado: <span id="paymentTotalPaid" class="text-success">$0.00</span></strong>
-                            </div>
+                            <strong>Ya Pagado: <span id="paymentTotalPaid">$0.00</span></strong>
                         </div>
                         <div class="col-md-4">
-                            <div class="text-center p-3 bg-light rounded">
-                                <i class="fas fa-hourglass-half text-warning"></i>
-                                <strong>Pendiente: <span id="paymentRemaining" class="text-warning">$0.00</span></strong>
-                            </div>
+                            <strong>Pendiente: <span id="paymentRemaining">$0.00</span></strong>
                         </div>
                     </div>
                 </div>
@@ -142,23 +111,21 @@
                 <form id="paymentForm">
                     <!-- Tipo de pago -->
                     <div class="mb-3">
-                        <label class="form-label">
-                            <i class="fas fa-users"></i> Tipo de Pago
-                        </label>
+                        <label class="form-label">Tipo de Pago</label>
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="form-check p-3 border rounded">
+                                <div class="form-check">
                                     <input class="form-check-input" type="radio" name="paymentType" id="paymentTypeIndividual" value="individual" checked onchange="togglePaymentType()">
-                                    <label class="form-check-label fw-bold" for="paymentTypeIndividual">
-                                        <i class="fas fa-user text-primary"></i> Individual
+                                    <label class="form-check-label" for="paymentTypeIndividual">
+                                        <i class="fas fa-user"></i> Individual
                                     </label>
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="form-check p-3 border rounded">
+                                <div class="form-check">
                                     <input class="form-check-input" type="radio" name="paymentType" id="paymentTypeShared" value="shared" onchange="togglePaymentType()">
-                                    <label class="form-check-label fw-bold" for="paymentTypeShared">
-                                        <i class="fas fa-users text-info"></i> Compartido
+                                    <label class="form-check-label" for="paymentTypeShared">
+                                        <i class="fas fa-users"></i> Compartido
                                     </label>
                                 </div>
                             </div>
@@ -168,27 +135,25 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="paymentAmount" class="form-label">
-                                    <i class="fas fa-dollar-sign"></i> Monto a Pagar
-                                </label>
+                                <label for="paymentAmount" class="form-label">Monto a Pagar</label>
                                 <input type="number" class="form-control" id="paymentAmount" step="0.01" min="0.01" required />
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="paymentMethod" class="form-label">
-                                    <i class="fas fa-credit-card"></i> Método de Pago
+                                    Método de Pago
                                     <span id="paymentMethodLockIcon" class="text-muted ms-1" style="display: none;">
                                         <i class="fas fa-lock" title="Campo bloqueado para pagos compartidos"></i>
                                     </span>
                                 </label>
                                 <select class="form-control" id="paymentMethod" required>
                                     <option value="">Seleccionar método</option>
-                                    <option value="Efectivo">💵 Efectivo</option>
-                                    <option value="Tarjeta">💳 Tarjeta</option>
-                                    <option value="Transferencia">📱 Transferencia</option>
-                                    <option value="Compartido">👥 Compartido</option>
-                                    <option value="Otro">📝 Otro</option>
+                                    <option value="Efectivo">Efectivo</option>
+                                    <option value="Tarjeta">Tarjeta</option>
+                                    <option value="Transferencia">Transferencia</option>
+                                    <option value="Compartido">Compartido</option>
+                                    <option value="Otro">Otro</option>
                                 </select>
                             </div>
                         </div>
@@ -196,26 +161,20 @@
 
                     <!-- Campo para nombre del pagador (solo para pagos individuales) -->
                     <div id="payerNameSection" class="mb-3">
-                        <label for="payerName" class="form-label">
-                            <i class="fas fa-user"></i> Nombre del Pagador (Opcional)
-                        </label>
+                        <label for="payerName" class="form-label">Nombre del Pagador (Opcional)</label>
                         <input type="text" class="form-control" id="payerName" placeholder="Ej: Juan Pérez, Mesa 5, etc.">
-                        <small class="form-text text-muted">
-                            <i class="fas fa-info-circle"></i> Opcional: Identificar quién realiza el pago
-                        </small>
+                        <small class="form-text text-muted">Opcional: Identificar quién realiza el pago</small>
                     </div>
 
                     <!-- Pagos divididos (solo para pagos compartidos) -->
                     <div id="splitPaymentsSection" class="mb-3" style="display: none;">
                         <div class="d-flex justify-content-between align-items-center">
-                            <label class="form-label">
-                                <i class="fas fa-users"></i> Pagos Divididos
-                            </label>
+                            <label class="form-label">Pagos Divididos</label>
                             <button type="button" class="btn btn-sm btn-outline-primary" onclick="addSplitPayment()">
                                 <i class="fas fa-plus"></i> Agregar Persona
                             </button>
                         </div>
-                        <div id="splitPaymentsContainer" class="mt-2">
+                        <div id="splitPaymentsContainer">
                             <!-- Pagos divididos se agregan aquí dinámicamente -->
                         </div>
                     </div>
@@ -257,12 +216,8 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times"></i> Cancelar
-                </button>
-                <button type="button" class="btn btn-primary" onclick="processPayment()">
-                    <i class="fas fa-check-circle"></i> Procesar Pago
-                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="processPayment()">Procesar Pago</button>
             </div>
         </div>
     </div>
@@ -308,13 +263,13 @@
                 console.log('[Main] Iniciando carga de la aplicación...');
                 
                 // Inicializar SignalR primero
-                initializeSignalR();
+            initializeSignalR();
                 
                 // Cargar datos
-                loadTables();
-                loadCategories();
-                
-                // Agregar event listeners para los botones
+            loadTables();
+            loadCategories();
+            
+            // Agregar event listeners para los botones
                 const sendToKitchenBtn = document.getElementById('sendToKitchen');
                 const clearOrderBtn = document.getElementById('clearOrderBtn');
                 const cancelOrderBtn = document.getElementById('cancelOrder');
@@ -332,10 +287,10 @@
                 }
                 
                 // Deshabilitar botón inicialmente
-                disableConfirmButton();
+                        disableConfirmButton();
                 
                 console.log('[Main] Aplicación cargada exitosamente');
-            } catch (error) {
+                } catch (error) {
                 console.error('[Main] Error al inicializar la aplicación:', error);
             }
         });

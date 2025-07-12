@@ -4,341 +4,357 @@
     ViewData["Title"] = "Sucursales";
 }
 
-<div class="container-fluid px-4 dark-theme">
-    <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
-        <h1 class="h3 mb-0 text-white">
-            <i class="fas fa-store-alt me-2"></i>Gestión de Sucursales
-        </h1>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createBranchModal">
-            <i class="fas fa-plus me-2"></i>Nueva Sucursal
-        </button>
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="hero-content">
+        <div class="hero-text">
+            <h1 class="hero-title">
+                <i class="fas fa-store-alt hero-icon"></i>
+                Gestión de Sucursales
+            </h1>
+            <p class="hero-description">
+                Administra las sucursales de tu empresa de forma eficiente y organizada
+            </p>
+        </div>
+        <div class="hero-actions">
+            <button class="btn btn-primary btn-lg modern-btn" data-bs-toggle="modal" data-bs-target="#createBranchModal">
+                <i class="fas fa-plus me-2"></i>
+                Nueva Sucursal
+            </button>
+        </div>
     </div>
+    <div class="hero-decoration">
+        <div class="decoration-circle circle-1"></div>
+        <div class="decoration-circle circle-2"></div>
+        <div class="decoration-circle circle-3"></div>
+    </div>
+</section>
 
-    <div class="card shadow-sm border-0 mb-4 bg-dark">
-        <div class="card-body">
-            <!-- Filtros -->
-            <div class="row mb-4">
+<!-- Content Section -->
+<section class="content-section">
+    <div class="container-fluid">
+        <!-- Filters Section -->
+        <div class="filters-section">
+            <div class="row g-3">
                 <div class="col-md-4">
-                    <div class="input-group">
-                        <span class="input-group-text bg-dark border-end-0">
-                            <i class="fas fa-search text-muted"></i>
-                        </span>
-                        <input type="text" id="searchBranchInput" class="form-control border-start-0 bg-dark text-white" placeholder="Buscar sucursal...">
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="searchBranchInput" class="form-control search-input" placeholder="Buscar sucursal...">
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <select id="statusFilter" class="form-select bg-dark text-white">
-                        <option value="">Todos los estados</option>
-                        <option value="true">Activa</option>
-                        <option value="false">Inactiva</option>
-                    </select>
+                    <div class="filter-box">
+                        <i class="fas fa-filter filter-icon"></i>
+                        <select id="statusFilter" class="form-select filter-select">
+                            <option value="">Todos los estados</option>
+                            <option value="true">Activa</option>
+                            <option value="false">Inactiva</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex justify-content-end">
+                        <button class="btn btn-outline-primary modern-btn" onclick="clearFilters()">
+                            <i class="fas fa-eraser me-2"></i>
+                            Limpiar Filtros
+                        </button>
+                    </div>
                 </div>
             </div>
-            <!-- Fin Filtros -->
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4" id="branchesGrid">
-                @foreach (var item in Model)
+        </div>
+
+        <!-- Branches Grid -->
+        <div class="content-grid">
+            <div class="row g-4" id="branchesGrid">
+                @foreach (var branch in Model)
                 {
-                    <div class="col">
-                        <div class="card h-100 branch-card border-0 shadow-sm bg-dark">
-                            <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
-                                <h5 class="card-title mb-0 text-primary">@item.Name</h5>
-                                <div class="dropdown">
-                                    <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="dropdown">
-                                        <i class="fas fa-ellipsis-v"></i>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end bg-dark">
-                                        <li>
-                                            <a class="dropdown-item text-white" href="#" onclick="editBranch('@item.Id')">
-                                                <i class="fas fa-edit me-2 text-primary"></i>Editar
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item text-white" href="#" onclick="deleteBranch('@item.Id')">
-                                                <i class="fas fa-trash me-2 text-danger"></i>Eliminar
-                                            </a>
-                                        </li>
-                                    </ul>
+                    <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12">
+                        <div class="modern-card branch-card-item">
+                            <div class="card-header-modern">
+                                <div class="branch-icon">
+                                    <i class="fas fa-store-alt"></i>
+                                </div>
+                                <div class="branch-info">
+                                    <h5 class="branch-name">@branch.Name</h5>
+                                    <span class="branch-company">@(branch.Company?.Name ?? "Sin compañía")</span>
+                                </div>
+                                <div class="status-badge">
+                                    <span class="badge @(branch.IsActive == true ? "badge-success" : "badge-danger")">
+                                        @(branch.IsActive == true ? "Activa" : "Inactiva")
+                                    </span>
                                 </div>
                             </div>
-                            <div class="card-body">
-                                <div class="mb-3">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <i class="fas fa-map-marker-alt text-muted me-2"></i>
-                                        <span class="text-muted">@(!string.IsNullOrWhiteSpace(item.Address) ? item.Address : "Sin dirección")</span>
+                            <div class="card-body-modern">
+                                <div class="branch-details">
+                                    <div class="detail-item">
+                                        <i class="fas fa-map-marker-alt detail-icon"></i>
+                                        <div class="detail-content">
+                                            <span class="detail-label">Dirección</span>
+                                            <span class="detail-value">@(!string.IsNullOrWhiteSpace(branch.Address) ? branch.Address : "Sin dirección")</span>
+                                        </div>
                                     </div>
-                                    <div class="d-flex align-items-center mb-2">
-                                        <i class="fas fa-phone text-muted me-2"></i>
-                                        <span class="text-muted">@(!string.IsNullOrWhiteSpace(item.Phone) ? item.Phone : "Sin teléfono")</span>
+                                    <div class="detail-item">
+                                        <i class="fas fa-phone detail-icon"></i>
+                                        <div class="detail-content">
+                                            <span class="detail-label">Teléfono</span>
+                                            <span class="detail-value">@(!string.IsNullOrWhiteSpace(branch.Phone) ? branch.Phone : "Sin teléfono")</span>
+                                        </div>
                                     </div>
-                                    <div class="d-flex align-items-center mb-2">
-                                        <i class="fas fa-building text-muted me-2"></i>
-                                        <span class="text-muted">@(item.Company?.Name ?? "Sin compañía")</span>
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <span class="badge @(item.IsActive == true ? "bg-success" : "bg-danger")">
-                                            @(item.IsActive == true ? "Activa" : "Inactiva")
-                                        </span>
+                                    <div class="detail-item">
+                                        <i class="fas fa-building detail-icon"></i>
+                                        <div class="detail-content">
+                                            <span class="detail-label">Compañía</span>
+                                            <span class="detail-value">@(branch.Company?.Name ?? "Sin compañía")</span>
+                                        </div>
                                     </div>
                                 </div>
+                            </div>
+                            <div class="card-footer-modern">
+                                <button class="btn btn-outline-primary btn-sm modern-btn-sm" onclick="editBranch('@branch.Id')" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm modern-btn-sm" onclick="deleteBranch('@branch.Id')" title="Eliminar">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
                 }
             </div>
         </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <div class="empty-icon">
+                <i class="fas fa-store-alt"></i>
+            </div>
+            <h3 class="empty-title">No se encontraron sucursales</h3>
+            <p class="empty-description">Prueba ajustando los filtros de búsqueda o crea una nueva sucursal</p>
+            <button class="btn btn-primary modern-btn" data-bs-toggle="modal" data-bs-target="#createBranchModal">
+                <i class="fas fa-plus me-2"></i>
+                Crear Primera Sucursal
+            </button>
+        </div>
     </div>
-</div>
+</section>
 
 <!-- Modal de Creación -->
-<div class="modal fade" id="createBranchModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content border-0 shadow bg-dark">
-            <div class="modal-header border-0">
-                <h5 class="modal-title text-white">Nueva Sucursal</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+<div class="modal fade" id="createBranchModal" tabindex="-1" aria-labelledby="createBranchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content modern-modal">
+            <div class="modal-header modern-modal-header">
+                <div class="modal-title-section">
+                    <div class="modal-icon">
+                        <i class="fas fa-store-alt"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title" id="createBranchModalLabel">Nueva Sucursal</h5>
+                        <p class="modal-subtitle">Crea una nueva sucursal en el sistema</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close modern-btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <form id="createBranchForm">
-                    <div class="mb-3">
-                        <label class="form-label text-white">Compañía *</label>
-                        <select class="form-select bg-dark text-white" name="CompanyId" id="createCompanyId" required></select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-white">Nombre</label>
-                        <input type="text" class="form-control bg-dark text-white" name="Name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-white">Dirección</label>
-                        <input type="text" class="form-control bg-dark text-white" name="Address">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-white">Teléfono</label>
-                        <input type="text" class="form-control bg-dark text-white" name="Phone">
-                    </div>
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" name="IsActive" checked>
-                            <label class="form-check-label text-white">Activa</label>
+            <form id="createBranchForm">
+                <div class="modal-body modern-modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <div class="modern-form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-building me-2"></i>
+                                    Compañía *
+                                </label>
+                                <select class="form-select modern-select" name="CompanyId" id="createCompanyId" required>
+                                    <option value="">Cargando compañías...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="modern-form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-store-alt me-2"></i>
+                                    Nombre de la Sucursal *
+                                </label>
+                                <input type="text" class="form-control modern-input" name="Name" required 
+                                       placeholder="Ingresa el nombre de la sucursal">
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="modern-form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-map-marker-alt me-2"></i>
+                                    Dirección
+                                </label>
+                                <input type="text" class="form-control modern-input" name="Address" 
+                                       placeholder="Ingresa la dirección de la sucursal">
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="modern-form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-phone me-2"></i>
+                                    Teléfono
+                                </label>
+                                <input type="text" class="form-control modern-input" name="Phone" 
+                                       placeholder="Ingresa el número de teléfono">
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="modern-form-group">
+                                <div class="form-check modern-check">
+                                    <input type="checkbox" class="form-check-input" name="IsActive" checked>
+                                    <label class="form-check-label">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        Sucursal Activa
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </form>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="createBranch()">Crear Sucursal</button>
-            </div>
+                </div>
+                <div class="modal-footer modern-modal-footer">
+                    <button type="button" class="btn btn-outline-secondary modern-btn" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary modern-btn" onclick="createBranch()">
+                        <i class="fas fa-save me-2"></i>
+                        Crear Sucursal
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
 <!-- Modal de Edición -->
-<div class="modal fade" id="editBranchModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content border-0 shadow bg-dark">
-            <div class="modal-header border-0">
-                <h5 class="modal-title text-white">Editar Sucursal</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+<div class="modal fade" id="editBranchModal" tabindex="-1" aria-labelledby="editBranchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content modern-modal">
+            <div class="modal-header modern-modal-header">
+                <div class="modal-title-section">
+                    <div class="modal-icon">
+                        <i class="fas fa-edit"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title" id="editBranchModalLabel">Editar Sucursal</h5>
+                        <p class="modal-subtitle">Modifica la información de la sucursal</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close modern-btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <form id="editBranchForm">
+            <form id="editBranchForm">
+                <div class="modal-body modern-modal-body">
                     <input type="hidden" name="Id">
-                    <div class="mb-3">
-                        <label class="form-label text-white">Compañía *</label>
-                        <select class="form-select bg-dark text-white" name="CompanyId" id="editCompanyId" required></select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-white">Nombre</label>
-                        <input type="text" class="form-control bg-dark text-white" name="Name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-white">Dirección</label>
-                        <input type="text" class="form-control bg-dark text-white" name="Address">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-white">Teléfono</label>
-                        <input type="text" class="form-control bg-dark text-white" name="Phone">
-                    </div>
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" name="IsActive">
-                            <label class="form-check-label text-white">Activa</label>
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <div class="modern-form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-building me-2"></i>
+                                    Compañía *
+                                </label>
+                                <select class="form-select modern-select" name="CompanyId" id="editCompanyId" required>
+                                    <option value="">Cargando compañías...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="modern-form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-store-alt me-2"></i>
+                                    Nombre de la Sucursal *
+                                </label>
+                                <input type="text" class="form-control modern-input" name="Name" required 
+                                       placeholder="Ingresa el nombre de la sucursal">
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="modern-form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-map-marker-alt me-2"></i>
+                                    Dirección
+                                </label>
+                                <input type="text" class="form-control modern-input" name="Address" 
+                                       placeholder="Ingresa la dirección de la sucursal">
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="modern-form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-phone me-2"></i>
+                                    Teléfono
+                                </label>
+                                <input type="text" class="form-control modern-input" name="Phone" 
+                                       placeholder="Ingresa el número de teléfono">
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="modern-form-group">
+                                <div class="form-check modern-check">
+                                    <input type="checkbox" class="form-check-input" name="IsActive">
+                                    <label class="form-check-label">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        Sucursal Activa
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </form>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="updateBranch()">Guardar Cambios</button>
-            </div>
+                </div>
+                <div class="modal-footer modern-modal-footer">
+                    <button type="button" class="btn btn-outline-secondary modern-btn" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary modern-btn" onclick="updateBranch()">
+                        <i class="fas fa-save me-2"></i>
+                        Guardar Cambios
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
-@section Styles {
-    <style>
-        body {
-            background-color: #121212;
-        }
-
-        .dark-theme {
-            background-color: #121212;
-            min-height: 100vh;
-        }
-
-        .branch-card {
-            transition: all 0.3s ease;
-            background: #1e1e1e !important;
-        }
-
-        .branch-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
-        }
-
-        .card-title {
-            font-weight: 600;
-            color: #2196F3;
-        }
-
-        .dropdown-item {
-            padding: 0.5rem 1rem;
-            transition: all 0.2s ease;
-        }
-
-        .dropdown-item:hover {
-            background-color: #2c2c2c;
-        }
-
-        .dropdown-item i {
-            width: 20px;
-        }
-
-        .form-control, .form-select {
-            border-radius: 8px;
-            border: 1px solid #333;
-            padding: 0.6rem 1rem;
-            background-color: #1e1e1e !important;
-            color: white !important;
-        }
-
-        .form-control:focus, .form-select:focus {
-            border-color: #2196F3;
-            box-shadow: 0 0 0 0.2rem rgba(33, 150, 243, 0.1);
-        }
-
-        .btn {
-            padding: 0.6rem 1.2rem;
-            border-radius: 8px;
-            font-weight: 500;
-        }
-
-        .btn-primary {
-            background-color: #2196F3;
-            border-color: #2196F3;
-        }
-
-        .btn-primary:hover {
-            background-color: #1976D2;
-            border-color: #1976D2;
-        }
-
-        .btn-secondary {
-            background-color: #424242;
-            border-color: #424242;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background-color: #616161;
-            border-color: #616161;
-            color: white;
-        }
-
-        .modal-content {
-            border-radius: 15px;
-            background-color: #1e1e1e !important;
-        }
-
-        .input-group-text {
-            border-radius: 8px 0 0 8px;
-            background-color: #1e1e1e !important;
-            border: 1px solid #333;
-            color: #666;
-        }
-
-        .input-group .form-control {
-            border-radius: 0 8px 8px 0;
-        }
-
-        .badge {
-            padding: 0.5em 1em;
-            font-weight: 500;
-            border-radius: 6px;
-        }
-
-        .form-check-input:checked {
-            background-color: #2196F3;
-            border-color: #2196F3;
-        }
-
-        .form-check-label {
-            color: #fff;
-        }
-
-        .dropdown-menu {
-            background-color: #1e1e1e;
-            border: 1px solid #333;
-        }
-
-        .dropdown-item {
-            color: #fff;
-        }
-
-        .dropdown-item:hover {
-            background-color: #2c2c2c;
-        }
-
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #1e1e1e;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #424242;
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #616161;
-        }
-    </style>
-}
-
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        $(document).ready(function () {
-            $('#searchBranchInput').on('keyup', filterBranches);
-            $('#statusFilter').on('change', filterBranches);
-        });
+        // Función para limpiar filtros
+        function clearFilters() {
+            $("#searchBranchInput").val("");
+            $("#statusFilter").val("");
+            filterBranches();
+        }
 
+        // Función para actualizar estado vacío
+        function updateEmptyState() {
+            const visibleCards = $("#branchesGrid .col:visible").length;
+            if (visibleCards === 0) {
+                $("#emptyState").show();
+            } else {
+                $("#emptyState").hide();
+            }
+        }
+
+        // Función para filtrar sucursales
         function filterBranches() {
             const searchTerm = $('#searchBranchInput').val().toLowerCase();
             const status = $('#statusFilter').val();
-            $('.branch-card').each(function () {
+            
+            $('#branchesGrid .col').each(function () {
                 const card = $(this);
-                const name = card.find('.card-title').text().toLowerCase();
-                const isActive = card.find('.badge').hasClass('bg-success');
+                const name = card.find('.branch-name').text().toLowerCase();
+                const isActive = card.find('.badge-success').length > 0;
+                
                 const matchesSearch = name.includes(searchTerm);
                 const matchesStatus = status === '' || (status === 'true' && isActive) || (status === 'false' && !isActive);
-                card.closest('.col').toggle(matchesSearch && matchesStatus);
+                
+                card.toggle(matchesSearch && matchesStatus);
             });
+            
+            updateEmptyState();
         }
 
+        // Función para cargar compañías en selects
         function loadCompaniesSelect(selectId, selectedId) {
             $.get('/Company/GetCompanies', function (res) {
                 var select = $(selectId);
@@ -349,28 +365,40 @@
                         select.append('<option value="' + c.id + '">' + c.name + '</option>');
                     });
                     select.prop('disabled', false);
+                    
                     // Seleccionar la compañía después de poblar el select
                     if (selectedId) {
                         setTimeout(function() {
                             select.val(selectedId);
                         }, 0);
                     }
+                    
                     if (selectId === '#createCompanyId') {
                         $('#createBranchModal').find('button.btn-primary').prop('disabled', false);
                     }
                 } else {
                     select.empty().append('<option value="">No hay compañías disponibles</option>');
                 }
+            }).fail(function() {
+                var select = $(selectId);
+                select.empty().append('<option value="">Error al cargar compañías</option>');
             });
         }
 
+        // Eventos
+        $(document).ready(function () {
+            $('#searchBranchInput').on('keyup', filterBranches);
+            $('#statusFilter').on('change', filterBranches);
+            updateEmptyState();
+        });
+
+        // Eventos de modales
         $('#createBranchModal').on('show.bs.modal', function () {
             var select = $('#createCompanyId');
             var btn = $(this).find('button.btn-primary');
             select.empty().append('<option>Cargando compañías...</option>').prop('disabled', true);
             btn.prop('disabled', true);
             loadCompaniesSelect('#createCompanyId');
-            // Limpiar selección previa
             select.val('');
         });
 
@@ -379,14 +407,17 @@
             loadCompaniesSelect('#editCompanyId', selectedId);
         });
 
+        // Función para crear sucursal
         window.createBranch = function () {
             const form = $('#createBranchForm');
             const formData = {};
             let errors = [];
+            
             form.serializeArray().forEach(item => {
                 formData[item.name] = item.value;
             });
             formData.IsActive = form.find('[name="IsActive"]').is(':checked');
+            
             // Validaciones
             if (!formData.Name || formData.Name.trim() === "") {
                 errors.push('El nombre es requerido');
@@ -394,51 +425,75 @@
             if (!formData.CompanyId) {
                 errors.push('La compañía es requerida');
             }
+            
             if (errors.length > 0) {
                 Swal.fire({
+                    icon: 'error',
                     title: 'Error de validación',
-                    html: errors.join('<br>'),
-                    icon: 'error'
+                    html: errors.join('<br>')
                 });
                 return;
             }
+            
             Swal.fire({
                 title: 'Creando sucursal...',
+                text: 'Por favor espera un momento',
+                icon: 'info',
                 allowOutsideClick: false,
-                didOpen: () => { Swal.showLoading(); }
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
             });
+            
             $.ajax({
                 url: '/Branch/Create',
                 method: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(formData),
                 success: function (response) {
-                    Swal.close();
                     if (response.success) {
                         $('#createBranchModal').modal('hide');
                         Swal.fire({
                             icon: 'success',
-                            title: '¡Sucursal creada correctamente!',
+                            title: '¡Éxito!',
+                            text: '¡Sucursal creada correctamente!',
                             showConfirmButton: false,
-                            timer: 1200
-                        }).then(() => location.reload());
+                            timer: 1500
+                        }).then(() => {
+                            location.reload();
+                        });
                     } else {
-                        showError(response.message);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: response.message || 'No se pudo crear la sucursal'
+                        });
                     }
                 },
-                error: function () {
-                    Swal.close();
-                    showError('Error al crear la sucursal');
+                error: function (xhr, status, error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo crear la sucursal. Por favor intenta nuevamente.'
+                    });
                 }
             });
         }
 
+        // Función para editar sucursal
         window.editBranch = function (id) {
             Swal.fire({
-                title: 'Cargando...',
+                title: 'Cargando información...',
+                text: 'Por favor espera un momento',
+                icon: 'info',
                 allowOutsideClick: false,
-                didOpen: () => { Swal.showLoading(); }
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
             });
+            
             $.ajax({
                 url: `/Branch/Get/${id}`,
                 method: 'GET',
@@ -447,6 +502,7 @@
                     if (response.success) {
                         const branch = response.data;
                         const form = $('#editBranchForm');
+                        
                         form[0].reset();
                         form.find('[name="Id"]').val(branch.id);
                         form.find('[name="Name"]').val(branch.name);
@@ -454,28 +510,40 @@
                         form.find('[name="Phone"]').val(branch.phone);
                         form.find('[name="IsActive"]').prop('checked', branch.isActive);
                         form.find('[name="CompanyId"]').val(branch.companyId);
+                        
                         loadCompaniesSelect('#editCompanyId', branch.companyId);
+                        
                         const editModal = new bootstrap.Modal(document.getElementById('editBranchModal'));
                         editModal.show();
                     } else {
-                        showError(response.message || 'Error al cargar la sucursal');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: response.message || 'Error al cargar la sucursal'
+                        });
                     }
                 },
-                error: function () {
-                    Swal.close();
-                    showError('Error al cargar la sucursal.');
+                error: function (xhr, status, error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Error al cargar la sucursal. Por favor intenta nuevamente.'
+                    });
                 }
             });
         }
 
+        // Función para actualizar sucursal
         window.updateBranch = function () {
             const form = $('#editBranchForm');
             const formData = {};
             let errors = [];
+            
             form.serializeArray().forEach(item => {
                 formData[item.name] = item.value;
             });
             formData.IsActive = form.find('[name="IsActive"]').is(':checked');
+            
             // Validaciones
             if (!formData.Name || formData.Name.trim() === "") {
                 errors.push('El nombre es requerido');
@@ -483,90 +551,690 @@
             if (!formData.CompanyId) {
                 errors.push('La compañía es requerida');
             }
+            
             if (errors.length > 0) {
                 Swal.fire({
+                    icon: 'error',
                     title: 'Error de validación',
-                    html: errors.join('<br>'),
-                    icon: 'error'
+                    html: errors.join('<br>')
                 });
                 return;
             }
+            
             Swal.fire({
                 title: 'Actualizando sucursal...',
+                text: 'Por favor espera un momento',
+                icon: 'info',
                 allowOutsideClick: false,
-                didOpen: () => { Swal.showLoading(); }
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
             });
+            
             $.ajax({
                 url: `/Branch/Edit/${formData.Id}`,
                 method: 'PUT',
                 contentType: 'application/json',
                 data: JSON.stringify(formData),
                 success: function (response) {
-                    Swal.close();
                     if (response.success) {
                         $('#editBranchModal').modal('hide');
                         Swal.fire({
                             icon: 'success',
-                            title: '¡Sucursal editada correctamente!',
+                            title: '¡Éxito!',
+                            text: '¡Sucursal editada correctamente!',
                             showConfirmButton: false,
-                            timer: 1200
-                        }).then(() => location.reload());
+                            timer: 1500
+                        }).then(() => {
+                            location.reload();
+                        });
                     } else {
-                        showError(response.message || 'Error al actualizar la sucursal');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: response.message || 'Error al actualizar la sucursal'
+                        });
                     }
                 },
-                error: function () {
-                    Swal.close();
-                    showError('Error al actualizar la sucursal.');
+                error: function (xhr, status, error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Error al actualizar la sucursal. Por favor intenta nuevamente.'
+                    });
                 }
             });
         }
 
+        // Función para eliminar sucursal
         window.deleteBranch = function (id) {
             Swal.fire({
-                title: '¿Está seguro que desea eliminar esta sucursal?',
+                title: '¿Estás seguro?',
+                text: 'Esta acción eliminará la sucursal permanentemente',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Sí, eliminar',
-                cancelButtonText: 'Cancelar'
+                confirmButtonColor: 'var(--danger-color)',
+                cancelButtonColor: 'var(--secondary-color)',
+                confirmButtonText: '<i class="fas fa-trash me-2"></i>Sí, eliminar',
+                cancelButtonText: '<i class="fas fa-times me-2"></i>Cancelar',
+                reverseButtons: true
             }).then((result) => {
                 if (result.isConfirmed) {
                     Swal.fire({
                         title: 'Eliminando sucursal...',
+                        text: 'Por favor espera un momento',
+                        icon: 'info',
                         allowOutsideClick: false,
-                        didOpen: () => { Swal.showLoading(); }
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
                     });
+                    
                     $.ajax({
                         url: `/Branch/Delete/${id}`,
                         method: 'DELETE',
                         success: function (response) {
-                            Swal.close();
                             if (response.success) {
                                 Swal.fire({
                                     icon: 'success',
-                                    title: '¡Sucursal eliminada correctamente!',
+                                    title: '¡Eliminada!',
+                                    text: '¡Sucursal eliminada correctamente!',
                                     showConfirmButton: false,
-                                    timer: 1200
-                                }).then(() => location.reload());
+                                    timer: 1500
+                                }).then(() => {
+                                    location.reload();
+                                });
                             } else {
-                                showError(response.message);
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: response.message || 'No se pudo eliminar la sucursal'
+                                });
                             }
                         },
-                        error: function () {
-                            Swal.close();
-                            showError('Error al eliminar la sucursal');
+                        error: function (xhr, status, error) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Error al eliminar la sucursal. Por favor intenta nuevamente.'
+                            });
                         }
                     });
                 }
             });
         }
-
-        function showSuccess(message) {
-            Swal.fire('Éxito', message, 'success');
-        }
-
-        function showError(message) {
-            Swal.fire('Error', message, 'error');
-        }
     </script>
+}
+
+@section Styles {
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #e67e22;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --info-color: #3498db;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+            --border-radius: 20px;
+            --transition: all 0.3s ease;
+            --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            --hover-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 80px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            container: 1200px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-text h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .hero-icon {
+            background: linear-gradient(45deg, var(--accent-color), var(--warning-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-right: 20px;
+        }
+
+        .hero-description {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 600px;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .hero-decoration {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .decoration-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .circle-1 {
+            width: 100px;
+            height: 100px;
+            top: 10%;
+            right: 10%;
+            animation-delay: 0s;
+        }
+
+        .circle-2 {
+            width: 150px;
+            height: 150px;
+            top: 60%;
+            right: 5%;
+            animation-delay: 2s;
+        }
+
+        .circle-3 {
+            width: 80px;
+            height: 80px;
+            top: 30%;
+            right: 30%;
+            animation-delay: 4s;
+        }
+
+        @@keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        /* Content Section */
+        .content-section {
+            padding: 40px 0;
+            background: var(--light-color);
+            min-height: calc(100vh - 200px);
+        }
+
+        /* Filters Section */
+        .filters-section {
+            background: white;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            margin-bottom: 30px;
+        }
+
+        .search-box, .filter-box {
+            position: relative;
+        }
+
+        .search-icon, .filter-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--secondary-color);
+            z-index: 2;
+        }
+
+        .search-input, .filter-select {
+            padding-left: 45px;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            font-size: 16px;
+            transition: var(--transition);
+        }
+
+        .search-input:focus, .filter-select:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.1);
+        }
+
+        /* Content Grid */
+        .content-grid {
+            margin-top: 30px;
+        }
+
+        /* Modern Cards */
+        .modern-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            transition: var(--transition);
+            overflow: hidden;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modern-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .card-header-modern {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 25px;
+            position: relative;
+        }
+
+        .branch-icon {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+
+        .branch-info h5 {
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .branch-company {
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+        }
+
+        .badge-success {
+            background: var(--success-color);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-danger {
+            background: var(--danger-color);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .card-body-modern {
+            padding: 25px;
+            flex: 1;
+        }
+
+        .branch-details {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-icon {
+            width: 20px;
+            color: var(--accent-color);
+        }
+
+        .detail-content {
+            flex: 1;
+        }
+
+        .detail-label {
+            display: block;
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 2px;
+        }
+
+        .detail-value {
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        .card-footer-modern {
+            padding: 20px 25px;
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* Modern Buttons */
+        .modern-btn {
+            border: none;
+            border-radius: 15px;
+            padding: 12px 30px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modern-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: var(--transition);
+        }
+
+        .modern-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .modern-btn-sm {
+            padding: 8px 15px;
+            font-size: 0.9rem;
+            border-radius: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-color), var(--warning-color));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--warning-color), var(--accent-color));
+            transform: translateY(-2px);
+        }
+
+        .btn-outline-primary {
+            border: 2px solid var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .btn-outline-danger {
+            border: 2px solid var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        .btn-outline-danger:hover {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        .empty-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 30px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: white;
+        }
+
+        .empty-title {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .empty-description {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+
+        /* Modern Modals */
+        .modern-modal .modal-content {
+            border: none;
+            border-radius: var(--border-radius);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .modern-modal-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 30px;
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+        }
+
+        .modal-title-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .modal-icon {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .modal-title {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .modal-subtitle {
+            margin: 5px 0 0 0;
+            opacity: 0.8;
+            font-size: 0.95rem;
+        }
+
+        .modern-btn-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .modern-btn-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .modern-modal-body {
+            padding: 40px;
+        }
+
+        .modern-form-group {
+            margin-bottom: 25px;
+        }
+
+        .modern-form-group label {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .modern-input, .modern-select {
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 15px 20px;
+            font-size: 16px;
+            transition: var(--transition);
+            width: 100%;
+        }
+
+        .modern-input:focus, .modern-select:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.1);
+        }
+
+        .modern-check {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border: 2px solid #e0e0e0;
+            transition: var(--transition);
+        }
+
+        .modern-check:hover {
+            border-color: var(--accent-color);
+        }
+
+        .modern-check .form-check-input {
+            width: 20px;
+            height: 20px;
+            margin: 0;
+        }
+
+        .modern-check .form-check-label {
+            font-weight: 500;
+            color: var(--dark-color);
+            margin: 0;
+        }
+
+        .modern-modal-footer {
+            padding: 30px 40px;
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: end;
+            gap: 15px;
+        }
+
+        /* Responsive Design */
+        @@media (max-width: 768px) {
+            .hero-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 30px;
+            }
+
+            .hero-text h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero-actions {
+                justify-content: center;
+            }
+
+            .filters-section {
+                padding: 20px;
+            }
+
+            .modern-modal-body {
+                padding: 30px 20px;
+            }
+
+            .modern-modal-footer {
+                padding: 20px;
+            }
+        }
+
+        @@media (max-width: 480px) {
+            .hero-text h1 {
+                font-size: 2rem;
+            }
+
+            .hero-description {
+                font-size: 1rem;
+            }
+
+            .branch-details {
+                gap: 10px;
+            }
+
+            .detail-item {
+                padding: 8px 0;
+            }
+        }
+    </style>
 } 

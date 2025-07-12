@@ -4,82 +4,738 @@
     ViewData["Title"] = "Gestión de Estaciones";
 }
 
-<div class="container-fluid">
-    <!-- Header con filtros -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h3 class="mb-0">
-                            <i class="fas fa-fire"></i> Gestión de Estaciones
-                        </h3>
-                        <button class="btn btn-light" onclick="openCreateModal()">
-                            <i class="fas fa-plus"></i> Nueva Estación
-                        </button>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="searchInput" class="form-label">
-                                    <i class="fas fa-search"></i> Buscar Estación
-                                </label>
-                                <input type="text" class="form-control" id="searchInput" placeholder="Buscar por nombre...">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="typeFilter" class="form-label">
-                                    <i class="fas fa-filter"></i> Filtrar por Tipo
-                                </label>
-                                <select class="form-select" id="typeFilter">
-                                    <option value="">Todos los tipos</option>
-                                    <option value="Cocina">Cocina</option>
-                                    <option value="Bar">Bar</option>
-                                    <option value="Café">Café</option>
-                                    <option value="Postres">Postres</option>
-                                    <option value="Parrilla">Parrilla</option>
-                                    <option value="Sushi">Sushi</option>
-                                    <option value="Pizza">Pizza</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="productFilter" class="form-label">
-                                    <i class="fas fa-box"></i> Filtrar por Productos
-                                </label>
-                                <select class="form-select" id="productFilter">
-                                    <option value="">Todas las estaciones</option>
-                                    <option value="with">Con productos</option>
-                                    <option value="without">Sin productos</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<style>
+    :root {
+        --primary-color: #2c3e50;
+        --secondary-color: #34495e;
+        --accent-color: #e67e22;
+        --success-color: #27ae60;
+        --danger-color: #e74c3c;
+        --warning-color: #f39c12;
+        --info-color: #3498db;
+        --light-color: #ecf0f1;
+        --dark-color: #2c3e50;
+        --gradient-primary: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        --gradient-accent: linear-gradient(135deg, var(--accent-color), #d35400);
+        --gradient-success: linear-gradient(135deg, var(--success-color), #229954);
+        --gradient-danger: linear-gradient(135deg, var(--danger-color), #c0392b);
+        --gradient-warning: linear-gradient(135deg, var(--warning-color), #e67e22);
+        --gradient-info: linear-gradient(135deg, var(--info-color), #2980b9);
+        --shadow-light: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --shadow-medium: 0 8px 15px rgba(0, 0, 0, 0.15);
+        --shadow-heavy: 0 10px 30px rgba(0, 0, 0, 0.2);
+        --border-radius: 20px;
+        --transition: all 0.3s ease;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Poppins', sans-serif;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+        color: var(--dark-color);
+    }
+
+    /* Hero Section */
+    .hero-section {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 3rem 0;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero-section::before {
+        content: '';
+        position: absolute;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="10" cy="50" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="90" cy="30" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        animation: float 20s ease-in-out infinite;
+        opacity: 0.1;
+    }
+
+    @@keyframes float {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-20px) rotate(180deg); }
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+    }
+
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        animation: slideInFromTop 0.8s ease-out;
+    }
+
+    .hero-subtitle {
+        font-size: 1.3rem;
+        opacity: 0.9;
+        margin-bottom: 2rem;
+        animation: slideInFromBottom 0.8s ease-out;
+    }
+
+    @@keyframes slideInFromTop {
+        0% { opacity: 0; transform: translateY(-50px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+
+    @@keyframes slideInFromBottom {
+        0% { opacity: 0; transform: translateY(50px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-button {
+        background: var(--gradient-accent);
+        color: white;
+        padding: 1rem 2rem;
+        border: none;
+        border-radius: var(--border-radius);
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        box-shadow: var(--shadow-medium);
+        text-decoration: none;
+        display: inline-block;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    .hero-button:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-heavy);
+        color: white;
+        text-decoration: none;
+    }
+
+    @@keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    /* Main Content */
+    .main-content {
+        padding: 0 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    /* Filters Section */
+    .filters-section {
+        background: white;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-light);
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .filters-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--gradient-accent);
+    }
+
+    .filters-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .filter-group {
+        position: relative;
+    }
+
+    .filter-label {
+        display: block;
+        font-weight: 500;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .filter-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e1e8ed;
+        border-radius: 12px;
+        font-size: 1rem;
+        transition: var(--transition);
+        background: white;
+    }
+
+    .filter-input:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(231, 126, 34, 0.1);
+    }
+
+    .filter-input-icon {
+        position: relative;
+    }
+
+    .filter-input-icon .filter-input {
+        padding-left: 3rem;
+    }
+
+    .filter-input-icon .input-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--accent-color);
+        font-size: 1.1rem;
+    }
+
+    /* Stations Section */
+    .stations-section {
+        background: white;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-light);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stations-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--gradient-info);
+    }
+
+    .stations-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .stations-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .station-card {
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-light);
+        overflow: hidden;
+        transition: var(--transition);
+        position: relative;
+        border: 2px solid transparent;
+    }
+
+    .station-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-medium);
+        border-color: var(--accent-color);
+    }
+
+    .station-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--gradient-primary);
+    }
+
+    .station-card-header {
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .station-name {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .station-icon {
+        color: var(--accent-color);
+        font-size: 1.5rem;
+    }
+
+    .station-actions {
+        position: relative;
+    }
+
+    .station-actions .btn {
+        background: transparent;
+        border: none;
+        color: var(--primary-color);
+        font-size: 1.2rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 50%;
+        transition: var(--transition);
+    }
+
+    .station-actions .btn:hover {
+        background: rgba(44, 62, 80, 0.1);
+    }
+
+    .station-card-body {
+        padding: 1.5rem;
+    }
+
+    .station-info {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .station-info-item {
+        text-align: center;
+    }
+
+    .station-info-label {
+        font-weight: 500;
+        color: var(--primary-color);
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .station-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: white;
+        display: inline-block;
+    }
+
+    .station-badge.type {
+        background: var(--gradient-info);
+    }
+
+    .station-badge.products-with {
+        background: var(--gradient-warning);
+    }
+
+    .station-badge.products-without {
+        background: var(--gradient-danger);
+    }
+
+    .station-card-footer {
+        padding: 1.5rem;
+        background: #f8f9fa;
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .station-footer-actions {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .station-action-btn {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        border: 2px solid transparent;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .station-action-btn.view {
+        background: var(--gradient-info);
+        color: white;
+    }
+
+    .station-action-btn.view:hover {
+        background: var(--info-color);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-light);
+    }
+
+    .station-action-btn.edit {
+        background: var(--gradient-warning);
+        color: white;
+    }
+
+    .station-action-btn.edit:hover {
+        background: var(--warning-color);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-light);
+    }
+
+    /* Hidden state for filtering */
+    .station-card.hidden {
+        display: none !important;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: var(--secondary-color);
+        grid-column: 1 / -1;
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        color: var(--accent-color);
+        margin-bottom: 1rem;
+    }
+
+    .empty-state-message {
+        font-size: 1.2rem;
+        font-weight: 500;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state-description {
+        font-size: 1rem;
+        color: var(--secondary-color);
+        margin-bottom: 2rem;
+    }
+
+    /* Modal Styles */
+    .modal-content {
+        border: none;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-heavy);
+        overflow: hidden;
+    }
+
+    .modal-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 1.5rem;
+        border-bottom: none;
+    }
+
+    .modal-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .btn-close {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        border-radius: 50%;
+        width: 2rem;
+        height: 2rem;
+        opacity: 1;
+        transition: var(--transition);
+    }
+
+    .btn-close:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.1);
+    }
+
+    .modal-body {
+        padding: 2rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 500;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e1e8ed;
+        border-radius: 12px;
+        font-size: 1rem;
+        transition: var(--transition);
+        background: white;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(231, 126, 34, 0.1);
+    }
+
+    .modal-footer {
+        padding: 1.5rem;
+        background: #f8f9fa;
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary {
+        background: var(--gradient-accent);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-medium);
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+    }
+
+    .btn-danger {
+        background: var(--gradient-danger);
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background: var(--danger-color);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-medium);
+    }
+
+    /* Dropdown Styles */
+    .dropdown-menu {
+        border: none;
+        border-radius: 12px;
+        box-shadow: var(--shadow-medium);
+        padding: 0.5rem;
+        margin-top: 0.5rem;
+    }
+
+    .dropdown-item {
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+
+    .dropdown-item:hover {
+        background: rgba(231, 126, 34, 0.1);
+        color: var(--accent-color);
+        transform: translateX(5px);
+    }
+
+    .dropdown-item.text-danger:hover {
+        background: rgba(231, 76, 60, 0.1);
+        color: var(--danger-color);
+    }
+
+    /* Clear Filters Button */
+    .clear-filters-btn {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .clear-filters-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-medium);
+    }
+
+    /* Responsive Design */
+    @@media (max-width: 768px) {
+        .hero-title {
+            font-size: 2.5rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            padding: 0 1rem;
+        }
+
+        .filters-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stations-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .station-info {
+            grid-template-columns: 1fr;
+        }
+
+        .station-footer-actions {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                <i class="fas fa-fire"></i> Gestión de Estaciones
+            </h1>
+            <p class="hero-subtitle">
+                Administra las estaciones de trabajo de tu cocina y bar
+            </p>
+            <button class="hero-button" onclick="openCreateModal()">
+                <i class="fas fa-plus"></i> Nueva Estación
+            </button>
         </div>
     </div>
+</section>
 
-    <!-- Contenedor de cards -->
-    <div class="row" id="stationsContainer">
-        @foreach (var station in Model)
-        {
-            <div class="col-lg-4 col-md-6 mb-4 station-card" 
-                 data-name="@station.Name.ToLower()" 
-                 data-type="@station.Type" 
-                 data-products="@(station.Products.Any() ? "with" : "without")">
-                <div class="card h-100 station-card-inner">
-                    <div class="card-header bg-gradient-primary text-white">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">
-                                <i class="fas fa-fire"></i> @station.Name
-                            </h5>
+<!-- Main Content -->
+<div class="main-content">
+    <!-- Filters Section -->
+    <section class="filters-section">
+        <h2 class="filters-title">
+            <i class="fas fa-filter"></i> Filtros de Búsqueda
+        </h2>
+        <div class="filters-grid">
+            <div class="filter-group">
+                <label class="filter-label">
+                    <i class="fas fa-search"></i> Buscar Estación
+                </label>
+                <div class="filter-input-icon">
+                    <input type="text" id="searchInput" class="filter-input" placeholder="Buscar por nombre...">
+                    <i class="fas fa-search input-icon"></i>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">
+                    <i class="fas fa-tags"></i> Filtrar por Tipo
+                </label>
+                <select class="filter-input" id="typeFilter">
+                    <option value="">Todos los tipos</option>
+                    <option value="Cocina">Cocina</option>
+                    <option value="Bar">Bar</option>
+                    <option value="Café">Café</option>
+                    <option value="Postres">Postres</option>
+                    <option value="Parrilla">Parrilla</option>
+                    <option value="Sushi">Sushi</option>
+                    <option value="Pizza">Pizza</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">
+                    <i class="fas fa-box"></i> Filtrar por Productos
+                </label>
+                <select class="filter-input" id="productFilter">
+                    <option value="">Todas las estaciones</option>
+                    <option value="with">Con productos</option>
+                    <option value="without">Sin productos</option>
+                </select>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stations Section -->
+    <section class="stations-section">
+        <h2 class="stations-title">
+            <i class="fas fa-fire"></i> Estaciones de Trabajo
+        </h2>
+        <div class="stations-grid" id="stationsContainer">
+            @foreach (var station in Model)
+            {
+                <div class="station-card" 
+                     data-name="@station.Name.ToLower()" 
+                     data-type="@station.Type" 
+                     data-products="@(station.Products.Any() ? "with" : "without")">
+                    <div class="station-card-header">
+                        <h3 class="station-name">
+                            @if (!string.IsNullOrEmpty(station.Icon))
+                            {
+                                <i class="@station.Icon station-icon"></i>
+                            }
+                            else
+                            {
+                                <i class="fas fa-fire station-icon"></i>
+                            }
+                            @station.Name
+                        </h3>
+                        <div class="station-actions">
                             <div class="dropdown">
-                                <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <button class="btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="fas fa-ellipsis-v"></i>
                                 </button>
                                 <ul class="dropdown-menu">
@@ -97,53 +753,49 @@
                             </div>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-6">
-                                <p class="mb-1"><strong>Tipo:</strong></p>
-                                <span class="badge bg-info">@station.Type</span>
+                    <div class="station-card-body">
+                        <div class="station-info">
+                            <div class="station-info-item">
+                                <div class="station-info-label">Tipo:</div>
+                                <span class="station-badge type">@station.Type</span>
                             </div>
-                            <div class="col-6">
-                                <p class="mb-1"><strong>Productos:</strong></p>
+                            <div class="station-info-item">
+                                <div class="station-info-label">Productos:</div>
                                 @if (station.Products.Any())
                                 {
-                                    <span class="badge bg-warning">@station.Products.Count producto(s)</span>
+                                    <span class="station-badge products-with">@station.Products.Count producto(s)</span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-secondary">Sin productos</span>
+                                    <span class="station-badge products-without">Sin productos</span>
                                 }
                             </div>
                         </div>
                     </div>
-                    <div class="card-footer bg-transparent">
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-outline-primary btn-sm" onclick="viewStation('@station.Id')">
+                    <div class="station-card-footer">
+                        <div class="station-footer-actions">
+                            <button class="station-action-btn view" onclick="viewStation('@station.Id')">
                                 <i class="fas fa-eye"></i> Ver Detalles
                             </button>
-                            <button class="btn btn-outline-warning btn-sm" onclick="editStation('@station.Id')">
+                            <button class="station-action-btn edit" onclick="editStation('@station.Id')">
                                 <i class="fas fa-edit"></i> Editar
                             </button>
                         </div>
                     </div>
                 </div>
-            </div>
-        }
-    </div>
-
-    <!-- Mensaje cuando no hay estaciones -->
-    <div class="row" id="noStationsMessage" style="display: none;">
-        <div class="col-12">
-            <div class="alert alert-info text-center">
-                <i class="fas fa-info-circle fa-2x mb-3"></i>
-                <h4>No se encontraron estaciones</h4>
-                <p>No hay estaciones que coincidan con los filtros aplicados.</p>
-                <button class="btn btn-primary" onclick="clearFilters()">
-                    <i class="fas fa-times"></i> Limpiar Filtros
-                </button>
-            </div>
+            }
         </div>
-    </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="noStationsMessage" style="display: none;">
+            <i class="fas fa-info-circle empty-state-icon"></i>
+            <h4 class="empty-state-message">No se encontraron estaciones</h4>
+            <p class="empty-state-description">No hay estaciones que coincidan con los filtros aplicados.</p>
+            <button class="clear-filters-btn" onclick="clearFilters()">
+                <i class="fas fa-times"></i> Limpiar Filtros
+            </button>
+        </div>
+    </section>
 </div>
 
 <!-- Modal para Crear/Editar Estación -->
@@ -151,19 +803,25 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="modalTitle">Nueva Estación</h5>
+                <h5 class="modal-title" id="modalTitle">
+                    <i class="fas fa-plus"></i> Nueva Estación
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="stationForm">
                     <input type="hidden" id="stationId" name="Id">
-                    <div class="mb-3">
-                        <label for="stationName" class="form-label">Nombre de la Estación</label>
-                        <input type="text" class="form-control" id="stationName" name="Name" required>
+                    <div class="form-group">
+                        <label for="stationName" class="form-label">
+                            <i class="fas fa-fire"></i> Nombre de la Estación
+                        </label>
+                        <input type="text" class="form-control" id="stationName" name="Name" required placeholder="Ingrese el nombre de la estación">
                     </div>
-                    <div class="mb-3">
-                        <label for="stationType" class="form-label">Tipo de Estación</label>
-                        <select class="form-select" id="stationType" name="Type" required>
+                    <div class="form-group">
+                        <label for="stationType" class="form-label">
+                            <i class="fas fa-tags"></i> Tipo de Estación
+                        </label>
+                        <select class="form-control" id="stationType" name="Type" required>
                             <option value="">Seleccione un tipo...</option>
                             <option value="Cocina">Cocina</option>
                             <option value="Bar">Bar</option>
@@ -175,16 +833,20 @@
                             <option value="Otro">Otro</option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label for="stationIcon" class="form-label">Ícono (clase de Font Awesome)</label>
+                    <div class="form-group">
+                        <label for="stationIcon" class="form-label">
+                            <i class="fas fa-icons"></i> Ícono (clase de Font Awesome)
+                        </label>
                         <input type="text" class="form-control" id="stationIcon" name="Icon" placeholder="Ej: fas fa-utensils">
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
                 <button type="button" class="btn btn-primary" id="saveStationBtn">
-                    <i class="fas fa-save"></i> Guardar
+                    <i class="fas fa-save"></i> Guardar Estación
                 </button>
             </div>
         </div>
@@ -196,67 +858,22 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Detalles de la Estación</h5>
+                <h5 class="modal-title">
+                    <i class="fas fa-info-circle"></i> Detalles de la Estación
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="detailsContent">
                 <!-- Contenido dinámico -->
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
             </div>
         </div>
     </div>
 </div>
-
-@section Styles {
-    <style>
-        .station-card {
-            position: relative;
-            z-index: 1;
-        }
-
-        .station-card:hover {
-            z-index: 2;
-        }
-        
-        .station-card-inner {
-            transition: all 0.3s ease;
-            border: none;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .station-card:hover .station-card-inner {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .bg-gradient-primary {
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-        }
-
-        .card-header {
-            border-bottom: none;
-        }
-
-        .badge {
-            font-size: 0.8rem;
-        }
-
-        .dropdown-item:hover {
-            background-color: #f8f9fa;
-        }
-
-        .station-card.hidden {
-            display: none !important;
-        }
-
-        .form-control:focus, .form-select:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-        }
-    </style>
-}
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -279,6 +896,8 @@
                         showCancelButton: true,
                         confirmButtonText: 'Agregar',
                         cancelButtonText: 'Cancelar',
+                        confirmButtonColor: '#e67e22',
+                        cancelButtonColor: '#6c757d',
                         inputValidator: (value) => {
                             if (!value || value.trim() === '') {
                                 return 'Debe ingresar un tipo válido';
@@ -354,7 +973,7 @@
         function openCreateModal() {
             isEditMode = false;
             currentStationId = null;
-            $('#modalTitle').text('Nueva Estación');
+            $('#modalTitle').html('<i class="fas fa-plus"></i> Nueva Estación');
             $('#stationForm')[0].reset();
             $('#stationId').val('');
             $('#stationModal').modal('show');
@@ -363,7 +982,7 @@
         function editStation(id) {
             isEditMode = true;
             currentStationId = id;
-            $('#modalTitle').text('Editar Estación');
+            $('#modalTitle').html('<i class="fas fa-edit"></i> Editar Estación');
             
             // Cargar datos de la estación
             $.get(`/Station/GetStationById/${id}`)
@@ -376,11 +995,21 @@
                         $('#stationIcon').val(station.icon);
                         $('#stationModal').modal('show');
                     } else {
-                        Swal.fire('Error', 'No se pudo cargar la estación', 'error');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'No se pudo cargar la estación',
+                            confirmButtonColor: '#e74c3c'
+                        });
                     }
                 })
                 .fail(function() {
-                    Swal.fire('Error', 'Error al cargar la estación', 'error');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Error al cargar la estación',
+                        confirmButtonColor: '#e74c3c'
+                    });
                 });
         }
 
@@ -402,12 +1031,22 @@
 
             // Validaciones frontend
             if (!name) {
-                Swal.fire('Error', 'El nombre de la estación es requerido', 'error');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'El nombre de la estación es requerido',
+                    confirmButtonColor: '#e74c3c'
+                });
                 return;
             }
 
             if (!type) {
-                Swal.fire('Error', 'El tipo de estación es requerido', 'error');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'El tipo de estación es requerido',
+                    confirmButtonColor: '#e74c3c'
+                });
                 return;
             }
 
@@ -423,16 +1062,22 @@
             .done(function (response) {
                 if (response.success) {
                     Swal.fire({
+                        icon: 'success',
                         title: '¡Éxito!',
                         text: isEditMode ? 'Estación actualizada correctamente' : 'Estación creada correctamente',
-                        icon: 'success',
                         timer: 2000,
-                        showConfirmButton: false
+                        showConfirmButton: false,
+                        confirmButtonColor: '#27ae60'
                     }).then(() => {
                         location.reload();
                     });
                 } else {
-                    Swal.fire('Error', response.message || 'Error al guardar la estación', 'error');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: response.message || 'Error al guardar la estación',
+                        confirmButtonColor: '#e74c3c'
+                    });
                     if (response.errors) {
                         console.error("Errores del modelo:", response.errors);
                     }
@@ -443,7 +1088,12 @@
                 if (xhr.responseJSON && xhr.responseJSON.message) {
                     errorMessage = xhr.responseJSON.message;
                 }
-                Swal.fire('Error', errorMessage, 'error');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: errorMessage,
+                    confirmButtonColor: '#e74c3c'
+                });
             });
         }
 
@@ -454,7 +1104,12 @@
                     $('#detailsModal').modal('show');
                 })
                 .fail(function() {
-                    Swal.fire('Error', 'Error al cargar los detalles', 'error');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Error al cargar los detalles',
+                        confirmButtonColor: '#e74c3c'
+                    });
                 });
         }
 
@@ -464,8 +1119,8 @@
                 text: `¿Desea eliminar la estación "${name}"? Esta acción no se puede deshacer.`,
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
+                confirmButtonColor: '#e74c3c',
+                cancelButtonColor: '#6c757d',
                 confirmButtonText: 'Sí, eliminar',
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
@@ -474,16 +1129,22 @@
                     .done(function(response) {
                         if (response.success) {
                             Swal.fire({
+                                icon: 'success',
                                 title: '¡Eliminado!',
                                 text: 'La estación ha sido eliminada correctamente',
-                                icon: 'success',
                                 timer: 2000,
-                                showConfirmButton: false
+                                showConfirmButton: false,
+                                confirmButtonColor: '#27ae60'
                             }).then(() => {
                                 location.reload();
                             });
                         } else {
-                            Swal.fire('Error', response.message || 'Error al eliminar la estación', 'error');
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: response.message || 'Error al eliminar la estación',
+                                confirmButtonColor: '#e74c3c'
+                            });
                         }
                     })
                     .fail(function(xhr) {
@@ -491,7 +1152,12 @@
                         if (xhr.responseJSON && xhr.responseJSON.message) {
                             errorMessage = xhr.responseJSON.message;
                         }
-                        Swal.fire('Error', errorMessage, 'error');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: errorMessage,
+                            confirmButtonColor: '#e74c3c'
+                        });
                     });
                 }
             });

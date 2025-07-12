@@ -2,24 +2,22 @@
     // Resumen del pedido
 }
 
-<div class="resumen-card">
-    <div class="card-header">
-        <h5>
-            <i class="fas fa-receipt"></i> Resumen del Pedido
-        </h5>
+<div class="card resumen-card shadow-sm">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Resumen del Pedido</h5>
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table order-items-table">
-                <thead>
+            <table class="table table-bordered align-middle order-items-table">
+                <thead class="table-light">
                     <tr>
-                        <th><i class="fas fa-utensils"></i> Producto</th>
-                        <th><i class="fas fa-sort-numeric-up"></i> Cantidad</th>
-                        <th><i class="fas fa-dollar-sign"></i> Precio Unit.</th>
-                        <th><i class="fas fa-calculator"></i> Total</th>
-                        <th><i class="fas fa-clock"></i> Estado</th>
-                        <th><i class="fas fa-sticky-note"></i> Notas</th>
-                        <th><i class="fas fa-cog"></i> Acciones</th>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Precio Unit.</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                        <th>Notas</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="orderItems">
@@ -28,47 +26,29 @@
             </table>
         </div>
 
-        <div class="order-summary-info">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h5>
-                        <i class="fas fa-calculator"></i> Total: <span id="orderTotal">$0.00</span>
-                    </h5>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <div class="order-summary-info">
+                <h5>Total: <span id="orderTotal">$0.00</span></h5>
+                <small class="text-muted" id="itemCount">0 items</small>
+                <div class="payment-info mt-2">
                     <small class="text-muted">
-                        <i class="fas fa-shopping-cart"></i> <span id="itemCount">0 items</span>
-                    </small>
-                </div>
-                <div class="text-end">
-                    <small class="text-muted">
-                        <i class="fas fa-check-circle text-success"></i> Pagado: <span id="totalPaid">$0.00</span>
-                    </small>
-                    <br>
-                    <small class="text-muted">
-                        <i class="fas fa-hourglass-half text-warning"></i> Pendiente: <span id="remainingAmount">$0.00</span>
+                        Pagado: <span id="totalPaid">$0.00</span> | 
+                        Pendiente: <span id="remainingAmount">$0.00</span>
                     </small>
                 </div>
             </div>
-        </div>
-
-        <div class="order-controls">
-            <button class="btn btn-warning" id="clearOrderBtn">
-                <i class="fas fa-trash"></i> Vaciar
-            </button>
-            <button class="btn btn-danger" id="cancelOrder" style="display: none;">
-                <i class="fas fa-times-circle"></i> Cancelar Orden
-            </button>
-            <button class="btn btn-info" id="refreshOrderBtn" onclick="forceRefreshOrder()">
-                <i class="fas fa-sync-alt"></i> Actualizar
-            </button>
-            <button class="btn btn-primary" id="partialPaymentBtn" onclick="showPaymentModal()" style="display: none;">
-                <i class="fas fa-credit-card"></i> Pago Parcial
-            </button>
-            <button class="btn btn-secondary" id="paymentHistoryBtn" onclick="showPaymentHistoryModal()" style="display: none;">
-                <i class="fas fa-history"></i> Historial Pagos
-            </button>
-            <button class="btn btn-success" id="sendToKitchen">
-                <i class="fas fa-paper-plane"></i> Agregar a Cocina
-            </button>
+            <div class="order-controls">
+                <button class="btn btn-warning me-2" id="clearOrderBtn">Vaciar</button>
+                <button class="btn btn-danger me-2" id="cancelOrder" style="display: none;">Cancelar Orden</button>
+                <button class="btn btn-info me-2" id="refreshOrderBtn" onclick="forceRefreshOrder()">🔄 Actualizar</button>
+                <button class="btn btn-primary me-2" id="partialPaymentBtn" onclick="showPaymentModal()" style="display: none;">
+                    <i class="fas fa-credit-card"></i> Pago Parcial
+                </button>
+                <button class="btn btn-secondary me-2" id="paymentHistoryBtn" onclick="showPaymentHistoryModal()" style="display: none;">
+                    <i class="fas fa-history"></i> Historial Pagos
+                </button>
+                <button class="btn btn-success" id="sendToKitchen">Agregar a Cocina</button>
+            </div>
         </div>
     </div>
 </div> 

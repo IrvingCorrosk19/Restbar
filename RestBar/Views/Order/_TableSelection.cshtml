@@ -2,29 +2,21 @@
     // Zona de selección de mesa
 }
 
-<div class="section-card">
-    <div class="section-header">
-        <h2 class="section-title">
-            <i class="fas fa-table"></i> Selección de Mesa
-        </h2>
-    </div>
-    <div class="section-body">
-        <div class="table-filters">
-            <div class="filter-group" id="areaFilters">
-                <button class="filter-btn active" data-area="all">
-                    <i class="fas fa-map-marked-alt"></i> Todas las Áreas
-                </button>
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Selecciona una mesa:</h5>
+        <div class="d-flex gap-2">
+            <div class="btn-group" id="areaFilters">
+                <button class="btn btn-outline-primary active" data-area="all">Todas</button>
                 <!-- Áreas cargadas dinámicamente -->
             </div>
-            <div class="filter-group" id="statusFilters">
-                <button class="filter-btn active" data-status="all">
-                    <i class="fas fa-filter"></i> Todos los Estados
-                </button>
+            <div class="btn-group" id="statusFilters">
+                <button class="btn btn-outline-primary active" data-status="all">Todos los estados</button>
                 <!-- Estados cargados dinámicamente -->
             </div>
         </div>
-        <div class="tables-grid" id="tables">
-            <!-- Mesas cargadas dinámicamente -->
-        </div>
+    </div>
+    <div class="d-flex flex-wrap gap-2" id="tables">
+        <!-- Mesas cargadas dinámicamente -->
     </div>
 </div> 

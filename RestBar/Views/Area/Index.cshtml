@@ -4,109 +4,677 @@
     ViewData["Title"] = "Áreas";
 }
 
-<div class="container-fluid px-4">
-    <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
-        <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-th-large me-2"></i>Gestión de Áreas
-        </h1>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createAreaModal">
-            <i class="fas fa-plus me-2"></i>Nueva Área
-        </button>
-    </div>
+<style>
+    :root {
+        --primary-color: #2c3e50;
+        --secondary-color: #34495e;
+        --accent-color: #e67e22;
+        --success-color: #27ae60;
+        --danger-color: #e74c3c;
+        --warning-color: #f39c12;
+        --info-color: #3498db;
+        --light-color: #ecf0f1;
+        --dark-color: #2c3e50;
+        --gradient-primary: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        --gradient-accent: linear-gradient(135deg, var(--accent-color), #d35400);
+        --gradient-success: linear-gradient(135deg, var(--success-color), #229954);
+        --gradient-danger: linear-gradient(135deg, var(--danger-color), #c0392b);
+        --gradient-warning: linear-gradient(135deg, var(--warning-color), #e67e22);
+        --gradient-info: linear-gradient(135deg, var(--info-color), #2980b9);
+        --shadow-light: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --shadow-medium: 0 8px 15px rgba(0, 0, 0, 0.15);
+        --shadow-heavy: 0 10px 30px rgba(0, 0, 0, 0.2);
+        --border-radius: 20px;
+        --transition: all 0.3s ease;
+    }
 
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body">
-            <!-- Filtros -->
-            <div class="row mb-4">
-                <div class="col-md-4">
-                    <div class="input-group">
-                        <span class="input-group-text bg-light border-end-0">
-                            <i class="fas fa-search text-muted"></i>
-                        </span>
-                        <input type="text" id="searchAreaInput" class="form-control border-start-0" placeholder="Buscar área...">
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <select id="branchFilter" class="form-select">
-                        <option value="">Todas las sucursales</option>
-                    </select>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Poppins', sans-serif;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+        color: var(--dark-color);
+    }
+
+    /* Hero Section */
+    .hero-section {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 3rem 0;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero-section::before {
+        content: '';
+        position: absolute;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="10" cy="50" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="90" cy="30" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        animation: float 20s ease-in-out infinite;
+        opacity: 0.1;
+    }
+
+    @@keyframes float {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-20px) rotate(180deg); }
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+    }
+
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        animation: slideInFromTop 0.8s ease-out;
+    }
+
+    .hero-subtitle {
+        font-size: 1.3rem;
+        opacity: 0.9;
+        margin-bottom: 2rem;
+        animation: slideInFromBottom 0.8s ease-out;
+    }
+
+    @@keyframes slideInFromTop {
+        0% { opacity: 0; transform: translateY(-50px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+
+    @@keyframes slideInFromBottom {
+        0% { opacity: 0; transform: translateY(50px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-button {
+        background: var(--gradient-accent);
+        color: white;
+        padding: 1rem 2rem;
+        border: none;
+        border-radius: var(--border-radius);
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        box-shadow: var(--shadow-medium);
+        text-decoration: none;
+        display: inline-block;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    .hero-button:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-heavy);
+        color: white;
+        text-decoration: none;
+    }
+
+    @@keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    /* Main Content */
+    .main-content {
+        padding: 0 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    /* Filters Section */
+    .filters-section {
+        background: white;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-light);
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .filters-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--gradient-accent);
+    }
+
+    .filters-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .filter-group {
+        position: relative;
+    }
+
+    .filter-label {
+        display: block;
+        font-weight: 500;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .filter-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e1e8ed;
+        border-radius: 12px;
+        font-size: 1rem;
+        transition: var(--transition);
+        background: white;
+    }
+
+    .filter-input:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(231, 126, 34, 0.1);
+    }
+
+    .filter-input-icon {
+        position: relative;
+    }
+
+    .filter-input-icon .filter-input {
+        padding-left: 3rem;
+    }
+
+    .filter-input-icon .input-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--accent-color);
+        font-size: 1.1rem;
+    }
+
+    /* Areas Section */
+    .areas-section {
+        background: white;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-light);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .areas-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--gradient-info);
+    }
+
+    .areas-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .areas-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .area-card {
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-light);
+        overflow: hidden;
+        transition: var(--transition);
+        position: relative;
+        border: 2px solid transparent;
+    }
+
+    .area-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-medium);
+        border-color: var(--accent-color);
+    }
+
+    .area-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--gradient-primary);
+    }
+
+    .area-card-header {
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .area-name {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .area-icon {
+        color: var(--accent-color);
+        font-size: 1.5rem;
+    }
+
+    .area-actions {
+        position: relative;
+    }
+
+    .area-actions .btn {
+        background: transparent;
+        border: none;
+        color: var(--primary-color);
+        font-size: 1.2rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 50%;
+        transition: var(--transition);
+    }
+
+    .area-actions .btn:hover {
+        background: rgba(44, 62, 80, 0.1);
+    }
+
+    .area-card-body {
+        padding: 1.5rem;
+    }
+
+    .area-info-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding: 0.75rem;
+        background: #f8f9fa;
+        border-radius: 10px;
+        transition: var(--transition);
+    }
+
+    .area-info-item:hover {
+        background: #e9ecef;
+    }
+
+    .area-info-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .area-info-icon {
+        color: var(--accent-color);
+        font-size: 1.1rem;
+        margin-right: 0.75rem;
+        width: 20px;
+        text-align: center;
+    }
+
+    .area-info-text {
+        color: var(--secondary-color);
+        font-weight: 500;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: var(--secondary-color);
+        grid-column: 1 / -1;
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        color: var(--accent-color);
+        margin-bottom: 1rem;
+    }
+
+    .empty-state-message {
+        font-size: 1.2rem;
+        font-weight: 500;
+    }
+
+    /* Modal Styles */
+    .modal-content {
+        border: none;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-heavy);
+        overflow: hidden;
+    }
+
+    .modal-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 1.5rem;
+        border-bottom: none;
+    }
+
+    .modal-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .btn-close {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        border-radius: 50%;
+        width: 2rem;
+        height: 2rem;
+        opacity: 1;
+        transition: var(--transition);
+    }
+
+    .btn-close:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.1);
+    }
+
+    .modal-body {
+        padding: 2rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 500;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e1e8ed;
+        border-radius: 12px;
+        font-size: 1rem;
+        transition: var(--transition);
+        background: white;
+        resize: vertical;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(231, 126, 34, 0.1);
+    }
+
+    .modal-footer {
+        padding: 1.5rem;
+        background: #f8f9fa;
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary {
+        background: var(--gradient-accent);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-medium);
+    }
+
+    .btn-light {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-light:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+    }
+
+    /* Dropdown Styles */
+    .dropdown-menu {
+        border: none;
+        border-radius: 12px;
+        box-shadow: var(--shadow-medium);
+        padding: 0.5rem;
+        margin-top: 0.5rem;
+    }
+
+    .dropdown-item {
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+
+    .dropdown-item:hover {
+        background: rgba(231, 126, 34, 0.1);
+        color: var(--accent-color);
+        transform: translateX(5px);
+    }
+
+    .dropdown-item.text-danger:hover {
+        background: rgba(231, 76, 60, 0.1);
+        color: var(--danger-color);
+    }
+
+    /* Responsive Design */
+    @@media (max-width: 768px) {
+        .hero-title {
+            font-size: 2.5rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            padding: 0 1rem;
+        }
+
+        .filters-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .areas-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                <i class="fas fa-th-large"></i> Gestión de Áreas
+            </h1>
+            <p class="hero-subtitle">
+                Organiza y administra las diferentes áreas de tu restaurante
+            </p>
+            <button class="hero-button" data-bs-toggle="modal" data-bs-target="#createAreaModal">
+                <i class="fas fa-plus"></i> Nueva Área
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Main Content -->
+<div class="main-content">
+    <!-- Filters Section -->
+    <section class="filters-section">
+        <h2 class="filters-title">
+            <i class="fas fa-filter"></i> Filtros de Búsqueda
+        </h2>
+        <div class="filters-grid">
+            <div class="filter-group">
+                <label class="filter-label">
+                    <i class="fas fa-search"></i> Buscar Área
+                </label>
+                <div class="filter-input-icon">
+                    <input type="text" id="searchAreaInput" class="filter-input" placeholder="Buscar área...">
+                    <i class="fas fa-search input-icon"></i>
                 </div>
             </div>
-            <!-- Fin Filtros -->
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4" id="areasGrid">
-                @foreach (var item in Model)
-                {
-                    <div class="col">
-                        <div class="card h-100 area-card border-0 shadow-sm">
-                            <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
-                                <h5 class="card-title mb-0 text-primary">@item.Name</h5>
-                                <div class="dropdown">
-                                    <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="dropdown">
-                                        <i class="fas fa-ellipsis-v"></i>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        <li>
-                                            <a class="dropdown-item" href="#" onclick="editArea('@item.Id')">
-                                                <i class="fas fa-edit me-2 text-primary"></i>Editar
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item" href="#" onclick="deleteArea('@item.Id')">
-                                                <i class="fas fa-trash me-2 text-danger"></i>Eliminar
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <div class="mb-3">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <i class="fas fa-store text-muted me-2"></i>
-                                        <span class="text-muted">@(item.Branch?.Name ?? "Sin sucursal")</span>
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <i class="fas fa-info-circle text-muted me-2"></i>
-                                        <span class="text-muted">@(!string.IsNullOrWhiteSpace(item.Description) ? item.Description : "Sin descripción")</span>
-                                    </div>
-                                </div>
+            <div class="filter-group">
+                <label class="filter-label">
+                    <i class="fas fa-building"></i> Filtrar por Sucursal
+                </label>
+                <select id="branchFilter" class="filter-input">
+                    <option value="">Todas las sucursales</option>
+                </select>
+            </div>
+        </div>
+    </section>
+
+    <!-- Areas Section -->
+    <section class="areas-section">
+        <h2 class="areas-title">
+            <i class="fas fa-th-large"></i> Áreas del Restaurante
+        </h2>
+        <div class="areas-grid" id="areasGrid">
+            @foreach (var item in Model)
+            {
+                <div class="area-card">
+                    <div class="area-card-header">
+                        <h3 class="area-name">
+                            <i class="fas fa-th-large area-icon"></i>
+                            @item.Name
+                        </h3>
+                        <div class="area-actions">
+                            <div class="dropdown">
+                                <button class="btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a class="dropdown-item" href="#" onclick="editArea('@item.Id')">
+                                            <i class="fas fa-edit"></i> Editar
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item text-danger" href="#" onclick="deleteArea('@item.Id')">
+                                            <i class="fas fa-trash"></i> Eliminar
+                                        </a>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
                     </div>
-                }
-            </div>
+                    <div class="area-card-body">
+                        <div class="area-info-item">
+                            <i class="fas fa-store area-info-icon"></i>
+                            <span class="area-info-text">@(item.Branch?.Name ?? "Sin sucursal")</span>
+                        </div>
+                        <div class="area-info-item">
+                            <i class="fas fa-info-circle area-info-icon"></i>
+                            <span class="area-info-text">@(!string.IsNullOrWhiteSpace(item.Description) ? item.Description : "Sin descripción")</span>
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
-    </div>
+    </section>
 </div>
 
 <!-- Modal de Creación -->
 <div class="modal fade" id="createAreaModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-0">
-                <h5 class="modal-title">Nueva Área</h5>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus"></i> Nueva Área
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="createAreaForm">
-                    <div class="mb-3">
-                        <label class="form-label">Nombre</label>
-                        <input type="text" class="form-control" name="Name" required>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-th-large"></i> Nombre
+                        </label>
+                        <input type="text" class="form-control" name="Name" required placeholder="Ingrese el nombre del área">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Sucursal</label>
-                        <select class="form-select" name="BranchId" id="areaBranchSelect">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-building"></i> Sucursal
+                        </label>
+                        <select class="form-control" name="BranchId" id="areaBranchSelect">
                             <option value="">Seleccione una sucursal</option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Descripción</label>
-                        <textarea class="form-control" name="Description" rows="2"></textarea>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-align-left"></i> Descripción
+                        </label>
+                        <textarea class="form-control" name="Description" rows="3" placeholder="Describa el área (opcional)"></textarea>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="createArea()">Crear Área</button>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="createArea()">
+                    <i class="fas fa-save"></i> Crear Área
+                </button>
             </div>
         </div>
     </div>
@@ -115,122 +683,49 @@
 <!-- Modal de Edición -->
 <div class="modal fade" id="editAreaModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-0">
-                <h5 class="modal-title">Editar Área</h5>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit"></i> Editar Área
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="editAreaForm">
                     <input type="hidden" name="Id">
-                    <div class="mb-3">
-                        <label class="form-label">Nombre</label>
-                        <input type="text" class="form-control" name="Name" required>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-th-large"></i> Nombre
+                        </label>
+                        <input type="text" class="form-control" name="Name" required placeholder="Ingrese el nombre del área">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Sucursal</label>
-                        <select class="form-select" name="BranchId">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-building"></i> Sucursal
+                        </label>
+                        <select class="form-control" name="BranchId">
                             <option value="">Seleccione una sucursal</option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Descripción</label>
-                        <textarea class="form-control" name="Description" rows="2"></textarea>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-align-left"></i> Descripción
+                        </label>
+                        <textarea class="form-control" name="Description" rows="3" placeholder="Describa el área (opcional)"></textarea>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="updateArea()">Guardar Cambios</button>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="updateArea()">
+                    <i class="fas fa-save"></i> Guardar Cambios
+                </button>
             </div>
         </div>
     </div>
 </div>
-
-@section Styles {
-    <style>
-        .area-card {
-            transition: all 0.3s ease;
-            background: white;
-        }
-
-        .area-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
-        }
-
-        .card-title {
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
-        .dropdown-item {
-            padding: 0.5rem 1rem;
-            transition: all 0.2s ease;
-        }
-
-        .dropdown-item:hover {
-            background-color: #f8f9fa;
-        }
-
-        .dropdown-item i {
-            width: 20px;
-        }
-
-        .form-control, .form-select {
-            border-radius: 8px;
-            border: 1px solid #e0e0e0;
-            padding: 0.6rem 1rem;
-        }
-
-        .form-control:focus, .form-select:focus {
-            border-color: #2196F3;
-            box-shadow: 0 0 0 0.2rem rgba(33, 150, 243, 0.1);
-        }
-
-        .btn {
-            padding: 0.6rem 1.2rem;
-            border-radius: 8px;
-            font-weight: 500;
-        }
-
-        .btn-primary {
-            background-color: #2196F3;
-            border-color: #2196F3;
-        }
-
-        .btn-primary:hover {
-            background-color: #1976D2;
-            border-color: #1976D2;
-        }
-
-        .btn-light {
-            background-color: #f8f9fa;
-            border-color: #f8f9fa;
-            color: #2c3e50;
-        }
-
-        .btn-light:hover {
-            background-color: #e9ecef;
-            border-color: #e9ecef;
-            color: #2c3e50;
-        }
-
-        .modal-content {
-            border-radius: 15px;
-        }
-
-        .input-group-text {
-            border-radius: 8px 0 0 8px;
-            background-color: #f8f9fa;
-            border: 1px solid #e0e0e0;
-        }
-
-        .input-group .form-control {
-            border-radius: 0 8px 8px 0;
-        }
-    </style>
-}
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -279,11 +774,11 @@
             const branch = $('#branchFilter').val();
             $('.area-card').each(function () {
                 const card = $(this);
-                const name = card.find('.card-title').text().toLowerCase();
-                const branchName = card.find('.mb-2').first().text().replace('Sucursal:', '').trim();
+                const name = card.find('.area-name').text().toLowerCase();
+                const branchName = card.find('.area-info-text').first().text().trim();
                 const matchesSearch = name.includes(searchTerm);
                 const matchesBranch = branch === '' || branchName === branch;
-                card.closest('.col').toggle(matchesSearch && matchesBranch);
+                card.toggle(matchesSearch && matchesBranch);
             });
         }
 
@@ -304,9 +799,10 @@
             }
             if (errors.length > 0) {
                 Swal.fire({
+                    icon: 'error',
                     title: 'Error de validación',
                     html: errors.join('<br>'),
-                    icon: 'error'
+                    confirmButtonColor: '#e74c3c'
                 });
                 return;
             }
@@ -390,9 +886,10 @@
             }
             if (errors.length > 0) {
                 Swal.fire({
+                    icon: 'error',
                     title: 'Error de validación',
                     html: errors.join('<br>'),
-                    icon: 'error'
+                    confirmButtonColor: '#e74c3c'
                 });
                 return;
             }
@@ -431,7 +928,9 @@
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Sí, eliminar',
-                cancelButtonText: 'Cancelar'
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#e74c3c',
+                cancelButtonColor: '#6c757d'
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
@@ -454,11 +953,21 @@
         }
 
         function showSuccess(message) {
-            Swal.fire('Éxito', message, 'success');
+            Swal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: message,
+                confirmButtonColor: '#27ae60'
+            });
         }
 
         function showError(message) {
-            Swal.fire('Error', message, 'error');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: message,
+                confirmButtonColor: '#e74c3c'
+            });
         }
     </script>
 } 
