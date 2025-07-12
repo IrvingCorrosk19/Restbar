@@ -60,8 +60,17 @@ public partial class RestBarContext : DbContext
     // => optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=RestBar;Username=postgres;Password=Panama2020$");
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-     => optionsBuilder.UseNpgsql("Host=dpg-d1p8qok9c44c738cm710-a.oregon-postgres.render.com;Port=5432;Database=restbar_eaya;Username=admin;Password=GzBs1Og3eoWIPFf8lPEl1IUiy8ik93pM;Ssl Mode=Require;Trust Server Certificate=true");
+        optionsBuilder.UseNpgsql("Host=dpg-d1p8qok9c44c738cm710-a;Port=5432;Database=restbar_eaya;Username=admin;Password=GzBs1Og3eoWIPFf8lPEl1IUiy8ik93pM;Ssl Mode=Require;Trust Server Certificate=true");
+    }
+
+
+    // optionsBuilder.UseNpgsql("Host=dpg-d1otd649c44c7380il7g-a;Port=5432;Database=restbar_92si;Username=admin;Password=KMTp5bPR7rlkSDizV1t5RlDJTEFIjAdr;Ssl Mode=Require;Trust Server Certificate=true");
+
+    // => optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=RestBar;Username=postgres;Password=Panama2020$");
+    //optionsBuilder.UseNpgsql("Host=dpg-d1o87hjipnbc73elplu0-a.oregon-postgres.render.com;Port=5432;Database=restbar;Username=admin;Password=eBX4yz9XMPYuxU30aCWrhpX8JzD10bFy;Ssl Mode=Require;Trust Server Certificate=true");
+    //optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=RestBar;Username=postgres;Password=Panama2020$");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
