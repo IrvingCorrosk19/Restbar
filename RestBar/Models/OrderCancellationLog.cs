@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace RestBar.Models
 {
@@ -9,7 +10,9 @@ namespace RestBar.Models
         public Guid? UserId { get; set; } // Quien solicita - ahora nullable
         public Guid? SupervisorId { get; set; } // Quien autoriza
         public string Reason { get; set; }
-        public DateTime Date { get; set; } = DateTime.UtcNow; // Cambiado de UtcNow a Now
+        
+        [Column(TypeName = "timestamp with time zone")]
+        public DateTime Date { get; set; } = DateTime.UtcNow; // Ahora compatible con PostgreSQL
         public string Products { get; set; } // JSON de productos afectados
 
         // Navigation properties
