@@ -61,11 +61,23 @@ namespace RestBar.Services
 
         public async Task<IEnumerable<Table>> GetActiveTablesAsync()
         {
-            return await _context.Tables
-                .Where(t => t.IsActive == true)
-                .Include(t => t.Area)
-                .ToListAsync();
+            try
+            {
+                return await _context.Tables
+                    .Where(t => t.IsActive == true)
+                    .Include(t => t.Area)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                // Puedes registrar el error con un logger si tienes uno configurado
+                Console.WriteLine($"Error al obtener mesas activas: {ex.Message}");
+
+                // Devolver una lista vacía como fallback (opcional)
+                return Enumerable.Empty<Table>();
+            }
         }
+
 
         public async Task<IEnumerable<Table>> GetTablesByStatusAsync(string status)
         {

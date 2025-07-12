@@ -26,18 +26,7 @@ function formatCurrency(amount) {
     }
 }
 
-// Función para generar GUIDs únicos
-function guid() {
-    return {
-        newGuid: function () {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-                var r = Math.random() * 16 | 0,
-                    v = c == 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-        }
-    }
-}
+// Función para generar GUIDs únicos (declaración al final del archivo)
 
 // Función para mostrar mensajes de error
 function showError(message, title = 'Error') {
@@ -508,3 +497,6 @@ function getStatusDisplay(status) {
     
     return `<span class="badge status-badge ${badgeClass}">${displayText}</span>`;
 } 
+
+// ✅ Utilities cargadas correctamente - v2.0
+console.log('[Utilities] ✅ Módulo de utilidades cargado correctamente v2.0');

@@ -346,6 +346,20 @@ namespace RestBar.Controllers
         {
             try
             {
+                // Verificar autenticación
+                _logger.LogInformation($"[GetActiveTables] User authenticated: {User.Identity.IsAuthenticated}");
+                if (User.Identity.IsAuthenticated)
+                {
+                    var userId = User.FindFirst("UserId")?.Value;
+                    var userRole = User.FindFirst("UserRole")?.Value;
+                    _logger.LogInformation($"[GetActiveTables] UserId: {userId}, Role: {userRole}");
+                }
+                else
+                {
+                    _logger.LogWarning("[GetActiveTables] Usuario no autenticado");
+                    return Unauthorized(new { error = "Usuario no autenticado" });
+                }
+
                 var tables = await _tableService.GetActiveTablesAsync();
                 var tableData = tables.Select(t => new
                 {

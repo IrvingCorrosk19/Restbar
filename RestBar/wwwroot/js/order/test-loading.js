@@ -79,7 +79,7 @@ console.log('[Test] Para simular SignalR, usa: testSignalRNotification("table-id
 console.log('[Test Loading] Verificando carga de funciones...');
 
 // Lista de funciones que deben estar disponibles
-const requiredFunctions = [
+const requiredOrderFunctions = [
     'increaseQuantity',
     'decreaseQuantity',
     'updateOrderUI',
@@ -93,7 +93,7 @@ const requiredFunctions = [
 
 // Verificar que todas las funciones estén disponibles
 let allFunctionsLoaded = true;
-requiredFunctions.forEach(funcName => {
+requiredOrderFunctions.forEach(funcName => {
     if (typeof window[funcName] === 'function') {
         console.log(`[Test Loading] ✅ ${funcName} está disponible`);
     } else {
@@ -133,4 +133,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error(`[Test Loading] ❌ Elemento ${elementId} NO encontrado`);
         }
     });
-}); 
+});
+
+// ✅ Test-loading cargado correctamente - v2.0
+console.log('[Test Loading] ✅ Módulo de prueba cargado correctamente v2.0');

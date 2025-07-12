@@ -1,9 +1,123 @@
 // Table Management and Filtering
 
+// ============================================================
+// FUNCIONES DE UTILIDAD - DEFINIDAS PRIMERO
+// ============================================================
+
+function getTableStatusClass(status) {
+    switch (status) {
+        case 'Disponible':
+            return 'mesa-disponible';
+        case 'Ocupada':
+            return 'mesa-ocupada';
+        case 'Reservada':
+            return 'mesa-reservada';
+        case 'EnEspera':
+            return 'mesa-en-espera';
+        case 'Atendida':
+            return 'mesa-atendida';
+        case 'EnPreparacion':
+            return 'mesa-en-preparacion';
+        case 'Servida':
+            return 'mesa-servida';
+        case 'ParaPago':
+            return 'mesa-para-pago';
+        case 'Pagada':
+            return 'mesa-pagada';
+        case 'Bloqueada':
+            return 'mesa-bloqueada';
+        default:
+            return '';
+    }
+}
+
+function getStatusButtonClass(status) {
+    switch (status) {
+        case 'Disponible':
+            return 'btn btn-outline-success';
+        case 'Ocupada':
+            return 'btn btn-outline-danger';
+        case 'Reservada':
+            return 'btn btn-outline-warning';
+        case 'EnEspera':
+            return 'btn btn-outline-info';
+        case 'Atendida':
+            return 'btn btn-outline-primary';
+        case 'EnPreparacion':
+            return 'btn btn-outline-secondary';
+        case 'Servida':
+            return 'btn btn-outline-success';
+        case 'ParaPago':
+            return 'btn btn-outline-warning';
+        case 'Pagada':
+            return 'btn btn-outline-success';
+        case 'Bloqueada':
+            return 'btn btn-outline-dark';
+        default:
+            return 'btn btn-outline-secondary';
+    }
+}
+
+function getStatusDescription(status) {
+    switch (status) {
+        case 'Disponible':
+            return 'Mesa disponible para ocupar';
+        case 'Ocupada':
+            return 'Mesa ocupada por clientes';
+        case 'Reservada':
+            return 'Mesa reservada';
+        case 'EnEspera':
+            return 'Orden tomada, esperando preparación';
+        case 'Atendida':
+            return 'Mesa atendida';
+        case 'EnPreparacion':
+            return 'Orden en preparación en cocina';
+        case 'Servida':
+            return 'Orden servida, lista para pago';
+        case 'ParaPago':
+            return 'Mesa lista para realizar el pago';
+        case 'Pagada':
+            return 'Mesa pagada, lista para limpiar';
+        case 'Bloqueada':
+            return 'Mesa bloqueada temporalmente';
+        default:
+            return 'Estado desconocido';
+    }
+}
+
+// ============================================================
+// FUNCIONES PRINCIPALES
+// ============================================================
+
 async function loadTables() {
     try {
+        console.log('[Tables] Cargando mesas del servidor...');
         const response = await fetch('/Order/GetActiveTables');
+        
+        // Verificar el estado de la respuesta
+        if (!response.ok) {
+            if (response.status === 401) {
+                console.error('[Tables] ❌ Usuario no autenticado');
+                Swal.fire({
+                    title: 'Sesión Expirada',
+                    text: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+                    icon: 'warning',
+                    confirmButtonText: 'Ir al Login'
+                }).then(() => {
+                    window.location.href = '/Auth/Login';
+                });
+                return;
+            } else if (response.status === 403) {
+                console.error('[Tables] ❌ Sin permisos para acceder');
+                Swal.fire('Sin Permisos', 'No tienes permisos para acceder a esta información', 'error');
+                return;
+            } else {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+        }
+        
         const tables = await response.json();
+        console.log(`[Tables] ✅ ${tables.length} mesas recibidas del servidor`);
         
         // Obtener áreas únicas y normalizar los nombres
         const areas = [...new Set(tables.map(table => table.areaName || 'Sin área'))];
@@ -75,32 +189,9 @@ async function loadTables() {
     }
 }
 
-function getTableStatusClass(status) {
-    switch (status) {
-        case 'Disponible':
-            return 'mesa-disponible';
-        case 'Ocupada':
-            return 'mesa-ocupada';
-        case 'Reservada':
-            return 'mesa-reservada';
-        case 'EnEspera':
-            return 'mesa-en-espera';
-        case 'Atendida':
-            return 'mesa-atendida';
-        case 'EnPreparacion':
-            return 'mesa-en-preparacion';
-        case 'Servida':
-            return 'mesa-servida';
-        case 'ParaPago':
-            return 'mesa-para-pago';
-        case 'Pagada':
-            return 'mesa-pagada';
-        case 'Bloqueada':
-            return 'mesa-bloqueada';
-        default:
-            return '';
-    }
-}
+// ============================================================
+// FUNCIONES DE GESTIÓN DE MESAS
+// ============================================================
 
 function highlightSelectedTable(tableId) {
     document.querySelectorAll('.mesa-btn').forEach(btn => {
@@ -254,4 +345,7 @@ function updateTableUI(tableData) {
     
     console.log(`[Frontend] Tooltip actualizado con: ${getStatusDescription(tableData.status)}`);
     console.log(`[Frontend] updateTableUI completado exitosamente`);
-} 
+}
+
+// ✅ Tables cargadas correctamente - v2.0 
+console.log('[Tables] ✅ Funciones de gestión de mesas cargadas correctamente v2.0');

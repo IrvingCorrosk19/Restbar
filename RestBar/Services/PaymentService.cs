@@ -39,14 +39,14 @@ namespace RestBar.Services
                 Console.WriteLine($"[PaymentService] Amount: ${payment.Amount}");
                 Console.WriteLine($"[PaymentService] Method: {payment.Method}");
                 
-                payment.PaidAt = DateTime.Now;
+                payment.PaidAt = DateTime.UtcNow;
                 Console.WriteLine($"[PaymentService] PaidAt configurado como UTC: {payment.PaidAt}");
                 
                 // Validación de desarrollo para asegurar que las fechas sean UTC
-                if (payment.PaidAt.HasValue && payment.PaidAt.Value.Kind == DateTimeKind.Unspecified)
+                if (payment.PaidAt.HasValue && payment.PaidAt.Value.Kind != DateTimeKind.Utc)
                 {
-                    Console.WriteLine($"[PaymentService] ERROR: PaidAt tiene Kind Unspecified");
-                    throw new InvalidOperationException("PaidAt no debe ser Unspecified para columnas timestamp with time zone");
+                    Console.WriteLine($"[PaymentService] ERROR: PaidAt no es UTC, Kind: {payment.PaidAt.Value.Kind}");
+                    throw new InvalidOperationException("PaidAt debe ser UTC para columnas timestamp with time zone");
                 }
                 
                 payment.IsVoided = false;
