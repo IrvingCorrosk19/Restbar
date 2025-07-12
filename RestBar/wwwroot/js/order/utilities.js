@@ -1,3 +1,197 @@
+// ============================================================
+// UTILIDADES GENERALES PARA EL SISTEMA DE ÓRDENES
+// ============================================================
+
+// Función para parsear JSON de forma segura
+function safeJsonParse(jsonString, defaultValue = {}) {
+    try {
+        return JSON.parse(jsonString);
+    } catch (e) {
+        console.error('[Utilities] Error parseando JSON:', e);
+        return defaultValue;
+    }
+}
+
+// Función para formatear moneda
+function formatCurrency(amount) {
+    try {
+        const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+        return new Intl.NumberFormat('es-CR', {
+            style: 'currency',
+            currency: 'CRC'
+        }).format(numAmount);
+    } catch (e) {
+        console.error('[Utilities] Error formateando moneda:', e);
+        return `₡${amount || 0}`;
+    }
+}
+
+// Función para generar GUIDs únicos
+function guid() {
+    return {
+        newGuid: function () {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                var r = Math.random() * 16 | 0,
+                    v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+    }
+}
+
+// Función para mostrar mensajes de error
+function showError(message, title = 'Error') {
+    console.error(`[${title}] ${message}`);
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: title,
+            text: message,
+            icon: 'error',
+            confirmButtonText: 'Entendido'
+        });
+    } else {
+        alert(`${title}: ${message}`);
+    }
+}
+
+// Función para mostrar mensajes de éxito
+function showSuccess(message, title = 'Éxito') {
+    console.log(`[${title}] ${message}`);
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: title,
+            text: message,
+            icon: 'success',
+            timer: 3000,
+            timerProgressBar: true,
+            confirmButtonText: 'Entendido'
+        });
+    } else {
+        alert(`${title}: ${message}`);
+    }
+}
+
+// ============================================================
+// GESTIÓN DE USUARIO AUTENTICADO
+// ============================================================
+
+// Variable global para almacenar información del usuario actual
+let currentUser = null;
+
+// Función para obtener el usuario actual desde la API
+async function getCurrentUser() {
+    try {
+        if (currentUser) {
+            return currentUser;
+        }
+
+        console.log('[Utilities] Obteniendo usuario actual...');
+        
+        const response = await fetch('/Auth/CurrentUser', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                console.warn('[Utilities] Usuario no autenticado, redirigiendo al login');
+                window.location.href = '/Auth/Login';
+                return null;
+            }
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        
+        if (result.success && result.user) {
+            currentUser = result.user;
+            console.log('[Utilities] Usuario actual obtenido:', currentUser);
+            return currentUser;
+        } else {
+            console.error('[Utilities] Error en respuesta del usuario:', result);
+            return null;
+        }
+    } catch (error) {
+        console.error('[Utilities] Error obteniendo usuario actual:', error);
+        return null;
+    }
+}
+
+// Función para obtener el ID del usuario actual
+async function getCurrentUserId() {
+    try {
+        const user = await getCurrentUser();
+        return user ? user.id : null;
+    } catch (error) {
+        console.error('[Utilities] Error obteniendo ID del usuario:', error);
+        return null;
+    }
+}
+
+// Función para verificar permisos del usuario
+async function checkUserPermission(action) {
+    try {
+        console.log(`[Utilities] Verificando permiso para acción: ${action}`);
+        
+        const response = await fetch('/Auth/CheckPermission', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({ action: action })
+        });
+
+        if (!response.ok) {
+            console.error(`[Utilities] Error verificando permisos: ${response.status}`);
+            return false;
+        }
+
+        const result = await response.json();
+        return result.success && result.hasPermission;
+    } catch (error) {
+        console.error('[Utilities] Error verificando permisos:', error);
+        return false;
+    }
+}
+
+// Función para limpiar información del usuario (logout)
+function clearCurrentUser() {
+    currentUser = null;
+    console.log('[Utilities] Información del usuario limpiada');
+}
+
+// Función para mostrar información del usuario en la UI
+function displayUserInfo() {
+    if (!currentUser) {
+        return;
+    }
+
+    // Mostrar nombre del usuario en la barra de navegación si existe
+    const userNameElement = document.getElementById('current-user-name');
+    if (userNameElement) {
+        userNameElement.textContent = currentUser.fullName || currentUser.email;
+    }
+
+    // Mostrar rol del usuario si existe
+    const userRoleElement = document.getElementById('current-user-role');
+    if (userRoleElement) {
+        userRoleElement.textContent = currentUser.role;
+    }
+}
+
+// Inicializar información del usuario cuando se carga la página
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('[Utilities] DOM cargado, obteniendo usuario actual...');
+    await getCurrentUser();
+    displayUserInfo();
+});
+
+console.log('[Utilities] ✅ Utilidades cargadas correctamente');
+
 // Utility Functions and Helpers
 
 // Obtener descripción del estado

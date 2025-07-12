@@ -202,9 +202,12 @@ async function performCancellation(reason) {
             return;
         }
 
+        // Obtener ID del usuario actual
+        const userId = await getCurrentUserId();
+        
         const cancelData = {
             orderId: currentOrder.orderId,
-            userId: 'current-user-id', // TODO: Obtener del contexto de autenticación
+            userId: userId,
             reason: reason
         };
 

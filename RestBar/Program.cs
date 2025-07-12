@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using RestBar.Interfaces;
 using RestBar.Models;
@@ -11,6 +12,25 @@ builder.Services.AddControllersWithViews();
 
 // Agregar SignalR
 builder.Services.AddSignalR();
+
+// Configurar autenticación por cookies
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Auth/Login";
+        options.LogoutPath = "/Auth/Logout";
+        options.AccessDeniedPath = "/Auth/AccessDenied";
+        options.ReturnUrlParameter = "returnUrl";
+        options.ExpireTimeSpan = TimeSpan.FromHours(8); // Sesión de 8 horas
+        options.SlidingExpiration = true; // Renovar automáticamente
+        options.Cookie.Name = "RestBarAuth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+    });
+
+// Agregar HttpContextAccessor para el AuthService
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddDbContext<RestBarContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -40,6 +60,9 @@ builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IProductCategoryService, ProductCategoryService>();
 builder.Services.AddScoped<ISplitPaymentService, SplitPaymentService>();
 
+// Agregar servicio de autenticación
+builder.Services.AddScoped<IAuthService, AuthService>();
+
 // Agregar servicio de SignalR
 builder.Services.AddScoped<IOrderHubService, OrderHubService>();
 
@@ -58,11 +81,13 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+// Configurar middleware de autenticación (orden importante)
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Auth}/{action=Login}/{id?}"); // Cambiar página de inicio a Login
 
 // Mapear el hub de SignalR
 app.MapHub<OrderHub>("/orderHub");

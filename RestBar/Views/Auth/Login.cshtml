@@ -1,0 +1,145 @@
+@{
+    Layout = "~/Views/Shared/_LoginLayout.cshtml";
+    ViewData["Title"] = "Iniciar Sesión";
+}
+
+<div class="login-form">
+    <div class="form-title">
+        <h2>Bienvenido</h2>
+        <p>Inicia sesión para acceder al sistema</p>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <div>@error.ErrorMessage</div>
+            }
+        </div>
+    }
+
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["Message"]
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            @TempData["Error"]
+        </div>
+    }
+
+    <form method="post" asp-action="Login" asp-controller="Auth">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+
+        <div class="form-group">
+            <i class="fas fa-envelope"></i>
+            <input type="email" 
+                   name="email" 
+                   class="form-control" 
+                   placeholder="Correo electrónico" 
+                   required 
+                   autocomplete="email"
+                   value="@(TempData["LastEmail"] ?? "")" />
+        </div>
+
+        <div class="form-group">
+            <i class="fas fa-lock"></i>
+            <input type="password" 
+                   name="password" 
+                   class="form-control" 
+                   placeholder="Contraseña" 
+                   required 
+                   autocomplete="current-password" />
+        </div>
+
+        <button type="submit" class="btn btn-login">
+            <i class="fas fa-sign-in-alt me-2"></i>
+            Iniciar Sesión
+        </button>
+    </form>
+
+    <div class="admin-link">
+        <p class="mb-2">¿Primera vez usando el sistema?</p>
+        <a href="@Url.Action("CreateAdmin", "Auth")">
+            <i class="fas fa-user-cog me-1"></i>
+            Crear usuario administrador
+        </a>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Enfocar el campo de email al cargar
+        document.addEventListener('DOMContentLoaded', function() {
+            const emailInput = document.querySelector('input' + '[name="email"]');
+            if (emailInput && !emailInput.value) {
+                emailInput.focus();
+            } else {
+                const passwordInput = document.querySelector('input' + '[name="password"]');
+                if (passwordInput) {
+                    passwordInput.focus();
+                }
+            }
+        });
+
+        // Manejo del formulario
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            const email = document.querySelector('input' + '[name="email"]').value;
+            const password = document.querySelector('input' + '[name="password"]').value;
+
+            if (!email || !password) {
+                e.preventDefault();
+                showAlert('Por favor, completa todos los campos', 'danger');
+                return;
+            }
+
+            // Validar formato de email
+            const emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+            if (!emailRegex.test(email)) {
+                e.preventDefault();
+                showAlert('Por favor, ingresa un email válido', 'danger');
+                return;
+            }
+
+            // Mostrar indicador de carga
+            const button = document.querySelector('.btn-login');
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Iniciando sesión...';
+            button.disabled = true;
+        });
+
+        function showAlert(message, type) {
+            // Remover alertas existentes
+            const existingAlerts = document.querySelectorAll('.alert-custom');
+            existingAlerts.forEach(alert => alert.remove());
+
+            // Crear nueva alerta
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-' + type + ' alert-custom';
+            alertDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>' + message;
+
+            // Insertar antes del formulario
+            const form = document.querySelector('form');
+            form.parentNode.insertBefore(alertDiv, form);
+
+            // Auto-remover después de 5 segundos
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+
+        // Credenciales de ejemplo para desarrollo
+        // Código de demo removido para evitar conflictos de sintaxis
+    </script>
+} 

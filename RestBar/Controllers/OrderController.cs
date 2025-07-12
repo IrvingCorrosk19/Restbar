@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RestBar.Interfaces;
@@ -13,6 +14,7 @@ using System.IO;
 
 namespace RestBar.Controllers
 {
+    [Authorize] // Requiere autenticación para todos los métodos
     public class OrderController : Controller
     {
         private readonly IOrderService _orderService;
@@ -611,24 +613,18 @@ namespace RestBar.Controllers
 
                 Console.WriteLine($"[OrderController] OrderId validado: {dto.OrderId}");
 
-                // Convertir UserId string a Guid si es necesario
+                // Obtener userId del contexto de autenticación
                 Guid? userId = null;
-                Console.WriteLine($"[OrderController] Procesando UserId: {dto.UserId}");
+                var userIdClaim = User.FindFirst("UserId")?.Value;
                 
-                if (!string.IsNullOrEmpty(dto.UserId) && dto.UserId != "current-user-id")
+                if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out Guid parsedUserId))
                 {
-                    Console.WriteLine($"[OrderController] UserId no es current-user-id, intentando parsear...");
-                    if (!Guid.TryParse(dto.UserId, out Guid parsedUserId))
-                    {
-                        Console.WriteLine($"[OrderController] ERROR: UserId inválido: {dto.UserId}");
-                        return BadRequest(new { error = "UserId inválido" });
-                    }
                     userId = parsedUserId;
-                    Console.WriteLine($"[OrderController] UserId parseado correctamente: {userId}");
+                    Console.WriteLine($"[OrderController] UserId obtenido del contexto de autenticación: {userId}");
                 }
                 else
                 {
-                    Console.WriteLine($"[OrderController] UserId será null (current-user-id o vacío)");
+                    Console.WriteLine($"[OrderController] No se pudo obtener UserId del contexto de autenticación");
                 }
 
                 Console.WriteLine($"[OrderController] Llamando a CancelOrderAsync...");
