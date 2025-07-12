@@ -243,42 +243,69 @@
 
 @section Styles {
     <style>
-        /* 
-         * MEJORAS IMPLEMENTADAS:
-         * 1. Tarjetas completamente clickeables: Toda la tarjeta ahora es un enlace
-         * 2. Mantenimiento de estilos: Los colores y efectos se mantienen consistentes
-         * 3. Accesibilidad mejorada: Indicadores de foco y soporte para teclado
-         * 4. Dispositivos táctiles: Optimizaciones específicas para móviles
-         * 5. Efectos visuales: Overlay y feedback visual mejorados
-         */
+        /* ========================
+           DISEÑO DE COCINA APLICADO AL HOME
+           Estética sobria, elegante y profesional
+           ======================== */
         :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #34495e;
-            --accent-color: #e67e22;
-            --light-color: #ecf0f1;
-            --dark-color: #1a252f;
-            --success-color: #27ae60;
-            --info-color: #3498db;
-            --warning-color: #f39c12;
-            --purple-color: #9b59b6;
-            --pink-color: #e91e63;
-            --teal-color: #1abc9c;
+            --home-primary: #1e40af;
+            --home-primary-dark: #1e3a8a;
+            --home-success: #059669;
+            --home-success-light: #10b981;
+            --home-warning: #d97706;
+            --home-warning-light: #f59e0b;
+            --home-danger: #dc2626;
+            --home-danger-light: #ef4444;
+            --home-info: #0891b2;
+            --home-info-light: #06b6d4;
+            --home-purple: #7c3aed;
+            --home-purple-light: #8b5cf6;
+            --home-pink: #db2777;
+            --home-pink-light: #ec4899;
+            --home-teal: #0d9488;
+            --home-teal-light: #14b8a6;
+            
+            --home-bg-primary: #0f172a;
+            --home-bg-secondary: #1e293b;
+            --home-bg-tertiary: #334155;
+            --home-surface: #475569;
+            
+            --home-text-primary: #f8fafc;
+            --home-text-secondary: #cbd5e1;
+            --home-text-muted: #94a3b8;
+            
+            --home-border: #475569;
+            --home-border-light: #64748b;
+            
+            --home-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+            --home-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+            --home-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+            
+            --home-radius-sm: 8px;
+            --home-radius-md: 12px;
+            --home-radius-lg: 16px;
+            
+            --home-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, var(--light-color) 0%, #bdc3c7 100%);
+            background: linear-gradient(135deg, var(--home-bg-primary) 0%, var(--home-bg-secondary) 100%);
             min-height: 100vh;
+            color: var(--home-text-primary);
         }
 
-        /* Hero Section */
+        /* ========================
+           HERO SECTION - ESTÉTICA COCINA
+           ======================== */
         .hero-section {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            color: white;
-            padding: 3rem 0;
+            background: linear-gradient(135deg, var(--home-bg-primary) 0%, var(--home-bg-secondary) 100%);
+            color: var(--home-text-primary);
+            padding: 4rem 0;
             margin-bottom: 2rem;
             position: relative;
             overflow: hidden;
+            border-bottom: 1px solid var(--home-border);
         }
 
         .hero-section::before {
@@ -288,13 +315,37 @@
             left: -50%;
             width: 200%;
             height: 200%;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="restaurant" patternUnits="userSpaceOnUse" width="20" height="20"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23restaurant)"/></svg>');
-            animation: float 20s ease-in-out infinite;
+            background: linear-gradient(45deg, 
+                rgba(30, 64, 175, 0.1) 0%,
+                transparent 25%,
+                transparent 50%,
+                rgba(30, 64, 175, 0.1) 75%,
+                transparent 100%
+            );
+            animation: backgroundShift 20s ease-in-out infinite;
         }
 
-        @@keyframes float {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            50% { transform: translate(-20px, -20px) rotate(180deg); }
+        .hero-section::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 80%, rgba(30, 64, 175, 0.2) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(5, 150, 105, 0.2) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        @@keyframes backgroundShift {
+            0%, 100% { 
+                transform: translate(0, 0) rotate(0deg); 
+                opacity: 0.5;
+            }
+            50% { 
+                transform: translate(-30px, -30px) rotate(180deg); 
+                opacity: 0.8;
+            }
         }
 
         .hero-content {
@@ -306,89 +357,152 @@
         }
 
         .hero-text h1 {
-            font-size: 3rem;
+            font-size: 3.5rem;
             font-weight: 700;
             margin-bottom: 1rem;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, var(--home-text-primary) 0%, var(--home-info-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
 
         .hero-text p {
-            font-size: 1.3rem;
+            font-size: 1.4rem;
             margin-bottom: 2rem;
-            opacity: 0.9;
+            color: var(--home-text-secondary);
+            font-weight: 400;
         }
 
         .hero-stats {
             display: flex;
             gap: 2rem;
             flex-wrap: wrap;
+            justify-content: flex-start;
         }
 
         .stat-item {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 25px;
+            gap: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--home-border);
+            border-radius: var(--home-radius-lg);
             backdrop-filter: blur(10px);
+            transition: var(--home-transition);
+            box-shadow: var(--home-shadow-sm);
+        }
+
+        .stat-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--home-border-light);
+            transform: translateY(-2px);
         }
 
         .stat-item i {
-            font-size: 1.2rem;
+            font-size: 1.25rem;
+            color: var(--home-info-light);
         }
 
-        /* Dashboard Container */
+        .stat-item span {
+            font-weight: 500;
+            color: var(--home-text-primary);
+        }
+
+        /* ========================
+           DASHBOARD CONTAINER
+           ======================== */
         .dashboard-container {
-            padding: 2rem 0;
+            padding: 3rem 0;
+            background: linear-gradient(135deg, var(--home-bg-primary) 0%, var(--home-bg-secondary) 100%);
+            position: relative;
         }
 
-        /* Section Headers */
+        .dashboard-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 30% 20%, rgba(30, 64, 175, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(5, 150, 105, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        /* ========================
+           SECTION HEADERS
+           ======================== */
         .section-header {
             text-align: center;
             margin-bottom: 3rem;
+            position: relative;
+            z-index: 1;
         }
 
         .section-header h2 {
             font-size: 2.5rem;
             font-weight: 600;
-            color: var(--primary-color);
+            background: linear-gradient(135deg, var(--home-text-primary) 0%, var(--home-info-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             margin-bottom: 0.5rem;
         }
 
         .section-header p {
             font-size: 1.1rem;
-            color: #666;
-            font-weight: 300;
+            color: var(--home-text-secondary);
+            font-weight: 400;
         }
 
-        /* Dashboard Cards */
-        /* Nota: Las tarjetas ahora son completamente clickeables como enlaces */
+        /* ========================
+           DASHBOARD CARDS - ESTÉTICA COCINA
+           ======================== */
         .dashboard-card {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
+            background: linear-gradient(135deg, var(--home-bg-secondary) 0%, var(--home-bg-tertiary) 100%);
+            border: 1px solid var(--home-border);
+            border-radius: var(--home-radius-lg);
             padding: 2rem;
             height: 100%;
             position: relative;
             overflow: hidden;
-            transition: all 0.4s ease;
-            border: none;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: var(--home-transition);
+            box-shadow: var(--home-shadow-lg);
             cursor: pointer;
             text-decoration: none;
             color: inherit;
             display: block;
+            backdrop-filter: blur(10px);
+        }
+
+        .dashboard-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
+            transition: var(--home-transition);
+            opacity: 0;
         }
 
         .dashboard-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            transform: translateY(-8px);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+            border-color: var(--home-border-light);
             text-decoration: none;
             color: inherit;
         }
 
+        .dashboard-card:hover::before {
+            opacity: 1;
+        }
+
         .dashboard-card:focus {
-            outline: 2px solid var(--accent-color);
+            outline: 2px solid var(--home-info-light);
             outline-offset: 2px;
             text-decoration: none;
         }
@@ -401,58 +515,75 @@
             align-items: center;
             justify-content: center;
             margin-bottom: 1.5rem;
-            transition: all 0.3s ease;
+            transition: var(--home-transition);
+            box-shadow: var(--home-shadow-md);
+            border: 1px solid var(--home-border);
         }
 
         .card-icon i {
             font-size: 2.5rem;
             color: white;
+            transition: var(--home-transition);
+        }
+
+        .dashboard-card:hover .card-icon {
+            transform: scale(1.1);
+            box-shadow: var(--home-shadow-lg);
         }
 
         .card-content h3 {
             font-size: 1.5rem;
             font-weight: 600;
-            color: var(--primary-color);
+            color: var(--home-text-primary);
             margin-bottom: 0.5rem;
+            transition: var(--home-transition);
         }
 
         .card-content p {
-            color: #666;
+            color: var(--home-text-secondary);
             margin-bottom: 1.5rem;
-            font-weight: 300;
+            font-weight: 400;
+            line-height: 1.6;
         }
 
         /* Mantener colores consistentes en enlaces */
         .dashboard-card:hover .card-content h3 {
-            color: var(--primary-color);
+            color: var(--home-text-primary);
         }
 
         .dashboard-card:hover .card-content p {
-            color: #666;
+            color: var(--home-text-secondary);
         }
 
         .dashboard-card:visited .card-content h3 {
-            color: var(--primary-color);
+            color: var(--home-text-primary);
         }
 
         .dashboard-card:visited .card-content p {
-            color: #666;
+            color: var(--home-text-secondary);
         }
 
         .card-btn {
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            color: var(--accent-color);
+            color: var(--home-info-light);
             text-decoration: none;
             font-weight: 500;
-            transition: all 0.3s ease;
+            transition: var(--home-transition);
             pointer-events: none;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--home-border);
+            border-radius: var(--home-radius-sm);
+            backdrop-filter: blur(5px);
         }
 
         .dashboard-card:hover .card-btn {
-            color: var(--primary-color);
+            color: var(--home-text-primary);
             transform: translateX(5px);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--home-border-light);
         }
 
         .card-overlay {
@@ -464,13 +595,14 @@
             background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
             transform: translateX(-100%);
             transition: transform 0.6s ease;
+            z-index: 1;
         }
 
         .dashboard-card:hover .card-overlay {
             transform: translateX(100%);
         }
 
-        /* Efecto adicional para indicar que es clickeable */
+        /* Efecto shimmer para indicar que es clickeable */
         .dashboard-card::after {
             content: '';
             position: absolute;
@@ -478,9 +610,9 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(255, 255, 255, 0.1);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.08) 100%);
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: var(--home-transition);
             pointer-events: none;
         }
 
@@ -490,53 +622,103 @@
 
         /* Mejorar el indicador de foco para accesibilidad */
         .dashboard-card:focus-visible {
-            outline: 3px solid var(--accent-color);
+            outline: 3px solid var(--home-info-light);
             outline-offset: 3px;
         }
 
-        /* Card Specific Colors */
-        .card-orders .card-icon { background: linear-gradient(45deg, var(--success-color), #2ecc71); }
-        .card-orders:hover { background: linear-gradient(135deg, #fff 0%, #d5f4e6 100%); }
+        /* ========================
+           COLORES ESPECÍFICOS DE TARJETAS - ESTILO COCINA
+           ======================== */
+        .card-orders .card-icon { 
+            background: linear-gradient(135deg, var(--home-success) 0%, var(--home-success-light) 100%); 
+        }
+        .card-orders:hover { 
+            background: linear-gradient(135deg, var(--home-bg-secondary) 0%, rgba(5, 150, 105, 0.1) 100%); 
+        }
 
-        .card-products .card-icon { background: linear-gradient(45deg, var(--info-color), #5dade2); }
-        .card-products:hover { background: linear-gradient(135deg, #fff 0%, #d6eaf8 100%); }
+        .card-products .card-icon { 
+            background: linear-gradient(135deg, var(--home-info) 0%, var(--home-info-light) 100%); 
+        }
+        .card-products:hover { 
+            background: linear-gradient(135deg, var(--home-bg-secondary) 0%, rgba(8, 145, 178, 0.1) 100%); 
+        }
 
-        .card-tables .card-icon { background: linear-gradient(45deg, var(--warning-color), #f4d03f); }
-        .card-tables:hover { background: linear-gradient(135deg, #fff 0%, #fef9e7 100%); }
+        .card-tables .card-icon { 
+            background: linear-gradient(135deg, var(--home-warning) 0%, var(--home-warning-light) 100%); 
+        }
+        .card-tables:hover { 
+            background: linear-gradient(135deg, var(--home-bg-secondary) 0%, rgba(217, 119, 6, 0.1) 100%); 
+        }
 
-        .card-users .card-icon { background: linear-gradient(45deg, var(--purple-color), #bb8fce); }
-        .card-users:hover { background: linear-gradient(135deg, #fff 0%, #f4ecf7 100%); }
+        .card-users .card-icon { 
+            background: linear-gradient(135deg, var(--home-purple) 0%, var(--home-purple-light) 100%); 
+        }
+        .card-users:hover { 
+            background: linear-gradient(135deg, var(--home-bg-secondary) 0%, rgba(124, 58, 237, 0.1) 100%); 
+        }
 
-        .card-categories .card-icon { background: linear-gradient(45deg, var(--pink-color), #f06292); }
-        .card-categories:hover { background: linear-gradient(135deg, #fff 0%, #fce4ec 100%); }
+        .card-categories .card-icon { 
+            background: linear-gradient(135deg, var(--home-pink) 0%, var(--home-pink-light) 100%); 
+        }
+        .card-categories:hover { 
+            background: linear-gradient(135deg, var(--home-bg-secondary) 0%, rgba(219, 39, 119, 0.1) 100%); 
+        }
 
-        .card-stations .card-icon { background: linear-gradient(45deg, var(--accent-color), #f39c12); }
-        .card-stations:hover { background: linear-gradient(135deg, #fff 0%, #fef5e7 100%); }
+        .card-stations .card-icon { 
+            background: linear-gradient(135deg, var(--home-danger) 0%, var(--home-danger-light) 100%); 
+        }
+        .card-stations:hover { 
+            background: linear-gradient(135deg, var(--home-bg-secondary) 0%, rgba(220, 38, 38, 0.1) 100%); 
+        }
 
-        .card-areas .card-icon { background: linear-gradient(45deg, var(--teal-color), #58d68d); }
-        .card-areas:hover { background: linear-gradient(135deg, #fff 0%, #e8f8f5 100%); }
+        .card-areas .card-icon { 
+            background: linear-gradient(135deg, var(--home-teal) 0%, var(--home-teal-light) 100%); 
+        }
+        .card-areas:hover { 
+            background: linear-gradient(135deg, var(--home-bg-secondary) 0%, rgba(13, 148, 136, 0.1) 100%); 
+        }
 
-        .card-companies .card-icon { background: linear-gradient(45deg, var(--secondary-color), #5d6d7e); }
-        .card-companies:hover { background: linear-gradient(135deg, #fff 0%, #eaeded 100%); }
+        .card-companies .card-icon { 
+            background: linear-gradient(135deg, var(--home-bg-tertiary) 0%, var(--home-surface) 100%); 
+        }
+        .card-companies:hover { 
+            background: linear-gradient(135deg, var(--home-bg-secondary) 0%, rgba(71, 85, 105, 0.1) 100%); 
+        }
 
-        .card-branches .card-icon { background: linear-gradient(45deg, var(--info-color), #85c1e9); }
-        .card-branches:hover { background: linear-gradient(135deg, #fff 0%, #ebf5fb 100%); }
+        .card-branches .card-icon { 
+            background: linear-gradient(135deg, var(--home-primary) 0%, var(--home-primary-dark) 100%); 
+        }
+        .card-branches:hover { 
+            background: linear-gradient(135deg, var(--home-bg-secondary) 0%, rgba(30, 64, 175, 0.1) 100%); 
+        }
 
-        .card-station-work .card-icon { background: linear-gradient(45deg, var(--primary-color), #5d6d7e); }
-        .card-station-work:hover { background: linear-gradient(135deg, #fff 0%, #ebedef 100%); }
+        .card-station-work .card-icon { 
+            background: linear-gradient(135deg, var(--home-info) 0%, var(--home-primary) 100%); 
+        }
+        .card-station-work:hover { 
+            background: linear-gradient(135deg, var(--home-bg-secondary) 0%, rgba(8, 145, 178, 0.1) 100%); 
+        }
 
-        /* Responsive Design */
+        /* ========================
+           RESPONSIVE DESIGN - ESTILO COCINA
+           ======================== */
         @@media (max-width: 768px) {
             .hero-text h1 {
-                font-size: 2rem;
+                font-size: 2.5rem;
             }
             
             .hero-text p {
-                font-size: 1.1rem;
+                font-size: 1.2rem;
             }
             
             .hero-stats {
                 justify-content: center;
+                gap: 1rem;
+            }
+            
+            .stat-item {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
             }
             
             .section-header h2 {
@@ -547,13 +729,22 @@
                 padding: 1.5rem;
                 margin-bottom: 1rem;
             }
+            
+            .card-icon {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .card-icon i {
+                font-size: 2rem;
+            }
         }
 
         /* Optimización para dispositivos táctiles */
         @@media (hover: none) and (pointer: coarse) {
             .dashboard-card:hover {
                 transform: none;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                box-shadow: var(--home-shadow-lg);
             }
             
             .dashboard-card:active {
@@ -564,6 +755,10 @@
             .dashboard-card:hover .card-btn {
                 transform: none;
             }
+            
+            .dashboard-card:hover .card-icon {
+                transform: none;
+            }
         }
 
         @@media (max-width: 480px) {
@@ -571,8 +766,48 @@
                 padding: 0 1rem;
             }
             
+            .hero-text h1 {
+                font-size: 2rem;
+            }
+            
+            .hero-text p {
+                font-size: 1rem;
+            }
+            
+            .hero-stats {
+                flex-direction: column;
+                align-items: center;
+                gap: 0.75rem;
+            }
+            
+            .stat-item {
+                width: 100%;
+                justify-content: center;
+            }
+            
             .dashboard-container {
                 padding: 1rem 0;
+            }
+            
+            .dashboard-card {
+                padding: 1rem;
+            }
+            
+            .card-icon {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .card-icon i {
+                font-size: 1.5rem;
+            }
+            
+            .card-content h3 {
+                font-size: 1.25rem;
+            }
+            
+            .card-content p {
+                font-size: 0.9rem;
             }
         }
     </style>

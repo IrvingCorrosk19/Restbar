@@ -59,32 +59,32 @@ else
     </div>
 
     <main class="orders-grid">
-        @foreach (var order in Model)
-        {
+@foreach (var order in Model)
+{
             <div class="order-card">
-                @{
-                    string orderTitle = "";
+        @{
+            string orderTitle = "";
                     string orderIcon = "";
                     string orderClass = "";
-                    switch (order.OrderType)
-                    {
-                        case OrderType.DineIn:
-                            orderTitle = order.TableNumber ?? "Sin mesa";
+            switch (order.OrderType)
+            {
+                case OrderType.DineIn:
+                    orderTitle = order.TableNumber ?? "Sin mesa";
                             orderIcon = "fas fa-chair";
                             orderClass = "order-dine-in";
-                            break;
-                        case OrderType.TakeOut:
-                            orderTitle = "Para Llevar";
+                    break;
+                case OrderType.TakeOut:
+                    orderTitle = "Para Llevar";
                             orderIcon = "fas fa-shopping-bag";
                             orderClass = "order-takeout";
-                            break;
-                        case OrderType.Delivery:
-                            orderTitle = "Delivery";
+                    break;
+                case OrderType.Delivery:
+                    orderTitle = "Delivery";
                             orderIcon = "fas fa-motorcycle";
                             orderClass = "order-delivery";
-                            break;
-                    }
-                }
+                    break;
+            }
+        }
                 
                 <div class="order-header @orderClass">
                     <div class="order-title">
@@ -97,15 +97,15 @@ else
                         @TimeAgo(order.OpenedAt)
                     </div>
                 </div>
-                
-                <!-- Resumen de estado de la orden -->
+        
+        <!-- Resumen de estado de la orden -->
                 <div class="order-status-section">
                     <div class="status-badge @(order.PendingItems > 0 ? "status-pending" : order.PreparingItems > 0 ? "status-preparing" : "status-ready")">
                         <i class="fas @(order.PendingItems > 0 ? "fa-hourglass-start" : order.PreparingItems > 0 ? "fa-fire" : "fa-check-circle")"></i>
-                        @order.StatusSummary
-                    </div>
-                    @if (order.TotalItems > order.PendingItems)
-                    {
+                @order.StatusSummary
+            </div>
+            @if (order.TotalItems > order.PendingItems)
+            {
                         <div class="items-summary">
                             <div class="summary-item summary-ready">
                                 <i class="fas fa-check-circle"></i>
@@ -115,107 +115,107 @@ else
                                 <i class="fas fa-fire"></i>
                                 <span>@order.PreparingItems preparando</span>
                             </div>
-                        </div>
-                    }
                 </div>
-                
+            }
+        </div>
+        
                 <!-- Barra de progreso mejorada -->
                 <div class="progress-section">
                     <div class="progress-bar-container">
-                        <div class="progress-bar">
+            <div class="progress-bar">
                             <div class="progress-fill" style="width: @(order.TotalItems > 0 ? ((order.ReadyItems + order.PreparingItems) * 100 / order.TotalItems) : 0)%">
                                 <div class="progress-glow"></div>
                             </div>
-                        </div>
-                        <div class="progress-text">
+            </div>
+            <div class="progress-text">
                             <span class="progress-current">@(order.ReadyItems + order.PreparingItems)</span>
                             <span class="progress-separator">de</span>
                             <span class="progress-total">@order.TotalItems</span>
                             <span class="progress-label">items procesados</span>
                         </div>
-                    </div>
-                </div>
-                
-                <!-- Items agrupados por KitchenStatus -->
-                @{
-                    var pendingItems = order.Items.Where(i => i.KitchenStatus == "Pending").ToList();
-                    var sentItems = order.Items.Where(i => i.KitchenStatus == "Sent").ToList();
-                }
-                
+            </div>
+        </div>
+        
+        <!-- Items agrupados por KitchenStatus -->
+        @{
+            var pendingItems = order.Items.Where(i => i.KitchenStatus == "Pending").ToList();
+            var sentItems = order.Items.Where(i => i.KitchenStatus == "Sent").ToList();
+        }
+        
                 <div class="items-container">
-                    @if (pendingItems.Any())
-                    {
-                        <div class="items-section pending-section">
+        @if (pendingItems.Any())
+        {
+            <div class="items-section pending-section">
                             <div class="section-header">
                                 <i class="fas fa-hourglass-start"></i>
                                 <h4>Items Pendientes de Envío</h4>
                                 <span class="items-count">@pendingItems.Count</span>
                             </div>
                             <ul class="items-list">
-                                @foreach (var item in pendingItems)
-                                {
+                    @foreach (var item in pendingItems)
+                    {
                                     <li class="item item-pending">
                                         <div class="item-main">
                                             <span class="item-quantity">@item.Quantity×</span>
-                                            <span class="item-name">@item.ProductName</span>
+                            <span class="item-name">@item.ProductName</span>
                                             <div class="item-status-badge pending">
                                                 <i class="fas fa-hourglass-start"></i>
                                                 Pendiente
                                             </div>
                                         </div>
-                                        @if (!string.IsNullOrWhiteSpace(item.Notes))
-                                        {
+                            @if (!string.IsNullOrWhiteSpace(item.Notes))
+                            {
                                             <div class="item-notes">
                                                 <i class="fas fa-sticky-note"></i>
                                                 @item.Notes
                                             </div>
-                                        }
-                                    </li>
-                                }
-                            </ul>
-                        </div>
+                            }
+                        </li>
                     }
-                    
-                    @if (sentItems.Any())
-                    {
-                        <div class="items-section sent-section">
+                </ul>
+            </div>
+        }
+        
+        @if (sentItems.Any())
+        {
+            <div class="items-section sent-section">
                             <div class="section-header">
                                 <i class="fas fa-fire"></i>
                                 <h4>Items Enviados a Preparar</h4>
                                 <span class="items-count">@sentItems.Count</span>
                             </div>
                             <ul class="items-list">
-                                @foreach (var item in sentItems)
-                                {
+                    @foreach (var item in sentItems)
+                    {
                                     <li class="item item-sent">
                                         <div class="item-main">
                                             <span class="item-quantity">@item.Quantity×</span>
-                                            <span class="item-name">@item.ProductName</span>
+                            <span class="item-name">@item.ProductName</span>
                                             <div class="item-status-badge preparing">
                                                 <i class="fas fa-fire"></i>
                                                 Preparando
                                             </div>
-                                            <button class="btn-mark-ready" data-order-id="@order.OrderId" data-item-id="@item.ItemId">
+                            <button class="btn-mark-ready" data-order-id="@order.OrderId" data-item-id="@item.ItemId">
                                                 <i class="fas fa-check"></i>
                                                 Listo
-                                            </button>
+                            </button>
                                         </div>
-                                        @if (!string.IsNullOrWhiteSpace(item.Notes))
-                                        {
+                            @if (!string.IsNullOrWhiteSpace(item.Notes))
+                            {
                                             <div class="item-notes">
                                                 <i class="fas fa-sticky-note"></i>
                                                 @item.Notes
                                             </div>
-                                        }
-                                    </li>
-                                }
-                            </ul>
-                        </div>
+                            }
+                        </li>
                     }
+                </ul>
+            </div>
+        }
                 </div>
-                
-                @if (!string.IsNullOrWhiteSpace(order.Notes))
-                {
+        
+        @if (!string.IsNullOrWhiteSpace(order.Notes))
+        {
                     <div class="order-notes">
                         <div class="notes-header">
                             <i class="fas fa-comment-alt"></i>
@@ -227,24 +227,24 @@ else
                 
                 <!-- Acciones de la orden -->
                 <div class="order-actions">
-                    @if (sentItems.Any())
-                    {
-                        <button class="btn-ready-all" data-order-id="@order.OrderId">
+        @if (sentItems.Any())
+        {
+            <button class="btn-ready-all" data-order-id="@order.OrderId">
                             <i class="fas fa-check-double"></i>
                             <span>Marcar Todos como Listos</span>
-                        </button>
-                    }
-                    else if (!pendingItems.Any() && !sentItems.Any())
-                    {
+            </button>
+        }
+        else if (!pendingItems.Any() && !sentItems.Any())
+        {
                         <div class="all-items-complete">
                             <i class="fas fa-trophy"></i>
                             <span>Todos los items de esta estación están listos</span>
-                        </div>
-                    }
-                </div>
             </div>
         }
-    </main>
+                </div>
+    </div>
+}
+</main>
 }
 
 @section Scripts {
@@ -324,10 +324,10 @@ else
         // Auto-remove after animation
         setTimeout(() => {
             toast.classList.add('notification-exit');
-            setTimeout(() => {
-                if (toast.parentNode) {
-                    toast.parentNode.removeChild(toast);
-                }
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
             }, 300);
         }, 5000);
 
@@ -364,10 +364,10 @@ else
         // Auto-remove after animation
         setTimeout(() => {
             toast.classList.add('notification-exit');
-            setTimeout(() => {
-                if (toast.parentNode) {
-                    toast.parentNode.removeChild(toast);
-                }
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
             }, 300);
         }, 3000);
 
@@ -1013,20 +1013,20 @@ function showNotification(message, type) {
 
 .progress-bar-container {
     position: relative;
-}
-
-.progress-bar {
-    width: 100%;
+    }
+    
+    .progress-bar {
+        width: 100%;
     height: 10px;
     background: var(--kitchen-bg-tertiary);
     border-radius: 5px;
-    overflow: hidden;
+        overflow: hidden;
     position: relative;
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.progress-fill {
-    height: 100%;
+    }
+    
+    .progress-fill {
+        height: 100%;
     background: linear-gradient(90deg, var(--kitchen-success) 0%, var(--kitchen-success-light) 100%);
     transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
@@ -1046,9 +1046,9 @@ function showNotification(message, type) {
 @@keyframes progress-glow {
     0% { transform: translateX(-100%); }
     100% { transform: translateX(100%); }
-}
-
-.progress-text {
+    }
+    
+    .progress-text {
     display: flex;
     align-items: center;
     gap: 0.375rem;
@@ -1114,7 +1114,7 @@ function showNotification(message, type) {
     font-size: 0.75rem;
     font-weight: 600;
     min-width: 24px;
-    text-align: center;
+        text-align: center;
 }
 
 .pending-section .section-header i {
@@ -1176,7 +1176,7 @@ function showNotification(message, type) {
 
 .item-name {
     flex: 1;
-    font-weight: 500;
+        font-weight: 500;
     color: var(--kitchen-text-primary);
     font-size: 0.9375rem;
 }
@@ -1229,15 +1229,15 @@ function showNotification(message, type) {
 /* ========================
    BOTONES DE ACCIÓN
    ======================== */
-.btn-mark-ready {
+    .btn-mark-ready {
     background: linear-gradient(135deg, var(--kitchen-success) 0%, var(--kitchen-success-light) 100%);
-    color: white;
-    border: none;
+        color: white;
+        border: none;
     padding: 0.5rem 0.875rem;
     border-radius: var(--kitchen-radius-sm);
     font-size: 0.75rem;
     font-weight: 600;
-    cursor: pointer;
+        cursor: pointer;
     transition: var(--kitchen-transition);
     display: flex;
     align-items: center;
@@ -1245,9 +1245,9 @@ function showNotification(message, type) {
     text-transform: uppercase;
     letter-spacing: 0.05em;
     box-shadow: var(--kitchen-shadow-sm);
-}
-
-.btn-mark-ready:hover {
+    }
+    
+    .btn-mark-ready:hover {
     transform: translateY(-1px);
     box-shadow: var(--kitchen-shadow-md);
     background: linear-gradient(135deg, var(--kitchen-success-light) 0%, var(--kitchen-success) 100%);
@@ -1255,11 +1255,11 @@ function showNotification(message, type) {
 
 .btn-mark-ready:active {
     transform: translateY(0);
-}
-
-.btn-mark-ready:disabled {
+    }
+    
+    .btn-mark-ready:disabled {
     background: var(--kitchen-surface);
-    cursor: not-allowed;
+        cursor: not-allowed;
     transform: none;
     box-shadow: none;
 }
@@ -1297,19 +1297,19 @@ function showNotification(message, type) {
    ======================== */
 .order-actions {
     padding: 1.25rem 1.5rem;
-}
-
-.btn-ready-all {
+    }
+    
+    .btn-ready-all {
     background: linear-gradient(135deg, var(--kitchen-success) 0%, var(--kitchen-success-light) 100%);
-    color: white;
-    border: none;
+        color: white;
+        border: none;
     padding: 0.875rem 1.25rem;
     border-radius: var(--kitchen-radius-md);
     font-size: 0.9375rem;
     font-weight: 600;
-    cursor: pointer;
+        cursor: pointer;
     transition: var(--kitchen-transition);
-    width: 100%;
+        width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1317,9 +1317,9 @@ function showNotification(message, type) {
     text-transform: uppercase;
     letter-spacing: 0.05em;
     box-shadow: var(--kitchen-shadow-md);
-}
-
-.btn-ready-all:hover {
+    }
+    
+    .btn-ready-all:hover {
     transform: translateY(-2px);
     box-shadow: var(--kitchen-shadow-lg);
     background: linear-gradient(135deg, var(--kitchen-success-light) 0%, var(--kitchen-success) 100%);
@@ -1327,21 +1327,21 @@ function showNotification(message, type) {
 
 .btn-ready-all:active {
     transform: translateY(0);
-}
-
-.btn-ready-all:disabled {
+    }
+    
+    .btn-ready-all:disabled {
     background: var(--kitchen-surface);
-    cursor: not-allowed;
+        cursor: not-allowed;
     transform: none;
     box-shadow: var(--kitchen-shadow-sm);
-}
-
+    }
+    
 .all-items-complete {
     background: linear-gradient(135deg, var(--kitchen-success) 0%, var(--kitchen-success-light) 100%);
-    color: white;
+        color: white;
     padding: 1rem 1.25rem;
     border-radius: var(--kitchen-radius-md);
-    text-align: center;
+        text-align: center;
     font-weight: 600;
     display: flex;
     align-items: center;
@@ -1420,8 +1420,8 @@ function showNotification(message, type) {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    display: flex;
-    align-items: center;
+        display: flex;
+        align-items: center;
     justify-content: center;
     font-size: 1.125rem;
     flex-shrink: 0;
@@ -1448,9 +1448,9 @@ function showNotification(message, type) {
 }
 
 .notification-content {
-    flex: 1;
-}
-
+        flex: 1;
+    }
+    
 .notification-title {
     font-weight: 600;
     color: var(--kitchen-text-primary);
