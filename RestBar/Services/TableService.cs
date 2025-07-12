@@ -37,8 +37,26 @@ namespace RestBar.Services
 
         public async Task UpdateAsync(Table table)
         {
-            _context.Entry(table).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+            try
+            {
+                // Buscar si hay una entidad con el mismo ID siendo rastreada
+                var existingEntity = _context.ChangeTracker.Entries<Table>()
+                    .FirstOrDefault(e => e.Entity.Id == table.Id);
+
+                if (existingEntity != null)
+                {
+                    // Detach la entidad existente para evitar conflictos
+                    existingEntity.State = EntityState.Detached;
+                }
+
+                // Usar Update para manejar automÃ¡ticamente el tracking
+                _context.Tables.Update(table);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("Error al actualizar la mesa en la base de datos.", ex);
+            }
         }
 
         public async Task DeleteAsync(Guid id)
@@ -73,7 +91,7 @@ namespace RestBar.Services
                 // Puedes registrar el error con un logger si tienes uno configurado
                 Console.WriteLine($"Error al obtener mesas activas: {ex.Message}");
 
-                // Devolver una lista vacía como fallback (opcional)
+                // Devolver una lista vacï¿½a como fallback (opcional)
                 return Enumerable.Empty<Table>();
             }
         }

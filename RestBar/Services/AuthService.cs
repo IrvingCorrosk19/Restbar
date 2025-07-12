@@ -217,7 +217,7 @@ namespace RestBar.Services
                     PasswordHash = HashPassword("Admin123!"),
                     Role = UserRole.admin,
                     IsActive = true,
-                    CreatedAt = DateTime.Now,
+                    CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified),
                     BranchId = null
                 };
 

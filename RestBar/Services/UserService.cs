@@ -33,7 +33,12 @@ namespace RestBar.Services
         {
             try
             {
-                //user.CreatedAt = DateTime.UtcNow;
+                // Validar que el password no esté vacío
+                if (string.IsNullOrEmpty(user.PasswordHash))
+                {
+                    throw new ArgumentException("La contraseña no puede estar vacía", nameof(user.PasswordHash));
+                }
+
                 user.IsActive = true;
                 user.PasswordHash = HashPassword(user.PasswordHash);
                 _context.Users.Add(user);
@@ -45,20 +50,41 @@ namespace RestBar.Services
                 // Puedes loguear el error si tienes un logger configurado
                 // _logger.LogError(ex, "Error al crear el usuario");
 
-                // Tambi�n puedes lanzar una excepci�n m�s espec�fica
+                // También puedes lanzar una excepción más específica
                 throw new ApplicationException("Error al crear el usuario en la base de datos.", ex);
             }
         }
 
-
         public async Task UpdateAsync(User user)
         {
-            if (!string.IsNullOrEmpty(user.PasswordHash))
+            try
             {
-                user.PasswordHash = HashPassword(user.PasswordHash);
+                // Buscar si hay una entidad con el mismo ID siendo rastreada
+                var existingEntity = _context.ChangeTracker.Entries<User>()
+                    .FirstOrDefault(e => e.Entity.Id == user.Id);
+
+                if (existingEntity != null)
+                {
+                    // Detach la entidad existente para evitar conflictos
+                    existingEntity.State = EntityState.Detached;
+                }
+
+                // Solo hashear el password si no está vacío y no parece estar ya hasheado
+                if (!string.IsNullOrEmpty(user.PasswordHash) && 
+                    !user.PasswordHash.Contains("=") && // Los hashes Base64 contienen "="
+                    user.PasswordHash.Length < 50) // Los hashes son más largos
+                {
+                    user.PasswordHash = HashPassword(user.PasswordHash);
+                }
+
+                // Usar Update para manejar automáticamente el tracking
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync();
             }
-            _context.Entry(user).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+            catch (Exception ex)
+            {
+                throw new ApplicationException("Error al actualizar el usuario en la base de datos.", ex);
+            }
         }
 
         public async Task DeleteAsync(Guid id)
@@ -132,6 +158,12 @@ namespace RestBar.Services
 
         private string HashPassword(string password)
         {
+            // Validar que el password no sea nulo o vacío
+            if (string.IsNullOrEmpty(password))
+            {
+                throw new ArgumentException("La contraseña no puede estar vacía", nameof(password));
+            }
+
             using (var sha256 = SHA256.Create())
             {
                 var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));

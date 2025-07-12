@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RestBar.Models;
 using System;
@@ -11,6 +12,7 @@ using RestBar.Interfaces;
 
 namespace RestBar.Controllers
 {
+    [Authorize(Policy = "ProductAccess")]
     public class ProductController : Controller
     {
         private readonly RestBarContext _context;
@@ -100,7 +102,7 @@ namespace RestBar.Controllers
                     IsActive = model.IsActive,
                     CategoryId = model.CategoryId,
                     StationId = model.StationId,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified)
                 };
 
                 var created = await _productService.CreateAsync(product);

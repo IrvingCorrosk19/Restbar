@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using RestBar.Models;
 using RestBar.Services;
 using System;
@@ -8,6 +9,7 @@ using RestBar.Interfaces;
 
 namespace RestBar.Controllers
 {
+    [Authorize(Policy = "SystemConfig")]
     public class CategoryController : Controller
     {
         private readonly ICategoryService _categoryService;

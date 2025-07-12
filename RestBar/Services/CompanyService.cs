@@ -29,7 +29,7 @@ namespace RestBar.Services
 
         public async Task<Company> CreateAsync(Company company)
         {
-            company.CreatedAt = DateTime.Now;
+            company.CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
             _context.Companies.Add(company);
             await _context.SaveChangesAsync();
             return company;
@@ -37,8 +37,26 @@ namespace RestBar.Services
 
         public async Task UpdateAsync(Company company)
         {
-            _context.Entry(company).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+            try
+            {
+                // Buscar si hay una entidad con el mismo ID siendo rastreada
+                var existingEntity = _context.ChangeTracker.Entries<Company>()
+                    .FirstOrDefault(e => e.Entity.Id == company.Id);
+
+                if (existingEntity != null)
+                {
+                    // Detach la entidad existente para evitar conflictos
+                    existingEntity.State = EntityState.Detached;
+                }
+
+                // Usar Update para manejar automáticamente el tracking
+                _context.Companies.Update(company);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("Error al actualizar la empresa en la base de datos.", ex);
+            }
         }
 
         public async Task DeleteAsync(Guid id)

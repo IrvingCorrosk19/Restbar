@@ -64,8 +64,26 @@ namespace RestBar.Services
 
         public async Task UpdateAsync(SplitPayment splitPayment)
         {
-            _context.Entry(splitPayment).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+            try
+            {
+                // Buscar si hay una entidad con el mismo ID siendo rastreada
+                var existingEntity = _context.ChangeTracker.Entries<SplitPayment>()
+                    .FirstOrDefault(e => e.Entity.Id == splitPayment.Id);
+
+                if (existingEntity != null)
+                {
+                    // Detach la entidad existente para evitar conflictos
+                    existingEntity.State = EntityState.Detached;
+                }
+
+                // Usar Update para manejar automáticamente el tracking
+                _context.SplitPayments.Update(splitPayment);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("Error al actualizar el pago dividido en la base de datos.", ex);
+            }
         }
 
         public async Task DeleteAsync(Guid id)

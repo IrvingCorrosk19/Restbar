@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using RestBar.Interfaces;
 using RestBar.Models;
 using System;
@@ -7,6 +8,7 @@ using System.Linq;
 
 namespace RestBar.Controllers
 {
+    [Authorize(Policy = "SystemConfig")]
     public class CompanyController : Controller
     {
         private readonly ICompanyService _companyService;
@@ -58,8 +60,18 @@ namespace RestBar.Controllers
         {
             if (string.IsNullOrWhiteSpace(model.Name))
                 return Json(new { success = false, message = "El nombre es requerido" });
+            
+            if (string.IsNullOrWhiteSpace(model.LegalId))
+                return Json(new { success = false, message = "El ID legal es requerido" });
+            
+            // Validar que el legal_id no esté duplicado
+            var existingCompany = await _companyService.GetByLegalIdAsync(model.LegalId);
+            if (existingCompany != null)
+                return Json(new { success = false, message = "Ya existe una compañía con este ID legal" });
+            
             if (model.CreatedAt == null)
-                model.CreatedAt = DateTime.Now;
+                model.CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
+            
             var created = await _companyService.CreateAsync(model);
             return Json(new { success = true, data = created });
         }

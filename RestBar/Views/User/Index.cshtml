@@ -1094,6 +1094,22 @@
                 const password = document.getElementById('password').value;
                 const confirmPassword = document.getElementById('confirmPassword').value;
 
+                // Validar que el password no esté vacío
+                if (!password || password.trim() === '') {
+                    showError('La contraseña es requerida');
+                    saveButton.innerHTML = originalText;
+                    saveButton.disabled = false;
+                    return;
+                }
+
+                // Validar longitud mínima del password
+                if (password.length < 6) {
+                    showError('La contraseña debe tener al menos 6 caracteres');
+                    saveButton.innerHTML = originalText;
+                    saveButton.disabled = false;
+                    return;
+                }
+
                 // Validate passwords match
                 if (password !== confirmPassword) {
                     showError('Las contraseñas no coinciden');
@@ -1132,25 +1148,28 @@
                     return;
                 }
 
-                const user = {
-                    id: userId || '',
-                    fullName: fullName,
-                    email: email,
-                    passwordHash: password,
-                    role: role,
-                    branchId: branchIdValue,
-                    isActive: document.getElementById('isActive').checked,
-                    createdAt: new Date().toISOString()
-                };
-
-                console.log('Enviando datos:', user);
-
                 const url = userId ? '/User/Update' : '/User/Create';
+
+                // Crear FormData para envío
+                const formData = new FormData();
+                if (userId) formData.append('id', userId);
+                formData.append('fullName', fullName);
+                formData.append('email', email);
+                formData.append('password', password);
+                formData.append('role', role);
+                formData.append('branchId', branchIdValue);
+                formData.append('isActive', document.getElementById('isActive').checked);
+
+                console.log('Enviando FormData...');
+                console.log('Password length:', password.length);
+                console.log('Password value:', password);
 
                 $.ajax({
                     url: url,
                     type: 'POST',
-                    data: user,
+                    data: formData,
+                    processData: false,
+                    contentType: false,
                     success: function(result) {
                         if (result.success) {
                             userModal.hide();
@@ -1165,6 +1184,7 @@
                     },
                     error: function(xhr, status, error) {
                         console.error('Error saving user:', error);
+                        console.error('Response text:', xhr.responseText);
                         showError('Error al guardar el usuario');
                     },
                     complete: function() {

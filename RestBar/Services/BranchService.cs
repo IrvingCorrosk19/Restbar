@@ -34,7 +34,7 @@ namespace RestBar.Services
 
         public async Task<Branch> CreateAsync(Branch branch)
         {
-            branch.CreatedAt = DateTime.Now;
+            branch.CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
             _context.Branches.Add(branch);
             await _context.SaveChangesAsync();
             return branch;
@@ -42,8 +42,26 @@ namespace RestBar.Services
 
         public async Task UpdateAsync(Branch branch)
         {
-            _context.Entry(branch).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+            try
+            {
+                // Buscar si hay una entidad con el mismo ID siendo rastreada
+                var existingEntity = _context.ChangeTracker.Entries<Branch>()
+                    .FirstOrDefault(e => e.Entity.Id == branch.Id);
+
+                if (existingEntity != null)
+                {
+                    // Detach la entidad existente para evitar conflictos
+                    existingEntity.State = EntityState.Detached;
+                }
+
+                // Usar Update para manejar automáticamente el tracking
+                _context.Branches.Update(branch);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("Error al actualizar la sucursal en la base de datos.", ex);
+            }
         }
 
         public async Task DeleteAsync(Guid id)

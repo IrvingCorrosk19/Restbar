@@ -1,23 +1,61 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using RestBar.Interfaces;
 using RestBar.Models;
 
 namespace RestBar.Controllers
 {
+    [Authorize]
     public class UserController : Controller
     {
         private readonly IUserService _userService;
         private readonly IBranchService _branchService;
         private readonly ICompanyService _companyService;
+        private readonly IAuthService _authService;
 
-        public UserController(IUserService userService, IBranchService branchService, ICompanyService companyService)
+        public UserController(IUserService userService, IBranchService branchService, ICompanyService companyService, IAuthService authService)
         {
             _userService = userService;
             _branchService = branchService;
             _companyService = companyService;
+            _authService = authService;
         }
 
+        private async Task<bool> HasUserManagementPermissionAsync()
+        {
+            try
+            {
+                var currentUser = await _authService.GetCurrentUserAsync(User);
+                if (currentUser == null) return false;
+                
+                return currentUser.Role == UserRole.admin || 
+                       currentUser.Role == UserRole.manager || 
+                       currentUser.Role == UserRole.support;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private async Task<IActionResult> CheckUserManagementPermissionAsync()
+        {
+            if (!await HasUserManagementPermissionAsync())
+            {
+                return Json(new { success = false, message = "No tienes permisos para gestionar usuarios" });
+            }
+            return null;
+        }
+
+        [Authorize(Policy = "UserManagement")]
         public IActionResult Index()
+        {
+            return View();
+        }
+
+        // Nueva vista para gestión completa de usuarios y roles
+        [Authorize(Policy = "UserManagement")]
+        public IActionResult UserManagement()
         {
             return View();
         }
@@ -25,6 +63,9 @@ namespace RestBar.Controllers
         [HttpGet]
         public async Task<IActionResult> GetUsers(string searchTerm, string role, Guid? branchId, bool? isActive)
         {
+            var permissionCheck = await CheckUserManagementPermissionAsync();
+            if (permissionCheck != null) return permissionCheck;
+
             try
             {
                 var users = await _userService.GetAllAsync();
@@ -83,6 +124,9 @@ namespace RestBar.Controllers
         [HttpGet]
         public async Task<IActionResult> GetUser(Guid id)
         {
+            var permissionCheck = await CheckUserManagementPermissionAsync();
+            if (permissionCheck != null) return permissionCheck;
+
             try
             {
                 var user = await _userService.GetByIdAsync(id);
@@ -117,13 +161,37 @@ namespace RestBar.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromForm] User user)
+        public async Task<IActionResult> Create([FromForm] User user, [FromForm] string password)
         {
+            var permissionCheck = await CheckUserManagementPermissionAsync();
+            if (permissionCheck != null) return permissionCheck;
+
             try
             {
                 if (user == null)
                 {
                     return Json(new { success = false, message = "Los datos del usuario no pueden estar vacíos" });
+                }
+
+                // Validar que el password no esté vacío
+                if (string.IsNullOrEmpty(password))
+                {
+                    return Json(new { success = false, message = "La contraseña es requerida" });
+                }
+
+                // Validar longitud mínima del password
+                if (password.Length < 6)
+                {
+                    return Json(new { success = false, message = "La contraseña debe tener al menos 6 caracteres" });
+                }
+
+                // Asignar el password al user
+                user.PasswordHash = password;
+
+                // Validar que el email no esté vacío
+                if (string.IsNullOrEmpty(user.Email))
+                {
+                    return Json(new { success = false, message = "El email es requerido" });
                 }
 
                 // Validar que el email no esté duplicado
@@ -151,7 +219,7 @@ namespace RestBar.Controllers
 
                 // Limpiar campos que no deben ser establecidos por el cliente
                 user.Id = Guid.NewGuid();
-                user.CreatedAt = DateTime.Now;
+                user.CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
                 user.IsActive = true;
 
                 var createdUser = await _userService.CreateAsync(user);
@@ -177,8 +245,11 @@ namespace RestBar.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Update([FromForm] User user)
+        public async Task<IActionResult> Update([FromForm] User user, [FromForm] string password = "")
         {
+            var permissionCheck = await CheckUserManagementPermissionAsync();
+            if (permissionCheck != null) return permissionCheck;
+
             try
             {
                 if (user == null)
@@ -191,6 +262,21 @@ namespace RestBar.Controllers
                 if (existingUser == null)
                 {
                     return Json(new { success = false, message = "Usuario no encontrado" });
+                }
+
+                // Si se proporciona password, validarlo y asignarlo
+                if (!string.IsNullOrEmpty(password))
+                {
+                    if (password.Length < 6)
+                    {
+                        return Json(new { success = false, message = "La contraseña debe tener al menos 6 caracteres" });
+                    }
+                    user.PasswordHash = password;
+                }
+                else
+                {
+                    // Mantener el password existente si no se proporciona uno nuevo
+                    user.PasswordHash = existingUser.PasswordHash;
                 }
 
                 // Validar que el email no esté duplicado (si se cambió)
@@ -247,6 +333,9 @@ namespace RestBar.Controllers
         [HttpDelete]
         public async Task<IActionResult> Delete(Guid id)
         {
+            var permissionCheck = await CheckUserManagementPermissionAsync();
+            if (permissionCheck != null) return permissionCheck;
+
             try
             {
                 await _userService.DeleteAsync(id);
@@ -261,6 +350,9 @@ namespace RestBar.Controllers
         [HttpGet]
         public async Task<IActionResult> GetCompanies()
         {
+            var permissionCheck = await CheckUserManagementPermissionAsync();
+            if (permissionCheck != null) return permissionCheck;
+
             try
             {
                 var companies = await _companyService.GetAllAsync();
@@ -279,6 +371,9 @@ namespace RestBar.Controllers
         [HttpGet]
         public async Task<IActionResult> GetBranches()
         {
+            var permissionCheck = await CheckUserManagementPermissionAsync();
+            if (permissionCheck != null) return permissionCheck;
+
             try
             {
                 var branches = await _branchService.GetAllAsync();
@@ -299,6 +394,9 @@ namespace RestBar.Controllers
         [HttpGet]
         public async Task<IActionResult> GetSupervisors()
         {
+            var permissionCheck = await CheckUserManagementPermissionAsync();
+            if (permissionCheck != null) return permissionCheck;
+
             try
             {
                 var supervisors = await _userService.GetByRoleAsync(UserRole.supervisor);

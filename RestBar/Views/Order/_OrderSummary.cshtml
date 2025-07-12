@@ -43,15 +43,25 @@
             </div>
             <div class="order-controls">
                 <button class="btn btn-warning me-2" id="clearOrderBtn">Vaciar</button>
-                <button class="btn btn-danger me-2" id="cancelOrder" style="display: none;">Cancelar Orden</button>
+                <button class="btn btn-danger me-2" id="cancelOrder" style="display: none;" data-permission="orders">Cancelar Orden</button>
                 <button class="btn btn-info me-2" id="refreshOrderBtn" onclick="forceRefreshOrder()">🔄 Actualizar</button>
-                <button class="btn btn-primary me-2" id="partialPaymentBtn" onclick="showPaymentModal()" style="display: none;">
+                <button class="btn btn-primary me-2" id="partialPaymentBtn" onclick="showPaymentModal()" style="display: none;" data-permission="payments">
                     <i class="fas fa-credit-card"></i> Pago Parcial
                 </button>
-                <button class="btn btn-secondary me-2" id="paymentHistoryBtn" onclick="showPaymentHistoryModal()" style="display: none;">
+                <button class="btn btn-secondary me-2" id="paymentHistoryBtn" onclick="showPaymentHistoryModal()" style="display: none;" data-permission="payments">
                     <i class="fas fa-history"></i> Historial Pagos
                 </button>
-                <button class="btn btn-success" id="sendToKitchen">Agregar a Cocina</button>
+                <button class="btn btn-success" id="sendToKitchen" data-permission="orders">Agregar a Cocina</button>
+                
+                <!-- Botón solo para supervisores y administradores -->
+                <button class="btn btn-warning me-2" id="priorityOrderBtn" style="display: none;" data-roles="admin,manager,supervisor">
+                    <i class="fas fa-exclamation-triangle"></i> Prioridad
+                </button>
+                
+                <!-- Botón solo para administradores -->
+                <button class="btn btn-info me-2" id="adminOrderBtn" style="display: none;" data-role="admin">
+                    <i class="fas fa-cog"></i> Config. Orden
+                </button>
             </div>
         </div>
     </div>

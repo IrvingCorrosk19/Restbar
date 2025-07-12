@@ -31,7 +31,7 @@ namespace RestBar.Services
 
         public async Task<AuditLog> CreateAsync(AuditLog auditLog)
         {
-            auditLog.Timestamp = DateTime.Now;
+            auditLog.Timestamp = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
             _context.AuditLogs.Add(auditLog);
             await _context.SaveChangesAsync();
             return auditLog;
@@ -39,8 +39,26 @@ namespace RestBar.Services
 
         public async Task UpdateAsync(AuditLog auditLog)
         {
-            _context.Entry(auditLog).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+            try
+            {
+                // Buscar si hay una entidad con el mismo ID siendo rastreada
+                var existingEntity = _context.ChangeTracker.Entries<AuditLog>()
+                    .FirstOrDefault(e => e.Entity.Id == auditLog.Id);
+
+                if (existingEntity != null)
+                {
+                    // Detach la entidad existente para evitar conflictos
+                    existingEntity.State = EntityState.Detached;
+                }
+
+                // Usar Update para manejar automáticamente el tracking
+                _context.AuditLogs.Update(auditLog);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("Error al actualizar el registro de auditoría en la base de datos.", ex);
+            }
         }
 
         public async Task DeleteAsync(Guid id)

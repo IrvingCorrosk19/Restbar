@@ -44,10 +44,6 @@ namespace RestBar.Services
         {
             order.OpenedAt = DateTime.UtcNow;
             
-            // Validación de desarrollo para asegurar que las fechas sean UTC
-            if (order.OpenedAt.HasValue && order.OpenedAt.Value.Kind == DateTimeKind.Unspecified)
-                throw new InvalidOperationException("OpenedAt no debe ser Unspecified para columnas timestamp with time zone");
-            
             order.Status = OrderStatus.Pending;
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
@@ -83,8 +79,26 @@ namespace RestBar.Services
 
         public async Task UpdateAsync(Order order)
         {
-            _context.Entry(order).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+            try
+            {
+                // Buscar si hay una entidad con el mismo ID siendo rastreada
+                var existingEntity = _context.ChangeTracker.Entries<Order>()
+                    .FirstOrDefault(e => e.Entity.Id == order.Id);
+
+                if (existingEntity != null)
+                {
+                    // Detach la entidad existente para evitar conflictos
+                    existingEntity.State = EntityState.Detached;
+                }
+
+                // Usar Update para manejar automáticamente el tracking
+                _context.Orders.Update(order);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("Error al actualizar la orden en la base de datos.", ex);
+            }
         }
 
         public async Task DeleteAsync(Guid id)
@@ -206,10 +220,6 @@ namespace RestBar.Services
             {
                 order.Status = OrderStatus.Completed;
                 order.ClosedAt = DateTime.UtcNow;
-                
-                // Validación de desarrollo para asegurar que las fechas sean UTC
-                if (order.ClosedAt.HasValue && order.ClosedAt.Value.Kind == DateTimeKind.Unspecified)
-                    throw new InvalidOperationException("ClosedAt no debe ser Unspecified para columnas timestamp with time zone");
                 
                 await _context.SaveChangesAsync();
             }
@@ -878,10 +888,6 @@ namespace RestBar.Services
                 // Marcar la orden como cancelada
                 order.Status = OrderStatus.Cancelled;
                 order.ClosedAt = DateTime.UtcNow;
-                
-                // Validación de desarrollo para asegurar que las fechas sean UTC
-                if (order.ClosedAt.HasValue && order.ClosedAt.Value.Kind == DateTimeKind.Unspecified)
-                    throw new InvalidOperationException("ClosedAt no debe ser Unspecified para columnas timestamp with time zone");
 
                 // Crear log de cancelación
                 var cancellationLog = new OrderCancellationLog
@@ -1395,7 +1401,7 @@ namespace RestBar.Services
                 Console.WriteLine($"[OrderService] Enviando notificaciones SignalR...");
                 
                 // Notificación detallada del item actualizado
-                var timestamp = DateTime.Now.ToString("HH:mm:ss");
+                var timestamp = DateTime.UtcNow.ToString("HH:mm:ss");
                 await _orderHubService.NotifyOrderItemUpdated(
                     order.Id, 
                     item.Id, 

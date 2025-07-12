@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using RestBar.Interfaces;
 using RestBar.Models;
 using RestBar.ViewModel;
@@ -9,6 +10,7 @@ namespace RestBar.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Policy = "PaymentAccess")]
     public class PaymentController : ControllerBase
     {
         private readonly IPaymentService _paymentService;

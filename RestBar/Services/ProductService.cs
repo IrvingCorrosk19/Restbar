@@ -36,6 +36,7 @@ namespace RestBar.Services
                     throw new ArgumentNullException(nameof(product), "El producto no puede ser null.");
 
                 product.Id = Guid.NewGuid();
+                product.CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
                 _context.Products.Add(product);
                 await _context.SaveChangesAsync();
 

@@ -39,8 +39,26 @@ namespace RestBar.Services
 
         public async Task UpdateAsync(OrderItem orderItem)
         {
-            _context.Entry(orderItem).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+            try
+            {
+                // Buscar si hay una entidad con el mismo ID siendo rastreada
+                var existingEntity = _context.ChangeTracker.Entries<OrderItem>()
+                    .FirstOrDefault(e => e.Entity.Id == orderItem.Id);
+
+                if (existingEntity != null)
+                {
+                    // Detach la entidad existente para evitar conflictos
+                    existingEntity.State = EntityState.Detached;
+                }
+
+                // Usar Update para manejar automáticamente el tracking
+                _context.OrderItems.Update(orderItem);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("Error al actualizar el item de la orden en la base de datos.", ex);
+            }
         }
 
         public async Task DeleteAsync(Guid id)

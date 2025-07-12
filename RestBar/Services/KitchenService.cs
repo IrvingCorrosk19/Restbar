@@ -105,7 +105,7 @@ namespace RestBar.Services
             Console.WriteLine($"[KitchenService] TableId: {order.TableId}");
 
             order.Status = OrderStatus.Ready;
-            order.ClosedAt = DateTime.UtcNow;
+            order.ClosedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
             
             // Validación de desarrollo para asegurar que las fechas sean UTC
             if (order.ClosedAt.HasValue && order.ClosedAt.Value.Kind == DateTimeKind.Unspecified)
@@ -202,7 +202,7 @@ namespace RestBar.Services
             {
                 item.Status = OrderItemStatus.Ready;
                 item.PreparedByStationId = station.Id;
-                item.PreparedAt = DateTime.UtcNow;
+                item.PreparedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
                 
                 // Validación de desarrollo para asegurar que las fechas sean UTC
                 if (item.PreparedAt.HasValue && item.PreparedAt.Value.Kind == DateTimeKind.Unspecified)
@@ -223,7 +223,7 @@ namespace RestBar.Services
             {
                 Console.WriteLine($"[KitchenService] Todos los items están listos, marcando orden como lista");
                 order.Status = OrderStatus.Ready;
-                order.ClosedAt = DateTime.UtcNow;
+                order.ClosedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
                 
                 // Validación de desarrollo para asegurar que las fechas sean UTC
                 if (order.ClosedAt.HasValue && order.ClosedAt.Value.Kind == DateTimeKind.Unspecified)
@@ -375,7 +375,7 @@ namespace RestBar.Services
             // Marcar el item como listo
             itemToMark.Status = OrderItemStatus.Ready;
             itemToMark.PreparedByStationId = station.Id;
-            itemToMark.PreparedAt = DateTime.UtcNow;
+            itemToMark.PreparedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
             
             // Validación de desarrollo para asegurar que las fechas sean UTC
             if (itemToMark.PreparedAt.HasValue && itemToMark.PreparedAt.Value.Kind == DateTimeKind.Unspecified)
@@ -395,7 +395,7 @@ namespace RestBar.Services
             {
                 Console.WriteLine($"[KitchenService] Todos los items están listos, marcando orden como lista");
                 order.Status = OrderStatus.Ready;
-                order.ClosedAt = DateTime.UtcNow;
+                order.ClosedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
                 
                 // Validación de desarrollo para asegurar que las fechas sean UTC
                 if (order.ClosedAt.HasValue && order.ClosedAt.Value.Kind == DateTimeKind.Unspecified)

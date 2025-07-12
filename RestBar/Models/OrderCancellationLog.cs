@@ -12,7 +12,7 @@ namespace RestBar.Models
         public string Reason { get; set; }
         
         [Column(TypeName = "timestamp with time zone")]
-        public DateTime Date { get; set; } = DateTime.Now; // Ahora compatible con PostgreSQL
+        public DateTime Date { get; set; } = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified); // Ahora compatible con PostgreSQL
         public string Products { get; set; } // JSON de productos afectados
 
         // Navigation properties

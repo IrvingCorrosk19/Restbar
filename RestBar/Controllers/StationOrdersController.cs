@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using RestBar.Services;
 using System.Threading.Tasks;
 
 namespace RestBar.Controllers
 {
+    [Authorize(Policy = "KitchenAccess")]
     public class StationOrdersController : Controller
     {
         private readonly IKitchenService _kitchenService;

@@ -1,0 +1,895 @@
+@{
+    ViewData["Title"] = "Gestión de Usuarios y Roles";
+}
+
+<style>
+    :root {
+        --primary-color: #2c3e50;
+        --secondary-color: #34495e;
+        --accent-color: #e67e22;
+        --success-color: #27ae60;
+        --danger-color: #e74c3c;
+        --warning-color: #f39c12;
+        --info-color: #3498db;
+        --light-color: #ecf0f1;
+        --dark-color: #2c3e50;
+        --gradient-primary: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        --shadow-light: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --shadow-medium: 0 8px 15px rgba(0, 0, 0, 0.15);
+        --border-radius: 20px;
+        --transition: all 0.3s ease;
+    }
+
+    body {
+        font-family: 'Poppins', sans-serif;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+        color: var(--dark-color);
+    }
+
+    /* Hero Section */
+    .hero-section {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 3rem 0;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero-section::before {
+        content: '';
+        position: absolute;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        animation: float 20s ease-in-out infinite;
+        opacity: 0.1;
+    }
+
+    @@keyframes float {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-20px) rotate(180deg); }
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+    }
+
+    .hero-title {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .hero-subtitle {
+        font-size: 1.2rem;
+        opacity: 0.9;
+        margin-bottom: 2rem;
+    }
+
+    /* Main Content */
+    .main-content {
+        padding: 0 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    /* Toolbar */
+    .toolbar {
+        background: white;
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-light);
+        margin-bottom: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .search-box {
+        position: relative;
+        flex: 1;
+        min-width: 300px;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 0.75rem 1rem 0.75rem 2.5rem;
+        border: 2px solid #e1e8ed;
+        border-radius: 12px;
+        font-size: 1rem;
+        transition: var(--transition);
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(231, 126, 34, 0.1);
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #666;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--accent-color), #d35400);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        box-shadow: var(--shadow-light);
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-medium);
+    }
+
+    /* Filters */
+    .filters-section {
+        background: white;
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-light);
+        margin-bottom: 2rem;
+    }
+
+    .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .filter-group {
+        position: relative;
+    }
+
+    .filter-label {
+        display: block;
+        font-weight: 500;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .filter-select {
+        width: 100%;
+        padding: 0.6rem;
+        border: 2px solid #e1e8ed;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        transition: var(--transition);
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(231, 126, 34, 0.1);
+    }
+
+    /* Users Table */
+    .users-container {
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-light);
+        overflow: hidden;
+    }
+
+    .users-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .users-header h3 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    .users-stats {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .table-container {
+        overflow-x: auto;
+    }
+
+    .users-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .users-table th,
+    .users-table td {
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid #e1e8ed;
+    }
+
+    .users-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: var(--primary-color);
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .users-table tr:hover {
+        background: #f8f9fa;
+    }
+
+    /* Role Badge */
+    .role-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .role-admin { background: #e74c3c; color: white; }
+    .role-manager { background: #3498db; color: white; }
+    .role-supervisor { background: #f39c12; color: white; }
+    .role-waiter { background: #27ae60; color: white; }
+    .role-cashier { background: #9b59b6; color: white; }
+    .role-chef { background: #e67e22; color: white; }
+    .role-bartender { background: #1abc9c; color: white; }
+    .role-inventory { background: #34495e; color: white; }
+    .role-accountant { background: #95a5a6; color: white; }
+    .role-support { background: #e91e63; color: white; }
+
+    /* Status Badge */
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .status-active { background: #d4edda; color: #155724; }
+    .status-inactive { background: #f8d7da; color: #721c24; }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-edit {
+        background: var(--info-color);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        transition: var(--transition);
+    }
+
+    .btn-edit:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .btn-delete {
+        background: var(--danger-color);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        transition: var(--transition);
+    }
+
+    .btn-delete:hover {
+        background: #c0392b;
+        transform: translateY(-1px);
+    }
+
+    /* Modal Styles */
+    .modal-content {
+        border-radius: var(--border-radius);
+        border: none;
+        box-shadow: var(--shadow-medium);
+    }
+
+    .modal-header {
+        background: var(--gradient-primary);
+        color: white;
+        border-bottom: none;
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+        padding: 1.5rem;
+    }
+
+    .modal-body {
+        padding: 2rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 500;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid #e1e8ed;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: var(--transition);
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(231, 126, 34, 0.1);
+    }
+
+    .btn-save {
+        background: var(--success-color);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .btn-save:hover {
+        background: #229954;
+        transform: translateY(-1px);
+    }
+
+    .btn-cancel {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        margin-right: 0.5rem;
+    }
+
+    .btn-cancel:hover {
+        background: #5a6268;
+        transform: translateY(-1px);
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .search-box {
+            min-width: unset;
+        }
+
+        .filters-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .users-stats {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<div class="hero-section">
+    <div class="hero-content">
+        <h1 class="hero-title">
+            <i class="fas fa-users-cog"></i> Gestión de Usuarios
+        </h1>
+        <p class="hero-subtitle">
+            Administra usuarios, roles y permisos del sistema
+        </p>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <div class="search-box">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="search-input" id="searchInput" placeholder="Buscar usuarios...">
+            </div>
+        </div>
+        <button class="btn-primary" onclick="showCreateUserModal()">
+            <i class="fas fa-plus"></i> Nuevo Usuario
+        </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-section">
+        <div class="filters-grid">
+            <div class="filter-group">
+                <label class="filter-label">Rol</label>
+                <select class="filter-select" id="roleFilter">
+                    <option value="">Todos los roles</option>
+                    <option value="admin">Administrador</option>
+                    <option value="manager">Gerente</option>
+                    <option value="supervisor">Supervisor</option>
+                    <option value="waiter">Mesero</option>
+                    <option value="cashier">Cajero</option>
+                    <option value="chef">Cocinero</option>
+                    <option value="bartender">Bartender</option>
+                    <option value="inventory">Inventarista</option>
+                    <option value="accountant">Contador</option>
+                    <option value="support">Soporte</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Estado</label>
+                <select class="filter-select" id="statusFilter">
+                    <option value="">Todos</option>
+                    <option value="true">Activo</option>
+                    <option value="false">Inactivo</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Sucursal</label>
+                <select class="filter-select" id="branchFilter">
+                    <option value="">Todas las sucursales</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="users-container">
+        <div class="users-header">
+            <h3><i class="fas fa-users"></i> Lista de Usuarios</h3>
+            <div class="users-stats">
+                <span id="totalUsers">Total: 0</span>
+                <span id="activeUsers">Activos: 0</span>
+                <span id="inactiveUsers">Inactivos: 0</span>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Email</th>
+                        <th>Rol</th>
+                        <th>Sucursal</th>
+                        <th>Estado</th>
+                        <th>Creado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <!-- Usuarios se cargarán aquí -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Crear/Editar Usuario -->
+<div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="userModalLabel">
+                    <i class="fas fa-user-plus"></i> Nuevo Usuario
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <input type="hidden" id="userId" name="id">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Nombre Completo *</label>
+                                <input type="text" class="form-control" id="fullName" name="fullName" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Email *</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Rol *</label>
+                                <select class="form-control" id="role" name="role" required>
+                                    <option value="">Seleccionar rol</option>
+                                    <option value="admin">Administrador</option>
+                                    <option value="manager">Gerente</option>
+                                    <option value="supervisor">Supervisor</option>
+                                    <option value="waiter">Mesero</option>
+                                    <option value="cashier">Cajero</option>
+                                    <option value="chef">Cocinero</option>
+                                    <option value="bartender">Bartender</option>
+                                    <option value="inventory">Inventarista</option>
+                                    <option value="accountant">Contador</option>
+                                    <option value="support">Soporte</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Sucursal</label>
+                                <select class="form-control" id="branchId" name="branchId">
+                                    <option value="">Sin sucursal</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Contraseña *</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                                <small class="text-muted">Mínimo 8 caracteres</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Confirmar Contraseña *</label>
+                                <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="isActive" name="isActive" checked>
+                                    <label class="form-check-label" for="isActive">
+                                        Usuario activo
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn-save" onclick="saveUser()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let users = [];
+let branches = [];
+let isEditMode = false;
+
+// Cargar datos iniciales
+document.addEventListener('DOMContentLoaded', function() {
+    loadUsers();
+    loadBranches();
+    
+    // Event listeners para filtros
+    document.getElementById('searchInput').addEventListener('input', filterUsers);
+    document.getElementById('roleFilter').addEventListener('change', filterUsers);
+    document.getElementById('statusFilter').addEventListener('change', filterUsers);
+    document.getElementById('branchFilter').addEventListener('change', filterUsers);
+});
+
+// Cargar usuarios
+async function loadUsers() {
+    try {
+        const response = await fetch('/User/GetUsers');
+        const result = await response.json();
+        
+        if (result.success) {
+            users = result.data;
+            renderUsers(users);
+            updateStats();
+        } else {
+            Swal.fire('Error', result.message || 'Error al cargar usuarios', 'error');
+        }
+    } catch (error) {
+        console.error('Error al cargar usuarios:', error);
+        Swal.fire('Error', 'Error al cargar usuarios', 'error');
+    }
+}
+
+// Cargar sucursales
+async function loadBranches() {
+    try {
+        const response = await fetch('/User/GetBranches');
+        const result = await response.json();
+        
+        if (result.success) {
+            branches = result.data;
+            populateBranchSelects();
+        }
+    } catch (error) {
+        console.error('Error al cargar sucursales:', error);
+    }
+}
+
+// Poblar selectores de sucursales
+function populateBranchSelects() {
+    const branchFilter = document.getElementById('branchFilter');
+    const branchSelect = document.getElementById('branchId');
+    
+    branches.forEach(branch => {
+        const option1 = new Option(branch.name, branch.id);
+        const option2 = new Option(branch.name, branch.id);
+        branchFilter.add(option1);
+        branchSelect.add(option2);
+    });
+}
+
+// Renderizar usuarios
+function renderUsers(usersToRender) {
+    const tbody = document.getElementById('usersTableBody');
+    tbody.innerHTML = '';
+    
+    usersToRender.forEach(user => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <div class="d-flex align-items-center">
+                    <div class="avatar-circle me-3">
+                        ${user.fullName ? user.fullName.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <div class="fw-bold">${user.fullName || 'Sin nombre'}</div>
+                        <div class="text-muted small">ID: ${user.id.substring(0, 8)}...</div>
+                    </div>
+                </div>
+            </td>
+            <td>${user.email}</td>
+            <td><span class="role-badge role-${user.role}">${getRoleName(user.role)}</span></td>
+            <td>${user.branchName || 'Sin sucursal'}</td>
+            <td><span class="status-badge status-${user.isActive ? 'active' : 'inactive'}">${user.isActive ? 'Activo' : 'Inactivo'}</span></td>
+            <td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</td>
+            <td>
+                <div class="action-buttons">
+                    <button class="btn-edit" onclick="editUser('${user.id}')">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                    <button class="btn-delete" onclick="deleteUser('${user.id}')">
+                        <i class="fas fa-trash"></i> Eliminar
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Obtener nombre del rol
+function getRoleName(role) {
+    const roleNames = {
+        admin: 'Administrador',
+        manager: 'Gerente',
+        supervisor: 'Supervisor',
+        waiter: 'Mesero',
+        cashier: 'Cajero',
+        chef: 'Cocinero',
+        bartender: 'Bartender',
+        inventory: 'Inventarista',
+        accountant: 'Contador',
+        support: 'Soporte'
+    };
+    return roleNames[role] || role;
+}
+
+// Actualizar estadísticas
+function updateStats() {
+    const total = users.length;
+    const active = users.filter(u => u.isActive).length;
+    const inactive = total - active;
+    
+    document.getElementById('totalUsers').textContent = `Total: ${total}`;
+    document.getElementById('activeUsers').textContent = `Activos: ${active}`;
+    document.getElementById('inactiveUsers').textContent = `Inactivos: ${inactive}`;
+}
+
+// Filtrar usuarios
+function filterUsers() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const roleFilter = document.getElementById('roleFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    const branchFilter = document.getElementById('branchFilter').value;
+    
+    let filteredUsers = users.filter(user => {
+        const matchesSearch = !searchTerm || 
+            (user.fullName && user.fullName.toLowerCase().includes(searchTerm)) ||
+            (user.email && user.email.toLowerCase().includes(searchTerm));
+        
+        const matchesRole = !roleFilter || user.role === roleFilter;
+        const matchesStatus = !statusFilter || user.isActive.toString() === statusFilter;
+        const matchesBranch = !branchFilter || user.branchId === branchFilter;
+        
+        return matchesSearch && matchesRole && matchesStatus && matchesBranch;
+    });
+    
+    renderUsers(filteredUsers);
+}
+
+// Mostrar modal para crear usuario
+function showCreateUserModal() {
+    isEditMode = false;
+    document.getElementById('userModalLabel').innerHTML = '<i class="fas fa-user-plus"></i> Nuevo Usuario';
+    document.getElementById('userForm').reset();
+    document.getElementById('userId').value = '';
+    document.getElementById('isActive').checked = true;
+    new bootstrap.Modal(document.getElementById('userModal')).show();
+}
+
+// Editar usuario
+async function editUser(userId) {
+    try {
+        const response = await fetch(`/User/GetUser?id=${userId}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            isEditMode = true;
+            const user = result.data;
+            
+            document.getElementById('userModalLabel').innerHTML = '<i class="fas fa-user-edit"></i> Editar Usuario';
+            document.getElementById('userId').value = user.id;
+            document.getElementById('fullName').value = user.fullName || '';
+            document.getElementById('email').value = user.email;
+            document.getElementById('role').value = user.role;
+            document.getElementById('branchId').value = user.branchId || '';
+            document.getElementById('isActive').checked = user.isActive;
+            
+            // Ocultar campos de contraseña en modo edición
+            document.getElementById('password').required = false;
+            document.getElementById('confirmPassword').required = false;
+            
+            new bootstrap.Modal(document.getElementById('userModal')).show();
+        } else {
+            Swal.fire('Error', result.message || 'Error al cargar usuario', 'error');
+        }
+    } catch (error) {
+        console.error('Error al cargar usuario:', error);
+        Swal.fire('Error', 'Error al cargar usuario', 'error');
+    }
+}
+
+// Guardar usuario
+async function saveUser() {
+    const form = document.getElementById('userForm');
+    const formData = new FormData(form);
+    
+    // Validar contraseñas
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    if (!isEditMode && password !== confirmPassword) {
+        Swal.fire('Error', 'Las contraseñas no coinciden', 'error');
+        return;
+    }
+    
+    if (!isEditMode && password.length < 8) {
+        Swal.fire('Error', 'La contraseña debe tener al menos 8 caracteres', 'error');
+        return;
+    }
+    
+    try {
+        const url = isEditMode ? '/User/Update' : '/User/Create';
+        const response = await fetch(url, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            Swal.fire('Éxito', `Usuario ${isEditMode ? 'actualizado' : 'creado'} exitosamente`, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('userModal')).hide();
+            loadUsers();
+        } else {
+            Swal.fire('Error', result.message || 'Error al guardar usuario', 'error');
+        }
+    } catch (error) {
+        console.error('Error al guardar usuario:', error);
+        Swal.fire('Error', 'Error al guardar usuario', 'error');
+    }
+}
+
+// Eliminar usuario
+async function deleteUser(userId) {
+    const result = await Swal.fire({
+        title: '¿Estás seguro?',
+        text: 'Esta acción no se puede deshacer',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    });
+    
+    if (result.isConfirmed) {
+        try {
+            const response = await fetch(`/User/Delete?id=${userId}`, {
+                method: 'DELETE'
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                Swal.fire('Eliminado', 'Usuario eliminado exitosamente', 'success');
+                loadUsers();
+            } else {
+                Swal.fire('Error', result.message || 'Error al eliminar usuario', 'error');
+            }
+        } catch (error) {
+            console.error('Error al eliminar usuario:', error);
+            Swal.fire('Error', 'Error al eliminar usuario', 'error');
+        }
+    }
+}
+</script>
+
+<style>
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+</style> 

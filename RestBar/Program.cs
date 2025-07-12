@@ -4,6 +4,8 @@ using RestBar.Interfaces;
 using RestBar.Models;
 using RestBar.Services;
 using RestBar.Hubs;
+using RestBar.Middleware;
+using RestBar.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +30,39 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         options.Cookie.SameSite = SameSiteMode.Lax;
     });
+
+// Configurar autorización con políticas personalizadas
+builder.Services.AddAuthorization(options =>
+{
+    // Políticas por roles específicos
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("admin"));
+    options.AddPolicy("ManagerOrAbove", policy => policy.RequireRole("admin", "manager"));
+    options.AddPolicy("SupervisorOrAbove", policy => policy.RequireRole("admin", "manager", "supervisor"));
+    
+    // Políticas para área de órdenes
+    options.AddPolicy("OrderAccess", policy => policy.RequireRole("admin", "manager", "supervisor", "waiter", "cashier"));
+    
+    // Políticas para área de cocina
+    options.AddPolicy("KitchenAccess", policy => policy.RequireRole("admin", "manager", "supervisor", "chef", "bartender"));
+    
+    // Políticas para área de pagos
+    options.AddPolicy("PaymentAccess", policy => policy.RequireRole("admin", "manager", "supervisor", "cashier", "accountant"));
+    
+    // Políticas para área de inventario
+    options.AddPolicy("InventoryAccess", policy => policy.RequireRole("admin", "manager", "inventory"));
+    
+    // Políticas para área de productos
+    options.AddPolicy("ProductAccess", policy => policy.RequireRole("admin", "manager", "inventory"));
+    
+    // Políticas para área de usuarios
+    options.AddPolicy("UserManagement", policy => policy.RequireRole("admin", "manager", "support"));
+    
+    // Políticas para área de reportes
+    options.AddPolicy("ReportAccess", policy => policy.RequireRole("admin", "manager", "accountant"));
+    
+    // Políticas para área de configuración
+    options.AddPolicy("SystemConfig", policy => policy.RequireRole("admin"));
+});
 
 // Agregar HttpContextAccessor para el AuthService
 builder.Services.AddHttpContextAccessor();
@@ -84,6 +119,9 @@ app.UseRouting();
 // Configurar middleware de autenticación (orden importante)
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Middleware personalizado para validación de permisos
+app.UsePermissionValidation();
 
 app.MapControllerRoute(
     name: "default",

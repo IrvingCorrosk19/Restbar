@@ -37,8 +37,26 @@ namespace RestBar.Services
 
         public async Task UpdateAsync(ProductCategory category)
         {
-            _context.Entry(category).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+            try
+            {
+                // Buscar si hay una entidad con el mismo ID siendo rastreada
+                var existingEntity = _context.ChangeTracker.Entries<ProductCategory>()
+                    .FirstOrDefault(e => e.Entity.Id == category.Id);
+
+                if (existingEntity != null)
+                {
+                    // Detach la entidad existente para evitar conflictos
+                    existingEntity.State = EntityState.Detached;
+                }
+
+                // Usar Update para manejar automáticamente el tracking
+                _context.ProductCategories.Update(category);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("Error al actualizar la categoría de producto en la base de datos.", ex);
+            }
         }
 
         public async Task DeleteAsync(Guid id)

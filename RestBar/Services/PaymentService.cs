@@ -42,13 +42,6 @@ namespace RestBar.Services
                 payment.PaidAt = DateTime.UtcNow;
                 Console.WriteLine($"[PaymentService] PaidAt configurado como UTC: {payment.PaidAt}");
                 
-                // Validación de desarrollo para asegurar que las fechas sean UTC
-                if (payment.PaidAt.HasValue && payment.PaidAt.Value.Kind != DateTimeKind.Utc)
-                {
-                    Console.WriteLine($"[PaymentService] ERROR: PaidAt no es UTC, Kind: {payment.PaidAt.Value.Kind}");
-                    throw new InvalidOperationException("PaidAt debe ser UTC para columnas timestamp with time zone");
-                }
-                
                 payment.IsVoided = false;
                 Console.WriteLine($"[PaymentService] Payment configurado - IsVoided: {payment.IsVoided}");
                 
@@ -78,8 +71,26 @@ namespace RestBar.Services
 
         public async Task UpdateAsync(Payment payment)
         {
-            _context.Entry(payment).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+            try
+            {
+                // Buscar si hay una entidad con el mismo ID siendo rastreada
+                var existingEntity = _context.ChangeTracker.Entries<Payment>()
+                    .FirstOrDefault(e => e.Entity.Id == payment.Id);
+
+                if (existingEntity != null)
+                {
+                    // Detach la entidad existente para evitar conflictos
+                    existingEntity.State = EntityState.Detached;
+                }
+
+                // Usar Update para manejar automáticamente el tracking
+                _context.Payments.Update(payment);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("Error al actualizar el pago en la base de datos.", ex);
+            }
         }
 
         public async Task DeleteAsync(Guid id)
