@@ -723,6 +723,98 @@
     .order-controls .btn {
         width: 100%;
     }
+    
+    /* Mejoras específicas para móviles */
+    .mesa-btn {
+        min-width: 80px;
+        padding: 8px 10px;
+        font-size: 0.85rem;
+        margin: 3px;
+    }
+    
+    .mesa-btn i {
+        font-size: 1rem;
+        margin-bottom: 3px;
+    }
+    
+    .mesa-btn small {
+        font-size: 0.75rem;
+    }
+    
+    .capacity-badge {
+        width: 24px;
+        height: 24px;
+        font-size: 0.7rem;
+        top: -8px;
+        right: -8px;
+    }
+    
+    .product-card {
+        margin-bottom: 10px;
+    }
+    
+    .categoria-btn {
+        min-width: 100px;
+        font-size: 0.85rem;
+        padding: 6px 12px;
+    }
+    
+    .order-summary {
+        margin-top: 15px;
+    }
+    
+    .order-item-summary {
+        padding: 8px;
+        font-size: 0.85rem;
+    }
+    
+    .badge {
+        font-size: 0.7rem;
+        padding: 0.25em 0.4em;
+    }
+    
+    .order-item-status-badge,
+    .order-status-badge {
+        font-size: 0.65rem;
+        padding: 0.2em 0.4em;
+    }
+}
+
+/* Estilos adicionales para móviles pequeños */
+@media (max-width: 480px) {
+    .mesa-btn {
+        min-width: 70px;
+        padding: 6px 8px;
+        font-size: 0.8rem;
+    }
+    
+    .mesa-btn i {
+        font-size: 0.9rem;
+    }
+    
+    .capacity-badge {
+        width: 20px;
+        height: 20px;
+        font-size: 0.6rem;
+    }
+    
+    .categoria-btn {
+        min-width: 80px;
+        font-size: 0.8rem;
+        padding: 5px 10px;
+    }
+    
+    .product-card {
+        font-size: 0.85rem;
+    }
+    
+    .order-items-table {
+        font-size: 0.75rem;
+    }
+    
+    .order-item-summary {
+        font-size: 0.8rem;
+    }
 }
 
 /* ✅ Estilos para controles de cantidad en resumen del pedido */

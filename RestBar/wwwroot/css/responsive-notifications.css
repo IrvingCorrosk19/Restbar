@@ -1,0 +1,543 @@
+/* =================================
+   NOTIFICACIONES RESPONSIVAS
+   Para mejorar la experiencia en móviles
+   ================================= */
+
+/* Estilos base para SweetAlert2 responsivo */
+.swal2-container {
+    padding: 10px !important;
+}
+
+.swal2-popup {
+    font-size: 14px !important;
+}
+
+/* Estilos para toast notifications de SweetAlert2 */
+.swal2-toast {
+    max-width: none !important;
+    width: auto !important;
+    margin: 8px !important;
+}
+
+/* Media queries para diferentes tamaños de pantalla */
+
+/* Tablets y pantallas medianas (768px - 1024px) */
+@media (max-width: 1024px) {
+    .swal2-toast {
+        font-size: 14px !important;
+        padding: 12px !important;
+    }
+    
+    .swal2-toast .swal2-title {
+        font-size: 16px !important;
+        margin-bottom: 5px !important;
+    }
+    
+    .swal2-toast .swal2-content {
+        font-size: 13px !important;
+    }
+}
+
+/* Teléfonos móviles (hasta 768px) */
+@media (max-width: 768px) {
+    /* Repositioning toasts para móviles */
+    .swal2-toast {
+        position: fixed !important;
+        top: 10px !important;
+        left: 10px !important;
+        right: 10px !important;
+        bottom: auto !important;
+        margin: 0 !important;
+        max-width: none !important;
+        width: calc(100% - 20px) !important;
+        font-size: 13px !important;
+        padding: 10px 15px !important;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2) !important;
+    }
+    
+    .swal2-toast .swal2-title {
+        font-size: 15px !important;
+        margin-bottom: 4px !important;
+        line-height: 1.3 !important;
+    }
+    
+    .swal2-toast .swal2-content {
+        font-size: 12px !important;
+        line-height: 1.4 !important;
+        margin: 0 !important;
+    }
+    
+    /* Botones en móviles */
+    .swal2-toast .swal2-actions {
+        margin-top: 8px !important;
+        gap: 8px !important;
+    }
+    
+    .swal2-toast .swal2-confirm,
+    .swal2-toast .swal2-deny,
+    .swal2-toast .swal2-cancel {
+        font-size: 12px !important;
+        padding: 6px 12px !important;
+        min-width: 80px !important;
+    }
+    
+    /* Iconos en móviles */
+    .swal2-toast .swal2-icon {
+        width: 30px !important;
+        height: 30px !important;
+        margin: 0 8px 0 0 !important;
+    }
+    
+    /* Ajustar espaciado para texto con icono */
+    .swal2-toast .swal2-html-container {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+}
+
+/* Teléfonos móviles pequeños (hasta 480px) */
+@media (max-width: 480px) {
+    .swal2-toast {
+        font-size: 12px !important;
+        padding: 8px 12px !important;
+        left: 5px !important;
+        right: 5px !important;
+        width: calc(100% - 10px) !important;
+    }
+    
+    .swal2-toast .swal2-title {
+        font-size: 14px !important;
+        margin-bottom: 3px !important;
+    }
+    
+    .swal2-toast .swal2-content {
+        font-size: 11px !important;
+        line-height: 1.3 !important;
+    }
+    
+    .swal2-toast .swal2-icon {
+        width: 25px !important;
+        height: 25px !important;
+    }
+    
+    .swal2-toast .swal2-confirm,
+    .swal2-toast .swal2-deny,
+    .swal2-toast .swal2-cancel {
+        font-size: 11px !important;
+        padding: 5px 10px !important;
+        min-width: 70px !important;
+    }
+}
+
+/* Diálogos modales responsivos */
+@media (max-width: 768px) {
+    .swal2-popup:not(.swal2-toast) {
+        width: 95% !important;
+        max-width: 400px !important;
+        margin: 10px !important;
+        padding: 15px !important;
+    }
+    
+    .swal2-popup:not(.swal2-toast) .swal2-title {
+        font-size: 18px !important;
+        margin-bottom: 10px !important;
+    }
+    
+    .swal2-popup:not(.swal2-toast) .swal2-content {
+        font-size: 14px !important;
+        line-height: 1.4 !important;
+    }
+    
+    .swal2-popup:not(.swal2-toast) .swal2-actions {
+        margin-top: 15px !important;
+        gap: 10px !important;
+        flex-direction: column !important;
+    }
+    
+    .swal2-popup:not(.swal2-toast) .swal2-confirm,
+    .swal2-popup:not(.swal2-toast) .swal2-deny,
+    .swal2-popup:not(.swal2-toast) .swal2-cancel {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 10px !important;
+        font-size: 14px !important;
+    }
+}
+
+/* Mejorar notificaciones SignalR para móviles */
+@media (max-width: 768px) {
+    .signalr-toast {
+        position: fixed !important;
+        top: 10px !important;
+        left: 10px !important;
+        right: 10px !important;
+        bottom: auto !important;
+        margin: 0 !important;
+        min-width: auto !important;
+        max-width: none !important;
+        width: calc(100% - 20px) !important;
+        font-size: 13px !important;
+        z-index: 9999 !important;
+    }
+    
+    .signalr-toast-header {
+        padding: 10px 12px 6px !important;
+        font-size: 14px !important;
+    }
+    
+    .signalr-toast-body {
+        padding: 8px 12px 10px !important;
+        font-size: 12px !important;
+        line-height: 1.4 !important;
+    }
+    
+    .signalr-toast-close {
+        width: 18px !important;
+        height: 18px !important;
+        font-size: 16px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .signalr-toast {
+        left: 5px !important;
+        right: 5px !important;
+        width: calc(100% - 10px) !important;
+        font-size: 12px !important;
+    }
+    
+    .signalr-toast-header {
+        padding: 8px 10px 5px !important;
+        font-size: 13px !important;
+    }
+    
+    .signalr-toast-body {
+        padding: 6px 10px 8px !important;
+        font-size: 11px !important;
+    }
+}
+
+/* Indicador de conexión SignalR responsivo */
+@media (max-width: 768px) {
+    .signalr-status {
+        bottom: 15px !important;
+        right: 15px !important;
+        width: 15px !important;
+        height: 15px !important;
+    }
+}
+
+/* Actualizaciones en tiempo real responsivas */
+@media (max-width: 768px) {
+    .real-time-update {
+        margin: 5px 0 !important;
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+    }
+}
+
+/* Badges de estado responsivos */
+@media (max-width: 768px) {
+    .order-item-status-badge,
+    .order-status-badge {
+        font-size: 10px !important;
+        padding: 2px 6px !important;
+        margin: 2px !important;
+    }
+}
+
+/* Asegurar que múltiples toasts se apilen correctamente en móviles */
+@media (max-width: 768px) {
+    .swal2-toast + .swal2-toast {
+        top: calc(10px + 60px) !important;
+    }
+    
+    .swal2-toast + .swal2-toast + .swal2-toast {
+        top: calc(10px + 120px) !important;
+    }
+    
+    .swal2-toast + .swal2-toast + .swal2-toast + .swal2-toast {
+        top: calc(10px + 180px) !important;
+    }
+}
+
+/* Mejoras para accesibilidad en móviles */
+@media (max-width: 768px) {
+    .swal2-toast,
+    .signalr-toast {
+        -webkit-tap-highlight-color: transparent !important;
+        user-select: none !important;
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+    }
+    
+    .swal2-toast .swal2-confirm,
+    .swal2-toast .swal2-deny,
+    .swal2-toast .swal2-cancel,
+    .signalr-toast-close {
+        min-height: 44px !important;
+        min-width: 44px !important;
+        -webkit-tap-highlight-color: transparent !important;
+    }
+}
+
+/* Animaciones optimizadas para móviles */
+@media (max-width: 768px) {
+    .swal2-toast {
+        animation: slideInFromTop 0.3s ease-out !important;
+    }
+    
+    .swal2-toast.swal2-hide {
+        animation: slideOutToTop 0.3s ease-in !important;
+    }
+}
+
+@keyframes slideInFromTop {
+    from {
+        transform: translateY(-100%) !important;
+        opacity: 0 !important;
+    }
+    to {
+        transform: translateY(0) !important;
+        opacity: 1 !important;
+    }
+}
+
+@keyframes slideOutToTop {
+    from {
+        transform: translateY(0) !important;
+        opacity: 1 !important;
+    }
+    to {
+        transform: translateY(-100%) !important;
+        opacity: 0 !important;
+    }
+}
+
+/* Mejoras para orientación landscape en móviles */
+@media (max-width: 768px) and (orientation: landscape) {
+    .swal2-toast {
+        top: 5px !important;
+        left: 5px !important;
+        right: 5px !important;
+        width: calc(100% - 10px) !important;
+    }
+    
+    .swal2-popup:not(.swal2-toast) {
+        width: 90% !important;
+        max-width: 500px !important;
+    }
+}
+
+/* Estilos para mejorar la legibilidad en pantallas pequeñas */
+@media (max-width: 768px) {
+    .swal2-toast .swal2-title,
+    .swal2-toast .swal2-content,
+    .signalr-toast-header,
+    .signalr-toast-body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+        -webkit-font-smoothing: antialiased !important;
+        -moz-osx-font-smoothing: grayscale !important;
+    }
+    
+    .swal2-toast {
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+    }
+}
+
+/* Prioridad alta para notificaciones de error en móviles */
+@media (max-width: 768px) {
+    .swal2-toast.swal2-error {
+        border-left: 4px solid #dc3545 !important;
+        background-color: #fff5f5 !important;
+    }
+    
+    .swal2-toast.swal2-success {
+        border-left: 4px solid #28a745 !important;
+        background-color: #f0fff4 !important;
+    }
+    
+    .swal2-toast.swal2-warning {
+        border-left: 4px solid #ffc107 !important;
+        background-color: #fffbf0 !important;
+    }
+    
+    .swal2-toast.swal2-info {
+        border-left: 4px solid #17a2b8 !important;
+        background-color: #f0f8ff !important;
+    }
+}
+
+/* Clases personalizadas para notificaciones específicas */
+.swal2-payment-notification {
+    border-left: 4px solid #28a745 !important;
+    background: linear-gradient(135deg, #f0fff4 0%, #e8f5e9 100%) !important;
+}
+
+.swal2-order-notification {
+    border-left: 4px solid #17a2b8 !important;
+    background: linear-gradient(135deg, #f0f8ff 0%, #e3f2fd 100%) !important;
+}
+
+.swal2-error-notification {
+    border-left: 4px solid #dc3545 !important;
+    background: linear-gradient(135deg, #fff5f5 0%, #ffebee 100%) !important;
+}
+
+.swal2-success-notification {
+    border-left: 4px solid #28a745 !important;
+    background: linear-gradient(135deg, #f0fff4 0%, #e8f5e9 100%) !important;
+}
+
+.swal2-warning-notification {
+    border-left: 4px solid #ffc107 !important;
+    background: linear-gradient(135deg, #fffbf0 0%, #fff8e1 100%) !important;
+}
+
+/* Animaciones para móviles */
+.swal2-show-mobile {
+    animation: slideInMobile 0.3s ease-out !important;
+}
+
+.swal2-hide-mobile {
+    animation: slideOutMobile 0.3s ease-in !important;
+}
+
+@keyframes slideInMobile {
+    0% {
+        transform: translateY(-100%) scale(0.8) !important;
+        opacity: 0 !important;
+    }
+    100% {
+        transform: translateY(0) scale(1) !important;
+        opacity: 1 !important;
+    }
+}
+
+@keyframes slideOutMobile {
+    0% {
+        transform: translateY(0) scale(1) !important;
+        opacity: 1 !important;
+    }
+    100% {
+        transform: translateY(-100%) scale(0.8) !important;
+        opacity: 0 !important;
+    }
+}
+
+/* Toasts apilados en móviles */
+.swal2-stacked-toast {
+    z-index: 9999 !important;
+}
+
+/* Estilos para clases personalizadas del JavaScript */
+.swal2-mobile-container {
+    padding: 5px !important;
+}
+
+.swal2-mobile-popup {
+    border-radius: 8px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
+}
+
+.swal2-mobile-title {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    line-height: 1.3 !important;
+}
+
+.swal2-mobile-content {
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+}
+
+.swal2-small-mobile-popup {
+    border-radius: 6px !important;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.2) !important;
+}
+
+.swal2-small-mobile-title {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+}
+
+.swal2-small-mobile-content {
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+}
+
+/* Diálogos móviles */
+.swal2-mobile-dialog-container {
+    padding: 10px !important;
+}
+
+.swal2-mobile-dialog-popup {
+    border-radius: 10px !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.swal2-mobile-dialog-title {
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    margin-bottom: 10px !important;
+}
+
+.swal2-mobile-dialog-content {
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+    margin-bottom: 15px !important;
+}
+
+.swal2-mobile-dialog-actions {
+    margin-top: 15px !important;
+    gap: 10px !important;
+    flex-direction: column !important;
+}
+
+.swal2-mobile-dialog-confirm,
+.swal2-mobile-dialog-cancel {
+    width: 100% !important;
+    padding: 12px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    border-radius: 6px !important;
+    margin: 0 !important;
+}
+
+.swal2-mobile-dialog-confirm {
+    background: #007bff !important;
+    border: none !important;
+    color: white !important;
+}
+
+.swal2-mobile-dialog-cancel {
+    background: #6c757d !important;
+    border: none !important;
+    color: white !important;
+}
+
+/* Indicadores de progreso responsivos */
+@media (max-width: 768px) {
+    .swal2-timer-progress-bar {
+        height: 3px !important;
+        background: rgba(0, 0, 0, 0.2) !important;
+    }
+}
+
+/* Mejoras de contraste para dispositivos móviles */
+@media (max-width: 768px) {
+    .swal2-toast .swal2-title {
+        color: #1a1a1a !important;
+        font-weight: 600 !important;
+    }
+    
+    .swal2-toast .swal2-content {
+        color: #333333 !important;
+    }
+    
+    .swal2-toast .swal2-icon {
+        border-width: 2px !important;
+    }
+} 
