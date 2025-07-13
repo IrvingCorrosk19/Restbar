@@ -20,9 +20,15 @@ namespace RestBar.Middleware
 
         public async Task InvokeAsync(HttpContext context, IAuthService authService)
         {
-            // Solo validar en rutas que requieren autenticación
+            // Permitir acceso a rutas públicas esenciales
             if (context.Request.Path.StartsWithSegments("/Auth") || 
-                context.Request.Path.StartsWithSegments("/Home/Error"))
+                context.Request.Path.StartsWithSegments("/Home/Error") ||
+                context.Request.Path.Value == "/" ||
+                context.Request.Path.StartsWithSegments("/css") ||
+                context.Request.Path.StartsWithSegments("/js") ||
+                context.Request.Path.StartsWithSegments("/images") ||
+                context.Request.Path.StartsWithSegments("/lib") ||
+                context.Request.Path.StartsWithSegments("/favicon.ico"))
             {
                 await _next(context);
                 return;
