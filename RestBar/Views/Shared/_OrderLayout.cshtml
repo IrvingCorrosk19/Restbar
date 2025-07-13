@@ -9,80 +9,1209 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Main Theme CSS -->
+    <link href="~/css/site.css" rel="stylesheet" asp-append-version="true">
     <!-- Responsive Notifications -->
     <link href="~/css/responsive-notifications.css" rel="stylesheet" asp-append-version="true">
 
     <style>
-        body {
-            background-color: #f4f6f9;
-            font-family: 'Segoe UI', sans-serif;
+        /*
+        ========================================================
+        ORDER LAYOUT - TEMA ELEGANTE DE RESTAURANTE DE ALTA CLASE
+        ========================================================
+        
+        🏆 DISEÑO PREMIUM IMPLEMENTADO:
+        
+        🎨 PALETA SOFISTICADA:
+        - Dorado elegante (#f59e0b) como color principal
+        - Cobre refinado (#c2410c) para acentos especiales
+        - Fondos oscuros profundos con texturas sutiles
+        - Gradientes sofisticados que evocan lujo y calidad
+        
+        🏪 ESTÉTICA DE RESTAURANTE:
+        - Mesas con estados visuales elegantes y contrastes altos
+        - Categorías con acentos dorados y efectos de brillo
+        - Botones con bordes contrastantes y efectos de profundidad
+        - Tipografía premium con sombras y espaciado refinado
+        
+        ✨ EFECTOS PREMIUM:
+        - Sombras dramáticas con efectos de resplandor dorado
+        - Animaciones suaves con patrones de fondo elegantes
+        - Micro-interacciones sofisticadas en todos los elementos
+        - Contraste alto para máxima legibilidad y accesibilidad
+        
+        🌟 EXPERIENCIA DE LUJO:
+        - Resumen de pedido con acabados premium
+        - Indicadores de estado con símbolos elegantes (●, ★)
+        - Efectos hover que comunican calidad y atención al detalle
+        - Diseño que transmite confianza y profesionalismo
+        
+        ========================================================
+        */
+        
+        /* Variables CSS del tema elegante para restaurante */
+        :root {
+            /* Colores primarios elegantes */
+            --primary-color: #1e40af;
+            --primary-dark: #1e3a8a;
+            --accent-gold: #f59e0b;
+            --accent-gold-light: #fbbf24;
+            --accent-copper: #c2410c;
+            --accent-copper-light: #ea580c;
+            
+            /* Estados con colores sofisticados */
+            --success-color: #16a34a;
+            --success-light: #22c55e;
+            --success-elegant: #15803d;
+            --warning-color: #d97706;
+            --warning-light: #f59e0b;
+            --warning-elegant: #b45309;
+            --danger-color: #dc2626;
+            --danger-light: #ef4444;
+            --danger-elegant: #b91c1c;
+            --info-color: #0891b2;
+            --info-light: #06b6d4;
+            
+            /* Backgrounds sofisticados */
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --bg-surface: #475569;
+            --bg-elegant: #262626;
+            --bg-card: #1a1a1a;
+            
+            /* Textos con mejor contraste */
+            --text-primary: #ffffff;
+            --text-secondary: #e5e7eb;
+            --text-muted: #9ca3af;
+            --text-accent: #fbbf24;
+            
+            /* Bordes elegantes */
+            --border-color: #525252;
+            --border-light: #737373;
+            --border-accent: #f59e0b;
+            
+            /* Sombras más dramáticas */
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+            --shadow-glow: 0 0 20px rgba(245, 158, 11, 0.2);
+            
+            /* Radios más refinados */
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            
+            /* Transiciones suaves */
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        h2 {
-            color: #2c3e50;
+                 /* Tema elegante para pedidos de restaurante */
+         body.order-theme {
+             margin: 0;
+             font-family: 'Inter', sans-serif;
+             background: linear-gradient(135deg, #0a0a0a 0%, var(--bg-elegant) 35%, #1a1a1a 100%);
+             color: var(--text-primary);
+             min-height: 100vh;
+             position: relative;
+             overflow-x: hidden;
+         }
+
+         /* Patrón de fondo elegante con acentos dorados */
+         body.order-theme::before {
+             content: '';
+             position: fixed;
+             top: 0;
+             left: 0;
+             width: 100%;
+             height: 100%;
+             background-image: 
+                 radial-gradient(circle at 15% 85%, rgba(245, 158, 11, 0.06) 0%, transparent 45%),
+                 radial-gradient(circle at 85% 15%, rgba(194, 65, 12, 0.08) 0%, transparent 50%),
+                 radial-gradient(circle at 50% 50%, rgba(30, 64, 175, 0.04) 0%, transparent 60%),
+                 linear-gradient(45deg, transparent 48%, rgba(245, 158, 11, 0.02) 50%, transparent 52%);
+             z-index: -1;
+             animation: backgroundShift 25s ease-in-out infinite;
+         }
+
+         /* Overlay sutil para textura */
+         body.order-theme::after {
+             content: '';
+             position: fixed;
+             top: 0;
+             left: 0;
+             width: 100%;
+             height: 100%;
+             background: 
+                 repeating-linear-gradient(
+                     90deg,
+                     transparent,
+                     transparent 2px,
+                     rgba(245, 158, 11, 0.008) 2px,
+                     rgba(245, 158, 11, 0.008) 4px
+                 );
+             z-index: -1;
+             pointer-events: none;
+         }
+
+         @@keyframes backgroundShift {
+             0%, 100% { 
+                 transform: translate(0, 0) scale(1); 
+                 opacity: 0.4;
+             }
+             33% { 
+                 transform: translate(-10px, -10px) scale(1.02); 
+                 opacity: 0.6;
+             }
+             66% { 
+                 transform: translate(10px, -5px) scale(0.98); 
+                 opacity: 0.5;
+             }
+         }
+
+                 /* Título principal */
+         .page-title {
+             color: var(--text-primary);
+             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+             margin-bottom: 2rem;
+             text-align: center;
+         }
+
+         .page-title h2 {
+             color: var(--text-primary);
+             font-size: 2.2rem;
+             font-weight: 700;
+             margin-bottom: 0.5rem;
+             text-shadow: 0 2px 4px rgba(0,0,0,0.3), 0 0 20px rgba(245, 158, 11, 0.1);
+             letter-spacing: -0.025em;
+             position: relative;
+         }
+
+         .page-title h2::after {
+             content: '';
+             position: absolute;
+             bottom: -8px;
+             left: 50%;
+             transform: translateX(-50%);
+             width: 100px;
+             height: 2px;
+             background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+             border-radius: 1px;
+         }
+
+         .page-title .subtitle {
+             color: var(--text-secondary);
+             font-size: 1.05rem;
+             font-weight: 400;
+             margin-bottom: 2rem;
+             opacity: 0.9;
+             font-style: italic;
+         }
+
+         /* Efectos para iconos */
+         .icon-pulse {
+             animation: pulse 2s infinite;
+         }
+
+         @@keyframes pulse {
+             0% { transform: scale(1); }
+             50% { transform: scale(1.05); }
+             100% { transform: scale(1); }
+         }
+
+         /* Separadores con estilo */
+         .section-divider {
+             height: 2px;
+             background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
+             margin: 2rem 0;
+             border-radius: 1px;
+         }
+
+         /* Mejoras para los iconos de las cards */
+         .producto-card .product-icon {
+             position: absolute;
+             top: 1rem;
+             right: 1rem;
+             width: 40px;
+             height: 40px;
+             border-radius: 50%;
+             background: linear-gradient(135deg, var(--primary-color), var(--info-color));
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             color: white;
+             font-size: 1.2rem;
+             box-shadow: var(--shadow-sm);
+             transition: var(--transition);
+             z-index: 4;
+         }
+
+         .producto-card:hover .product-icon {
+             transform: rotate(360deg) scale(1.1);
+             box-shadow: var(--shadow-md);
+         }
+
+         /* Efectos para los badges de estado */
+         .status-badge {
+             padding: 0.25rem 0.75rem;
+             border-radius: var(--radius-sm);
+             font-size: 0.8rem;
+             font-weight: 600;
+             text-transform: uppercase;
+             letter-spacing: 0.5px;
+             position: relative;
+             overflow: hidden;
+         }
+
+         .status-badge::before {
+             content: '';
+             position: absolute;
+             top: 0;
+             left: -100%;
+             width: 100%;
+             height: 100%;
+             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+             transition: left 0.5s ease;
+         }
+
+         .status-badge:hover::before {
+             left: 100%;
+         }
+
+         .status-badge.pendiente {
+             background: linear-gradient(135deg, var(--warning-color), var(--warning-light));
+             color: white;
+         }
+
+         .status-badge.listo {
+             background: linear-gradient(135deg, var(--success-color), var(--success-light));
+             color: white;
+         }
+
+         .status-badge.servido {
+             background: linear-gradient(135deg, var(--info-color), var(--info-light));
+             color: white;
+         }
+
+                 /* Estilo para las mesas */
+         .mesa-btn {
+             min-width: 100px;
+             padding: 12px 16px;
+             font-weight: 600;
+             border-radius: var(--radius-md);
+             transition: var(--transition);
+             border: 2px solid;
+             box-shadow: var(--shadow-sm);
+             text-align: center;
+             position: relative;
+             overflow: hidden;
+             backdrop-filter: blur(10px);
+         }
+
+         .mesa-btn::before {
+             content: '';
+             position: absolute;
+             top: 0;
+             left: -100%;
+             width: 100%;
+             height: 100%;
+             background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+             transition: left 0.5s ease;
+         }
+
+         .mesa-btn::after {
+             content: '';
+             position: absolute;
+             inset: 0;
+             border-radius: var(--radius-md);
+             padding: 2px;
+             background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+             mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+             mask-composite: subtract;
+             opacity: 0;
+             transition: opacity 0.3s ease;
+         }
+
+         .mesa-btn:hover::before {
+             left: 100%;
+         }
+
+         .mesa-btn:hover::after {
+             opacity: 1;
+         }
+
+         .mesa-btn:hover {
+             transform: translateY(-3px) scale(1.05);
+             box-shadow: var(--shadow-lg);
+         }
+
+         .mesa-btn:active {
+             transform: translateY(-1px) scale(1.02);
+             box-shadow: var(--shadow-md);
+         }
+
+         /* Mesa Disponible - Verde elegante */
+         .mesa-disponible {
+             background: linear-gradient(135deg, #1a1a2e 0%, #2a2a2a 100%);
+             color: var(--text-primary);
+             border: 2px solid var(--success-elegant);
+             box-shadow: var(--shadow-sm), inset 0 1px 2px rgba(22, 163, 74, 0.1);
+         }
+
+         .mesa-disponible:hover {
+             background: linear-gradient(135deg, #1a2e1a 0%, #2a2a2a 100%);
+             border-color: var(--success-light);
+             box-shadow: var(--shadow-md), 0 0 15px rgba(22, 163, 74, 0.2);
+             color: var(--text-primary);
+         }
+
+         .mesa-disponible::after {
+             content: '●';
+             position: absolute;
+             top: 8px;
+             right: 8px;
+             color: var(--success-light);
+             font-size: 12px;
+             text-shadow: 0 0 8px rgba(22, 163, 74, 0.6);
+         }
+
+         /* Mesa Ocupada - Rojo elegante */
+         .mesa-ocupada {
+             background: linear-gradient(135deg, #1a1a2e 0%, #2a2a2a 100%);
+             color: var(--text-primary);
+             border: 2px solid var(--danger-elegant);
+             box-shadow: var(--shadow-sm), inset 0 1px 2px rgba(185, 28, 28, 0.1);
+         }
+
+         .mesa-ocupada:hover {
+             background: linear-gradient(135deg, #2e1a1a 0%, #2a2a2a 100%);
+             border-color: var(--danger-light);
+             box-shadow: var(--shadow-md), 0 0 15px rgba(185, 28, 28, 0.2);
+             color: var(--text-primary);
+         }
+
+         .mesa-ocupada::after {
+             content: '●';
+             position: absolute;
+             top: 8px;
+             right: 8px;
+             color: var(--danger-light);
+             font-size: 12px;
+             text-shadow: 0 0 8px rgba(185, 28, 28, 0.6);
+         }
+
+         /* Mesa en Pedido - Dorado elegante */
+         .mesa-en-pedido {
+             background: linear-gradient(135deg, #1a1a2e 0%, #2a2a2a 100%);
+             color: var(--text-primary);
+             border: 2px solid var(--accent-gold);
+             box-shadow: var(--shadow-sm), inset 0 1px 2px rgba(245, 158, 11, 0.1);
+         }
+
+         .mesa-en-pedido:hover {
+             background: linear-gradient(135deg, #2e2517 0%, #2a2a2a 100%);
+             border-color: var(--accent-gold-light);
+             box-shadow: var(--shadow-md), var(--shadow-glow);
+             color: var(--text-primary);
+         }
+
+         .mesa-en-pedido::after {
+             content: '●';
+             position: absolute;
+             top: 8px;
+             right: 8px;
+             color: var(--accent-gold-light);
+             font-size: 12px;
+             text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+         }
+
+         /* Mesa Seleccionada - Acento azul dorado */
+         .mesa-btn.active {
+             background: linear-gradient(135deg, #1a1a2e 0%, #2a2a2a 100%) !important;
+             border-color: var(--accent-gold) !important;
+             color: var(--text-accent) !important;
+             box-shadow: var(--shadow-lg), var(--shadow-glow) !important;
+             transform: translateY(-2px) scale(1.03) !important;
+         }
+
+         .mesa-btn.active::after {
+             content: '★' !important;
+             color: var(--accent-gold-light) !important;
+             font-size: 14px !important;
+             animation: pulse 2s infinite !important;
+         }
+
+                 /* Estilo para categorías */
+         /* Categorías elegantes estilo restaurante */
+         .categoria-btn {
+             min-width: 140px;
+             margin-bottom: 12px;
+             background: linear-gradient(135deg, var(--bg-card) 0%, rgba(38, 38, 38, 0.8) 100%);
+             color: var(--text-secondary);
+             border: 1px solid rgba(115, 115, 115, 0.3);
+             border-radius: var(--radius-md);
+             padding: 12px 20px;
+             font-weight: 500;
+             font-size: 0.95rem;
+             transition: var(--transition);
+             box-shadow: var(--shadow-sm);
+             position: relative;
+             overflow: hidden;
+             backdrop-filter: blur(15px);
+             letter-spacing: 0.025em;
+         }
+
+         .categoria-btn::before {
+             content: '';
+             position: absolute;
+             top: 0;
+             left: -100%;
+             width: 100%;
+             height: 100%;
+             background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.08), transparent);
+             transition: left 0.6s ease;
+         }
+
+         .categoria-btn::after {
+             content: '';
+             position: absolute;
+             bottom: 0;
+             left: 50%;
+             transform: translateX(-50%) scaleX(0);
+             width: 60%;
+             height: 2px;
+             background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+             transition: all 0.4s ease;
+             border-radius: 1px;
+         }
+
+         .categoria-btn:hover::before {
+             left: 100%;
+         }
+
+         .categoria-btn:hover::after {
+             transform: translateX(-50%) scaleX(1);
+             box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+         }
+
+         .categoria-btn:hover {
+             transform: translateY(-2px);
+             box-shadow: var(--shadow-md), 0 4px 20px rgba(245, 158, 11, 0.1);
+             border-color: rgba(245, 158, 11, 0.4);
+             color: var(--text-primary);
+             background: linear-gradient(135deg, rgba(38, 38, 38, 0.9) 0%, var(--bg-card) 100%);
+         }
+
+         /* Categoría Activa - Dorado elegante */
+         .categoria-btn.active {
+             background: linear-gradient(135deg, rgba(46, 37, 23, 0.9) 0%, rgba(38, 38, 38, 0.95) 100%);
+             border-color: var(--accent-gold);
+             color: var(--text-accent);
+             box-shadow: var(--shadow-md), var(--shadow-glow);
+             position: relative;
+             transform: translateY(-1px);
+         }
+
+         .categoria-btn.active::after {
+             transform: translateX(-50%) scaleX(1);
+             background: linear-gradient(90deg, transparent, var(--accent-gold-light), transparent);
+             height: 3px;
+             box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+         }
+
+         .categoria-btn.active::before {
+             background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.12), transparent);
+             left: 0;
+         }
+
+         /* Efecto especial para categoría activa */
+         .categoria-btn.active {
+             border-top: 1px solid rgba(245, 158, 11, 0.6);
+             border-bottom: 1px solid rgba(245, 158, 11, 0.6);
+         }
+
+                 /* Estilo para productos */
+         .producto-card {
+             background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+             border: 2px solid var(--border-color);
+             border-radius: var(--radius-lg);
+             transition: var(--transition);
+             box-shadow: var(--shadow-sm);
+             overflow: hidden;
+             position: relative;
+             backdrop-filter: blur(10px);
+         }
+
+         .producto-card::before {
+             content: '';
+             position: absolute;
+             top: 0;
+             left: 0;
+             right: 0;
+             height: 4px;
+             background: linear-gradient(90deg, var(--info-color), var(--success-color), var(--warning-color), var(--info-color));
+             background-size: 300% 100%;
+             animation: colorShift 3s ease-in-out infinite;
+             transform: scaleX(0);
+             transition: transform 0.3s ease;
+         }
+
+         .producto-card::after {
+             content: '';
+             position: absolute;
+             top: 0;
+             left: 0;
+             right: 0;
+             bottom: 0;
+             background: linear-gradient(135deg, rgba(30, 64, 175, 0.05), rgba(5, 150, 105, 0.05));
+             opacity: 0;
+             transition: opacity 0.3s ease;
+         }
+
+         @@keyframes colorShift {
+             0%, 100% { background-position: 0% 0; }
+             50% { background-position: 100% 0; }
+         }
+
+         .producto-card:hover::before {
+             transform: scaleX(1);
+         }
+
+         .producto-card:hover::after {
+             opacity: 1;
+         }
+
+         .producto-card:hover {
+             transform: translateY(-6px) scale(1.02);
+             box-shadow: var(--shadow-lg);
+             border-color: var(--info-color);
+             background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-surface));
+         }
+
+         .producto-card .card-body {
+             color: var(--text-primary);
+             position: relative;
+             z-index: 2;
+             padding: 1.5rem;
+         }
+
+         .producto-card .card-title {
+             color: var(--text-primary);
+             font-weight: 700;
+             font-size: 1.1rem;
+             margin-bottom: 0.5rem;
+             text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+         }
+
+         .producto-card .card-text {
+             color: var(--text-secondary);
+             font-size: 0.9rem;
+             line-height: 1.4;
+         }
+
+         .producto-card .precio {
+             color: var(--success-light);
+             font-weight: 700;
+             font-size: 1.2rem;
+             text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+         }
+
+         .producto-card .btn {
+             margin-top: 15px;
+             border-radius: var(--radius-sm);
+             font-weight: 600;
+             transition: var(--transition);
+             position: relative;
+             overflow: hidden;
+             z-index: 3;
+         }
+
+         .producto-card .btn::before {
+             content: '';
+             position: absolute;
+             top: 0;
+             left: -100%;
+             width: 100%;
+             height: 100%;
+             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+             transition: left 0.5s ease;
+         }
+
+         .producto-card .btn:hover::before {
+             left: 100%;
+         }
+
+         .producto-card .btn:hover {
+             transform: translateY(-1px);
+             box-shadow: var(--shadow-md);
+         }
+
+                 /* Estilo para resumen de pedido */
+         .resumen-card {
+             background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+             border: 2px solid var(--border-color);
+             border-radius: var(--radius-lg);
+             overflow: hidden;
+             box-shadow: var(--shadow-md);
+             position: relative;
+             backdrop-filter: blur(10px);
+         }
+
+         /* Resumen de Pedido Elegante */
+         .resumen-card::before {
+             content: '';
+             position: absolute;
+             top: 0;
+             left: 0;
+             right: 0;
+             height: 3px;
+             background: linear-gradient(90deg, transparent, var(--accent-gold), var(--accent-copper), var(--accent-gold), transparent);
+             opacity: 0.8;
+             border-radius: 2px 2px 0 0;
+         }
+
+         .resumen-card::after {
+             content: '';
+             position: absolute;
+             top: 0;
+             left: 0;
+             right: 0;
+             bottom: 0;
+             background: linear-gradient(135deg, rgba(245, 158, 11, 0.03), rgba(194, 65, 12, 0.02));
+             pointer-events: none;
+         }
+
+         .resumen-card .card-header {
+             background: linear-gradient(135deg, rgba(46, 37, 23, 0.9) 0%, var(--bg-card) 100%);
+             border-bottom: 2px solid rgba(245, 158, 11, 0.3);
+             color: var(--text-accent);
+             font-weight: 700;
+             padding: 1.5rem 2rem;
+             position: relative;
+             z-index: 2;
+             text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+             letter-spacing: 0.025em;
+         }
+
+         .resumen-card .card-header::before {
+             content: '';
+             position: absolute;
+             top: 0;
+             left: 0;
+             right: 0;
+             height: 1px;
+             background: linear-gradient(90deg, transparent, var(--accent-gold-light), transparent);
+             opacity: 0.6;
+         }
+
+         .resumen-card .card-header h5 {
+             margin: 0;
+             display: flex;
+             align-items: center;
+             gap: 0.75rem;
+         }
+
+         .resumen-card .card-header h5 i {
+             color: var(--accent-gold-light);
+             text-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+         }
+
+         .resumen-card .card-body {
+             background: linear-gradient(135deg, var(--bg-card) 0%, rgba(38, 38, 38, 0.95) 100%);
+             color: var(--text-primary);
+             position: relative;
+             z-index: 2;
+             padding: 2rem;
+             border: 1px solid rgba(245, 158, 11, 0.1);
+         }
+
+         .resumen-card .order-total {
+             background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-surface));
+             border: 2px solid var(--border-color);
+             border-radius: var(--radius-md);
+             padding: 1rem;
+             margin-top: 1rem;
+             font-size: 1.1rem;
+             font-weight: 700;
+             color: var(--success-light);
+             text-align: center;
+             box-shadow: var(--shadow-sm);
+         }
+
+         .resumen-card .order-actions {
+             display: flex;
+             gap: 0.75rem;
+             margin-top: 1rem;
+         }
+
+         .resumen-card .order-actions .btn {
+             flex: 1;
+             padding: 0.75rem 1rem;
+             font-size: 0.95rem;
+         }
+
+        /* Tablas */
+        .table {
+            background: transparent;
+            color: var(--text-primary);
+            border-collapse: separate;
+            border-spacing: 0;
         }
 
-        .mesa-btn {
-            min-width: 100px;
-            padding: 10px;
+        .table th {
+            background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-surface));
+            color: var(--text-primary);
             font-weight: 600;
-            border-radius: 0.5rem;
-            transition: all 0.2s ease-in-out;
-        }
-
-        .mesa-btn:hover {
-            transform: scale(1.05);
-        }
-
-        .mesa-disponible {
-            background-color: #dff0d8;
-            color: #3c763d;
-        }
-
-        .mesa-ocupada {
-            background-color: #f2dede;
-            color: #a94442;
-        }
-
-        .mesa-en-pedido {
-            background-color: #fcf8e3;
-            color: #8a6d3b;
-        }
-
-        .categoria-btn {
-            min-width: 140px;
-            margin-bottom: 10px;
-        }
-
-        .producto-card {
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            transition: transform 0.2s ease-in-out;
-        }
-
-        .producto-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .producto-card .btn {
-            margin-top: 10px;
-        }
-
-        .resumen-card {
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .table th, .table td {
+            border-bottom: 2px solid var(--border-color);
+            padding: 0.75rem;
             vertical-align: middle;
+        }
+
+        .table td {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.75rem;
+            vertical-align: middle;
+        }
+
+        .table tbody tr:hover td {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+                 /* Botones personalizados */
+         .btn {
+             border-radius: var(--radius-sm);
+             font-weight: 600;
+             transition: var(--transition);
+             position: relative;
+             overflow: hidden;
+             border: 2px solid;
+             backdrop-filter: blur(10px);
+         }
+
+         .btn::before {
+             content: '';
+             position: absolute;
+             top: 0;
+             left: -100%;
+             width: 100%;
+             height: 100%;
+             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+             transition: left 0.5s ease;
+         }
+
+         .btn:hover::before {
+             left: 100%;
+         }
+
+         /* Botón Primario - Dorado Elegante */
+         .btn-primary {
+             background: linear-gradient(135deg, var(--bg-card) 0%, rgba(46, 37, 23, 0.8) 100%);
+             border: 2px solid var(--accent-gold);
+             color: var(--text-accent);
+             box-shadow: var(--shadow-sm), 0 0 10px rgba(245, 158, 11, 0.2);
+             position: relative;
+             font-weight: 600;
+             letter-spacing: 0.025em;
+         }
+
+         .btn-primary::after {
+             content: '';
+             position: absolute;
+             inset: 0;
+             border-radius: inherit;
+             background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.2));
+             opacity: 0;
+             transition: opacity 0.3s ease;
+         }
+
+         .btn-primary:hover {
+             background: linear-gradient(135deg, rgba(46, 37, 23, 0.9) 0%, var(--bg-card) 100%);
+             border-color: var(--accent-gold-light);
+             color: var(--text-accent);
+             transform: translateY(-2px);
+             box-shadow: var(--shadow-md), var(--shadow-glow);
+         }
+
+         .btn-primary:hover::after {
+             opacity: 1;
+         }
+
+         .btn-primary:active {
+             transform: translateY(0);
+             box-shadow: var(--shadow-sm);
+         }
+
+         /* Botón Success - Verde Elegante */
+         .btn-success {
+             background: linear-gradient(135deg, var(--bg-card) 0%, rgba(26, 46, 26, 0.8) 100%);
+             border: 2px solid var(--success-elegant);
+             color: var(--success-light);
+             box-shadow: var(--shadow-sm), 0 0 10px rgba(22, 163, 74, 0.2);
+             position: relative;
+             font-weight: 600;
+         }
+
+         .btn-success::after {
+             content: '';
+             position: absolute;
+             inset: 0;
+             border-radius: inherit;
+             background: linear-gradient(135deg, rgba(22, 163, 74, 0.1), rgba(22, 163, 74, 0.2));
+             opacity: 0;
+             transition: opacity 0.3s ease;
+         }
+
+         .btn-success:hover {
+             background: linear-gradient(135deg, rgba(26, 46, 26, 0.9) 0%, var(--bg-card) 100%);
+             border-color: var(--success-light);
+             color: var(--success-light);
+             transform: translateY(-2px);
+             box-shadow: var(--shadow-md), 0 0 15px rgba(22, 163, 74, 0.3);
+         }
+
+         .btn-success:hover::after {
+             opacity: 1;
+         }
+
+         .btn-success:active {
+             transform: translateY(0);
+             box-shadow: var(--shadow-sm);
+         }
+
+         /* Botón Warning - Cobre Elegante */
+         .btn-warning {
+             background: linear-gradient(135deg, var(--bg-card) 0%, rgba(46, 37, 23, 0.8) 100%);
+             border: 2px solid var(--accent-copper);
+             color: var(--accent-copper-light);
+             box-shadow: var(--shadow-sm), 0 0 10px rgba(194, 65, 12, 0.2);
+             position: relative;
+             font-weight: 600;
+         }
+
+         .btn-warning::after {
+             content: '';
+             position: absolute;
+             inset: 0;
+             border-radius: inherit;
+             background: linear-gradient(135deg, rgba(194, 65, 12, 0.1), rgba(194, 65, 12, 0.2));
+             opacity: 0;
+             transition: opacity 0.3s ease;
+         }
+
+         .btn-warning:hover {
+             background: linear-gradient(135deg, rgba(46, 37, 23, 0.9) 0%, var(--bg-card) 100%);
+             border-color: var(--accent-copper-light);
+             color: var(--accent-copper-light);
+             transform: translateY(-2px);
+             box-shadow: var(--shadow-md), 0 0 15px rgba(194, 65, 12, 0.3);
+         }
+
+         .btn-warning:hover::after {
+             opacity: 1;
+         }
+
+         .btn-warning:active {
+             transform: translateY(0);
+             box-shadow: var(--shadow-sm);
+         }
+
+         /* Botón Danger - Rojo Elegante */
+         .btn-danger {
+             background: linear-gradient(135deg, var(--bg-card) 0%, rgba(46, 26, 26, 0.8) 100%);
+             border: 2px solid var(--danger-elegant);
+             color: var(--danger-light);
+             box-shadow: var(--shadow-sm), 0 0 10px rgba(185, 28, 28, 0.2);
+             position: relative;
+             font-weight: 600;
+         }
+
+         .btn-danger::after {
+             content: '';
+             position: absolute;
+             inset: 0;
+             border-radius: inherit;
+             background: linear-gradient(135deg, rgba(185, 28, 28, 0.1), rgba(185, 28, 28, 0.2));
+             opacity: 0;
+             transition: opacity 0.3s ease;
+         }
+
+         .btn-danger:hover {
+             background: linear-gradient(135deg, rgba(46, 26, 26, 0.9) 0%, var(--bg-card) 100%);
+             border-color: var(--danger-light);
+             color: var(--danger-light);
+             transform: translateY(-2px);
+             box-shadow: var(--shadow-md), 0 0 15px rgba(185, 28, 28, 0.3);
+         }
+
+         .btn-danger:hover::after {
+             opacity: 1;
+         }
+
+         .btn-danger:active {
+             transform: translateY(0);
+             box-shadow: var(--shadow-sm);
+         }
+
+         .btn-secondary {
+             background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-surface));
+             border-color: var(--border-color);
+             color: var(--text-primary);
+             box-shadow: var(--shadow-sm);
+         }
+
+         .btn-secondary:hover {
+             background: linear-gradient(135deg, var(--bg-surface), var(--bg-tertiary));
+             border-color: var(--border-light);
+             color: var(--text-primary);
+             transform: translateY(-2px);
+             box-shadow: var(--shadow-lg);
+         }
+
+         .btn-secondary:active {
+             transform: translateY(0);
+             box-shadow: var(--shadow-sm);
+         }
+
+        /* Modales */
+        .modal-content {
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            color: var(--text-primary);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-surface));
+            border-bottom: 2px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .modal-footer {
+            background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-surface));
+            border-top: 2px solid var(--border-color);
+        }
+
+        /* Formularios */
+        .form-control {
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            background: var(--bg-surface);
+            border-color: var(--primary-color);
+            color: var(--text-primary);
+            box-shadow: 0 0 0 0.2rem rgba(30, 64, 175, 0.25);
+        }
+
+        .form-control::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-label {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .form-select {
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .form-select:focus {
+            background: var(--bg-surface);
+            border-color: var(--primary-color);
+            color: var(--text-primary);
+            box-shadow: 0 0 0 0.2rem rgba(30, 64, 175, 0.25);
+        }
+
+        /* Alertas */
+        .alert {
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, rgba(8, 145, 178, 0.1), rgba(6, 182, 212, 0.1));
+            border-color: var(--info-color);
+            color: var(--text-primary);
+        }
+
+                 /* Animaciones de entrada */
+         @@keyframes fadeInUp {
+             from {
+                 opacity: 0;
+                 transform: translateY(20px);
+             }
+             to {
+                 opacity: 1;
+                 transform: translateY(0);
+             }
+         }
+
+         @@keyframes slideInLeft {
+             from {
+                 opacity: 0;
+                 transform: translateX(-30px);
+             }
+             to {
+                 opacity: 1;
+                 transform: translateX(0);
+             }
+         }
+
+         @@keyframes slideInRight {
+             from {
+                 opacity: 0;
+                 transform: translateX(30px);
+             }
+             to {
+                 opacity: 1;
+                 transform: translateX(0);
+             }
+         }
+
+         .container-fluid {
+             animation: fadeInUp 0.6s ease-out;
+         }
+
+         .categoria-btn {
+             animation: fadeInUp 0.3s ease-out;
+         }
+
+         .categoria-btn:nth-child(odd) {
+             animation-delay: 0.05s;
+         }
+
+         .categoria-btn:nth-child(even) {
+             animation-delay: 0.1s;
+         }
+
+         .producto-card {
+             animation: fadeInUp 0.3s ease-out;
+         }
+
+         .producto-card:nth-child(1) { animation-delay: 0.05s; }
+         .producto-card:nth-child(2) { animation-delay: 0.1s; }
+         .producto-card:nth-child(3) { animation-delay: 0.15s; }
+         .producto-card:nth-child(4) { animation-delay: 0.2s; }
+
+         .resumen-card {
+             animation: fadeInUp 0.3s ease-out;
+             animation-delay: 0.1s;
+         }
+
+         .mesa-btn {
+             animation: fadeInUp 0.3s ease-out;
+         }
+
+         .mesa-btn:nth-child(1) { animation-delay: 0.05s; }
+         .mesa-btn:nth-child(2) { animation-delay: 0.1s; }
+         .mesa-btn:nth-child(3) { animation-delay: 0.15s; }
+         .mesa-btn:nth-child(4) { animation-delay: 0.2s; }
+
+         /* Loader elegante */
+         .loading-spinner {
+             width: 40px;
+             height: 40px;
+             border: 4px solid rgba(255, 255, 255, 0.1);
+             border-top: 4px solid var(--primary-color);
+             border-radius: 50%;
+             animation: spin 1s linear infinite;
+             margin: 20px auto;
+         }
+
+         @@keyframes spin {
+             0% { transform: rotate(0deg); }
+             100% { transform: rotate(360deg); }
+         }
+
+         /* Efectos para las secciones */
+         .section-title {
+             color: var(--text-primary);
+             font-weight: 600;
+             margin-bottom: 1rem;
+             position: relative;
+             padding-left: 1rem;
+         }
+
+         .section-title::before {
+             content: '';
+             position: absolute;
+             left: 0;
+             top: 0;
+             bottom: 0;
+             width: 4px;
+             background: linear-gradient(135deg, var(--primary-color), var(--success-color));
+             border-radius: 2px;
+         }
+
+         /* Mejoras en las transiciones */
+         * {
+             transition: var(--transition);
+         }
+
+         /* Efectos hover para elementos interactivos */
+         .interactive-element:hover {
+             transform: translateY(-2px);
+             box-shadow: var(--shadow-md);
+         }
+
+         /* Efectos para los números de mesa */
+         .mesa-number {
+             font-size: 1.2rem;
+             font-weight: 700;
+             text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+         }
+
+         /* Efectos para los precios */
+         .price-highlight {
+             color: var(--success-light);
+             font-weight: 700;
+             text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+         }
+
+        /* Responsividad */
+        @@media (max-width: 768px) {
+            .mesa-btn {
+                min-width: 80px;
+                padding: 10px 12px;
+            }
+            
+            .categoria-btn {
+                min-width: 120px;
+            }
+            
+            .producto-card {
+                margin-bottom: 1rem;
+            }
         }
     </style>
     @await RenderSectionAsync("Styles", required: false)
 </head>
-<body>
+<body class="order-theme">
     <div class="container-fluid py-4">
-        <h2 class="fw-bold mb-4">@ViewData["Title"]</h2>
+        <div class="page-title">
+            <h2 class="fw-bold mb-4">@ViewData["Title"]</h2>
+            <p class="subtitle">Gestiona los pedidos de manera eficiente y elegante</p>
+        </div>
         @RenderBody()
     </div>
 

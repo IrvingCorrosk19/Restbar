@@ -448,7 +448,16 @@ namespace RestBar.Controllers
                     return BadRequest(new { error = "Debe seleccionar una mesa antes de enviar la orden." });
                 }
 
-                Guid? userId = Guid.Parse("db93d2fc-9f7e-42fd-8ccf-91b8d60b6867");
+                // Obtener userId del usuario autenticado
+                var userIdClaim = User.FindFirst("UserId")?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+                {
+                    Console.WriteLine($"[OrderController] ERROR: Usuario no autenticado o UserId inválido");
+                    _logger.LogWarning("SendToKitchen: Usuario no autenticado o UserId inválido");
+                    return BadRequest(new { error = "Usuario no autenticado." });
+                }
+
+                Console.WriteLine($"[OrderController] Usuario autenticado - UserId: {userId}");
                 Console.WriteLine($"[OrderController] Llamando a SendToKitchenAsync...");
                 
                 var order = await _orderService.SendToKitchenAsync(dto, userId);
