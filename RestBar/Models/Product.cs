@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace RestBar.Models;
 
-public partial class Product
+public partial class Product : ITrackableEntity
 {
     public Guid Id { get; set; }
 
@@ -31,15 +31,19 @@ public partial class Product
     [StringLength(500)]
     public string? ImageUrl { get; set; }
 
-    public bool? IsActive { get; set; } = true;
+    public bool IsActive { get; set; } = true;
 
-    public DateTime? CreatedAt { get; set; }
+    // ✅ CAMPOS DE AUDITORÍA ESTANDARIZADOS
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public string? CreatedBy { get; set; }
+    public string? UpdatedBy { get; set; }
 
     public Guid? CategoryId { get; set; }
 
     public virtual Category? Category { get; set; }
 
-    public virtual ICollection<Inventory> Inventories { get; set; } = new List<Inventory>();
+
 
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 
@@ -48,5 +52,14 @@ public partial class Product
     public Guid? StationId { get; set; }
     public virtual Station? Station { get; set; }
 
-    public decimal? Stock { get; set; }
+    // ✅ NUEVO: Propiedades multi-tenant
+    [Display(Name = "Compañía")]
+    public Guid? CompanyId { get; set; }
+
+    [Display(Name = "Sucursal")]
+    public Guid? BranchId { get; set; }
+
+    // Propiedades de navegación multi-tenant
+    public virtual Company? Company { get; set; }
+    public virtual Branch? Branch { get; set; }
 }

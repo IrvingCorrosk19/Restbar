@@ -522,12 +522,24 @@
     </div>
 }
 
+<!-- Error Message -->
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert" style="background: var(--gradient-danger); color: white; padding: 1rem 2rem; border-radius: var(--border-radius); margin: 2rem auto; max-width: 800px; text-align: center; box-shadow: var(--shadow-light);">
+        <i class="fas fa-exclamation-triangle"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
 <!-- Main Content -->
 <div class="main-content">
     <!-- Categories Section -->
     <section class="categories-section">
         <h2 class="categories-title">
-            <i class="fas fa-tags"></i> Categorías del Sistema
+            <i class="fas fa-tags"></i> Categorías del Sistema 
+            <span style="font-size: 0.8rem; color: #666; margin-left: 1rem;">
+                (@Model.Count() categorías encontradas)
+            </span>
         </h2>
         <div class="categories-grid">
             @if (Model.Any())

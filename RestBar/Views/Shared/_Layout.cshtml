@@ -3,6 +3,9 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>@ViewData["Title"] - RestBar</title>
     <link rel="icon" href="~/images/logo.png" type="image/png" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -15,9 +18,10 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="dark-theme">
+    <!-- Header optimizado para aprovechar laterales -->
     <header class="main-header">
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark">
-            <div class="container-fluid">
+            <div class="navbar-container">
                 <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
                     <div class="brand-container">
                         <img src="~/images/logo.png" alt="RestBar Logo" class="brand-logo"/>
@@ -98,19 +102,38 @@
                             </li>
                         </ul>
                     }
+                    
+                    <!-- Información de Compañía y Sucursal - Esquina Derecha -->
+                    @if (User.Identity.IsAuthenticated && User.FindFirst("CompanyId")?.Value != null && User.FindFirst("BranchId")?.Value != null)
+                    {
+                        <div class="company-branch-info-corner">
+                            <div class="company-info">
+                                <i class="fas fa-building"></i>
+                                <span class="company-name">@(User.FindFirst("CompanyName")?.Value ?? "Compañía")</span>
+                            </div>
+                            <div class="branch-info">
+                                <i class="fas fa-store"></i>
+                                <span class="branch-name">@(User.FindFirst("BranchName")?.Value ?? "Sucursal")</span>
+                            </div>
+                        </div>
+                    }
                 </div>
             </div>
         </nav>
     </header>
     
+    <!-- Contenedor principal optimizado para aprovechar laterales -->
     <div class="main-container">
         <main role="main" class="main-content">
-            @RenderBody()
+            <div class="content-wrapper">
+                @RenderBody()
+            </div>
         </main>
     </div>
 
+    <!-- Footer optimizado -->
     <footer class="main-footer">
-        <div class="container-fluid">
+        <div class="footer-container">
             <div class="footer-content">
                 <span>&copy; 2024 - RestBar - Sistema de Gestión de Restaurantes</span>
                 <div class="footer-links">
@@ -120,14 +143,24 @@
         </div>
     </footer>
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/jquery/dist/jquery.min.js" asp-append-version="true"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="~/js/responsive-notifications.js" asp-append-version="true"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    <!-- ✅ NUEVO: CSS para cuentas separadas -->
+    <link href="~/css/separate-accounts.css" rel="stylesheet" asp-append-version="true" />
+    
+    <script src="~/js/dev-cache-buster.js" asp-append-version="true"></script>
+ 
+    
     <script src="~/_framework/aspnetcore-browser-refresh.js"></script>
+    
+    <!-- ✅ NUEVO: JS para cuentas separadas - Cargado al final -->
+    <script src="~/js/order/separate-accounts-simple.js" asp-append-version="true"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

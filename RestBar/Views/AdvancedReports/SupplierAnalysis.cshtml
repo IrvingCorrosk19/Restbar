@@ -1,0 +1,323 @@
+@{
+    ViewData["Title"] = "Análisis de Proveedores";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-truck text-primary"></i> Análisis de Proveedores
+        </h1>
+        <div>
+            <button class="btn btn-success" onclick="exportToExcel()">
+                <i class="fas fa-file-excel"></i> Exportar a Excel
+            </button>
+            <button class="btn btn-danger" onclick="exportToPdf()">
+                <i class="fas fa-file-pdf"></i> Exportar a PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filtros</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <label>Fecha Inicio:</label>
+                    <input type="date" id="startDate" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label>Fecha Fin:</label>
+                    <input type="date" id="endDate" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label>&nbsp;</label>
+                    <button class="btn btn-primary btn-block" onclick="loadSupplierAnalysis()">
+                        <i class="fas fa-search"></i> Generar Reporte
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas Generales -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Proveedores
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalSuppliers">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-truck fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Proveedores Activos
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="activeSuppliers">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Total Compras
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalPurchases">$0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-shopping-cart fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Valor Promedio
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="averageOrderValue">$0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rendimiento de Proveedores -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Rendimiento de Proveedores</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="performanceTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Proveedor</th>
+                            <th>Email</th>
+                            <th>Teléfono</th>
+                            <th>Total Órdenes</th>
+                            <th>Total Gastado</th>
+                            <th>Valor Promedio</th>
+                            <th>Entregas a Tiempo</th>
+                            <th>Entregas Tardías</th>
+                            <th>% A Tiempo</th>
+                            <th>Calificación</th>
+                        </tr>
+                    </thead>
+                    <tbody id="performanceTableBody">
+                        <!-- Los datos se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Análisis de Órdenes de Compra -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Análisis de Órdenes de Compra</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="purchaseOrderTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Número de Orden</th>
+                            <th>Proveedor</th>
+                            <th>Fecha de Orden</th>
+                            <th>Fecha Esperada</th>
+                            <th>Fecha Real</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th>Días para Entregar</th>
+                            <th>A Tiempo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="purchaseOrderTableBody">
+                        <!-- Los datos se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Inicializar fechas
+            var today = new Date();
+            var lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+            
+            $('#startDate').val(lastMonth.toISOString().split('T')[0]);
+            $('#endDate').val(today.toISOString().split('T')[0]);
+            
+            // Cargar datos iniciales
+            loadSupplierAnalysis();
+        });
+
+        function loadSupplierAnalysis() {
+            var startDate = $('#startDate').val();
+            var endDate = $('#endDate').val();
+
+            // Mostrar loading
+            showLoading();
+
+            $.ajax({
+                url: '/AdvancedReports/GetSupplierAnalysis',
+                type: 'GET',
+                data: {
+                    startDate: startDate,
+                    endDate: endDate
+                },
+                success: function(data) {
+                    updateStatistics(data);
+                    updatePerformanceTable(data.performanceData);
+                    updatePurchaseOrderTable(data.purchaseOrderAnalysis);
+                    hideLoading();
+                },
+                error: function(xhr, status, error) {
+                    
+                    hideLoading();
+                    showError('Error al cargar el análisis de proveedores');
+                }
+            });
+        }
+
+        function updateStatistics(data) {
+            $('#totalSuppliers').text(data.totalSuppliers);
+            $('#activeSuppliers').text(data.activeSuppliers);
+            $('#totalPurchases').text('$' + data.totalPurchases.toFixed(2));
+            $('#averageOrderValue').text('$' + data.averageOrderValue.toFixed(2));
+        }
+
+        function updatePerformanceTable(performanceData) {
+            var tbody = $('#performanceTableBody');
+            tbody.empty();
+
+            performanceData.forEach(function(item) {
+                var row = `
+                    <tr>
+                        <td>${item.supplierName}</td>
+                        <td>${item.contactEmail}</td>
+                        <td>${item.phone}</td>
+                        <td>${item.totalOrders}</td>
+                        <td>$${item.totalSpent.toFixed(2)}</td>
+                        <td>$${item.averageOrderValue.toFixed(2)}</td>
+                        <td>${item.onTimeDeliveries}</td>
+                        <td>${item.lateDeliveries}</td>
+                        <td>${item.onTimePercentage.toFixed(1)}%</td>
+                        <td><span class="badge badge-${getPerformanceBadgeClass(item.performanceRating)}">${item.performanceRating}</span></td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        function updatePurchaseOrderTable(purchaseOrderAnalysis) {
+            var tbody = $('#purchaseOrderTableBody');
+            tbody.empty();
+
+            purchaseOrderAnalysis.forEach(function(item) {
+                var row = `
+                    <tr>
+                        <td>${item.purchaseOrderNumber}</td>
+                        <td>${item.supplierName}</td>
+                        <td>${new Date(item.orderDate).toLocaleDateString()}</td>
+                        <td>${item.expectedDeliveryDate ? new Date(item.expectedDeliveryDate).toLocaleDateString() : '-'}</td>
+                        <td>${item.actualDeliveryDate ? new Date(item.actualDeliveryDate).toLocaleDateString() : '-'}</td>
+                        <td>$${item.totalAmount.toFixed(2)}</td>
+                        <td><span class="badge badge-${getStatusBadgeClass(item.status)}">${item.status}</span></td>
+                        <td>${item.daysToDeliver}</td>
+                        <td><span class="badge badge-${item.isOnTime ? 'success' : 'danger'}">${item.isOnTime ? 'Sí' : 'No'}</span></td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        function getPerformanceBadgeClass(rating) {
+            switch(rating) {
+                case 'Excellent': return 'success';
+                case 'Good': return 'info';
+                case 'Average': return 'warning';
+                case 'Poor': return 'danger';
+                default: return 'secondary';
+            }
+        }
+
+        function getStatusBadgeClass(status) {
+            switch(status) {
+                case 'Pending': return 'warning';
+                case 'Approved': return 'info';
+                case 'InTransit': return 'primary';
+                case 'Delivered': return 'success';
+                case 'Cancelled': return 'danger';
+                default: return 'secondary';
+            }
+        }
+
+        function exportToExcel() {
+            var startDate = $('#startDate').val();
+            var endDate = $('#endDate').val();
+
+            window.location.href = `/AdvancedReports/ExportToExcel?reportType=SupplierAnalysis&startDate=${startDate}&endDate=${endDate}`;
+        }
+
+        function exportToPdf() {
+            var startDate = $('#startDate').val();
+            var endDate = $('#endDate').val();
+
+            window.location.href = `/AdvancedReports/ExportToPdf?reportType=SupplierAnalysis&startDate=${startDate}&endDate=${endDate}`;
+        }
+
+        function showLoading() {
+            // Implementar loading spinner
+        }
+
+        function hideLoading() {
+            // Ocultar loading spinner
+        }
+
+        function showError(message) {
+            // Mostrar mensaje de error
+            alert(message);
+        }
+    </script>
+} 

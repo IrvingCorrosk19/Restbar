@@ -6,13 +6,14 @@ using System.Text;
 
 namespace RestBar.Services
 {
-    public class UserService : IUserService
+    public class UserService : BaseTrackingService, IUserService
     {
-        private readonly RestBarContext _context;
+        private readonly IGlobalLoggingService _loggingService;
 
-        public UserService(RestBarContext context)
+        public UserService(RestBarContext context, IGlobalLoggingService loggingService, IHttpContextAccessor httpContextAccessor)
+            : base(context, httpContextAccessor)
         {
-            _context = context;
+            _loggingService = loggingService;
         }
 
         public async Task<IEnumerable<User>> GetAllAsync()
@@ -41,16 +42,29 @@ namespace RestBar.Services
 
                 user.IsActive = true;
                 user.PasswordHash = HashPassword(user.PasswordHash);
+                // El tracking automático se maneja en el contexto
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
+
+                // ✅ NUEVO: Logging de creación de usuario
+                await _loggingService.LogUserActivityAsync(
+                    action: AuditAction.CREATE.ToString(),
+                    description: $"Usuario creado: {user.FullName} ({user.Email}) - Rol: {user.Role}",
+                    userId: user.Id,
+                    newValues: new { user.FullName, user.Email, user.Role, user.BranchId }
+                );
+
                 return user;
             }
             catch (Exception ex)
             {
-                // Puedes loguear el error si tienes un logger configurado
-                // _logger.LogError(ex, "Error al crear el usuario");
+                // ✅ NUEVO: Logging de error
+                await _loggingService.LogModuleErrorAsync(
+                    module: AuditModule.USER.ToString(),
+                    description: $"Error al crear usuario: {user.Email}",
+                    exception: ex
+                );
 
-                // También puedes lanzar una excepción más específica
                 throw new ApplicationException("Error al crear el usuario en la base de datos.", ex);
             }
         }
@@ -59,6 +73,9 @@ namespace RestBar.Services
         {
             try
             {
+                // Obtener valores anteriores para logging
+                var oldUser = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.Id);
+
                 // Buscar si hay una entidad con el mismo ID siendo rastreada
                 var existingEntity = _context.ChangeTracker.Entries<User>()
                     .FirstOrDefault(e => e.Entity.Id == user.Id);
@@ -77,12 +94,29 @@ namespace RestBar.Services
                     user.PasswordHash = HashPassword(user.PasswordHash);
                 }
 
-                // Usar Update para manejar automáticamente el tracking
+                // El tracking automático se maneja en el contexto
                 _context.Users.Update(user);
                 await _context.SaveChangesAsync();
+
+                // ✅ NUEVO: Logging de actualización de usuario
+                await _loggingService.LogUserActivityAsync(
+                    action: AuditAction.UPDATE.ToString(),
+                    description: $"Usuario actualizado: {user.FullName} ({user.Email})",
+                    userId: user.Id,
+                    oldValues: oldUser != null ? new { oldUser.FullName, oldUser.Email, oldUser.Role, oldUser.BranchId, oldUser.IsActive } : null,
+                    newValues: new { user.FullName, user.Email, user.Role, user.BranchId, user.IsActive }
+                );
             }
             catch (Exception ex)
             {
+                // ✅ NUEVO: Logging de error
+                await _loggingService.LogModuleErrorAsync(
+                    module: AuditModule.USER.ToString(),
+                    description: $"Error al actualizar usuario: {user.Email}",
+                    exception: ex,
+                    recordId: user.Id
+                );
+
                 throw new ApplicationException("Error al actualizar el usuario en la base de datos.", ex);
             }
         }
@@ -92,6 +126,14 @@ namespace RestBar.Services
             var user = await _context.Users.FindAsync(id);
             if (user != null)
             {
+                // ✅ NUEVO: Logging de eliminación de usuario
+                await _loggingService.LogUserActivityAsync(
+                    action: AuditAction.DELETE.ToString(),
+                    description: $"Usuario eliminado: {user.FullName} ({user.Email})",
+                    userId: user.Id,
+                    oldValues: new { user.FullName, user.Email, user.Role, user.BranchId, user.IsActive }
+                );
+
                 _context.Users.Remove(user);
                 await _context.SaveChangesAsync();
             }
@@ -154,6 +196,34 @@ namespace RestBar.Services
 
             var hashedPassword = HashPassword(password);
             return user.PasswordHash == hashedPassword;
+        }
+
+        // ✅ NUEVO: Método para obtener usuario actual con asignaciones
+        public async Task<User?> GetCurrentUserWithAssignmentsAsync(Guid userId)
+        {
+            try
+            {
+                Console.WriteLine($"🔍 [UserService] GetCurrentUserWithAssignmentsAsync() - Iniciando para userId: {userId}");
+
+                var user = await _context.Users
+                    .Include(u => u.Branch)
+                    .ThenInclude(b => b.Company)
+                    .FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (user == null)
+                {
+                    Console.WriteLine($"⚠️ [UserService] GetCurrentUserWithAssignmentsAsync() - Usuario con ID {userId} no encontrado");
+                    return null;
+                }
+
+                Console.WriteLine($"✅ [UserService] GetCurrentUserWithAssignmentsAsync() - Usuario encontrado: {user.Email}, CompanyId: {user.Branch?.CompanyId}, BranchId: {user.BranchId}");
+                return user;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [UserService] GetCurrentUserWithAssignmentsAsync() - Error: {ex.Message}");
+                return null;
+            }
         }
 
         private string HashPassword(string password)

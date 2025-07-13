@@ -1,0 +1,362 @@
+@{
+    ViewData["Title"] = "Gestión de Pagos - RestBar";
+    Layout = "_Layout";
+}
+
+<!-- Header Section -->
+<div class="payment-header">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1 class="payment-title">
+                    <i class="fas fa-credit-card"></i>
+                    Gestión de Pagos
+                </h1>
+                <p class="payment-subtitle">Administra cobranzas, pagos parciales y reportes financieros</p>
+            </div>
+            <div class="col-md-6 text-end">
+                <div class="payment-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalRevenue">$0.00</h3>
+                            <p>Ingresos Totales</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-receipt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalOrders">0</h3>
+                            <p>Órdenes Pagadas</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="pendingPayments">0</h3>
+                            <p>Pagos Pendientes</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="payment-container">
+    <div class="container-fluid">
+        <!-- Filters Section -->
+        <div class="filters-section">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="dateFilter">Período</label>
+                        <select id="dateFilter" class="form-control">
+                            <option value="today">Hoy</option>
+                            <option value="week">Esta Semana</option>
+                            <option value="month" selected>Este Mes</option>
+                            <option value="year">Este Año</option>
+                            <option value="custom">Personalizado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="statusFilter">Estado</label>
+                        <select id="statusFilter" class="form-control">
+                            <option value="all">Todos</option>
+                            <option value="completed">Completados</option>
+                            <option value="pending">Pendientes</option>
+                            <option value="cancelled">Cancelados</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="methodFilter">Método</label>
+                        <select id="methodFilter" class="form-control">
+                            <option value="all">Todos</option>
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Tarjeta">Tarjeta</option>
+    
+                            <option value="Compartido">Compartido</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button id="refreshBtn" class="btn btn-primary btn-block">
+                            <i class="fas fa-sync-alt"></i>
+                            Actualizar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs Section -->
+        <div class="payment-tabs">
+            <ul class="nav nav-tabs" id="paymentTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="payments-tab" data-bs-toggle="tab" data-bs-target="#payments" type="button" role="tab">
+                        <i class="fas fa-list"></i>
+                        Pagos Recientes
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">
+                        <i class="fas fa-clock"></i>
+                        Pendientes
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button" role="tab">
+                        <i class="fas fa-chart-line"></i>
+                        Análisis
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports" type="button" role="tab">
+                        <i class="fas fa-file-alt"></i>
+                        Reportes
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="paymentTabsContent">
+            <!-- Pagos Recientes Tab -->
+            <div class="tab-pane fade show active" id="payments" role="tabpanel">
+                <div class="payments-section">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-history"></i> Pagos Recientes</h5>
+                                    <div class="card-actions">
+                                        <button class="btn btn-sm btn-outline-primary" id="exportPayments">
+                                            <i class="fas fa-download"></i> Exportar
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover" id="paymentsTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Orden</th>
+                                                    <th>Monto</th>
+                                                    <th>Método</th>
+                                                    <th>Estado</th>
+                                                    <th>Fecha</th>
+                                                    <th>Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="paymentsTableBody">
+                                                <!-- Data will be loaded here -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="text-center" id="paymentsLoading">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Cargando...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pendientes Tab -->
+            <div class="tab-pane fade" id="pending" role="tabpanel">
+                <div class="pending-section">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-exclamation-triangle"></i> Pagos Pendientes</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover" id="pendingTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>Orden</th>
+                                                    <th>Mesa</th>
+                                                    <th>Total</th>
+                                                    <th>Pagado</th>
+                                                    <th>Pendiente</th>
+                                                    <th>Estado</th>
+                                                    <th>Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="pendingTableBody">
+                                                <!-- Data will be loaded here -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="text-center" id="pendingLoading">
+                                        <div class="spinner-border text-warning" role="status">
+                                            <span class="visually-hidden">Cargando...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Análisis Tab -->
+            <div class="tab-pane fade" id="analytics" role="tabpanel">
+                <div class="analytics-section">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-chart-pie"></i> Métodos de Pago</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="paymentMethodsChart" width="400" height="300"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-chart-line"></i> Ventas por Día</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="dailySalesChart" width="400" height="300"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-chart-bar"></i> Rendimiento Mensual</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="monthlyPerformanceChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reportes Tab -->
+            <div class="tab-pane fade" id="reports" role="tabpanel">
+                <div class="reports-section">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="report-card">
+                                <div class="report-icon">
+                                    <i class="fas fa-file-invoice-dollar"></i>
+                                </div>
+                                <div class="report-content">
+                                    <h4>Reporte Diario</h4>
+                                    <p>Resumen de pagos del día</p>
+                                    <button class="btn btn-primary btn-sm" onclick="generateDailyReport()">
+                                        Generar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="report-card">
+                                <div class="report-icon">
+                                    <i class="fas fa-calendar-week"></i>
+                                </div>
+                                <div class="report-content">
+                                    <h4>Reporte Semanal</h4>
+                                    <p>Análisis semanal de ventas</p>
+                                    <button class="btn btn-primary btn-sm" onclick="generateWeeklyReport()">
+                                        Generar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="report-card">
+                                <div class="report-icon">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </div>
+                                <div class="report-content">
+                                    <h4>Reporte Mensual</h4>
+                                    <p>Resumen mensual completo</p>
+                                    <button class="btn btn-primary btn-sm" onclick="generateMonthlyReport()">
+                                        Generar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-credit-card"></i>
+                    Procesar Pago
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="paymentModalContent">
+                    <!-- Payment form will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Details Modal -->
+<div class="modal fade" id="paymentDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-info-circle"></i>
+                    Detalles del Pago
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="paymentDetailsContent">
+                    <!-- Payment details will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="~/js/payment-management.js"></script>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/payment-management.css" />
+} 

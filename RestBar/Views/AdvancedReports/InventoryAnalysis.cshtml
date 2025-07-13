@@ -1,0 +1,354 @@
+@{
+    ViewData["Title"] = "Análisis de Inventario";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-boxes text-primary"></i> Análisis de Inventario
+        </h1>
+        <div>
+            <button class="btn btn-success" onclick="exportToExcel()">
+                <i class="fas fa-file-excel"></i> Exportar a Excel
+            </button>
+            <button class="btn btn-danger" onclick="exportToPdf()">
+                <i class="fas fa-file-pdf"></i> Exportar a PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filtros</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <label>Fecha Inicio:</label>
+                    <input type="date" id="startDate" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label>Fecha Fin:</label>
+                    <input type="date" id="endDate" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label>Sucursal:</label>
+                    <select id="branchId" class="form-control">
+                        <option value="">Todas las sucursales</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label>&nbsp;</label>
+                    <button class="btn btn-primary btn-block" onclick="loadInventoryAnalysis()">
+                        <i class="fas fa-search"></i> Generar Reporte
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas Generales -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Productos
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalProducts">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-boxes fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Bajo Stock
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="lowStockProducts">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Sin Stock
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="outOfStockProducts">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-times-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Valor Total
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalInventoryValue">$0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertas de Bajo Stock -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Alertas de Bajo Stock</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="lowStockTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Categoría</th>
+                            <th>Sucursal</th>
+                            <th>Stock Actual</th>
+                            <th>Stock Mínimo</th>
+                            <th>Punto de Reorden</th>
+                            <th>Nivel de Alerta</th>
+                            <th>Última Actualización</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lowStockTableBody">
+                        <!-- Los datos se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rotación de Inventario -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Rotación de Inventario</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="turnoverTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Categoría</th>
+                            <th>Stock Promedio</th>
+                            <th>Total Vendido</th>
+                            <th>Tasa de Rotación</th>
+                            <th>Días para Vender</th>
+                            <th>Eficiencia</th>
+                        </tr>
+                    </thead>
+                    <tbody id="turnoverTableBody">
+                        <!-- Los datos se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Valor de Inventario -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Valor de Inventario</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="valueTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Categoría</th>
+                            <th>Stock Actual</th>
+                            <th>Costo Unitario</th>
+                            <th>Valor Total</th>
+                            <th>Valor Mes Anterior</th>
+                            <th>Cambio de Valor</th>
+                            <th>Sucursal</th>
+                        </tr>
+                    </thead>
+                    <tbody id="valueTableBody">
+                        <!-- Los datos se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Inicializar fechas
+            var today = new Date();
+            var lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+            
+            $('#startDate').val(lastMonth.toISOString().split('T')[0]);
+            $('#endDate').val(today.toISOString().split('T')[0]);
+            
+            // Cargar datos iniciales
+            loadInventoryAnalysis();
+        });
+
+        function loadInventoryAnalysis() {
+            var startDate = $('#startDate').val();
+            var endDate = $('#endDate').val();
+            var branchId = $('#branchId').val();
+
+            // Mostrar loading
+            showLoading();
+
+            $.ajax({
+                url: '/AdvancedReports/GetInventoryAnalysis',
+                type: 'GET',
+                data: {
+                    startDate: startDate,
+                    endDate: endDate,
+                    branchId: branchId
+                },
+                success: function(data) {
+                    updateStatistics(data);
+                    updateLowStockTable(data.lowStockAlerts);
+                    updateTurnoverTable(data.turnoverData);
+                    updateValueTable(data.valueReport);
+                    hideLoading();
+                },
+                error: function(xhr, status, error) {
+                    
+                    hideLoading();
+                    showError('Error al cargar el análisis de inventario');
+                }
+            });
+        }
+
+        function updateStatistics(data) {
+            $('#totalProducts').text(data.totalProducts);
+            $('#lowStockProducts').text(data.lowStockProducts);
+            $('#outOfStockProducts').text(data.outOfStockProducts);
+            $('#totalInventoryValue').text('$' + data.totalInventoryValue.toFixed(2));
+        }
+
+        function updateLowStockTable(alerts) {
+            var tbody = $('#lowStockTableBody');
+            tbody.empty();
+
+            alerts.forEach(function(alert) {
+                var row = `
+                    <tr>
+                        <td>${alert.productName}</td>
+                        <td>${alert.categoryName}</td>
+                        <td>${alert.branchName}</td>
+                        <td>${alert.currentStock}</td>
+                        <td>${alert.minStock}</td>
+                        <td>${alert.reorderPoint}</td>
+                        <td><span class="badge badge-${alert.alertLevel === 'Critical' ? 'danger' : 'warning'}">${alert.alertLevel}</span></td>
+                        <td>${new Date(alert.lastUpdated).toLocaleDateString()}</td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        function updateTurnoverTable(turnoverData) {
+            var tbody = $('#turnoverTableBody');
+            tbody.empty();
+
+            turnoverData.forEach(function(item) {
+                var row = `
+                    <tr>
+                        <td>${item.productName}</td>
+                        <td>${item.categoryName}</td>
+                        <td>${item.averageStock}</td>
+                        <td>${item.totalSold}</td>
+                        <td>${item.turnoverRate}</td>
+                        <td>${item.daysToSell}</td>
+                        <td><span class="badge badge-${item.efficiency === 'High' ? 'success' : item.efficiency === 'Medium' ? 'warning' : 'danger'}">${item.efficiency}</span></td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        function updateValueTable(valueReport) {
+            var tbody = $('#valueTableBody');
+            tbody.empty();
+
+            valueReport.forEach(function(item) {
+                var row = `
+                    <tr>
+                        <td>${item.productName}</td>
+                        <td>${item.categoryName}</td>
+                        <td>${item.currentStock}</td>
+                        <td>$${item.unitCost.toFixed(2)}</td>
+                        <td>$${item.totalValue.toFixed(2)}</td>
+                        <td>$${item.lastMonthValue.toFixed(2)}</td>
+                        <td>${item.valueChange >= 0 ? '+' : ''}$${item.valueChange.toFixed(2)}</td>
+                        <td>${item.branchName}</td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        function exportToExcel() {
+            var startDate = $('#startDate').val();
+            var endDate = $('#endDate').val();
+            var branchId = $('#branchId').val();
+
+            window.location.href = `/AdvancedReports/ExportToExcel?reportType=InventoryAnalysis&startDate=${startDate}&endDate=${endDate}&branchId=${branchId}`;
+        }
+
+        function exportToPdf() {
+            var startDate = $('#startDate').val();
+            var endDate = $('#endDate').val();
+            var branchId = $('#branchId').val();
+
+            window.location.href = `/AdvancedReports/ExportToPdf?reportType=InventoryAnalysis&startDate=${startDate}&endDate=${endDate}&branchId=${branchId}`;
+        }
+
+        function showLoading() {
+            // Implementar loading spinner
+        }
+
+        function hideLoading() {
+            // Ocultar loading spinner
+        }
+
+        function showError(message) {
+            // Mostrar mensaje de error
+            alert(message);
+        }
+    </script>
+} 

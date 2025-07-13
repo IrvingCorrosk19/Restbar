@@ -9,11 +9,9 @@ using System.Text;
 
 namespace RestBar.Services
 {
-    public class AuthService : IAuthService
+    public class AuthService : BaseTrackingService, IAuthService
     {
-        private readonly RestBarContext _context;
         private readonly IUserService _userService;
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<AuthService> _logger;
 
         public AuthService(
@@ -21,10 +19,9 @@ namespace RestBar.Services
             IUserService userService, 
             IHttpContextAccessor httpContextAccessor,
             ILogger<AuthService> logger)
+            : base(context, httpContextAccessor)
         {
-            _context = context;
             _userService = userService;
-            _httpContextAccessor = httpContextAccessor;
             _logger = logger;
         }
 
@@ -32,8 +29,10 @@ namespace RestBar.Services
         {
             try
             {
+                Console.WriteLine($"🔍 [AuthService] LoginAsync() - Iniciando login para email: {email}");
                 _logger.LogInformation($"[AuthService] Intento de login para email: {email}");
 
+                Console.WriteLine($"🔍 [AuthService] LoginAsync() - Buscando usuario en base de datos");
                 var user = await _context.Users
                     .Include(u => u.Branch)
                     .ThenInclude(b => b.Company)
@@ -41,28 +40,40 @@ namespace RestBar.Services
 
                 if (user == null)
                 {
+                    Console.WriteLine($"❌ [AuthService] LoginAsync() - Usuario no encontrado: {email}");
                     _logger.LogWarning($"[AuthService] Usuario no encontrado: {email}");
                     return null;
                 }
 
+                Console.WriteLine($"✅ [AuthService] LoginAsync() - Usuario encontrado: {user.Email}, Activo: {user.IsActive}, Rol: {user.Role}");
+
                 if (user.IsActive != true)
                 {
+                    Console.WriteLine($"❌ [AuthService] LoginAsync() - Usuario inactivo: {email}");
                     _logger.LogWarning($"[AuthService] Usuario inactivo: {email}");
                     return null;
                 }
 
+                Console.WriteLine($"🔍 [AuthService] LoginAsync() - Verificando contraseña");
                 var hashedPassword = HashPassword(password);
+                Console.WriteLine($"🔍 [AuthService] LoginAsync() - Password hash generado: {hashedPassword}");
+                Console.WriteLine($"🔍 [AuthService] LoginAsync() - Password hash en BD: {user.PasswordHash}");
+                
                 if (user.PasswordHash != hashedPassword)
                 {
+                    Console.WriteLine($"❌ [AuthService] LoginAsync() - Contraseña incorrecta para: {email}");
                     _logger.LogWarning($"[AuthService] Contraseña incorrecta para: {email}");
                     return null;
                 }
 
+                Console.WriteLine($"✅ [AuthService] LoginAsync() - Login exitoso para: {email}, Rol: {user.Role}");
                 _logger.LogInformation($"[AuthService] Login exitoso para: {email}, Rol: {user.Role}");
                 return user;
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"❌ [AuthService] LoginAsync() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [AuthService] LoginAsync() - StackTrace: {ex.StackTrace}");
                 _logger.LogError(ex, $"[AuthService] Error en LoginAsync para email: {email}");
                 return null;
             }
@@ -132,14 +143,15 @@ namespace RestBar.Services
                 // Permisos basados en roles
                 return user.Role switch
                 {
-                    UserRole.admin => true, // Admin tiene acceso a todo
-                    UserRole.manager => action != "admin_only", // Manager tiene acceso casi completo
+                    UserRole.superadmin => true, // SuperAdmin tiene acceso a TODO
+                    UserRole.admin => action != "superadmin_only", // Admin tiene acceso a todo excepto funciones de SuperAdmin
+                    UserRole.manager => action != "admin_only" && action != "superadmin_only", // Manager tiene acceso casi completo
                     UserRole.supervisor => action is "orders" or "kitchen" or "payments" or "tables",
                     UserRole.waiter => action is "orders" or "tables" or "customers",
                     UserRole.cashier => action is "orders" or "payments" or "customers",
                     UserRole.chef => action is "kitchen" or "orders",
                     UserRole.bartender => action is "orders" or "kitchen",
-                    UserRole.inventory => action is "inventory" or "products",
+
                     UserRole.accountant => action is "payments" or "reports",
                     UserRole.support => action is "orders" or "users",
                     _ => false
@@ -175,11 +187,19 @@ namespace RestBar.Services
             if (user.BranchId.HasValue)
             {
                 claims.Add(new Claim("BranchId", user.BranchId.Value.ToString()));
+                if (user.Branch != null)
+                {
+                    claims.Add(new Claim("BranchName", user.Branch.Name));
+                }
             }
 
             if (user.Branch?.CompanyId != null)
             {
                 claims.Add(new Claim("CompanyId", user.Branch.CompanyId.ToString()));
+                if (user.Branch.Company != null)
+                {
+                    claims.Add(new Claim("CompanyName", user.Branch.Company.Name));
+                }
             }
 
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -217,7 +237,7 @@ namespace RestBar.Services
                     PasswordHash = HashPassword("Admin123!"),
                     Role = UserRole.admin,
                     IsActive = true,
-                    CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified),
+                    // ✅ Fechas se manejan automáticamente por el modelo
                     BranchId = null
                 };
 

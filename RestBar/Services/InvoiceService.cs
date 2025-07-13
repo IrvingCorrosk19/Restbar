@@ -4,13 +4,11 @@ using RestBar.Models;
 
 namespace RestBar.Services
 {
-    public class InvoiceService : IInvoiceService
+    public class InvoiceService : BaseTrackingService, IInvoiceService
     {
-        private readonly RestBarContext _context;
-
-        public InvoiceService(RestBarContext context)
+        public InvoiceService(RestBarContext context, IHttpContextAccessor httpContextAccessor) 
+            : base(context, httpContextAccessor)
         {
-            _context = context;
         }
 
         public async Task<IEnumerable<Invoice>> GetAllAsync()
@@ -31,12 +29,7 @@ namespace RestBar.Services
 
         public async Task<Invoice> CreateAsync(Invoice invoice)
         {
-            invoice.CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
-            
-            // Validación de desarrollo para asegurar que las fechas sean UTC
-            if (invoice.CreatedAt.HasValue && invoice.CreatedAt.Value.Kind == DateTimeKind.Unspecified)
-                throw new InvalidOperationException("CreatedAt no debe ser Unspecified para columnas timestamp with time zone");
-            
+            // ✅ Fechas se manejan automáticamente por el modelo y BaseTrackingService
             _context.Invoices.Add(invoice);
             await _context.SaveChangesAsync();
             return invoice;
@@ -122,7 +115,7 @@ namespace RestBar.Services
                 return 0;
 
             decimal subtotal = invoice.Order.OrderItems.Sum(oi => oi.Quantity * oi.UnitPrice);
-            decimal tax = subtotal * (invoice.Tax ?? 0) / 100;
+            decimal tax = subtotal * invoice.Tax / 100;
             decimal total = subtotal + tax;
 
             invoice.Total = total;

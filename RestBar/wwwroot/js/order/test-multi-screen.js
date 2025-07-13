@@ -1,149 +1,111 @@
-// Test Multi-Screen - Script para verificar actualización en múltiples pantallas
+// Test Multi Screen - Script para probar actualizaciones en múltiples pantallas
 
-console.log('[MultiScreen] ===== PRUEBA DE ACTUALIZACIÓN EN MÚLTIPLES PANTALLAS =====');
-
-// Función para simular notificación SignalR desde otra pantalla
-function simulateSignalRNotification(tableId, newStatus) {
-    console.log(`[MultiScreen] Simulando notificación SignalR: ${tableId} -> ${newStatus}`);
-    
-    // Simular el evento SignalR
-    if (signalRConnection && signalRConnection.state === signalR.HubConnectionState.Connected) {
-        // Disparar el evento manualmente
-        const event = new CustomEvent('tableStatusChanged', {
-            detail: { tableId, newStatus }
-        });
-        document.dispatchEvent(event);
-        
-        // También llamar directamente a la función
-        if (typeof updateTableStatus === 'function') {
-            updateTableStatus(tableId, newStatus);
-        }
-    } else {
-        console.error('[MultiScreen] SignalR no está conectado');
+// Función para simular notificación SignalR
+function simulateNotification(tableId, newStatus) {
+    if (typeof updateTableStatus === 'function') {
+        updateTableStatus(tableId, newStatus);
     }
 }
 
 // Función para verificar el estado actual de todas las mesas
-function checkAllTablesStatus() {
-    console.log('[MultiScreen] Estado actual de todas las mesas:');
+function checkCurrentStatus() {
     const tableButtons = document.querySelectorAll('.mesa-btn');
     
     tableButtons.forEach((btn, index) => {
         const tableId = btn.dataset.id;
         const status = btn.dataset.status;
         const classes = btn.className;
-        const hasEnPreparacion = classes.includes('mesa-en-preparacion');
-        const hasDisponible = classes.includes('mesa-disponible');
-        
-        console.log(`[MultiScreen] Mesa ${index + 1}:`);
-        console.log(`[MultiScreen]   - ID: ${tableId}`);
-        console.log(`[MultiScreen]   - Status: ${status}`);
-        console.log(`[MultiScreen]   - Classes: ${classes}`);
-        console.log(`[MultiScreen]   - EnPreparacion: ${hasEnPreparacion ? '✅' : '❌'}`);
-        console.log(`[MultiScreen]   - Disponible: ${hasDisponible ? '✅' : '❌'}`);
+        const hasEnPreparacion = classes.includes('btn-warning');
+        const hasDisponible = classes.includes('btn-success');
     });
 }
 
-// Función para probar el flujo completo de múltiples pantallas
-function testMultiScreenFlow() {
-    console.log('[MultiScreen] ===== INICIANDO PRUEBA DE MÚLTIPLES PANTALLAS =====');
-    
-    // 1. Verificar estado inicial
-    console.log('[MultiScreen] 1. Estado inicial:');
-    checkAllTablesStatus();
-    
-    // 2. Simular cambio de estado
+// Función para probar el flujo completo de actualización
+function testUpdateFlow() {
     const tableButtons = document.querySelectorAll('.mesa-btn');
-    if (tableButtons.length > 0) {
-        const testTable = tableButtons[0];
-        const tableId = testTable.dataset.id;
-        const currentStatus = testTable.dataset.status;
-        
-        console.log(`[MultiScreen] 2. Simulando cambio de estado:`);
-        console.log(`[MultiScreen]   - Mesa: ${tableId}`);
-        console.log(`[MultiScreen]   - Estado actual: ${currentStatus}`);
-        console.log(`[MultiScreen]   - Nuevo estado: EnPreparacion`);
-        
-        // Simular notificación
-        simulateSignalRNotification(tableId, 'EnPreparacion');
-        
-        // 3. Verificar estado después del cambio
-        setTimeout(() => {
-            console.log('[MultiScreen] 3. Estado después del cambio:');
-            checkAllTablesStatus();
-            
-            // 4. Simular cambio de vuelta
-            setTimeout(() => {
-                console.log('[MultiScreen] 4. Simulando cambio de vuelta a Disponible:');
-                simulateSignalRNotification(tableId, 'Disponible');
-                
-                setTimeout(() => {
-                    console.log('[MultiScreen] 5. Estado final:');
-                    checkAllTablesStatus();
-                    console.log('[MultiScreen] ===== PRUEBA COMPLETADA =====');
-                }, 1000);
-            }, 2000);
-        }, 1000);
-    } else {
-        console.error('[MultiScreen] No se encontraron mesas para probar');
+    if (tableButtons.length === 0) {
+        return;
     }
+
+    const firstTable = tableButtons[0];
+    const tableId = firstTable.dataset.id;
+    const currentStatus = firstTable.dataset.status;
+
+    // 1. Estado inicial
+    checkCurrentStatus();
+
+    // 2. Simular cambio de estado
+    simulateNotification(tableId, 'EnPreparacion');
+
+    // 3. Estado después del cambio
+    setTimeout(() => {
+        checkCurrentStatus();
+        
+        // 4. Simulando cambio de vuelta a Disponible
+        simulateNotification(tableId, 'Disponible');
+        
+        // 5. Estado final
+        setTimeout(() => {
+            checkCurrentStatus();
+        }, 1000);
+    }, 1000);
 }
 
 // Función para verificar conectividad SignalR
-function checkSignalRConnectivity() {
-    console.log('[MultiScreen] Verificando conectividad SignalR:');
-    console.log(`[MultiScreen]   - SignalR conectado: ${signalRConnection ? '✅' : '❌'}`);
+function checkConnectivity() {
     if (signalRConnection) {
-        console.log(`[MultiScreen]   - Estado: ${signalRConnection.state}`);
-        console.log(`[MultiScreen]   - URL: ${signalRConnection.baseUrl}`);
+        const state = signalRConnection.state;
+        const url = signalRConnection.baseUrl;
     }
 }
 
-// Función para forzar actualización de una mesa específica
-function forceUpdateTable(tableId, newStatus) {
-    console.log(`[MultiScreen] Forzando actualización: ${tableId} -> ${newStatus}`);
-    
-    // Buscar el botón
-    const tableButton = document.querySelector(`.mesa-btn[data-id='${tableId}']`);
-    if (!tableButton) {
-        console.error(`[MultiScreen] No se encontró la mesa ${tableId}`);
-        return;
+// Función para forzar actualización manual
+function forceUpdate(tableId, newStatus) {
+    const tableButton = document.querySelector(`[data-id="${tableId}"]`);
+    if (tableButton) {
+        const currentClasses = tableButton.className;
+        let newStatusClass = '';
+        
+        switch (newStatus) {
+            case 'Disponible':
+                newStatusClass = 'btn-success';
+                break;
+            case 'Ocupada':
+                newStatusClass = 'btn-warning';
+                break;
+            case 'EnPreparacion':
+                newStatusClass = 'btn-warning';
+                break;
+            case 'Servida':
+                newStatusClass = 'btn-info';
+                break;
+            case 'ParaPago':
+                newStatusClass = 'btn-success';
+                break;
+            case 'Pagada':
+                newStatusClass = 'btn-success';
+                break;
+            default:
+                newStatusClass = 'btn-secondary';
+        }
+        
+        // Limpiar clases de estado anteriores
+        const cleanClasses = currentClasses.replace(/btn-(success|warning|info|danger|secondary)/g, '');
+        tableButton.className = `${cleanClasses} ${newStatusClass}`.trim();
+        tableButton.dataset.status = newStatus;
     }
-    
-    // Actualizar manualmente
-    const statusClasses = [
-        'mesa-disponible', 'mesa-ocupada', 'mesa-reservada', 'mesa-en-espera', 
-        'mesa-atendida', 'mesa-en-preparacion', 'mesa-servida', 'mesa-para-pago', 
-        'mesa-pagada', 'mesa-bloqueada'
-    ];
-    tableButton.classList.remove(...statusClasses);
-    
-    const newStatusClass = getTableStatusClass(newStatus);
-    tableButton.classList.add(newStatusClass);
-    tableButton.dataset.status = newStatus;
-    
-    console.log(`[MultiScreen] ✅ Mesa actualizada manualmente: ${newStatusClass}`);
 }
 
 // Exponer funciones para uso en consola
 window.multiScreenTest = {
-    simulateNotification: simulateSignalRNotification,
-    checkStatus: checkAllTablesStatus,
-    testFlow: testMultiScreenFlow,
-    checkConnectivity: checkSignalRConnectivity,
-    forceUpdate: forceUpdateTable
+    simulateNotification: simulateNotification,
+    checkStatus: checkCurrentStatus,
+    testFlow: testUpdateFlow,
+    checkConnectivity: checkConnectivity,
+    forceUpdate: forceUpdate
 };
 
-console.log('[MultiScreen] Funciones disponibles:');
-console.log('[MultiScreen]   - multiScreenTest.simulateNotification(tableId, status)');
-console.log('[MultiScreen]   - multiScreenTest.checkStatus()');
-console.log('[MultiScreen]   - multiScreenTest.testFlow()');
-console.log('[MultiScreen]   - multiScreenTest.checkConnectivity()');
-console.log('[MultiScreen]   - multiScreenTest.forceUpdate(tableId, status)');
-
-// Ejecutar verificación automática
+// Ejecutar verificación automática después de 3 segundos
 setTimeout(() => {
-    console.log('[MultiScreen] Ejecutando verificación automática...');
-    checkSignalRConnectivity();
-    checkAllTablesStatus();
-}, 2000); 
+    checkConnectivity();
+}, 3000); 

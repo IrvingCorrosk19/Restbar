@@ -229,6 +229,8 @@
         padding: 1rem;
         text-align: left;
         border-bottom: 1px solid #e1e8ed;
+        color: #2c3e50;
+        font-weight: 500;
     }
 
     .users-table th {
@@ -242,6 +244,31 @@
 
     .users-table tr:hover {
         background: #f8f9fa;
+    }
+
+    .users-table td {
+        font-size: 0.95rem;
+        line-height: 1.4;
+    }
+
+    .users-table td:nth-child(2) { /* Email column */
+        color: #2c3e50;
+        font-weight: 600;
+    }
+
+    .users-table td:nth-child(4) { /* Sucursal column */
+        color: #34495e;
+        font-weight: 600;
+    }
+
+    .users-table td:nth-child(6) { /* Creado column */
+        color: #2c3e50;
+        font-weight: 500;
+    }
+
+    .text-muted {
+        color: #6c757d !important;
+        font-size: 0.85rem;
     }
 
     /* Role Badge */
@@ -261,7 +288,6 @@
     .role-cashier { background: #9b59b6; color: white; }
     .role-chef { background: #e67e22; color: white; }
     .role-bartender { background: #1abc9c; color: white; }
-    .role-inventory { background: #34495e; color: white; }
     .role-accountant { background: #95a5a6; color: white; }
     .role-support { background: #e91e63; color: white; }
 
@@ -275,6 +301,40 @@
 
     .status-active { background: #d4edda; color: #155724; }
     .status-inactive { background: #f8d7da; color: #721c24; }
+
+    /* Avatar Circle */
+    .avatar-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 1.1rem;
+        text-transform: uppercase;
+        box-shadow: var(--shadow-light);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .avatar-circle::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+        animation: shine 2s infinite;
+    }
+
+    @@keyframes shine {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
 
     /* Action Buttons */
     .action-buttons {
@@ -393,6 +453,25 @@
         transform: translateY(-1px);
     }
 
+    /* Password fields visibility */
+    .password-group {
+        display: block;
+    }
+
+    .password-group.hidden {
+        display: none;
+    }
+
+    .edit-password-note {
+        background: #e3f2fd;
+        border: 1px solid #2196f3;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        color: #1976d2;
+        font-size: 0.9rem;
+    }
+
     /* Responsive */
     @@media (max-width: 768px) {
         .toolbar {
@@ -447,36 +526,43 @@
     <!-- Filters -->
     <div class="filters-section">
         <div class="filters-grid">
-            <div class="filter-group">
-                <label class="filter-label">Rol</label>
-                <select class="filter-select" id="roleFilter">
-                    <option value="">Todos los roles</option>
-                    <option value="admin">Administrador</option>
-                    <option value="manager">Gerente</option>
-                    <option value="supervisor">Supervisor</option>
-                    <option value="waiter">Mesero</option>
-                    <option value="cashier">Cajero</option>
-                    <option value="chef">Cocinero</option>
-                    <option value="bartender">Bartender</option>
-                    <option value="inventory">Inventarista</option>
-                    <option value="accountant">Contador</option>
-                    <option value="support">Soporte</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label class="filter-label">Estado</label>
-                <select class="filter-select" id="statusFilter">
-                    <option value="">Todos</option>
-                    <option value="true">Activo</option>
-                    <option value="false">Inactivo</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label class="filter-label">Sucursal</label>
-                <select class="filter-select" id="branchFilter">
-                    <option value="">Todas las sucursales</option>
-                </select>
-            </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label for="companyFilter" class="form-label">Compañía</label>
+                            <select id="companyFilter" class="form-select">
+                                <option value="">Todas las compañías</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="branchFilter" class="form-label">Sucursal</label>
+                            <select id="branchFilter" class="form-select">
+                                <option value="">Todas las sucursales</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="roleFilter" class="form-label">Rol</label>
+                            <select id="roleFilter" class="form-select">
+                                <option value="">Todos los roles</option>
+                                <option value="admin">Administrador</option>
+                                <option value="manager">Gerente</option>
+                                <option value="supervisor">Supervisor</option>
+                                <option value="waiter">Mesero</option>
+                                <option value="cashier">Cajero</option>
+                                <option value="cook">Cocinero</option>
+                                <option value="bartender">Bartender</option>
+                                <option value="accountant">Contador</option>
+                                <option value="support">Soporte</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="statusFilter" class="form-label">Estado</label>
+                            <select id="statusFilter" class="form-select">
+                                <option value="">Todos</option>
+                                <option value="true">Activo</option>
+                                <option value="false">Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
         </div>
     </div>
 
@@ -554,7 +640,6 @@
                                     <option value="cashier">Cajero</option>
                                     <option value="chef">Cocinero</option>
                                     <option value="bartender">Bartender</option>
-                                    <option value="inventory">Inventarista</option>
                                     <option value="accountant">Contador</option>
                                     <option value="support">Soporte</option>
                                 </select>
@@ -562,15 +647,42 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="form-label">Sucursal</label>
-                                <select class="form-control" id="branchId" name="branchId">
-                                    <option value="">Sin sucursal</option>
+                                <label class="form-label">Compañía</label>
+                                <select class="form-control" id="modalCompanyId" name="companyId">
+                                    <option value="">Seleccionar compañía</option>
                                 </select>
                             </div>
                         </div>
                     </div>
                     
                     <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Sucursal</label>
+                                <select class="form-control" id="branchId" name="branchId">
+                                    <option value="">Seleccionar sucursal</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Estado</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="isActive" name="isActive" checked>
+                                    <label class="form-check-label" for="isActive">
+                                        Usuario activo
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="edit-password-note" id="editPasswordNote" style="display: none;">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>Nota:</strong> Deja los campos de contraseña vacíos si no deseas cambiarla.
+                    </div>
+                    
+                    <div class="row password-group" id="passwordGroup">
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label class="form-label">Contraseña *</label>
@@ -609,73 +721,291 @@
 </div>
 
 <script>
+// Variables globales
 let users = [];
 let branches = [];
-let isEditMode = false;
+let companies = [];
 
-// Cargar datos iniciales
+// Cargar compañías
+async function loadCompanies() {
+    try {
+        
+        const response = await fetch('/User/GetCompanies');
+        const result = await response.json();
+        
+        
+        
+        
+        
+        
+        
+        if (result.success) {
+            if (Array.isArray(result.data)) {
+                
+                companies = result.data;
+                populateCompanySelect();
+            } else {
+                
+                companies = [];
+                Swal.fire('Error', 'Los datos de compañías no tienen el formato esperado', 'error');
+            }
+        } else {
+            
+            companies = [];
+            Swal.fire('Error', result.message || 'Error al cargar compañías', 'error');
+        }
+    } catch (error) {
+        
+        companies = [];
+        Swal.fire('Error', 'Error al cargar compañías', 'error');
+    }
+}
+
+// Poblar dropdown de compañías
+function populateCompanySelect() {
+    const select = document.getElementById('companyFilter');
+    select.innerHTML = '<option value="">Todas las compañías</option>';
+    
+    companies.forEach(company => {
+        const option = document.createElement('option');
+        option.value = company.id;
+        option.textContent = company.name;
+        select.appendChild(option);
+    });
+}
+
+// Cargar sucursales (con filtro de compañía)
+async function loadBranches(companyId = null) {
+    try {
+        
+        
+        
+        let url = '/User/GetBranches';
+        if (companyId) {
+            url += `?companyId=${companyId}`;
+        }
+        
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        
+        
+        
+        
+        
+        
+        if (result.success) {
+            if (Array.isArray(result.data)) {
+                
+                branches = result.data;
+                populateBranchSelects();
+            } else {
+                
+                branches = [];
+                Swal.fire('Error', 'Los datos de sucursales no tienen el formato esperado', 'error');
+            }
+        } else {
+            
+            branches = [];
+            Swal.fire('Error', result.message || 'Error al cargar sucursales', 'error');
+        }
+    } catch (error) {
+        
+        branches = [];
+        Swal.fire('Error', 'Error al cargar sucursales', 'error');
+    }
+}
+
+// Poblar dropdowns de sucursales
+function populateBranchSelects() {
+    const filterSelect = document.getElementById('branchFilter');
+    const createSelect = document.getElementById('branchId');
+    
+    // Limpiar opciones existentes
+    filterSelect.innerHTML = '<option value="">Todas las sucursales</option>';
+    if (createSelect) {
+        createSelect.innerHTML = '<option value="">Seleccionar sucursal</option>';
+    }
+    
+    branches.forEach(branch => {
+        // Para el filtro
+        const filterOption = document.createElement('option');
+        filterOption.value = branch.id;
+        filterOption.textContent = branch.name;
+        filterSelect.appendChild(filterOption);
+        
+        // Para el formulario de creación
+        if (createSelect) {
+            const createOption = document.createElement('option');
+            createOption.value = branch.id;
+            createOption.textContent = branch.name;
+            createSelect.appendChild(createOption);
+        }
+    });
+}
+
+// Poblar dropdown de compañías en el modal
+function populateModalCompanySelect() {
+    const modalCompanySelect = document.getElementById('modalCompanyId');
+    modalCompanySelect.innerHTML = '<option value="">Seleccionar compañía</option>';
+    
+    companies.forEach(company => {
+        const option = document.createElement('option');
+        option.value = company.id;
+        option.textContent = company.name;
+        modalCompanySelect.appendChild(option);
+    });
+}
+
+// Cargar sucursales para el modal (con filtro de compañía)
+async function loadModalBranches(companyId = null) {
+    try {
+        
+        
+        
+        // Si no hay companyId, limpiar el dropdown y salir
+        if (!companyId) {
+            const modalBranchSelect = document.getElementById('branchId');
+            modalBranchSelect.innerHTML = '<option value="">Seleccionar sucursal</option>';
+            
+            return;
+        }
+        
+        let url = '/User/GetBranches';
+        url += `?companyId=${companyId}`;
+        
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        if (result.success && Array.isArray(result.data)) {
+            
+            
+            // Poblar solo el dropdown del modal
+            const modalBranchSelect = document.getElementById('branchId');
+            modalBranchSelect.innerHTML = '<option value="">Seleccionar sucursal</option>';
+            
+            result.data.forEach(branch => {
+                const option = document.createElement('option');
+                option.value = branch.id;
+                option.textContent = branch.name;
+                modalBranchSelect.appendChild(option);
+            });
+        } else {
+            
+        }
+    } catch (error) {
+        
+    }
+}
+
+// Event listener para cambio de compañía
+document.getElementById('companyFilter').addEventListener('change', function() {
+    const companyId = this.value;
+    
+    
+    // Limpiar sucursales actuales
+    branches = [];
+    populateBranchSelects();
+    
+    // Cargar sucursales de la compañía seleccionada
+    if (companyId) {
+        loadBranches(companyId);
+    } else {
+        // Si no hay compañía seleccionada, limpiar las sucursales
+        branches = [];
+        populateBranchSelects();
+    }
+    
+    // Aplicar filtros
+    applyFilters();
+});
+
+// Inicializar página
 document.addEventListener('DOMContentLoaded', function() {
+    
+    
+    // Cargar datos iniciales
+    loadCompanies();
     loadUsers();
-    loadBranches();
+    // No cargar todas las sucursales inicialmente - solo se cargarán cuando se seleccione una compañía
+    // loadBranches();
     
     // Event listeners para filtros
-    document.getElementById('searchInput').addEventListener('input', filterUsers);
-    document.getElementById('roleFilter').addEventListener('change', filterUsers);
-    document.getElementById('statusFilter').addEventListener('change', filterUsers);
-    document.getElementById('branchFilter').addEventListener('change', filterUsers);
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
+    document.getElementById('roleFilter').addEventListener('change', applyFilters);
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
+    document.getElementById('branchFilter').addEventListener('change', applyFilters);
+    
+    // Event listener para cambio de compañía en el modal
+    document.getElementById('modalCompanyId').addEventListener('change', function() {
+        const companyId = this.value;
+        
+        
+        // Limpiar sucursales del modal
+        const modalBranchSelect = document.getElementById('branchId');
+        modalBranchSelect.innerHTML = '<option value="">Seleccionar sucursal</option>';
+        
+        // Cargar sucursales de la compañía seleccionada en el modal
+        if (companyId) {
+            loadModalBranches(companyId);
+        } else {
+            // If no company selected, clear branches and do not load all
+            modalBranchSelect.innerHTML = '<option value="">Seleccionar sucursal</option>';
+        }
+    });
 });
 
 // Cargar usuarios
 async function loadUsers() {
     try {
+        
         const response = await fetch('/User/GetUsers');
         const result = await response.json();
         
+        
+        
+        
+        
+        
+        
         if (result.success) {
-            users = result.data;
-            renderUsers(users);
-            updateStats();
+            // Validar que data sea un array
+            if (Array.isArray(result.data)) {
+                
+                users = result.data;
+                renderUsers(users);
+                updateStats();
+            } else {
+                
+                
+                users = [];
+                renderUsers([]);
+                Swal.fire('Error', 'Los datos recibidos no tienen el formato esperado', 'error');
+            }
         } else {
+            
+            users = [];
+            renderUsers([]);
             Swal.fire('Error', result.message || 'Error al cargar usuarios', 'error');
         }
     } catch (error) {
-        console.error('Error al cargar usuarios:', error);
+        
+        users = [];
+        renderUsers([]);
         Swal.fire('Error', 'Error al cargar usuarios', 'error');
     }
-}
-
-// Cargar sucursales
-async function loadBranches() {
-    try {
-        const response = await fetch('/User/GetBranches');
-        const result = await response.json();
-        
-        if (result.success) {
-            branches = result.data;
-            populateBranchSelects();
-        }
-    } catch (error) {
-        console.error('Error al cargar sucursales:', error);
-    }
-}
-
-// Poblar selectores de sucursales
-function populateBranchSelects() {
-    const branchFilter = document.getElementById('branchFilter');
-    const branchSelect = document.getElementById('branchId');
-    
-    branches.forEach(branch => {
-        const option1 = new Option(branch.name, branch.id);
-        const option2 = new Option(branch.name, branch.id);
-        branchFilter.add(option1);
-        branchSelect.add(option2);
-    });
 }
 
 // Renderizar usuarios
 function renderUsers(usersToRender) {
     const tbody = document.getElementById('usersTableBody');
     tbody.innerHTML = '';
+    
+    // Validar que usersToRender sea un array
+    if (!Array.isArray(usersToRender)) {
+        
+        return;
+    }
     
     usersToRender.forEach(user => {
         const row = document.createElement('tr');
@@ -721,7 +1051,6 @@ function getRoleName(role) {
         cashier: 'Cajero',
         chef: 'Cocinero',
         bartender: 'Bartender',
-        inventory: 'Inventarista',
         accountant: 'Contador',
         support: 'Soporte'
     };
@@ -740,11 +1069,12 @@ function updateStats() {
 }
 
 // Filtrar usuarios
-function filterUsers() {
+function applyFilters() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const roleFilter = document.getElementById('roleFilter').value;
     const statusFilter = document.getElementById('statusFilter').value;
     const branchFilter = document.getElementById('branchFilter').value;
+    const companyFilter = document.getElementById('companyFilter').value;
     
     let filteredUsers = users.filter(user => {
         const matchesSearch = !searchTerm || 
@@ -754,8 +1084,9 @@ function filterUsers() {
         const matchesRole = !roleFilter || user.role === roleFilter;
         const matchesStatus = !statusFilter || user.isActive.toString() === statusFilter;
         const matchesBranch = !branchFilter || user.branchId === branchFilter;
+        const matchesCompany = !companyFilter || user.companyId === companyFilter;
         
-        return matchesSearch && matchesRole && matchesStatus && matchesBranch;
+        return matchesSearch && matchesRole && matchesStatus && matchesBranch && matchesCompany;
     });
     
     renderUsers(filteredUsers);
@@ -768,6 +1099,23 @@ function showCreateUserModal() {
     document.getElementById('userForm').reset();
     document.getElementById('userId').value = '';
     document.getElementById('isActive').checked = true;
+    
+    // Poblar dropdown de compañías en el modal
+    populateModalCompanySelect();
+    
+    // Do NOT load all branches initially. They will load when a company is selected.
+    // loadModalBranches(); // Removed this call
+    
+    // Mostrar campos de contraseña y hacerlos requeridos
+    document.getElementById('passwordGroup').classList.remove('hidden');
+    document.getElementById('editPasswordNote').style.display = 'none';
+    document.getElementById('password').required = true;
+    document.getElementById('confirmPassword').required = true;
+    
+    // Limpiar placeholders de modo edición
+    document.getElementById('password').placeholder = '';
+    document.getElementById('confirmPassword').placeholder = '';
+    
     new bootstrap.Modal(document.getElementById('userModal')).show();
 }
 
@@ -786,19 +1134,70 @@ async function editUser(userId) {
             document.getElementById('fullName').value = user.fullName || '';
             document.getElementById('email').value = user.email;
             document.getElementById('role').value = user.role;
-            document.getElementById('branchId').value = user.branchId || '';
             document.getElementById('isActive').checked = user.isActive;
             
-            // Ocultar campos de contraseña en modo edición
+            // Poblar dropdown de compañías en el modal
+            populateModalCompanySelect();
+            
+            // Si el usuario tiene una sucursal, determinar su compañía
+            if (user.branchId) {
+                // Primero intentar buscar la sucursal en la lista actual de sucursales
+                let userBranch = branches.find(b => b.id === user.branchId);
+                
+                // Si no se encuentra en la lista actual, hacer una llamada específica para obtener la sucursal
+                if (!userBranch) {
+                    try {
+                        
+                        const branchResponse = await fetch(`/User/GetBranches?branchId=${user.branchId}`);
+                        const branchResult = await branchResponse.json();
+                        
+                        if (branchResult.success && branchResult.data && branchResult.data.length > 0) {
+                            userBranch = branchResult.data[0];
+                            
+                        }
+                    } catch (error) {
+                        
+                    }
+                }
+                
+                if (userBranch && userBranch.companyId) {
+                    
+                    document.getElementById('modalCompanyId').value = userBranch.companyId;
+                    // Cargar sucursales de esa compañía
+                    await loadModalBranches(userBranch.companyId);
+                } else {
+                    
+                    // If branch not found or no company, clear branches
+                    const modalBranchSelect = document.getElementById('branchId');
+                    modalBranchSelect.innerHTML = '<option value="">Seleccionar sucursal</option>';
+                }
+            } else {
+                
+                // If no branch assigned to user, clear branches
+                const modalBranchSelect = document.getElementById('branchId');
+                modalBranchSelect.innerHTML = '<option value="">Seleccionar sucursal</option>';
+            }
+            
+            // Establecer la sucursal del usuario
+            document.getElementById('branchId').value = user.branchId || '';
+            
+            // Mostrar nota sobre contraseña y hacerla opcional
+            document.getElementById('editPasswordNote').style.display = 'block';
             document.getElementById('password').required = false;
             document.getElementById('confirmPassword').required = false;
+            
+            // Limpiar campos de contraseña para que se vea que son opcionales
+            document.getElementById('password').value = '';
+            document.getElementById('confirmPassword').value = '';
+            document.getElementById('password').placeholder = 'Dejar vacío para no cambiar';
+            document.getElementById('confirmPassword').placeholder = 'Dejar vacío para no cambiar';
             
             new bootstrap.Modal(document.getElementById('userModal')).show();
         } else {
             Swal.fire('Error', result.message || 'Error al cargar usuario', 'error');
         }
     } catch (error) {
-        console.error('Error al cargar usuario:', error);
+        
         Swal.fire('Error', 'Error al cargar usuario', 'error');
     }
 }
@@ -808,22 +1207,47 @@ async function saveUser() {
     const form = document.getElementById('userForm');
     const formData = new FormData(form);
     
+    // Manejar explícitamente el checkbox de isActive
+    const isActiveCheckbox = document.getElementById('isActive');
+    formData.set('isActive', isActiveCheckbox.checked);
+    
     // Validar contraseñas
     const password = document.getElementById('password').value;
     const confirmPassword = document.getElementById('confirmPassword').value;
     
-    if (!isEditMode && password !== confirmPassword) {
-        Swal.fire('Error', 'Las contraseñas no coinciden', 'error');
+    // Validar contraseñas solo si se están cambiando
+    if (password || confirmPassword) {
+        if (password !== confirmPassword) {
+            Swal.fire('Error', 'Las contraseñas no coinciden', 'error');
+            return;
+        }
+        
+        if (password.length < 8) {
+            Swal.fire('Error', 'La contraseña debe tener al menos 8 caracteres', 'error');
+            return;
+        }
+    }
+    
+    // Validar contraseña requerida para nuevos usuarios
+    if (!isEditMode && !password) {
+        Swal.fire('Error', 'La contraseña es requerida para nuevos usuarios', 'error');
         return;
     }
     
-    if (!isEditMode && password.length < 8) {
-        Swal.fire('Error', 'La contraseña debe tener al menos 8 caracteres', 'error');
-        return;
+    // Si estamos en modo edición y no hay contraseña, eliminar del FormData
+    if (isEditMode && !password) {
+        formData.delete('password');
+        formData.delete('confirmPassword');
     }
     
     try {
         const url = isEditMode ? '/User/Update' : '/User/Create';
+        
+        // Debug: mostrar datos que se envían
+        
+        
+        
+        
         const response = await fetch(url, {
             method: 'POST',
             body: formData
@@ -839,7 +1263,7 @@ async function saveUser() {
             Swal.fire('Error', result.message || 'Error al guardar usuario', 'error');
         }
     } catch (error) {
-        console.error('Error al guardar usuario:', error);
+        
         Swal.fire('Error', 'Error al guardar usuario', 'error');
     }
 }
@@ -872,7 +1296,7 @@ async function deleteUser(userId) {
                 Swal.fire('Error', result.message || 'Error al eliminar usuario', 'error');
             }
         } catch (error) {
-            console.error('Error al eliminar usuario:', error);
+            
             Swal.fire('Error', 'Error al eliminar usuario', 'error');
         }
     }

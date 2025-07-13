@@ -49,6 +49,89 @@ body {
    SELECCIÓN DE MESAS MEJORADA
    ======================== */
 
+/* Estilos para mesa seleccionada */
+.table-card {
+    transition: var(--transition);
+    border: 2px solid transparent;
+    cursor: pointer;
+    min-height: 120px; /* ✅ NUEVO: Altura mínima más pequeña */
+    max-height: 140px; /* ✅ NUEVO: Altura máxima */
+}
+
+.table-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.table-card.table-selected {
+    border: 3px solid var(--primary-color) !important;
+    box-shadow: 0 8px 25px rgba(13, 110, 253, 0.3) !important;
+    transform: scale(1.05) !important;
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%) !important; /* ✅ NUEVO: Fondo azul claro más visible */
+    animation: selectedPulse 2s ease-in-out infinite;
+}
+
+@keyframes selectedPulse {
+    0%, 100% {
+        box-shadow: 0 8px 25px rgba(13, 110, 253, 0.3);
+    }
+    50% {
+        box-shadow: 0 8px 25px rgba(13, 110, 253, 0.5);
+    }
+}
+
+/* Botón de selección mejorado */
+.select-table-btn {
+    transition: var(--transition);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.75rem; /* ✅ NUEVO: Texto más pequeño */
+    padding: 0.25rem 0.5rem; /* ✅ NUEVO: Padding más pequeño */
+}
+
+.select-table-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.select-table-btn:disabled {
+    opacity: 1;
+    cursor: not-allowed;
+}
+
+/* ✅ NUEVO: Estilos para cards más compactas */
+.table-card .card-body {
+    padding: 0.5rem !important; /* ✅ NUEVO: Padding más pequeño */
+}
+
+.table-card .card-title {
+    font-size: 0.9rem; /* ✅ NUEVO: Título más pequeño */
+    margin-bottom: 0.25rem !important;
+}
+
+.table-card .card-text {
+    font-size: 0.75rem; /* ✅ NUEVO: Texto más pequeño */
+    margin-bottom: 0.5rem !important;
+}
+
+.table-card .badge {
+    font-size: 0.65rem; /* ✅ NUEVO: Badge más pequeño */
+    padding: 0.25rem 0.5rem; /* ✅ NUEVO: Padding del badge más pequeño */
+}
+
+/* Indicador visual de mesa seleccionada */
+.table-selected .card-title {
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+.table-selected .badge {
+    background: var(--primary-gradient) !important;
+    color: white !important;
+    font-weight: 600;
+}
+
 .mesa-btn {
     position: relative;
     padding: 16px 20px;
@@ -106,43 +189,134 @@ body {
 }
 
 /* Estados de mesa mejorados */
-.mesa-disponible {
-    border-color: var(--success-color);
+.table-card.mesa-disponible {
+    border: 2px solid #28a745;
     background: linear-gradient(135deg, #d4edda 0%, #f8f9fa 100%);
-    color: var(--success-color);
+    color: #155724;
 }
 
-.mesa-disponible:hover {
-    background: var(--success-gradient);
+.table-card.mesa-disponible:hover {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
     color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
 }
 
-.mesa-ocupada {
-    border-color: var(--danger-color);
+.table-card.mesa-ocupada {
+    border: 2px solid #dc3545;
     background: linear-gradient(135deg, #f8d7da 0%, #f8f9fa 100%);
-    color: var(--danger-color);
+    color: #721c24;
 }
 
-.mesa-ocupada:hover {
-    background: var(--danger-gradient);
+.table-card.mesa-ocupada:hover {
+    background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
     color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
 }
 
-.mesa-reservada {
-    border-color: var(--info-color);
+.table-card.mesa-reservada {
+    border: 2px solid #17a2b8;
     background: linear-gradient(135deg, #d1ecf1 0%, #f8f9fa 100%);
-    color: var(--info-color);
+    color: #0c5460;
 }
 
-.mesa-reservada:hover {
-    background: var(--info-gradient);
+.table-card.mesa-reservada:hover {
+    background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%);
     color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
 }
 
-.mesa-en-espera {
-    border-color: var(--warning-color);
+.table-card.mesa-en-espera {
+    border: 2px solid #ffc107;
     background: linear-gradient(135deg, #fff3cd 0%, #f8f9fa 100%);
     color: #856404;
+}
+
+.table-card.mesa-en-espera:hover {
+    background: linear-gradient(135deg, #ffc107 0%, #ffeb3b 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+}
+
+.table-card.mesa-atendida {
+    border: 2px solid #6f42c1;
+    background: linear-gradient(135deg, #e2d9f3 0%, #f8f9fa 100%);
+    color: #4a2c6b;
+}
+
+.table-card.mesa-atendida:hover {
+    background: linear-gradient(135deg, #6f42c1 0%, #8e44ad 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(111, 66, 193, 0.3);
+}
+
+.table-card.mesa-en-preparacion {
+    border: 2px solid #fd7e14;
+    background: linear-gradient(135deg, #ffeaa7 0%, #f8f9fa 100%);
+    color: #e17055;
+}
+
+.table-card.mesa-en-preparacion:hover {
+    background: linear-gradient(135deg, #fd7e14 0%, #f39c12 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(253, 126, 20, 0.3);
+}
+
+.table-card.mesa-servida {
+    border: 2px solid #20c997;
+    background: linear-gradient(135deg, #d1f2eb 0%, #f8f9fa 100%);
+    color: #00695c;
+}
+
+.table-card.mesa-servida:hover {
+    background: linear-gradient(135deg, #20c997 0%, #00b894 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(32, 201, 151, 0.3);
+}
+
+.table-card.mesa-para-pago {
+    border: 2px solid #fd79a8;
+    background: linear-gradient(135deg, #fdcb6e 0%, #f8f9fa 100%);
+    color: #e84393;
+}
+
+.table-card.mesa-para-pago:hover {
+    background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(253, 121, 168, 0.3);
+}
+
+.table-card.mesa-pagada {
+    border: 2px solid #00b894;
+    background: linear-gradient(135deg, #a8e6cf 0%, #f8f9fa 100%);
+    color: #00695c;
+}
+
+.table-card.mesa-pagada:hover {
+    background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 184, 148, 0.3);
+}
+
+.table-card.mesa-bloqueada {
+    border: 2px solid #6c757d;
+    background: linear-gradient(135deg, #e9ecef 0%, #f8f9fa 100%);
+    color: #495057;
+}
+
+.table-card.mesa-bloqueada:hover {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
 }
 
 .mesa-en-espera:hover {
@@ -333,10 +507,11 @@ body {
     border: 1px solid #e9ecef;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-sm);
-    background: white;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
     overflow: hidden;
     margin-bottom: 1.5rem;
     position: relative;
+    backdrop-filter: blur(10px);
 }
 
 .product-card::before {
@@ -378,6 +553,9 @@ body {
     font-weight: 700;
     color: #2c3e50;
     margin-bottom: 0.5rem;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    font-size: 1rem;
+    line-height: 1.2;
 }
 
 .product-card .card-text {
@@ -860,6 +1038,7 @@ body {
     border: none;
     box-shadow: var(--shadow-lg);
     overflow: hidden;
+    background: white;
 }
 
 .modal-header {
@@ -872,22 +1051,27 @@ body {
 .modal-header .modal-title {
     font-weight: 700;
     font-size: 1.25rem;
+    color: white;
 }
 
 .modal-header .btn-close {
-    background: white;
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 50%;
     opacity: 0.8;
     transition: var(--transition);
+    padding: 0.5rem;
 }
 
 .modal-header .btn-close:hover {
     opacity: 1;
     transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .modal-body {
     padding: 2rem;
+    background: white;
+    color: #212529;
 }
 
 .modal-footer {
@@ -901,6 +1085,58 @@ body {
     padding: 0.75rem 2rem;
     border-radius: var(--border-radius-sm);
     transition: var(--transition);
+}
+
+.modal-footer .btn-primary {
+    background: var(--primary-gradient);
+    border: none;
+    color: white;
+}
+
+.modal-footer .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+    color: white;
+}
+
+.modal-footer .btn-secondary {
+    background: #6c757d;
+    color: white;
+    border: 1px solid #6c757d;
+}
+
+.modal-footer .btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+    background: #5a6268;
+    color: white;
+}
+
+/* Estilos generales para formularios en modales */
+.modal .form-label {
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 0.5rem;
+}
+
+.modal .form-control {
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+    background: white;
+    color: #212529;
+}
+
+.modal .form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    background: white;
+    color: #212529;
+}
+
+.modal .form-check-label {
+    color: #212529;
+    font-weight: 500;
 }
 
 /* ========================
@@ -1231,6 +1467,20 @@ body {
     background-color: #e8f5e9;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.product-card.selected-product .card-title {
+    color: #000000 !important;
+    font-weight: 700 !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+    font-size: 1.1rem !important;
+    line-height: 1.3 !important;
+}
+
+.product-card.selected-product .card-text {
+    color: #0056b3 !important;
+    font-weight: 600 !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
 }
 
 .product-card.selected-product:hover {
@@ -1982,6 +2232,7 @@ body {
 #editItemModal .modal-content {
     border-radius: 12px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    background: white;
 }
 
 #editItemModal .modal-header {
@@ -1993,15 +2244,30 @@ body {
 #editItemModal .modal-title {
     font-weight: 600;
     font-size: 1.2rem;
+    color: white;
 }
 
 #editItemModal .btn-close {
     filter: invert(1);
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    padding: 0.5rem;
+    opacity: 0.8;
+}
+
+#editItemModal .btn-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    opacity: 1;
+}
+
+#editItemModal .modal-body {
+    background: white;
+    color: #212529;
 }
 
 #editItemModal .form-label {
     font-weight: 600;
-    color: #495057;
+    color: #212529;
     margin-bottom: 0.5rem;
 }
 
@@ -2009,11 +2275,15 @@ body {
     border-radius: 8px;
     border: 2px solid #e9ecef;
     transition: all 0.3s ease;
+    background: white;
+    color: #212529;
 }
 
 #editItemModal .form-control:focus {
     border-color: #667eea;
     box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    background: white;
+    color: #212529;
 }
 
 #editItemModal .input-group {
@@ -2041,18 +2311,20 @@ body {
 
 #editItemModal .form-control-plaintext {
     font-weight: 600;
-    color: #495057;
+    color: #212529;
     padding: 0.5rem 0;
 }
 
 #editItemModal #editTotalPrice {
     font-size: 1.2rem;
     color: #28a745;
+    font-weight: 700;
 }
 
 #editItemModal .modal-footer {
     border-top: 1px solid #e9ecef;
     padding: 1rem;
+    background: white;
 }
 
 #editItemModal .btn-primary {
@@ -2062,11 +2334,13 @@ body {
     padding: 0.5rem 1.5rem;
     font-weight: 600;
     transition: all 0.3s ease;
+    color: white;
 }
 
 #editItemModal .btn-primary:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    color: white;
 }
 
 #editItemModal .btn-secondary {
@@ -2074,11 +2348,430 @@ body {
     padding: 0.5rem 1.5rem;
     font-weight: 600;
     transition: all 0.3s ease;
+    background: #6c757d;
+    color: white;
+    border: 1px solid #6c757d;
 }
 
 #editItemModal .btn-secondary:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+    background: #5a6268;
+    color: white;
+}
+
+/* ✅ MODAL DE PAGOS COMPLETAMENTE REDISEÑADO */
+#paymentModal .modal-dialog {
+    max-width: 750px;
+    margin: 1rem auto;
+}
+
+#paymentModal .modal-content {
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    background: white;
+    border: none;
+    overflow: hidden;
+}
+
+#paymentModal .modal-header {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: white;
+    border: none;
+    padding: 2rem 2.5rem 1.5rem;
+    position: relative;
+}
+
+#paymentModal .modal-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="10" cy="50" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="90" cy="30" r="0.5" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    opacity: 0.3;
+}
+
+#paymentModal .modal-title {
+    font-weight: 700;
+    font-size: 1.8rem;
+    color: white;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    position: relative;
+    z-index: 1;
+}
+
+#paymentModal .modal-title::before {
+    content: '💳';
+    font-size: 1.5rem;
+}
+
+#paymentModal .btn-close {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    padding: 0.75rem;
+    opacity: 0.9;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#paymentModal .btn-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+#paymentModal .modal-body {
+    background: white;
+    color: #2c3e50;
+    padding: 2.5rem;
+}
+
+#paymentModal .modal-body h6,
+#paymentModal .modal-body strong {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+#paymentModal .order-summary {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+#paymentModal .order-summary strong {
+    color: #1e3c72;
+    font-size: 1.1rem;
+}
+
+#paymentModal .order-items-list {
+    background: white;
+    border-radius: 10px;
+    padding: 1rem;
+    border: 1px solid #e9ecef;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+#paymentModal .order-item-summary {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border-left: 4px solid #1e3c72;
+}
+
+#paymentModal .order-item-summary:last-child {
+    margin-bottom: 0;
+}
+
+#paymentModal .form-label {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+}
+
+#paymentModal .form-control {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+    background: white;
+    color: #2c3e50;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+}
+
+#paymentModal .form-control:focus {
+    border-color: #1e3c72;
+    box-shadow: 0 0 0 0.2rem rgba(30, 60, 114, 0.15);
+    background: white;
+    color: #2c3e50;
+}
+
+#paymentModal .form-check {
+    margin-bottom: 1rem;
+}
+
+#paymentModal .form-check-input {
+    width: 1.2rem;
+    height: 1.2rem;
+    border-radius: 50%;
+    border: 2px solid #1e3c72;
+    margin-right: 0.5rem;
+}
+
+#paymentModal .form-check-input:checked {
+    background-color: #1e3c72;
+    border-color: #1e3c72;
+}
+
+#paymentModal .form-check-label {
+    color: #2c3e50;
+    font-weight: 500;
+    font-size: 1rem;
+    margin-left: 0.5rem;
+}
+
+#paymentModal .alert {
+    border-radius: 10px;
+    border: none;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+#paymentModal .alert-warning {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    color: #856404;
+}
+
+#paymentModal .alert-info {
+    background: linear-gradient(135deg, #d1ecf1 0%, #74b9ff 100%);
+    color: #0c5460;
+}
+
+#paymentModal .row {
+    margin-bottom: 1.5rem;
+}
+
+#paymentModal .col-md-4 {
+    padding: 0.5rem;
+}
+
+#paymentModal .col-md-4 strong {
+    display: block;
+    background: white;
+    padding: 0.75rem;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e9ecef;
+}
+
+#paymentModal .modal-footer {
+    border: none;
+    padding: 2rem 2.5rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#paymentModal .btn-primary {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    border: none;
+    border-radius: 25px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    color: white;
+    box-shadow: 0 4px 15px rgba(30, 60, 114, 0.2);
+}
+
+#paymentModal .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(30, 60, 114, 0.3);
+    color: white;
+}
+
+#paymentModal .btn-secondary {
+    border-radius: 25px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    background: #6c757d;
+    color: white;
+    border: 1px solid #6c757d;
+    box-shadow: 0 4px 15px rgba(108, 117, 125, 0.2);
+}
+
+#paymentModal .btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(108, 117, 125, 0.3);
+    background: #5a6268;
+    color: white;
+}
+
+/* Animaciones para el modal */
+#paymentModal.show .modal-content {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive para el modal de pagos */
+@media (max-width: 768px) {
+    #paymentModal .modal-dialog {
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+    }
+    
+    #paymentModal .modal-header,
+    #paymentModal .modal-body,
+    #paymentModal .modal-footer {
+        padding: 1.5rem;
+    }
+    
+    #paymentModal .modal-title {
+        font-size: 1.5rem;
+    }
+    
+    #paymentModal .col-md-4 {
+        margin-bottom: 1rem;
+    }
+}
+
+/* ✅ Estilos adicionales para mejorar el modal de pagos */
+#paymentModal .form-control[readonly] {
+    background-color: #f8f9fa;
+    border-color: #e9ecef;
+    color: #6c757d;
+}
+
+#paymentModal .form-control::placeholder {
+    color: #adb5bd;
+    font-style: italic;
+}
+
+#paymentModal .form-control:disabled {
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+    color: #6c757d;
+}
+
+#paymentModal .form-check-input:focus {
+    border-color: #1e3c72;
+    box-shadow: 0 0 0 0.2rem rgba(30, 60, 114, 0.15);
+}
+
+#paymentModal .badge {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+#paymentModal .text-muted {
+    color: #6c757d !important;
+}
+
+#paymentModal .text-success {
+    color: #28a745 !important;
+}
+
+#paymentModal .text-warning {
+    color: #ffc107 !important;
+}
+
+#paymentModal .text-danger {
+    color: #dc3545 !important;
+}
+
+#paymentModal .text-info {
+    color: #17a2b8 !important;
+}
+
+/* Mejorar la sección de resumen de cuenta */
+#paymentModal .order-summary .mb-3:first-child {
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+#paymentModal .order-summary .row {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+#paymentModal .order-summary .row .col-md-4 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#paymentModal .order-summary .row .col-md-4 strong {
+    font-size: 1.2rem;
+    margin-bottom: 0;
+}
+
+#paymentModal .order-summary .row .col-md-4 strong span {
+    font-size: 1.3rem;
+    color: #1e3c72;
+}
+
+/* Mejorar botones de radio */
+#paymentModal .form-check {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+#paymentModal .form-check:hover {
+    border-color: #1e3c72;
+    box-shadow: 0 2px 8px rgba(30, 60, 114, 0.1);
+}
+
+#paymentModal .form-check-input:checked + .form-check-label {
+    color: #1e3c72;
+    font-weight: 600;
+}
+
+#paymentModal .form-check:has(.form-check-input:checked) {
+    border-color: #1e3c72;
+    background: linear-gradient(135deg, #f8f9fa 0%, rgba(30, 60, 114, 0.05) 100%);
+}
+
+/* Sección de split payments */
+#paymentModal #splitPaymentSummary {
+    background: linear-gradient(135deg, #f1f3f4 0%, #e8eaf6 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid #dee2e6;
+    margin-top: 1.5rem;
+}
+
+#paymentModal #remainingBalanceSection {
+    border-radius: 10px;
+    border: none;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+#paymentModal #remainingBalanceSection.alert-warning {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    color: #856404;
+    border-left: 4px solid #ffc107;
 }
 
 /* ✅ Estilos para el botón de notas en las tarjetas de productos */
@@ -2117,3 +2810,539 @@ body {
         margin: 0.25rem 0;
     }
 } 
+
+/* ✅ Estilos específicos para el dropdown de métodos de pago */
+#paymentModal select.form-control {
+    background: white url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%23666" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4H4z"/></svg>') no-repeat right 0.75rem center;
+    background-size: 16px 16px;
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    padding: 0.75rem 2.5rem 0.75rem 1rem;
+    font-size: 1rem;
+    color: #2c3e50;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+#paymentModal select.form-control:focus {
+    border-color: #1e3c72;
+    box-shadow: 0 0 0 0.2rem rgba(30, 60, 114, 0.15);
+    outline: none;
+}
+
+#paymentModal select.form-control:disabled {
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+#paymentModal select.form-control option {
+    background: white;
+    color: #2c3e50;
+    padding: 0.5rem;
+}
+
+/* ✅ Estilos para las alertas informativas */
+#paymentModal .alert-info {
+    background: linear-gradient(135deg, #d1ecf1 0%, #b3e5fc 100%);
+    border: 1px solid #bee5eb;
+    border-left: 4px solid #17a2b8;
+    color: #0c5460;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+#paymentModal .alert-info i {
+    color: #17a2b8;
+    margin-right: 0.5rem;
+}
+
+#paymentModal .alert-info strong {
+    color: #0c5460;
+}
+
+#paymentModal .alert-info small {
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+/* ✅ Estilos para el campo de nombre del pagador */
+#paymentModal #payerNameSection {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid #dee2e6;
+    margin-bottom: 1.5rem;
+}
+
+#paymentModal #payerNameSection .form-text {
+    color: #6c757d;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+}
+
+/* ✅ Estilos para la sección de pagos divididos */
+#paymentModal #splitPaymentsSection {
+    background: linear-gradient(135deg, #f1f3f4 0%, #e8eaf6 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid #dee2e6;
+    margin-bottom: 1.5rem;
+}
+
+#paymentModal #splitPaymentsSection .d-flex {
+    margin-bottom: 1rem;
+}
+
+#paymentModal #splitPaymentsSection .btn-outline-primary {
+    border-color: #1e3c72;
+    color: #1e3c72;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+#paymentModal #splitPaymentsSection .btn-outline-primary:hover {
+    background: #1e3c72;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(30, 60, 114, 0.2);
+}
+
+/* ✅ Estilos para el ícono de bloqueo */
+#paymentModal #paymentMethodLockIcon {
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+#paymentModal #paymentMethodLockIcon i {
+    cursor: help;
+}
+
+/* ✅ Mejoras para los iconos en las etiquetas de radio */
+#paymentModal .form-check-label i {
+    margin-right: 0.5rem;
+    font-size: 1.1rem;
+    color: #1e3c72;
+}
+
+#paymentModal .form-check-input:checked + .form-check-label i {
+    color: #1e3c72;
+    animation: iconBounce 0.3s ease;
+}
+
+@keyframes iconBounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+/* ✅ Estilos para el contenedor de pagos divididos */
+#paymentModal #splitPaymentsContainer {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid #e9ecef;
+    margin-top: 1rem;
+    min-height: 50px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+#paymentModal #splitPaymentsContainer:empty::before {
+    content: "No hay pagos divididos agregados";
+    color: #6c757d;
+    font-style: italic;
+    text-align: center;
+    padding: 1rem;
+    display: block;
+}
+
+/* ✅ Estilos para elementos dinámicos de pagos divididos */
+#paymentModal .split-payment-item {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1rem;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+#paymentModal .split-payment-item:hover {
+    border-color: #1e3c72;
+    box-shadow: 0 2px 8px rgba(30, 60, 114, 0.1);
+}
+
+#paymentModal .split-payment-item .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+} 
+
+/* ✅ Backdrop mejorado para el modal de pagos */
+#paymentModal.modal {
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+}
+
+#paymentModal .modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+/* ✅ Animaciones adicionales para elementos interactivos */
+#paymentModal .form-control:focus {
+    transform: scale(1.02);
+}
+
+#paymentModal .btn {
+    position: relative;
+    overflow: hidden;
+}
+
+#paymentModal .btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+#paymentModal .btn:hover::before {
+    left: 100%;
+}
+
+/* ✅ Mejoras para el scroll personalizado */
+#paymentModal .order-items-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+#paymentModal .order-items-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+#paymentModal .order-items-list::-webkit-scrollbar-thumb {
+    background: #1e3c72;
+    border-radius: 3px;
+}
+
+#paymentModal .order-items-list::-webkit-scrollbar-thumb:hover {
+    background: #2a5298;
+}
+
+/* ✅ Estilos para elementos de loading (si se necesitan) */
+#paymentModal .loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #1e3c72;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ✅ Estilos para tooltips personalizados */
+#paymentModal [data-tooltip] {
+    position: relative;
+    cursor: help;
+}
+
+#paymentModal [data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #2c3e50;
+    color: white;
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+#paymentModal [data-tooltip]:hover::after {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-5px);
+}
+
+/* ✅ Micro-animaciones para mejorar la experiencia */
+#paymentModal .order-item-summary {
+    animation: fadeInUp 0.3s ease;
+}
+
+#paymentModal .order-item-summary:nth-child(1) { animation-delay: 0.1s; }
+#paymentModal .order-item-summary:nth-child(2) { animation-delay: 0.2s; }
+#paymentModal .order-item-summary:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ✅ Estados de validación visual mejorados */
+#paymentModal .form-control.is-valid {
+    border-color: #28a745;
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%2328a745" viewBox="0 0 16 16"><path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022Z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 16px;
+}
+
+#paymentModal .form-control.is-invalid {
+    border-color: #dc3545;
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%23dc3545" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 16px;
+}
+
+/* ✅ NUEVO: Estilos para desglose de impuestos en resumen del pedido */
+.tax-breakdown {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: var(--border-radius-sm);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid #dee2e6;
+    box-shadow: var(--shadow-sm);
+}
+
+.tax-breakdown .row {
+    margin: 0;
+}
+
+.tax-breakdown .col-md-4 {
+    padding: 0.5rem;
+    text-align: center;
+}
+
+.tax-breakdown small {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #6c757d;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.tax-breakdown .fw-bold {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.tax-breakdown #orderSubtotal {
+    color: #495057;
+}
+
+.tax-breakdown #orderTax {
+    color: var(--success-color);
+}
+
+.tax-breakdown #orderTotal {
+    color: var(--primary-color);
+    font-size: 1.2rem;
+}
+
+/* Responsive para desglose de impuestos */
+@media (max-width: 768px) {
+    .tax-breakdown {
+        padding: 0.75rem;
+    }
+    
+    .tax-breakdown .col-md-4 {
+        padding: 0.25rem;
+    }
+    
+    .tax-breakdown .fw-bold {
+        font-size: 1rem;
+    }
+    
+    .tax-breakdown small {
+        font-size: 0.8rem;
+    }
+}
+
+/* ✅ NUEVO: Estilos para modal de descuentos */
+#discountModal .modal-content {
+    border: none;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-lg);
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+#discountModal .modal-header {
+    background: linear-gradient(135deg, #ffc107 0%, #ffca2c 100%);
+    border-bottom: 2px solid #e0a800;
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+}
+
+#discountModal .modal-title {
+    color: #2c3e50;
+    font-weight: 700;
+    font-size: 1.25rem;
+}
+
+#discountModal .modal-title i {
+    color: #e0a800;
+}
+
+#discountModal .form-label {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+#discountModal .form-control {
+    border: 2px solid #e9ecef;
+    border-radius: var(--border-radius-sm);
+    padding: 0.75rem;
+    transition: var(--transition);
+}
+
+#discountModal .form-control:focus {
+    border-color: #ffc107;
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+}
+
+#discountModal .input-group-text {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-left: none;
+    color: #6c757d;
+    font-weight: 600;
+}
+
+#discountModal .alert-info {
+    background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+    border: 1px solid #bee5eb;
+    border-radius: var(--border-radius-sm);
+}
+
+#discountModal .alert-warning {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border: 1px solid #ffeaa7;
+    border-radius: var(--border-radius-sm);
+}
+
+#discountModal .btn-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #ffca2c 100%);
+    border: none;
+    color: #2c3e50;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--border-radius-sm);
+    transition: var(--transition);
+}
+
+#discountModal .btn-warning:hover {
+    background: linear-gradient(135deg, #e0a800 0%, #ffc107 100%);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+#discountModal .btn-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
+    border: none;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--border-radius-sm);
+    transition: var(--transition);
+}
+
+#discountModal .btn-danger:hover {
+    background: linear-gradient(135deg, #c82333 0%, #dc3545 100%);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Responsive para modal de descuentos */
+@media (max-width: 768px) {
+    #discountModal .modal-dialog {
+        margin: 1rem;
+    }
+    
+    #discountModal .modal-body {
+        padding: 1rem;
+    }
+    
+    #discountModal .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* ✅ NUEVO: Estilos para desglose financiero en SweetAlert2 */
+.swal2-html-container .order-summary .bg-light {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+    border: 1px solid #dee2e6;
+    border-radius: var(--border-radius-sm);
+}
+
+.swal2-html-container .order-summary h6 {
+    color: #2c3e50;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+}
+
+.swal2-html-container .order-summary .row {
+    margin: 0;
+}
+
+.swal2-html-container .order-summary .col-md-6,
+.swal2-html-container .order-summary .col-md-12 {
+    padding: 0.25rem 0.5rem;
+}
+
+.swal2-html-container .order-summary small {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.swal2-html-container .order-summary .text-danger {
+    color: #dc3545 !important;
+    font-weight: 700;
+}
+
+.swal2-html-container .order-summary .text-primary {
+    color: #0d6efd !important;
+}
+
+.swal2-html-container .order-summary .fw-bold {
+    font-weight: 700 !important;
+}
+
+/* Responsive para desglose financiero en SweetAlert2 */
+@media (max-width: 768px) {
+    .swal2-html-container .order-summary .col-md-6,
+    .swal2-html-container .order-summary .col-md-12 {
+        padding: 0.125rem 0.25rem;
+    }
+    
+    .swal2-html-container .order-summary small {
+        font-size: 0.8rem;
+    }
+}

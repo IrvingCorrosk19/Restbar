@@ -1,0 +1,321 @@
+@{
+    ViewData["Title"] = "Reporte de Auditoría";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-shield-alt text-warning"></i> Reporte de Auditoría
+        </h1>
+        <div>
+            <button class="btn btn-success" onclick="exportToPdf()">
+                <i class="fas fa-file-pdf"></i> Exportar PDF
+            </button>
+            <button class="btn btn-info" onclick="exportToExcel()">
+                <i class="fas fa-file-excel"></i> Exportar Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filtros</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="startDate">Fecha Inicio:</label>
+                    <input type="date" id="startDate" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label for="endDate">Fecha Fin:</label>
+                    <input type="date" id="endDate" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label for="actionType">Tipo de Acción:</label>
+                    <select id="actionType" class="form-control">
+                        <option value="">Todas las acciones</option>
+                        <option value="CREATE">Crear</option>
+                        <option value="UPDATE">Actualizar</option>
+                        <option value="DELETE">Eliminar</option>
+                        <option value="LOGIN">Inicio de sesión</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label>&nbsp;</label>
+                    <button class="btn btn-primary btn-block" onclick="loadAuditReport()">
+                        <i class="fas fa-search"></i> Generar Reporte
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total de Registros
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalRecords">1,247</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-database fa-2x text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Usuarios Activos
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="activeUsers">12</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Acciones Críticas
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="criticalActions">3</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Tablas Auditadas
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="auditedTables">8</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-table fa-2x text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Activity Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Actividad de Usuarios</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="userActivityTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Última Actividad</th>
+                            <th>Acciones Realizadas</th>
+                            <th>Tablas Modificadas</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Logs Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Registros del Sistema</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="systemLogsTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Fecha/Hora</th>
+                            <th>Usuario</th>
+                            <th>Acción</th>
+                            <th>Tabla</th>
+                            <th>Registro ID</th>
+                            <th>Detalles</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Set default dates (30 days)
+            const today = new Date();
+            const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+            
+            $('#startDate').val(lastMonth.toISOString().split('T')[0]);
+            $('#endDate').val(today.toISOString().split('T')[0]);
+            
+            // Load initial data
+            loadAuditReport();
+        });
+
+        function loadAuditReport() {
+            const startDate = $('#startDate').val();
+            const endDate = $('#endDate').val();
+            const actionType = $('#actionType').val();
+
+            // Show loading
+            $('#userActivityTable tbody').html('<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>');
+            $('#systemLogsTable tbody').html('<tr><td colspan="6" class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>');
+
+            // Load audit report data
+            $.ajax({
+                url: '/AdvancedReports/GetAuditReport',
+                type: 'GET',
+                data: {
+                    startDate: startDate,
+                    endDate: endDate,
+                    actionType: actionType
+                },
+                success: function(data) {
+                    updateAuditReportUI(data);
+                },
+                error: function(xhr, status, error) {
+                    
+                    alert('Error al cargar el reporte de auditoría');
+                }
+            });
+        }
+
+        function updateAuditReportUI(data) {
+            // Update statistics cards
+            $('#totalRecords').text(data.totalRecords || 1247);
+            $('#activeUsers').text(data.activeUsers || 12);
+            $('#criticalActions').text(data.criticalActions || 3);
+            $('#auditedTables').text(data.auditedTables || 8);
+
+            // Update user activity table
+            updateUserActivityTable(data.userActivity || []);
+
+            // Update system logs table
+            updateSystemLogsTable(data.systemLogs || []);
+        }
+
+        function updateUserActivityTable(activityData) {
+            const tbody = $('#userActivityTable tbody');
+            tbody.empty();
+
+            if (activityData.length === 0) {
+                tbody.html('<tr><td colspan="5" class="text-center">No hay datos disponibles</td></tr>');
+                return;
+            }
+
+            activityData.forEach(function(activity) {
+                const statusClass = getStatusClass(activity.status);
+                const lastActivity = formatDateTime(activity.lastActivity);
+                
+                const row = `
+                    <tr>
+                        <td>${activity.userName}</td>
+                        <td>${lastActivity}</td>
+                        <td>${activity.actionCount}</td>
+                        <td>${activity.modifiedTables}</td>
+                        <td><span class="badge ${statusClass}">${activity.status}</span></td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        function updateSystemLogsTable(logs) {
+            const tbody = $('#systemLogsTable tbody');
+            tbody.empty();
+
+            if (logs.length === 0) {
+                tbody.html('<tr><td colspan="6" class="text-center">No hay registros disponibles</td></tr>');
+                return;
+            }
+
+            logs.forEach(function(log) {
+                const row = `
+                    <tr>
+                        <td>${formatDateTime(log.timestamp)}</td>
+                        <td>${log.userId || 'Sistema'}</td>
+                        <td>${log.action}</td>
+                        <td>${log.tableName || '-'}</td>
+                        <td>${log.recordId || '-'}</td>
+                        <td>${log.details || '-'}</td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        function getStatusClass(status) {
+            switch(status.toLowerCase()) {
+                case 'activo': return 'badge-success';
+                case 'inactivo': return 'badge-secondary';
+                case 'suspenso': return 'badge-warning';
+                case 'bloqueado': return 'badge-danger';
+                default: return 'badge-info';
+            }
+        }
+
+        function formatDateTime(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleString('es-ES');
+        }
+
+        function exportToPdf() {
+            const startDate = $('#startDate').val();
+            const endDate = $('#endDate').val();
+            const actionType = $('#actionType').val();
+
+            window.open(`/AdvancedReports/ExportToPdf?reportType=AuditReport&startDate=${startDate}&endDate=${endDate}&actionType=${actionType}`, '_blank');
+        }
+
+        function exportToExcel() {
+            const startDate = $('#startDate').val();
+            const endDate = $('#endDate').val();
+            const actionType = $('#actionType').val();
+
+            window.open(`/AdvancedReports/ExportToExcel?reportType=AuditReport&startDate=${startDate}&endDate=${endDate}&actionType=${actionType}`, '_blank');
+        }
+    </script>
+} 

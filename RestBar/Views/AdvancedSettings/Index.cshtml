@@ -1,0 +1,266 @@
+@{
+    ViewData["Title"] = "Ajustes Avanzados";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-cogs text-primary me-2"></i>
+                        Ajustes Avanzados
+                    </h2>
+                    <p class="text-muted mb-0">Configuración completa del sistema RestBar</p>
+                </div>
+                <div class="card-body">
+                    <!-- Estadísticas de configuración -->
+                    <div class="row mb-4">
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-print fa-2x mb-2"></i>
+                                    <h4>@ViewBag.PrinterCount</h4>
+                                    <p class="mb-0">Impresoras</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-coins fa-2x mb-2"></i>
+                                    <h4>@ViewBag.CurrencyCount</h4>
+                                    <p class="mb-0">Monedas</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-percentage fa-2x mb-2"></i>
+                                    <h4>@ViewBag.TaxRateCount</h4>
+                                    <p class="mb-0">Impuestos</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-tags fa-2x mb-2"></i>
+                                    <h4>@ViewBag.DiscountPolicyCount</h4>
+                                    <p class="mb-0">Descuentos</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Secciones de configuración -->
+                    <div class="row">
+                        <!-- Configuración del Sistema -->
+                        <div class="col-lg-6 col-md-12 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-cog text-primary me-2"></i>
+                                        Configuración del Sistema
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted">Configuración general del sistema y parámetros básicos.</p>
+                                    <div class="d-grid">
+                                        <a href="@Url.Action("SystemSettings", "AdvancedSettings")" class="btn btn-outline-primary">
+                                            <i class="fas fa-arrow-right me-2"></i>
+                                            Gestionar Configuración
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Impresoras -->
+                        <div class="col-lg-6 col-md-12 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-print text-primary me-2"></i>
+                                        Impresoras
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted">Configuración de impresoras para tickets, reportes y cocina.</p>
+                                    <div class="d-grid">
+                                        <a href="@Url.Action("Printers", "AdvancedSettings")" class="btn btn-outline-primary">
+                                            <i class="fas fa-arrow-right me-2"></i>
+                                            Gestionar Impresoras
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Monedas -->
+                        <div class="col-lg-6 col-md-12 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-coins text-primary me-2"></i>
+                                        Monedas
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted">Configuración de monedas y tasas de cambio.</p>
+                                    <div class="d-grid">
+                                        <a href="@Url.Action("Currencies", "AdvancedSettings")" class="btn btn-outline-primary">
+                                            <i class="fas fa-arrow-right me-2"></i>
+                                            Gestionar Monedas
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Impuestos -->
+                        <div class="col-lg-6 col-md-12 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-percentage text-primary me-2"></i>
+                                        Impuestos
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted">Configuración de impuestos y tasas impositivas.</p>
+                                    <div class="d-grid">
+                                        <a href="@Url.Action("TaxRates", "AdvancedSettings")" class="btn btn-outline-primary">
+                                            <i class="fas fa-arrow-right me-2"></i>
+                                            Gestionar Impuestos
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Políticas de Descuento -->
+                        <div class="col-lg-6 col-md-12 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-tags text-primary me-2"></i>
+                                        Políticas de Descuento
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted">Configuración de descuentos y políticas comerciales.</p>
+                                    <div class="d-grid">
+                                        <a href="@Url.Action("DiscountPolicies", "AdvancedSettings")" class="btn btn-outline-primary">
+                                            <i class="fas fa-arrow-right me-2"></i>
+                                            Gestionar Descuentos
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Horarios de Operación -->
+                        <div class="col-lg-6 col-md-12 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-clock text-primary me-2"></i>
+                                        Horarios de Operación
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted">Configuración de horarios de apertura y cierre.</p>
+                                    <div class="d-grid">
+                                        <a href="@Url.Action("OperatingHours", "AdvancedSettings")" class="btn btn-outline-primary">
+                                            <i class="fas fa-arrow-right me-2"></i>
+                                            Gestionar Horarios
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Configuración de Notificaciones -->
+                        <div class="col-lg-6 col-md-12 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-bell text-primary me-2"></i>
+                                        Notificaciones
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted">Configuración de alertas y notificaciones del sistema.</p>
+                                    <div class="d-grid">
+                                        <a href="@Url.Action("NotificationSettings", "AdvancedSettings")" class="btn btn-outline-primary">
+                                            <i class="fas fa-arrow-right me-2"></i>
+                                            Gestionar Notificaciones
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Configuración de Respaldos -->
+                        <div class="col-lg-6 col-md-12 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-database text-primary me-2"></i>
+                                        Respaldos
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted">Configuración de respaldos automáticos y manuales.</p>
+                                    <div class="d-grid">
+                                        <a href="@Url.Action("BackupSettings", "AdvancedSettings")" class="btn btn-outline-primary">
+                                            <i class="fas fa-arrow-right me-2"></i>
+                                            Gestionar Respaldos
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Información adicional -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-info-circle me-2"></i>Información Importante</h6>
+                                <ul class="mb-0">
+                                    <li>Los cambios en la configuración pueden afectar el funcionamiento del sistema.</li>
+                                    <li>Se recomienda hacer respaldos antes de modificar configuraciones críticas.</li>
+                                    <li>Algunas configuraciones requieren permisos de administrador.</li>
+                                    <li>Los cambios se aplican inmediatamente en la mayoría de los casos.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Animación de las cards
+            $('.card').hover(
+                function() {
+                    $(this).addClass('shadow-lg');
+                },
+                function() {
+                    $(this).removeClass('shadow-lg');
+                }
+            );
+
+            // Tooltips
+            $('[data-bs-toggle="tooltip"]').tooltip();
+        });
+    </script>
+} 

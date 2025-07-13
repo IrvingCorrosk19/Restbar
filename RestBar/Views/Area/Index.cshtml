@@ -652,14 +652,7 @@
                         </label>
                         <input type="text" class="form-control" name="Name" required placeholder="Ingrese el nombre del área">
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-building"></i> Sucursal
-                        </label>
-                        <select class="form-control" name="BranchId" id="areaBranchSelect">
-                            <option value="">Seleccione una sucursal</option>
-                        </select>
-                    </div>
+                    
                     <div class="form-group">
                         <label class="form-label">
                             <i class="fas fa-align-left"></i> Descripción
@@ -699,14 +692,7 @@
                         </label>
                         <input type="text" class="form-control" name="Name" required placeholder="Ingrese el nombre del área">
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-building"></i> Sucursal
-                        </label>
-                        <select class="form-control" name="BranchId">
-                            <option value="">Seleccione una sucursal</option>
-                        </select>
-                    </div>
+                    
                     <div class="form-group">
                         <label class="form-label">
                             <i class="fas fa-align-left"></i> Descripción
@@ -730,30 +716,13 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        $(document).ready(function () {
-            loadBranches();
-            populateBranchFilter();
-            $('#searchAreaInput').on('keyup', filterAreas);
-            $('#branchFilter').on('change', filterAreas);
-        });
+                 $(document).ready(function () {
+             populateBranchFilter();
+             $('#searchAreaInput').on('keyup', filterAreas);
+             $('#branchFilter').on('change', filterAreas);
+         });
 
-        function loadBranches(callback) {
-            $.get('/Area/GetBranches', function (res) {
-                if (res.success) {
-                    const selects = ['#areaBranchSelect', '#editAreaForm select[name="BranchId"]'];
-                    selects.forEach(selectId => {
-                        const select = $(selectId);
-                        const current = select.val();
-                        select.empty().append('<option value="">Seleccione una sucursal</option>');
-                        res.data.forEach(branch => {
-                            select.append(`<option value="${branch.id}">${branch.name}</option>`);
-                        });
-                        select.val(current);
-                    });
-                    if (callback) callback();
-                }
-            });
-        }
+        
 
         function populateBranchFilter() {
             $.get('/Area/GetBranches', function (res) {
@@ -761,9 +730,11 @@
                     const select = $('#branchFilter');
                     const current = select.val();
                     select.empty().append('<option value="">Todas las sucursales</option>');
-                    res.data.forEach(branch => {
-                        select.append(`<option value="${branch.name}">${branch.name}</option>`);
-                    });
+                    if (res.data && Array.isArray(res.data)) {
+                        res.data.forEach(branch => {
+                            select.append(`<option value="${branch.name}">${branch.name}</option>`);
+                        });
+                    }
                     select.val(current);
                 }
             });
@@ -782,21 +753,18 @@
             });
         }
 
-        window.createArea = function () {
-            const form = $('#createAreaForm');
-            const formData = {};
-            let errors = [];
-            form.serializeArray().forEach(item => {
-                formData[item.name] = item.value;
-            });
-            formData.BranchId = formData.BranchId || null;
-            // Validaciones
-            if (!formData.Name || formData.Name.trim() === "") {
-                errors.push('El nombre es requerido');
-            }
-            if (!formData.BranchId) {
-                errors.push('La sucursal es requerida');
-            }
+                 window.createArea = function () {
+             const form = $('#createAreaForm');
+             const formData = {};
+             let errors = [];
+             form.serializeArray().forEach(item => {
+                 formData[item.name] = item.value;
+             });
+             
+             // Validaciones
+             if (!formData.Name || formData.Name.trim() === "") {
+                 errors.push('El nombre es requerido');
+             }
             if (errors.length > 0) {
                 Swal.fire({
                     icon: 'error',
@@ -833,57 +801,50 @@
             });
         }
 
-        window.editArea = function (id) {
-            Swal.fire({
-                title: 'Cargando...',
-                allowOutsideClick: false,
-                didOpen: () => { Swal.showLoading(); }
-            });
-            loadBranches(function () {
-                $.ajax({
-                    url: `/Area/Get/${id}`,
-                    method: 'GET',
-                    success: function (response) {
-                        Swal.close();
-                        if (response.success) {
-                            const area = response.data;
-                            const form = $('#editAreaForm');
-                            form[0].reset();
-                            form.find('[name="Id"]').val(area.id);
-                            form.find('[name="Name"]').val(area.name);
-                            form.find('[name="Description"]').val(area.description);
-                            if (area.branchId) {
-                                form.find('[name="BranchId"]').val(area.branchId);
-                            }
-                            const editModal = new bootstrap.Modal(document.getElementById('editAreaModal'));
-                            editModal.show();
-                        } else {
-                            showError(response.message || 'Error al cargar el área');
-                        }
-                    },
-                    error: function () {
-                        Swal.close();
-                        showError('Error al cargar el área.');
-                    }
-                });
-            });
-        }
+         window.editArea = function (id) {
+             Swal.fire({
+                 title: 'Cargando...',
+                 allowOutsideClick: false,
+                 didOpen: () => { Swal.showLoading(); }
+             });
+             $.ajax({
+                 url: `/Area/Get/${id}`,
+                 method: 'GET',
+                 success: function (response) {
+                     Swal.close();
+                     if (response.success) {
+                         const area = response.data;
+                         const form = $('#editAreaForm');
+                         form[0].reset();
+                         form.find('[name="Id"]').val(area.id);
+                         form.find('[name="Name"]').val(area.name);
+                         form.find('[name="Description"]').val(area.description);
 
-        window.updateArea = function () {
-            const form = $('#editAreaForm');
-            const formData = {};
-            let errors = [];
-            form.serializeArray().forEach(item => {
-                formData[item.name] = item.value;
-            });
-            formData.BranchId = formData.BranchId || null;
-            // Validaciones
-            if (!formData.Name || formData.Name.trim() === "") {
-                errors.push('El nombre es requerido');
-            }
-            if (!formData.BranchId) {
-                errors.push('La sucursal es requerida');
-            }
+                         const editModal = new bootstrap.Modal(document.getElementById('editAreaModal'));
+                         editModal.show();
+                     } else {
+                         showError(response.message || 'Error al cargar el área');
+                     }
+                 },
+                 error: function () {
+                     Swal.close();
+                     showError('Error al cargar el área.');
+                 }
+             });
+         };
+
+                 window.updateArea = function () {
+             const form = $('#editAreaForm');
+             const formData = {};
+             let errors = [];
+             form.serializeArray().forEach(item => {
+                 formData[item.name] = item.value;
+             });
+             
+             // Validaciones
+             if (!formData.Name || formData.Name.trim() === "") {
+                 errors.push('El nombre es requerido');
+             }
             if (errors.length > 0) {
                 Swal.fire({
                     icon: 'error',

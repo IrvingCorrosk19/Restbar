@@ -11,49 +11,120 @@ namespace RestBar.Services
     public class StationService : IStationService
     {
         private readonly RestBarContext _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public StationService(RestBarContext context)
+        public StationService(RestBarContext context, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<IEnumerable<Station>> GetAllStationsAsync()
         {
-            return await _context.Stations
-                .Include(s => s.Products)
-                .OrderBy(s => s.Name)
-                .ToListAsync();
+            try
+            {
+                Console.WriteLine("🔍 [StationService] GetAllStationsAsync() - Iniciando...");
+                
+                // Obtener usuario actual y sus asignaciones
+                var currentUser = await GetCurrentUserWithAssignmentsAsync();
+                
+                if (currentUser == null)
+                {
+                    Console.WriteLine("⚠️ [StationService] GetAllStationsAsync() - Usuario no encontrado");
+                    return new List<Station>();
+                }
+
+                Console.WriteLine($"✅ [StationService] GetAllStationsAsync() - Usuario: {currentUser.Email}, CompanyId: {currentUser.Branch?.CompanyId}, BranchId: {currentUser.BranchId}");
+
+                // Filtrar estaciones por compañía y sucursal del usuario
+                var stations = await _context.Stations
+                    .Include(s => s.Products)
+                    .Include(s => s.Area)
+                    .Include(s => s.Company)
+                    .Include(s => s.Branch)
+                    .Where(s => s.CompanyId == currentUser.Branch.CompanyId && s.BranchId == currentUser.BranchId)
+                    .OrderBy(s => s.Name)
+                    .ToListAsync();
+
+                Console.WriteLine($"📊 [StationService] GetAllStationsAsync() - Estaciones encontradas: {stations.Count}");
+                return stations;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [StationService] GetAllStationsAsync() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [StationService] GetAllStationsAsync() - StackTrace: {ex.StackTrace}");
+                throw;
+            }
         }
 
         public async Task<Station?> GetStationByIdAsync(Guid id)
         {
             return await _context.Stations
                 .Include(s => s.Products)
+                .Include(s => s.Area)
                 .FirstOrDefaultAsync(s => s.Id == id);
         }
 
         public async Task<Station> CreateStationAsync(Station station)
         {
-            if (station == null)
-                throw new ArgumentNullException(nameof(station), "La estación no puede ser null");
+            try
+            {
+                Console.WriteLine("🔍 [StationService] CreateStationAsync() - Iniciando...");
+                
+                if (station == null)
+                    throw new ArgumentNullException(nameof(station), "La estación no puede ser null");
 
-            if (string.IsNullOrWhiteSpace(station.Name))
-                throw new ArgumentException("El nombre de la estación es requerido");
+                if (string.IsNullOrWhiteSpace(station.Name))
+                    throw new ArgumentException("El nombre de la estación es requerido");
 
-            if (string.IsNullOrWhiteSpace(station.Type))
-                throw new ArgumentException("El tipo de estación es requerido");
+                if (string.IsNullOrWhiteSpace(station.Type))
+                    throw new ArgumentException("El tipo de estación es requerido");
 
-            // Verificar si ya existe una estación con el mismo nombre
-            var existingStation = await _context.Stations
-                .FirstOrDefaultAsync(s => s.Name.ToLower() == station.Name.ToLower());
-            
-            if (existingStation != null)
-                throw new InvalidOperationException($"Ya existe una estación con el nombre '{station.Name}'");
+                // Obtener usuario actual y sus asignaciones
+                var currentUser = await GetCurrentUserWithAssignmentsAsync();
+                
+                if (currentUser == null)
+                {
+                    Console.WriteLine("❌ [StationService] CreateStationAsync() - Usuario no encontrado");
+                    throw new InvalidOperationException("Usuario no autenticado");
+                }
 
-            station.Id = Guid.NewGuid();
-            _context.Stations.Add(station);
-            await _context.SaveChangesAsync();
-            return station;
+                Console.WriteLine($"✅ [StationService] CreateStationAsync() - Usuario: {currentUser.Email}, CompanyId: {currentUser.Branch?.CompanyId}, BranchId: {currentUser.BranchId}");
+
+                // Asignar automáticamente CompanyId y BranchId del usuario actual
+                station.CompanyId = currentUser.Branch.CompanyId;
+                station.BranchId = currentUser.BranchId;
+
+                // ✅ NUEVO: Asignar propiedades de auditoría
+                station.CreatedBy = currentUser.Email;
+                station.UpdatedBy = currentUser.Email;
+
+                Console.WriteLine($"✅ [StationService] CreateStationAsync() - Asignando CompanyId: {station.CompanyId}, BranchId: {station.BranchId}");
+                Console.WriteLine($"👤 [StationService] CreateStationAsync() - Creado por: {station.CreatedBy}");
+                Console.WriteLine($"🕒 [StationService] CreateStationAsync() - Creado en: {station.CreatedAt}");
+
+                // Verificar si ya existe una estación con el mismo nombre en la misma compañía/sucursal
+                var existingStation = await _context.Stations
+                    .FirstOrDefaultAsync(s => s.Name.ToLower() == station.Name.ToLower() 
+                                             && s.CompanyId == currentUser.Branch.CompanyId 
+                                             && s.BranchId == currentUser.BranchId);
+                
+                if (existingStation != null)
+                    throw new InvalidOperationException($"Ya existe una estación con el nombre '{station.Name}' en esta sucursal");
+
+                station.Id = Guid.NewGuid();
+                _context.Stations.Add(station);
+                await _context.SaveChangesAsync();
+                
+                Console.WriteLine($"✅ [StationService] CreateStationAsync() - Estación creada exitosamente: {station.Name}");
+                return station;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [StationService] CreateStationAsync() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [StationService] CreateStationAsync() - StackTrace: {ex.StackTrace}");
+                throw;
+            }
         }
 
         public async Task<Station> UpdateStationAsync(Guid id, Station station)
@@ -78,9 +149,25 @@ namespace RestBar.Services
             if (duplicateStation != null)
                 throw new InvalidOperationException($"Ya existe otra estación con el nombre '{station.Name}'");
 
+            // Obtener usuario actual para auditoría
+            var currentUser = await GetCurrentUserWithAssignmentsAsync();
+            
             existing.Name = station.Name;
             existing.Type = station.Type;
+            existing.Icon = station.Icon;
+            existing.AreaId = station.AreaId;
+            existing.IsActive = station.IsActive;
+            
+            // ✅ NUEVO: Actualizar propiedades de auditoría
+            existing.UpdatedBy = currentUser?.Email ?? "Sistema";
+            
             await _context.SaveChangesAsync();
+            
+            // Recargar con las relaciones
+            await _context.Entry(existing)
+                .Reference(s => s.Area)
+                .LoadAsync();
+                
             return existing;
         }
 
@@ -109,12 +196,31 @@ namespace RestBar.Services
 
         public async Task<IEnumerable<string>> GetDistinctStationTypesAsync()
         {
-            return await _context.Stations
-                .Where(s => !string.IsNullOrEmpty(s.Type))
-                .Select(s => s.Type)
-                .Distinct()
-                .OrderBy(t => t)
-                .ToListAsync();
+            try
+            {
+                Console.WriteLine("🔍 [StationService] GetDistinctStationTypesAsync() - Iniciando consulta de nombres de estaciones...");
+                
+                var stationNames = await _context.Stations
+                    .Where(s => s.IsActive && !string.IsNullOrEmpty(s.Name))
+                    .Select(s => s.Name)
+                    .Distinct()
+                    .OrderBy(n => n)
+                    .ToListAsync();
+                
+                Console.WriteLine($"✅ [StationService] GetDistinctStationTypesAsync() - Estaciones encontradas: {stationNames.Count}");
+                foreach (var name in stationNames)
+                {
+                    Console.WriteLine($"📋 [StationService] GetDistinctStationTypesAsync() - Estación: {name}");
+                }
+                
+                return stationNames;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [StationService] GetDistinctStationTypesAsync() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [StationService] GetDistinctStationTypesAsync() - StackTrace: {ex.StackTrace}");
+                return new List<string>();
+            }
         }
 
         public async Task<bool> StationHasProductsAsync(Guid id)
@@ -144,6 +250,40 @@ namespace RestBar.Services
             }
 
             return await query.AnyAsync(s => s.Name.ToLower() == name.ToLower());
+        }
+
+        // ✅ NUEVO: Método para obtener usuario actual con asignaciones
+        private async Task<User?> GetCurrentUserWithAssignmentsAsync()
+        {
+            try
+            {
+                var userIdClaim = _httpContextAccessor?.HttpContext?.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                
+                if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+                {
+                    Console.WriteLine("⚠️ [StationService] GetCurrentUserWithAssignmentsAsync() - No se pudo obtener userId del contexto");
+                    return null;
+                }
+
+                var user = await _context.Users
+                    .Include(u => u.Branch)
+                    .ThenInclude(b => b.Company)
+                    .FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (user == null)
+                {
+                    Console.WriteLine($"⚠️ [StationService] GetCurrentUserWithAssignmentsAsync() - Usuario con ID {userId} no encontrado");
+                    return null;
+                }
+
+                Console.WriteLine($"✅ [StationService] GetCurrentUserWithAssignmentsAsync() - Usuario encontrado: {user.Email}, CompanyId: {user.Branch?.CompanyId}, BranchId: {user.BranchId}");
+                return user;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [StationService] GetCurrentUserWithAssignmentsAsync() - Error: {ex.Message}");
+                return null;
+            }
         }
     }
 } 

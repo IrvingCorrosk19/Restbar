@@ -87,6 +87,7 @@ namespace RestBar.Helpers
         {
             return role.ToLower() switch
             {
+                "superadmin" => "role-superadmin",
                 "admin" => "role-admin",
                 "manager" => "role-manager",
                 "supervisor" => "role-supervisor",
@@ -94,7 +95,7 @@ namespace RestBar.Helpers
                 "cashier" => "role-cashier",
                 "chef" => "role-chef",
                 "bartender" => "role-bartender",
-                "inventory" => "role-inventory",
+
                 "accountant" => "role-accountant",
                 "support" => "role-support",
                 _ => "role-default"
@@ -108,6 +109,7 @@ namespace RestBar.Helpers
         {
             return role.ToLower() switch
             {
+                "superadmin" => "Super Administrador",
                 "admin" => "Administrador",
                 "manager" => "Gerente",
                 "supervisor" => "Supervisor",
@@ -115,7 +117,7 @@ namespace RestBar.Helpers
                 "cashier" => "Cajero",
                 "chef" => "Cocinero",
                 "bartender" => "Bartender",
-                "inventory" => "Inventarista",
+
                 "accountant" => "Contador",
                 "support" => "Soporte Técnico",
                 _ => role
@@ -135,14 +137,14 @@ namespace RestBar.Helpers
 
             return role.ToLower() switch
             {
-                "admin" => true, // Admin tiene acceso a todo
-                "manager" => action != "admin_only", // Manager tiene acceso casi completo
+                "superadmin" => true, // SuperAdmin tiene acceso a TODO
+                "admin" => action is not "superadmin_only", // Admin puede todo excepto funciones de SuperAdmin
+                "manager" => action is "orders" or "kitchen" or "payments" or "tables" or "products" or "users" or "reports",
                 "supervisor" => action is "orders" or "kitchen" or "payments" or "tables",
                 "waiter" => action is "orders" or "tables" or "customers",
                 "cashier" => action is "orders" or "payments" or "customers",
                 "chef" => action is "kitchen" or "orders",
                 "bartender" => action is "orders" or "kitchen",
-                "inventory" => action is "inventory" or "products",
                 "accountant" => action is "payments" or "reports",
                 "support" => action is "orders" or "users",
                 _ => false
@@ -187,14 +189,14 @@ namespace RestBar.Helpers
                         const role = window.currentUser.role.toLowerCase();
                         
                         switch(role) {{
-                            case 'admin': return true;
-                            case 'manager': return action !== 'admin_only';
+                            case 'superadmin': return true;
+                            case 'admin': return action !== 'superadmin_only';
+                            case 'manager': return ['orders', 'kitchen', 'payments', 'tables', 'products', 'users', 'reports'].includes(action);
                             case 'supervisor': return ['orders', 'kitchen', 'payments', 'tables'].includes(action);
                             case 'waiter': return ['orders', 'tables', 'customers'].includes(action);
                             case 'cashier': return ['orders', 'payments', 'customers'].includes(action);
                             case 'chef': return ['kitchen', 'orders'].includes(action);
                             case 'bartender': return ['orders', 'kitchen'].includes(action);
-                            case 'inventory': return ['inventory', 'products'].includes(action);
                             case 'accountant': return ['payments', 'reports'].includes(action);
                             case 'support': return ['orders', 'users'].includes(action);
                             default: return false;
@@ -276,8 +278,20 @@ namespace RestBar.Helpers
             
             var menuItems = new List<MenuItem>();
             
+            // Menú para SuperAdmin
+            if (role.ToLower() == "superadmin")
+            {
+                menuItems.AddRange(new[]
+                {
+                    new MenuItem { Name = "Super Admin", Icon = "fas fa-crown", Url = "/SuperAdmin/Index" },
+                    new MenuItem { Name = "Compañías", Icon = "fas fa-building", Url = "/SuperAdmin/Companies" },
+                    new MenuItem { Name = "Sucursales", Icon = "fas fa-store", Url = "/SuperAdmin/Branches" },
+                    new MenuItem { Name = "Crear Admin", Icon = "fas fa-user-plus", Url = "/SuperAdmin/CreateAdmin" },
+                    new MenuItem { Name = "Dashboard", Icon = "fas fa-home", Url = "/Home/Index" }
+                });
+            }
             // Menú para Admin
-            if (role.ToLower() == "admin")
+            else if (role.ToLower() == "admin")
             {
                 menuItems.AddRange(new[]
                 {
@@ -286,7 +300,7 @@ namespace RestBar.Helpers
                     new MenuItem { Name = "Órdenes", Icon = "fas fa-shopping-cart", Url = "/Order/Index" },
                     new MenuItem { Name = "Productos", Icon = "fas fa-box", Url = "/Product/Index" },
                     new MenuItem { Name = "Pagos", Icon = "fas fa-credit-card", Url = "/Payment/Index" },
-                    new MenuItem { Name = "Configuración", Icon = "fas fa-cog", Url = "/Company/Index" }
+                    new MenuItem { Name = "Reportes", Icon = "fas fa-chart-bar", Url = "/Reports/Index" }
                 });
             }
             // Menú para Manager
@@ -339,15 +353,7 @@ namespace RestBar.Helpers
                     new MenuItem { Name = "Órdenes", Icon = "fas fa-shopping-cart", Url = "/Order/Index" }
                 });
             }
-            // Menú para Inventory
-            else if (role.ToLower() == "inventory")
-            {
-                menuItems.AddRange(new[]
-                {
-                    new MenuItem { Name = "Productos", Icon = "fas fa-box", Url = "/Product/Index" },
-                    new MenuItem { Name = "Inventario", Icon = "fas fa-warehouse", Url = "/Inventory/Index" }
-                });
-            }
+
             // Menú para Accountant
             else if (role.ToLower() == "accountant")
             {

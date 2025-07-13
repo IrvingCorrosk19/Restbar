@@ -18,5 +18,8 @@ namespace RestBar.Interfaces
         Task<User?> GetUserWithOrdersAsync(Guid id);
         Task<User?> GetUserWithAuditLogsAsync(Guid id);
         Task<bool> ValidateUserAsync(string email, string password);
+        
+        // ✅ NUEVO: Obtener usuario actual con asignaciones
+        Task<User?> GetCurrentUserWithAssignmentsAsync(Guid userId);
     }
 } 

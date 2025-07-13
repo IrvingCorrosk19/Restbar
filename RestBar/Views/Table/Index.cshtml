@@ -94,8 +94,8 @@
                         
                         <div class="table-status">
                             <div class="status-indicator">
-                                <span class="status-dot" data-status="@(item.Status ?? "")" title="@(item.Status ?? "")"></span>
-                                <span class="status-text">@(item.Status ?? "Sin estado")</span>
+                                <span class="status-dot" data-status="@item.Status" title="@item.Status"></span>
+                                <span class="status-text">@item.Status</span>
                             </div>
                         </div>
                         
@@ -117,7 +117,7 @@
                                     </div>
                                     <div class="info-content">
                                         <span class="info-label">Capacidad</span>
-                                        <span class="info-value">@(item.Capacity ?? 0) personas</span>
+                                        <span class="info-value">@item.Capacity personas</span>
                                     </div>
                                 </div>
                             </div>
@@ -198,7 +198,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary modern-btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary modern-btn-primary" onclick="createTable()">Crear Mesa</button>
+                <button type="button" class="btn btn-primary modern-btn-primary" onclick="console.log('🔍 [Table/Index] Botón Crear Mesa clickeado'); createTable();">Crear Mesa</button>
             </div>
         </div>
     </div>
@@ -884,34 +884,96 @@
         });
 
         function loadAreas(callback) {
+            
+            
             $.get('/Table/GetAreas', function (res) {
+                
+                
                 if (res.success) {
+                    // ✅ NUEVO: Manejar serialización de Entity Framework
+                    const dataArray = res.data.$values || res.data;
+                    
+                    
+                    if (dataArray && Array.isArray(dataArray) && dataArray.length > 0) {
+                        const selects = ['#tableAreaSelect', '#editTableForm select[name="AreaId"]'];
+                        selects.forEach(selectId => {
+                            const select = $(selectId);
+                            const current = select.val();
+                            select.empty().append('<option value="">Seleccione un área</option>');
+                            
+                            dataArray.forEach(area => {
+                                select.append(`<option value="${area.id}">${area.name}</option>`);
+                            });
+                            
+                            select.val(current);
+                        });
+                        
+                        
+                        if (callback) callback();
+                    } else {
+                        
+                        const selects = ['#tableAreaSelect', '#editTableForm select[name="AreaId"]'];
+                        selects.forEach(selectId => {
+                            const select = $(selectId);
+                            select.empty().append('<option value="">No hay áreas disponibles</option>');
+                        });
+                        if (callback) callback();
+                    }
+                } else {
+                    
                     const selects = ['#tableAreaSelect', '#editTableForm select[name="AreaId"]'];
                     selects.forEach(selectId => {
                         const select = $(selectId);
-                        const current = select.val();
-                        select.empty().append('<option value="">Seleccione un área</option>');
-                        res.data.forEach(area => {
-                            select.append(`<option value="${area.id}">${area.name}</option>`);
-                        });
-                        select.val(current);
+                        select.empty().append('<option value="">Error al cargar áreas</option>');
                     });
                     if (callback) callback();
                 }
+            }).fail(function(xhr, status, error) {
+                
+                
+                
+                
+                const selects = ['#tableAreaSelect', '#editTableForm select[name="AreaId"]'];
+                selects.forEach(selectId => {
+                    const select = $(selectId);
+                    select.empty().append('<option value="">Error al cargar áreas</option>');
+                });
+                if (callback) callback();
             });
         }
 
         function populateAreaFilter() {
+            
+            
             $.get('/Table/GetAreas', function (res) {
+                
+                
                 if (res.success) {
+                    // ✅ NUEVO: Manejar serialización de Entity Framework
+                    const dataArray = res.data.$values || res.data;
+                    
+                    
                     const select = $('#areaFilter');
                     const current = select.val();
                     select.empty().append('<option value="">Todas las áreas</option>');
-                    res.data.forEach(area => {
-                        select.append(`<option value="${area.name}">${area.name}</option>`);
-                    });
+                    
+                    if (dataArray && Array.isArray(dataArray) && dataArray.length > 0) {
+                        dataArray.forEach(area => {
+                            select.append(`<option value="${area.name}">${area.name}</option>`);
+                        });
+                        
+                    } else {
+                        
+                    }
+                    
                     select.val(current);
+                } else {
+                    
                 }
+            }).fail(function(xhr, status, error) {
+                
+                
+                
             });
         }
 
@@ -950,33 +1012,96 @@
             });
         }
 
+        // ✅ NUEVO: Función para convertir string de status a valor numérico del enum
+        function getTableStatusValue(statusString) {
+            const statusMap = {
+                'Disponible': 0,
+                'Ocupada': 1,
+                'Reservada': 2,
+                'EnEspera': 3,
+                'Atendida': 4,
+                'EnPreparacion': 5,
+                'Servida': 6,
+                'ParaPago': 7,
+                'Pagada': 8,
+                'Bloqueada': 9
+            };
+            
+            const value = statusMap[statusString];
+            console.log(`🔍 [Table/Index] getTableStatusValue() - Convirtiendo '${statusString}' a ${value}`);
+            return value !== undefined ? value : 0; // Default a 'Disponible' si no se encuentra
+        }
+
+        // ✅ NUEVO: Función para convertir valor numérico del enum a string para el select
+        function getTableStatusString(statusValue) {
+            const statusMap = {
+                0: 'Disponible',
+                1: 'Ocupada',
+                2: 'Reservada',
+                3: 'EnEspera',
+                4: 'Atendida',
+                5: 'EnPreparacion',
+                6: 'Servida',
+                7: 'ParaPago',
+                8: 'Pagada',
+                9: 'Bloqueada'
+            };
+            
+            const string = statusMap[statusValue];
+            console.log(`🔍 [Table/Index] getTableStatusString() - Convirtiendo ${statusValue} a '${string}'`);
+            return string !== undefined ? string : 'Disponible'; // Default a 'Disponible' si no se encuentra
+        }
+
         window.createTable = function () {
+            console.log('🔍 [Table/Index] createTable() - Iniciando creación de mesa...');
+            
             const form = $('#createTableForm');
+            console.log('🔍 [Table/Index] createTable() - Formulario encontrado:', form.length > 0);
+            
             const formData = {};
             let errors = [];
-            form.serializeArray().forEach(item => {
+            
+            // ✅ NUEVO: Obtener datos del formulario correctamente
+            const serializedData = form.serializeArray();
+            console.log('🔍 [Table/Index] createTable() - Datos serializados:', serializedData);
+            
+            serializedData.forEach(item => {
                 formData[item.name] = item.value;
+                console.log(`🔍 [Table/Index] createTable() - Campo: ${item.name} = ${item.value}`);
             });
-            formData.TableNumber = parseInt(formData.TableNumber || 0);
-            formData.Capacity = parseInt(formData.Capacity || 0);
-            formData.IsActive = form.find('[name="IsActive"]').is(':checked');
-            formData.AreaId = formData.AreaId || null;
-            formData.Status = formData.Status || null;
+            
+            console.log('🔍 [Table/Index] createTable() - FormData completo:', formData);
+            
+            // ✅ NUEVO: Procesar datos correctamente
+            const tableNumber = parseInt(formData.TableNumber || 0);
+            const capacity = parseInt(formData.Capacity || 0);
+            const isActive = form.find('[name="IsActive"]').is(':checked');
+            const areaId = formData.AreaId || null;
+            const status = formData.Status || null;
+            
+            console.log('🔍 [Table/Index] createTable() - Datos del formulario:', {
+                TableNumber: tableNumber,
+                Capacity: capacity,
+                IsActive: isActive,
+                AreaId: areaId,
+                Status: status
+            });
 
             // Validaciones
-            if (!formData.TableNumber || isNaN(formData.TableNumber) || formData.TableNumber <= 0) {
+            if (!tableNumber || isNaN(tableNumber) || tableNumber <= 0) {
                 errors.push('El número de mesa es requerido y debe ser un número entero mayor a 0');
             }
-            if (!formData.Capacity || formData.Capacity <= 0) {
+            if (!capacity || capacity <= 0) {
                 errors.push('La capacidad debe ser mayor a 0');
             }
-            if (!formData.AreaId) {
+            if (!areaId) {
                 errors.push('El área es requerida');
             }
-            if (!formData.Status) {
+            if (!status) {
                 errors.push('El estado es requerido');
             }
             if (errors.length > 0) {
+                console.log('❌ [Table/Index] createTable() - Errores de validación:', errors);
                 Swal.fire({
                     title: 'Error de validación',
                     html: errors.join('<br>'),
@@ -984,29 +1109,70 @@
                 });
                 return;
             }
-            // Antes de enviar, convertir TableNumber a string
-            formData.TableNumber = formData.TableNumber.toString();
+            
+            // ✅ NUEVO: Construir objeto correctamente para el modelo
+            const tableData = {
+                TableNumber: tableNumber.toString(), // Convertir a string como espera el modelo
+                Capacity: capacity,
+                IsActive: isActive,
+                AreaId: areaId,
+                Status: getTableStatusValue(status) // Convertir string a enum value
+            };
+            
+            console.log('🔍 [Table/Index] createTable() - Datos a enviar:', tableData);
+            console.log('🔍 [Table/Index] createTable() - JSON stringify:', JSON.stringify(tableData));
+            console.log('🔍 [Table/Index] createTable() - Tipo de datos:', typeof tableData);
+            console.log('🔍 [Table/Index] createTable() - Propiedades del objeto:', Object.keys(tableData));
+            
+            // ✅ NUEVO: Verificar cada propiedad individualmente
+            console.log('🔍 [Table/Index] createTable() - Verificación detallada:');
+            console.log('  - TableNumber:', tableData.TableNumber, '(tipo:', typeof tableData.TableNumber, ')');
+            console.log('  - Capacity:', tableData.Capacity, '(tipo:', typeof tableData.Capacity, ')');
+            console.log('  - IsActive:', tableData.IsActive, '(tipo:', typeof tableData.IsActive, ')');
+            console.log('  - AreaId:', tableData.AreaId, '(tipo:', typeof tableData.AreaId, ')');
+            console.log('  - Status:', tableData.Status, '(tipo:', typeof tableData.Status, ')');
+            
             Swal.fire({
                 title: 'Creando mesa...',
                 allowOutsideClick: false,
                 didOpen: () => { Swal.showLoading(); }
             });
+            
+            console.log('🔍 [Table/Index] createTable() - Iniciando petición AJAX...');
+            console.log('🔍 [Table/Index] createTable() - URL:', '/Table/Create');
+            console.log('🔍 [Table/Index] createTable() - Method:', 'POST');
+            console.log('🔍 [Table/Index] createTable() - ContentType:', 'application/json');
+            
             $.ajax({
                 url: '/Table/Create',
                 method: 'POST',
                 contentType: 'application/json',
-                data: JSON.stringify(formData),
+                data: JSON.stringify(tableData),
                 success: function (response) {
+                    console.log('✅ [Table/Index] createTable() - Respuesta recibida:', response);
+                    console.log('✅ [Table/Index] createTable() - Tipo de respuesta:', typeof response);
+                    console.log('✅ [Table/Index] createTable() - Propiedades de respuesta:', Object.keys(response));
                     Swal.close();
                     if (response.success) {
+                        console.log('✅ [Table/Index] createTable() - Mesa creada exitosamente');
                         $('#createTableModal').modal('hide');
                         location.reload();
                         showSuccess('Mesa creada exitosamente');
                     } else {
+                        console.log('❌ [Table/Index] createTable() - Error en respuesta:', response.message);
                         showError(response.message);
                     }
                 },
-                error: function () {
+                error: function (xhr, status, error) {
+                    console.log('❌ [Table/Index] createTable() - Error AJAX completo:');
+                    console.log('  - xhr:', xhr);
+                    console.log('  - status:', status);
+                    console.log('  - error:', error);
+                    console.log('  - responseText:', xhr.responseText);
+                    console.log('  - status:', xhr.status);
+                    console.log('  - statusText:', xhr.statusText);
+                    console.log('  - readyState:', xhr.readyState);
+                    console.log('  - getAllResponseHeaders:', xhr.getAllResponseHeaders());
                     Swal.close();
                     showError('Error al crear la mesa');
                 }
@@ -1014,36 +1180,65 @@
         }
 
         window.editTable = function (id) {
+            console.log('🔍 [Table/Index] editTable() - Iniciando carga de mesa para edición...');
+            console.log('🔍 [Table/Index] editTable() - ID de mesa:', id);
+            
             Swal.fire({
                 title: 'Cargando...',
                 allowOutsideClick: false,
                 didOpen: () => { Swal.showLoading(); }
             });
+            
             loadAreas(function () {
+                console.log('🔍 [Table/Index] editTable() - Áreas cargadas, obteniendo datos de mesa...');
+                
                 $.ajax({
                     url: `/Table/Get/${id}`,
                     method: 'GET',
                     success: function (response) {
+                        console.log('✅ [Table/Index] editTable() - Respuesta recibida:', response);
                         Swal.close();
+                        
                         if (response.success) {
                             const table = response.data;
+                            console.log('🔍 [Table/Index] editTable() - Datos de mesa:', table);
+                            
                             const form = $('#editTableForm');
                             form[0].reset();
+                            
+                            // ✅ NUEVO: Cargar datos con logs detallados
                             form.find('[name="Id"]').val(table.id);
+                            console.log('🔍 [Table/Index] editTable() - ID cargado:', table.id);
+                            
                             form.find('[name="TableNumber"]').val(table.tableNumber);
+                            console.log('🔍 [Table/Index] editTable() - TableNumber cargado:', table.tableNumber);
+                            
                             form.find('[name="Capacity"]').val(table.capacity);
-                            form.find('[name="Status"]').val(table.status);
+                            console.log('🔍 [Table/Index] editTable() - Capacity cargado:', table.capacity);
+                            
+                            // ✅ CORREGIDO: Convertir el valor numérico del enum a string para el select
+                            const statusString = getTableStatusString(table.status);
+                            form.find('[name="Status"]').val(statusString);
+                            console.log('🔍 [Table/Index] editTable() - Status cargado:', table.status, '->', statusString);
+                            
                             form.find('[name="IsActive"]').prop('checked', table.isActive);
+                            console.log('🔍 [Table/Index] editTable() - IsActive cargado:', table.isActive);
+                            
                             if (table.areaId) {
                                 form.find('[name="AreaId"]').val(table.areaId);
+                                console.log('🔍 [Table/Index] editTable() - AreaId cargado:', table.areaId);
                             }
+                            
                             const editModal = new bootstrap.Modal(document.getElementById('editTableModal'));
                             editModal.show();
+                            console.log('✅ [Table/Index] editTable() - Modal de edición abierto');
                         } else {
+                            console.log('❌ [Table/Index] editTable() - Error en respuesta:', response.message);
                             showError(response.message || 'Error al cargar la mesa');
                         }
                     },
-                    error: function () {
+                    error: function (xhr, status, error) {
+                        console.log('❌ [Table/Index] editTable() - Error AJAX:', xhr, status, error);
                         Swal.close();
                         showError('Error al cargar la mesa.');
                     }
@@ -1052,32 +1247,55 @@
         }
 
         window.updateTable = function () {
+            console.log('🔍 [Table/Index] updateTable() - Iniciando actualización de mesa...');
+            
             const form = $('#editTableForm');
+            console.log('🔍 [Table/Index] updateTable() - Formulario encontrado:', form.length > 0);
+            
             const formData = {};
             let errors = [];
-            form.serializeArray().forEach(item => {
+            
+            // ✅ NUEVO: Obtener datos del formulario correctamente
+            const serializedData = form.serializeArray();
+            console.log('🔍 [Table/Index] updateTable() - Datos serializados:', serializedData);
+            
+            serializedData.forEach(item => {
                 formData[item.name] = item.value;
+                console.log(`🔍 [Table/Index] updateTable() - Campo: ${item.name} = ${item.value}`);
             });
-            formData.TableNumber = parseInt(formData.TableNumber || 0);
-            formData.Capacity = parseInt(formData.Capacity || 0);
-            formData.IsActive = form.find('[name="IsActive"]').is(':checked');
-            formData.AreaId = formData.AreaId || null;
-            formData.Status = formData.Status || null;
+            
+            console.log('🔍 [Table/Index] updateTable() - FormData completo:', formData);
+            
+            // ✅ NUEVO: Procesar datos correctamente
+            const tableNumber = parseInt(formData.TableNumber || 0);
+            const capacity = parseInt(formData.Capacity || 0);
+            const isActive = form.find('[name="IsActive"]').is(':checked');
+            const areaId = formData.AreaId || null;
+            const status = formData.Status || null;
+            
+            console.log('🔍 [Table/Index] updateTable() - Datos del formulario:', {
+                TableNumber: tableNumber,
+                Capacity: capacity,
+                IsActive: isActive,
+                AreaId: areaId,
+                Status: status
+            });
 
             // Validaciones
-            if (!formData.TableNumber || isNaN(formData.TableNumber) || formData.TableNumber <= 0) {
+            if (!tableNumber || isNaN(tableNumber) || tableNumber <= 0) {
                 errors.push('El número de mesa es requerido y debe ser un número entero mayor a 0');
             }
-            if (!formData.Capacity || formData.Capacity <= 0) {
+            if (!capacity || capacity <= 0) {
                 errors.push('La capacidad debe ser mayor a 0');
             }
-            if (!formData.AreaId) {
+            if (!areaId) {
                 errors.push('El área es requerida');
             }
-            if (!formData.Status) {
+            if (!status) {
                 errors.push('El estado es requerido');
             }
             if (errors.length > 0) {
+                console.log('❌ [Table/Index] updateTable() - Errores de validación:', errors);
                 Swal.fire({
                     title: 'Error de validación',
                     html: errors.join('<br>'),
@@ -1085,31 +1303,59 @@
                 });
                 return;
             }
-            // Antes de enviar, convertir TableNumber a string
-            formData.TableNumber = formData.TableNumber.toString();
+            
+            // ✅ NUEVO: Construir objeto correctamente para el modelo
+            const tableData = {
+                Id: formData.Id,
+                TableNumber: tableNumber.toString(), // Convertir a string como espera el modelo
+                Capacity: capacity,
+                IsActive: isActive,
+                AreaId: areaId,
+                Status: getTableStatusValue(status) // ✅ CORREGIDO: Convertir string a enum value
+            };
+            
+            console.log('🔍 [Table/Index] updateTable() - Datos a enviar:', tableData);
+            console.log('🔍 [Table/Index] updateTable() - JSON stringify:', JSON.stringify(tableData));
+            
             Swal.fire({
                 title: 'Actualizando mesa...',
                 allowOutsideClick: false,
                 didOpen: () => { Swal.showLoading(); }
             });
+            
+            console.log('🔍 [Table/Index] updateTable() - Iniciando petición AJAX...');
+            console.log('🔍 [Table/Index] updateTable() - URL:', `/Table/Edit/${tableData.Id}`);
+            console.log('🔍 [Table/Index] updateTable() - Method:', 'PUT');
+            console.log('🔍 [Table/Index] updateTable() - ContentType:', 'application/json');
+            
             $.ajax({
-                url: `/Table/Edit/${formData.Id}`,
+                url: `/Table/Edit/${tableData.Id}`,
                 method: 'PUT',
                 contentType: 'application/json',
-                data: JSON.stringify(formData),
+                data: JSON.stringify(tableData),
                 success: function (response) {
+                    console.log('✅ [Table/Index] updateTable() - Respuesta recibida:', response);
                     Swal.close();
                     if (response.success) {
+                        console.log('✅ [Table/Index] updateTable() - Mesa actualizada exitosamente');
                         $('#editTableModal').modal('hide');
                         showSuccess('Mesa actualizada exitosamente');
                         setTimeout(() => {
                             location.reload();
                         }, 1000);
                     } else {
+                        console.log('❌ [Table/Index] updateTable() - Error en respuesta:', response.message);
                         showError(response.message || 'Error al actualizar la mesa');
                     }
                 },
-                error: function () {
+                error: function (xhr, status, error) {
+                    console.log('❌ [Table/Index] updateTable() - Error AJAX completo:');
+                    console.log('  - xhr:', xhr);
+                    console.log('  - status:', status);
+                    console.log('  - error:', error);
+                    console.log('  - responseText:', xhr.responseText);
+                    console.log('  - status:', xhr.status);
+                    console.log('  - statusText:', xhr.statusText);
                     Swal.close();
                     showError('Error al actualizar la mesa.');
                 }

@@ -827,7 +827,7 @@
                     });
                 }
             } catch (error) {
-                console.error('Error loading branches:', error);
+                
             }
 
             // Cargar usuarios
@@ -889,7 +889,7 @@
                         });
                     }
                 } catch (error) {
-                    console.error('Error loading branches:', error);
+                    
                 }
             }
         }
@@ -932,7 +932,7 @@
                         }
 
                         result.data.forEach(user => {
-                            console.log('Usuario:', user); // Para depuración
+                             // Para depuración
                             const userInitials = getUserInitials(user.fullName);
                             const roleClass = getRoleClass(user.role);
                             const statusClass = getStatusClass(user.isActive);
@@ -993,7 +993,7 @@
                     }
                 })
                 .catch(error => {
-                    console.error('Error al filtrar usuarios:', error);
+                    
                     usersGrid.innerHTML = `
                         <div class="empty-state">
                             <i class="fas fa-exclamation-triangle empty-state-icon"></i>
@@ -1031,7 +1031,7 @@
 
                 if (result.success) {
                     const user = result.data;
-                    console.log('Datos del usuario:', user);
+                    
                     
                     // Restaurar el contenido original del modal
                     modalBody.innerHTML = originalContent;
@@ -1050,7 +1050,7 @@
                     const roleSelect = document.getElementById('role');
                     if (roleSelect) {
                         roleSelect.value = user.role;
-                        console.log('Rol establecido:', user.role);
+                        
                     }
                     
                     // Establecer la compañía y la sucursal
@@ -1076,7 +1076,7 @@
                     userModal.hide();
                 }
             } catch (error) {
-                console.error('Error loading user:', error);
+                
                 showError('Error al cargar el usuario');
                 userModal.hide();
             }
@@ -1160,9 +1160,9 @@
                 formData.append('branchId', branchIdValue);
                 formData.append('isActive', document.getElementById('isActive').checked);
 
-                console.log('Enviando FormData...');
-                console.log('Password length:', password.length);
-                console.log('Password value:', password);
+                
+                
+                
 
                 $.ajax({
                     url: url,
@@ -1183,8 +1183,8 @@
                         }
                     },
                     error: function(xhr, status, error) {
-                        console.error('Error saving user:', error);
-                        console.error('Response text:', xhr.responseText);
+                        
+                        
                         showError('Error al guardar el usuario');
                     },
                     complete: function() {
@@ -1194,7 +1194,7 @@
                     }
                 });
             } catch (error) {
-                console.error('Error saving user:', error);
+                
                 showError('Error al guardar el usuario');
                 // Restaurar el botón en caso de error
                 const saveButton = document.querySelector('#userModal .btn-primary');
@@ -1241,7 +1241,7 @@
                     );
                 }
             } catch (error) {
-                console.error('Error deleting user:', error);
+                
                 showError('Error al eliminar el usuario');
             }
         }

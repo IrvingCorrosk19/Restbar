@@ -93,7 +93,7 @@ namespace RestBar.Services
         {
             return await _context.OrderItems
                 .Where(oi => oi.OrderId == orderId)
-                .SumAsync(oi => (oi.UnitPrice * oi.Quantity) - (oi.Discount ?? 0));
+                .SumAsync(oi => (oi.UnitPrice * oi.Quantity) - oi.Discount);
         }
 
         public async Task<OrderItem?> GetOrderItemWithDetailsAsync(Guid id)

@@ -1,0 +1,313 @@
+@{
+    ViewData["Title"] = "Reportes Avanzados";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-chart-line text-primary me-2"></i>
+                Reportes Avanzados
+            </h1>
+            <p class="text-muted">Análisis detallado y métricas avanzadas del sistema</p>
+        </div>
+        <div>
+            <button class="btn btn-outline-secondary" onclick="window.history.back()">
+                <i class="fas fa-arrow-left me-2"></i>Volver
+            </button>
+        </div>
+    </div>
+
+    <!-- Estadísticas Generales -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Análisis de Inventario
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">Stock & Alertas</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-boxes fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Análisis de Proveedores
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">Rendimiento & Órdenes</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-truck fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Análisis de Rentabilidad
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">Margenes & Costos</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Análisis de Tendencias
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">Crecimiento & Patrones</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards de Reportes -->
+    <div class="row">
+        <!-- Análisis de Inventario -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-boxes me-2"></i>Análisis de Inventario
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <p class="text-muted small">Análisis completo del inventario incluyendo:</p>
+                        <ul class="list-unstyled small">
+                            <li><i class="fas fa-check text-success me-2"></i>Alertas de bajo stock</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Rotación de inventario</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Valor del inventario</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Eficiencia de stock</li>
+                        </ul>
+                    </div>
+                    <a href="@Url.Action("InventoryAnalysis", "AdvancedReports")" class="btn btn-primary btn-sm">
+                        <i class="fas fa-chart-bar me-2"></i>Ver Análisis
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Análisis de Proveedores -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-success">
+                        <i class="fas fa-truck me-2"></i>Análisis de Proveedores
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <p class="text-muted small">Evaluación del rendimiento de proveedores:</p>
+                        <ul class="list-unstyled small">
+                            <li><i class="fas fa-check text-success me-2"></i>Rendimiento por proveedor</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Análisis de órdenes de compra</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Tiempos de entrega</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Calidad de servicio</li>
+                        </ul>
+                    </div>
+                    <a href="@Url.Action("SupplierAnalysis", "AdvancedReports")" class="btn btn-success btn-sm">
+                        <i class="fas fa-chart-pie me-2"></i>Ver Análisis
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Análisis de Rentabilidad -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="fas fa-dollar-sign me-2"></i>Análisis de Rentabilidad
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <p class="text-muted small">Análisis financiero detallado:</p>
+                        <ul class="list-unstyled small">
+                            <li><i class="fas fa-check text-success me-2"></i>Margenes por producto</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Rentabilidad por categoría</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Análisis de costos</li>
+                            <li><i class="fas fa-check text-success me-2"></i>ROI por inversión</li>
+                        </ul>
+                    </div>
+                    <a href="@Url.Action("ProfitabilityAnalysis", "AdvancedReports")" class="btn btn-info btn-sm">
+                        <i class="fas fa-chart-area me-2"></i>Ver Análisis
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Análisis de Tendencias -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="fas fa-chart-line me-2"></i>Análisis de Tendencias
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <p class="text-muted small">Análisis de patrones y crecimiento:</p>
+                        <ul class="list-unstyled small">
+                            <li><i class="fas fa-check text-success me-2"></i>Tendencias estacionales</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Análisis de crecimiento</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Predicciones de ventas</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Patrones de comportamiento</li>
+                        </ul>
+                    </div>
+                    <a href="@Url.Action("TrendAnalysis", "AdvancedReports")" class="btn btn-warning btn-sm">
+                        <i class="fas fa-chart-line me-2"></i>Ver Análisis
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reporte de Auditoría -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-secondary">
+                        <i class="fas fa-shield-alt me-2"></i>Reporte de Auditoría
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <p class="text-muted small">Seguimiento de actividades del sistema:</p>
+                        <ul class="list-unstyled small">
+                            <li><i class="fas fa-check text-success me-2"></i>Actividad de usuarios</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Logs del sistema</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Eventos de seguridad</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Traza de cambios</li>
+                        </ul>
+                    </div>
+                    <a href="@Url.Action("AuditReport", "AdvancedReports")" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-clipboard-list me-2"></i>Ver Reporte
+                    </a>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- Salud del Sistema -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-danger">
+                        <i class="fas fa-heartbeat me-2"></i>Salud del Sistema
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <p class="text-muted small">Monitoreo del estado del sistema:</p>
+                        <ul class="list-unstyled small">
+                            <li><i class="fas fa-check text-success me-2"></i>Estado general del sistema</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Métricas de rendimiento</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Alertas de sistema</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Uptime y disponibilidad</li>
+                        </ul>
+                    </div>
+                    <a href="@Url.Action("SystemHealth", "AdvancedReports")" class="btn btn-danger btn-sm">
+                        <i class="fas fa-tachometer-alt me-2"></i>Ver Estado
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exportación -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-download me-2"></i>Exportación de Reportes
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Exportar a PDF</h6>
+                            <div class="btn-group-vertical w-100">
+                                    <i class="fas fa-file-pdf me-2"></i>Análisis de Inventario
+                                </a>
+                                <a href="@Url.Action("ExportToPdf", "AdvancedReports", new { reportType = "suppliers" })" class="btn btn-outline-primary btn-sm mb-2">
+                                    <i class="fas fa-file-pdf me-2"></i>Análisis de Proveedores
+                                </a>
+                                <a href="@Url.Action("ExportToPdf", "AdvancedReports", new { reportType = "profitability" })" class="btn btn-outline-primary btn-sm mb-2">
+                                    <i class="fas fa-file-pdf me-2"></i>Análisis de Rentabilidad
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Exportar a Excel</h6>
+                            <div class="btn-group-vertical w-100">
+                                    <i class="fas fa-file-excel me-2"></i>Análisis de Inventario
+                                </a>
+                                <a href="@Url.Action("ExportToExcel", "AdvancedReports", new { reportType = "suppliers" })" class="btn btn-outline-success btn-sm mb-2">
+                                    <i class="fas fa-file-excel me-2"></i>Análisis de Proveedores
+                                </a>
+                                <a href="@Url.Action("ExportToExcel", "AdvancedReports", new { reportType = "profitability" })" class="btn btn-outline-success btn-sm mb-2">
+                                    <i class="fas fa-file-excel me-2"></i>Análisis de Rentabilidad
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Animaciones para las cards
+            $('.card').hover(
+                function() {
+                    $(this).addClass('shadow-lg').removeClass('shadow');
+                },
+                function() {
+                    $(this).removeClass('shadow-lg').addClass('shadow');
+                }
+            );
+
+            // Tooltips
+            $('[data-toggle="tooltip"]').tooltip();
+        });
+    </script>
+} 

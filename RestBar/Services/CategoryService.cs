@@ -69,9 +69,29 @@ namespace RestBar.Services
 
         public async Task<IEnumerable<Category>> GetActiveCategoriesAsync()
         {
-            return await _context.Categories
-                .Where(c => c.IsActive)
-                .ToListAsync();
+            try
+            {
+                Console.WriteLine("🔍 [CategoryService] GetActiveCategoriesAsync() - Iniciando consulta de categorías activas...");
+                
+                var categories = await _context.Categories
+                    .Where(c => c.IsActive)
+                    .ToListAsync();
+                
+                Console.WriteLine($"✅ [CategoryService] GetActiveCategoriesAsync() - Categorías activas encontradas: {categories.Count}");
+                
+                foreach (var category in categories)
+                {
+                    Console.WriteLine($"📋 [CategoryService] GetActiveCategoriesAsync() - Categoría: ID={category.Id}, Name={category.Name}, IsActive={category.IsActive}");
+                }
+                
+                return categories;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [CategoryService] GetActiveCategoriesAsync() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [CategoryService] GetActiveCategoriesAsync() - StackTrace: {ex.StackTrace}");
+                throw;
+            }
         }
     }
 } 

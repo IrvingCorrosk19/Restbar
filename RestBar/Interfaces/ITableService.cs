@@ -19,5 +19,12 @@ namespace RestBar.Interfaces
         
         // Método para obtener mesas con formato específico para ViewBag
         Task<IEnumerable<object>> GetTablesForViewBagAsync();
+        
+        // ✅ NUEVO: Métodos para filtrar por CompanyId y BranchId
+        Task<IEnumerable<Table>> GetTablesByCompanyAndBranchAsync(Guid companyId, Guid branchId);
+        Task<IEnumerable<Table>> GetActiveTablesByCompanyAndBranchAsync(Guid companyId, Guid branchId);
+        
+        // ✅ NUEVO: Método para obtener el contexto (necesario para FixTableStatus)
+        RestBarContext GetContext();
     }
 } 

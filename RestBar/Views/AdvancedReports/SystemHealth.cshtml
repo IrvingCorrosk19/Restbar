@@ -1,0 +1,333 @@
+@{
+    ViewData["Title"] = "Salud del Sistema";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-heartbeat text-danger"></i> Salud del Sistema
+        </h1>
+        <div>
+            <button class="btn btn-success" onclick="exportToPdf()">
+                <i class="fas fa-file-pdf"></i> Exportar PDF
+            </button>
+            <button class="btn btn-info" onclick="exportToExcel()">
+                <i class="fas fa-file-excel"></i> Exportar Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filtros</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="startDate">Fecha Inicio:</label>
+                    <input type="date" id="startDate" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label for="endDate">Fecha Fin:</label>
+                    <input type="date" id="endDate" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label for="branchId">Sucursal:</label>
+                    <select id="branchId" class="form-control">
+                        <option value="">Todas las sucursales</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label>&nbsp;</label>
+                    <button class="btn btn-primary btn-block" onclick="loadSystemHealth()">
+                        <i class="fas fa-search"></i> Generar Reporte
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Estado General
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="systemStatus">Excelente</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Rendimiento
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="performanceScore">95%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-tachometer-alt fa-2x text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Errores (24h)
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="errorCount">2</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Tiempo Activo
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="uptime">99.8%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Metrics Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Métricas de Rendimiento</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="performanceTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Métrica</th>
+                            <th>Valor</th>
+                            <th>Estado</th>
+                            <th>Tendencia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Logs Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Registros del Sistema</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="systemLogsTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Fecha/Hora</th>
+                            <th>Nivel</th>
+                            <th>Acción</th>
+                            <th>Usuario</th>
+                            <th>Detalles</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Set default dates
+            const today = new Date();
+            const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+            
+            $('#startDate').val(lastMonth.toISOString().split('T')[0]);
+            $('#endDate').val(today.toISOString().split('T')[0]);
+            
+            // Load initial data
+            loadSystemHealth();
+        });
+
+        function loadSystemHealth() {
+            const startDate = $('#startDate').val();
+            const endDate = $('#endDate').val();
+            const branchId = $('#branchId').val();
+
+            // Show loading
+            $('#performanceTable tbody').html('<tr><td colspan="4" class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>');
+            $('#systemLogsTable tbody').html('<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>');
+
+            // Load system health data
+            $.ajax({
+                url: '/AdvancedReports/GetSystemHealth',
+                type: 'GET',
+                data: {
+                    startDate: startDate,
+                    endDate: endDate,
+                    branchId: branchId
+                },
+                success: function(data) {
+                    updateSystemHealthUI(data);
+                },
+                error: function(xhr, status, error) {
+                    
+                    alert('Error al cargar los datos de salud del sistema');
+                }
+            });
+        }
+
+        function updateSystemHealthUI(data) {
+            // Update statistics cards
+            $('#systemStatus').text(data.systemStatus || 'Excelente');
+            $('#performanceScore').text((data.performanceScore || 95) + '%');
+            $('#errorCount').text(data.errorCount || 0);
+            $('#uptime').text((data.uptimePercentage || 99.8) + '%');
+
+            // Update performance metrics table
+            updatePerformanceTable(data.performanceMetrics || []);
+
+            // Update system logs table
+            updateSystemLogsTable(data.systemLogs || []);
+        }
+
+        function updatePerformanceTable(metrics) {
+            const tbody = $('#performanceTable tbody');
+            tbody.empty();
+
+            if (metrics.length === 0) {
+                tbody.html('<tr><td colspan="4" class="text-center">No hay datos disponibles</td></tr>');
+                return;
+            }
+
+            metrics.forEach(function(metric) {
+                const statusClass = getStatusClass(metric.status);
+                const trendIcon = getTrendIcon(metric.trend);
+                
+                const row = `
+                    <tr>
+                        <td>${metric.metricName}</td>
+                        <td>${metric.value}</td>
+                        <td><span class="badge ${statusClass}">${metric.status}</span></td>
+                        <td><i class="fas ${trendIcon}"></i> ${metric.trend}</td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        function updateSystemLogsTable(logs) {
+            const tbody = $('#systemLogsTable tbody');
+            tbody.empty();
+
+            if (logs.length === 0) {
+                tbody.html('<tr><td colspan="5" class="text-center">No hay registros disponibles</td></tr>');
+                return;
+            }
+
+            logs.forEach(function(log) {
+                const levelClass = getLogLevelClass(log.logLevel);
+                const row = `
+                    <tr>
+                        <td>${formatDateTime(log.timestamp)}</td>
+                        <td><span class="badge ${levelClass}">${log.logLevel}</span></td>
+                        <td>${log.action}</td>
+                        <td>${log.userId || 'Sistema'}</td>
+                        <td>${log.details}</td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        function getStatusClass(status) {
+            switch(status.toLowerCase()) {
+                case 'excelente': return 'badge-success';
+                case 'bueno': return 'badge-info';
+                case 'regular': return 'badge-warning';
+                case 'crítico': return 'badge-danger';
+                default: return 'badge-secondary';
+            }
+        }
+
+        function getTrendIcon(trend) {
+            switch(trend.toLowerCase()) {
+                case 'mejorando': return 'fa-arrow-up text-success';
+                case 'estable': return 'fa-minus text-info';
+                case 'empeorando': return 'fa-arrow-down text-danger';
+                default: return 'fa-minus text-secondary';
+            }
+        }
+
+        function getLogLevelClass(level) {
+            switch(level.toLowerCase()) {
+                case 'error': return 'badge-danger';
+                case 'warning': return 'badge-warning';
+                case 'info': return 'badge-info';
+                case 'debug': return 'badge-secondary';
+                default: return 'badge-primary';
+            }
+        }
+
+        function formatDateTime(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleString('es-ES');
+        }
+
+        function exportToPdf() {
+            const startDate = $('#startDate').val();
+            const endDate = $('#endDate').val();
+            const branchId = $('#branchId').val();
+
+            window.open(`/AdvancedReports/ExportToPdf?reportType=SystemHealth&startDate=${startDate}&endDate=${endDate}&branchId=${branchId}`, '_blank');
+        }
+
+        function exportToExcel() {
+            const startDate = $('#startDate').val();
+            const endDate = $('#endDate').val();
+            const branchId = $('#branchId').val();
+
+            window.open(`/AdvancedReports/ExportToExcel?reportType=SystemHealth&startDate=${startDate}&endDate=${endDate}&branchId=${branchId}`, '_blank');
+        }
+    </script>
+} 

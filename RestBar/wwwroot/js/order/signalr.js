@@ -1,6 +1,44 @@
 // SignalR Connection Management
 let signalRConnection = null;
 
+// ✅ NUEVA FUNCIÓN: Remover item de la UI local cuando se cancela
+function removeItemFromUILocal(itemId) {
+    console.log('🔍 ENTRADA: removeItemFromUILocal() - itemId:', itemId);
+    
+    try {
+        // Buscar el elemento del item en la tabla
+        const itemRow = document.querySelector(`tr[data-item-id="${itemId}"]`);
+        
+        if (itemRow) {
+            console.log('🗑️ [SignalR] removeItemFromUILocal() - Item encontrado, removiendo de UI...');
+            
+            // Remover la fila de la tabla
+            itemRow.remove();
+            
+            // Actualizar el objeto currentOrder local
+            if (currentOrder && currentOrder.items) {
+                const itemIndex = currentOrder.items.findIndex(item => item.id === itemId);
+                if (itemIndex !== -1) {
+                    console.log('🗑️ [SignalR] removeItemFromUILocal() - Removiendo item de currentOrder...');
+                    currentOrder.items.splice(itemIndex, 1);
+                    
+                    // Recalcular totales
+                    currentOrder.total = currentOrder.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                    
+                    // Actualizar UI
+                    updateOrderUI();
+                    
+                    console.log('✅ [SignalR] removeItemFromUILocal() - Item removido exitosamente de UI local');
+                }
+            }
+        } else {
+            console.log('⚠️ [SignalR] removeItemFromUILocal() - Item no encontrado en UI');
+        }
+    } catch (error) {
+        console.error('❌ [SignalR] removeItemFromUILocal() - Error:', error);
+    }
+}
+
 // Inicializar SignalR
 async function initializeSignalR() {
     try {
@@ -15,29 +53,62 @@ async function initializeSignalR() {
 
         // Configurar eventos de SignalR
         signalRConnection.on("OrderStatusChanged", (orderId, newStatus) => {
-            console.log(`[SignalR] OrderStatusChanged: ${orderId} -> ${newStatus}`);
+            // 🎯 LOG ESTRATÉGICO: NOTIFICACIÓN DE CAMBIO DE ESTADO RECIBIDA
+            console.log('🚀 [SignalR] OrderStatusChanged() - NOTIFICACIÓN RECIBIDA - OrderId:', orderId, 'Nuevo estado:', newStatus);
+            
             if (currentOrder.orderId === orderId) {
+                console.log('🔄 [SignalR] OrderStatusChanged() - Actualizando orden actual...');
                 // Refrescar el estado completo desde el servidor
                 refreshOrderStatus(orderId);
+            } else {
+                console.log('ℹ️ [SignalR] OrderStatusChanged() - Notificación para otra orden, ignorando...');
             }
         });
 
-        signalRConnection.on("OrderItemStatusChanged", (orderId, itemId, newStatus) => {
-            console.log(`[SignalR] OrderItemStatusChanged: ${orderId} -> ${itemId} -> ${newStatus}`);
-            if (currentOrder.orderId === orderId) {
+        signalRConnection.on("OrderItemStatusChanged", (data) => {
+            console.log('🔍 ENTRADA: OrderItemStatusChanged SignalR - data:', data);
+            
+            // 🎯 LOG ESTRATÉGICO: NOTIFICACIÓN DE ITEM CANCELADO RECIBIDA
+            if (data.Status === 'Cancelled') {
+                console.log('🚀 [SignalR] OrderItemStatusChanged() - ITEM CANCELADO - OrderId:', data.OrderId, 'ItemId:', data.ItemId);
+            }
+            
+            console.log('📡 [SignalR] OrderItemStatusChanged recibido:', data);
+            
+            // ✅ NUEVO: Mostrar notificación si es un item cancelado
+            if (data.Status === 'Cancelled' && data.Message) {
+                showOrderItemDeletedNotification(data.Message, data.Type || 'warning');
+                
+                // ✅ NUEVO: Mostrar notificación específica para items cancelados
+                Swal.fire({
+                    title: 'Item Cancelado',
+                    text: `${data.ProductName} fue cancelado y removido de la orden`,
+                    icon: 'info',
+                    timer: 3000,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end'
+                });
+            }
+            
+            if (currentOrder.orderId === data.OrderId) {
+                console.log('🔄 [SignalR] OrderItemStatusChanged() - Actualizando orden actual...');
+                
+                // ✅ NUEVO: Si el item fue cancelado, removerlo de la UI local inmediatamente
+                if (data.Status === 'Cancelled') {
+                    console.log('🗑️ [SignalR] OrderItemStatusChanged() - Removiendo item cancelado de UI local...');
+                    removeItemFromUILocal(data.ItemId);
+                }
+                
                 // Refrescar el estado completo desde el servidor
-                refreshOrderStatus(orderId);
+                refreshOrderStatus(data.OrderId);
             }
         });
 
         signalRConnection.on("OrderItemUpdated", function (data) {
-            console.log("[SignalR] OrderItemUpdated:", data);
-            
             // Actualizar el DOM del ítem afectado usando ProductId
             const row = document.querySelector(`[data-item-id="${data.ProductId}"]`);
             if (row) {
-                console.log("[Frontend] Actualizando fila del item:", data.ProductId);
-                
                 // Actualizar la celda de estado
                 const estadoCell = row.querySelector(".estado-cell");
                 if (estadoCell) {
@@ -64,43 +135,81 @@ async function initializeSignalR() {
                     toast: true,
                     position: 'top-end'
                 });
-                
-                console.log("[Frontend] Item actualizado exitosamente en la UI");
-            } else {
-                console.warn("[Frontend] No se encontró la fila del item:", data.ProductId);
             }
         });
 
         signalRConnection.on("OrderCancelled", (orderId) => {
-            console.log(`[SignalR] OrderCancelled: ${orderId}`);
             if (currentOrder.orderId === orderId) {
                 handleOrderCancelled();
             }
         });
 
-        signalRConnection.on("TableStatusChanged", (tableId, newStatus) => {
-            console.log(`[SignalR] TableStatusChanged recibido:`);
-            console.log(`[SignalR]   - tableId: ${tableId}`);
-            console.log(`[SignalR]   - newStatus: ${newStatus}`);
-            console.log(`[SignalR]   - currentOrder.tableId: ${currentOrder?.tableId}`);
+        signalRConnection.on("OrderCompleted", (data) => {
+            console.log('📡 [SignalR] OrderCompleted recibido:', data);
             
-            // SIEMPRE actualizar la mesa, sin importar si es la actual o no
-            console.log(`[SignalR] Actualizando estado de mesa: ${tableId} -> ${newStatus}`);
-            updateTableStatus(tableId, newStatus);
+            // ✅ NUEVO: Mostrar notificación de orden completada
+            if (data.Message) {
+                showOrderCompletedNotification(data.Message, data.Type || 'success');
+            }
+            
+            // ✅ NUEVO: Actualizar estado de mesa si es relevante
+            if (data.TableNumber && currentOrder.tableNumber === data.TableNumber) {
+                console.log('🔄 [SignalR] OrderCompleted - Actualizando estado de mesa a ParaPago');
+                updateTableStatus(data.TableNumber, 'ParaPago');
+                
+                // ✅ NUEVO: Refrescar la orden para mostrar el estado actualizado
+                if (currentOrder.orderId) {
+                    console.log('🔄 [SignalR] OrderCompleted - Refrescando estado de la orden');
+                    refreshOrderStatus(currentOrder.orderId);
+                }
+            }
         });
 
-        signalRConnection.on("NewOrder", (orderId, tableNumber) => {
-            console.log(`[SignalR] NewOrder: ${orderId} -> ${tableNumber}`);
-            showNewOrderNotification(orderId, tableNumber);
+        signalRConnection.on("TableStatusChanged", (data) => {
+            console.log('🔍 [SignalR] TableStatusChanged() - INICIANDO - data recibida:', data);
+            
+            // ✅ CORREGIDO: Usar las propiedades correctas (minúsculas)
+            const tableId = data.tableId || data.TableId;
+            const newStatus = data.newStatus || data.NewStatus;
+            
+            console.log('📋 [SignalR] TableStatusChanged() - Extraídos parámetros:');
+            console.log('📋 [SignalR] TableStatusChanged() - tableId:', tableId);
+            console.log('📋 [SignalR] TableStatusChanged() - newStatus:', newStatus);
+            
+            // 🎯 LOG ESTRATÉGICO: NOTIFICACIÓN DE MESA RECIBIDA
+            console.log('🚀 [SignalR] TableStatusChanged() - NOTIFICACIÓN DE MESA RECIBIDA - TableId:', tableId, 'Nuevo estado:', newStatus);
+            console.log('📡 [SignalR] TableStatusChanged() - Datos completos recibidos:', data);
+            
+            // ✅ NUEVO: Mostrar notificación de cambio de estado
+            if (data.message || data.Message) {
+                console.log('📢 [SignalR] TableStatusChanged() - Mostrando notificación al usuario...');
+                showTableStatusNotification(data.message || data.Message, data.type || data.Type || 'info');
+                console.log('✅ [SignalR] TableStatusChanged() - Notificación mostrada');
+            }
+            
+            // SIEMPRE actualizar la mesa, sin importar si es la actual o no
+            console.log('🔄 [SignalR] TableStatusChanged() - Llamando updateTableStatus con parámetros:');
+            console.log('🔄 [SignalR] TableStatusChanged() - updateTableStatus(' + tableId + ', ' + newStatus + ')');
+            
+            updateTableStatus(tableId, newStatus);
+            
+            console.log('✅ [SignalR] TableStatusChanged() - COMPLETADO - Handler ejecutado exitosamente');
+        });
+
+        // ✅ NUEVO: Escuchar nuevas órdenes (para notificación en Order/Index)
+        signalRConnection.on("NewOrder", (data) => {
+            console.log('📡 [SignalR] NewOrder recibido:', data);
+            
+            // Mostrar notificación de nueva orden
+            showNewOrderNotification(data.OrderId, data.TableNumber);
         });
 
         signalRConnection.on("KitchenUpdate", () => {
-            console.log(`[SignalR] KitchenUpdate`);
             showKitchenUpdateNotification();
         });
 
         signalRConnection.on("PaymentProcessed", (orderId, amount, method, isFullyPaid) => {
-            console.log(`[SignalR] PaymentProcessed: ${orderId} -> $${amount} (${method}) - Completo: ${isFullyPaid}`);
+    
             if (currentOrder.orderId === orderId) {
                 handlePaymentProcessed(amount, method, isFullyPaid);
             }
@@ -108,44 +217,60 @@ async function initializeSignalR() {
 
         // Manejar reconexión
         signalRConnection.onreconnecting(() => {
-            console.log("[SignalR] Reconectando...");
+    
             statusIndicator.className = 'signalr-status connecting';
             statusIndicator.title = 'Reconectando...';
         });
 
         signalRConnection.onreconnected(() => {
-            console.log("[SignalR] Reconectado");
+            console.log('🔄 [SignalR] Reconectado, reuniéndose a grupos...');
             statusIndicator.className = 'signalr-status connected';
             statusIndicator.title = 'Conectado';
+            
             // Reunirse a los grupos necesarios
             if (currentOrder.orderId) {
                 signalRConnection.invoke("JoinOrderGroup", currentOrder.orderId);
+                console.log('✅ [SignalR] Reunido al grupo de orden:', currentOrder.orderId);
             }
             if (currentOrder.tableId) {
                 signalRConnection.invoke("JoinTableGroup", currentOrder.tableId);
+                console.log('✅ [SignalR] Reunido al grupo de mesa:', currentOrder.tableId);
             }
+            
+            // ✅ NUEVO: Reunirse al grupo de órdenes
+            signalRConnection.invoke("JoinOrdersGroup");
+            console.log('✅ [SignalR] Reunido al grupo "orders"');
+            
+            // Reunirse al grupo de cocina
+            signalRConnection.invoke("JoinKitchenGroup");
+            console.log('✅ [SignalR] Reunido al grupo "kitchen"');
+            
+            // Reunirse al grupo general de mesas
+            signalRConnection.invoke("JoinAllTablesGroup");
+            console.log('✅ [SignalR] Reunido al grupo "table_all"');
         });
 
         signalRConnection.onclose(() => {
-            console.log("[SignalR] Conexión cerrada");
             statusIndicator.className = 'signalr-status';
             statusIndicator.title = 'Desconectado';
         });
 
         await signalRConnection.start();
-        console.log("[SignalR] Conectado al hub");
         
         statusIndicator.className = 'signalr-status connected';
         statusIndicator.title = 'Conectado';
+
+        // ✅ NUEVO: Unirse al grupo de órdenes para recibir notificaciones
+        await signalRConnection.invoke("JoinOrdersGroup");
+        console.log('✅ [SignalR] Unido al grupo "orders" exitosamente');
 
         // Unirse al grupo de cocina
         await signalRConnection.invoke("JoinKitchenGroup");
         
         // Unirse al grupo general de mesas para recibir todas las notificaciones
         await signalRConnection.invoke("JoinAllTablesGroup");
-        console.log("[SignalR] Unido al grupo general de mesas");
     } catch (error) {
-        console.error("[SignalR] Error al conectar:", error);
+        
         const statusIndicator = document.getElementById('signalrStatus');
         statusIndicator.className = 'signalr-status';
         statusIndicator.title = 'Error de conexión';
@@ -154,28 +279,29 @@ async function initializeSignalR() {
 
 // Unirse a grupos de SignalR cuando se selecciona una mesa
 async function joinSignalRGroups(tableId, orderId) {
-    console.log('[SignalR] joinSignalRGroups iniciado');
-    console.log('[SignalR] tableId:', tableId);
-    console.log('[SignalR] orderId:', orderId);
-    console.log('[SignalR] signalRConnection state:', signalRConnection?.state);
-    
     if (signalRConnection && signalRConnection.state === signalR.HubConnectionState.Connected) {
         try {
+            console.log('🔍 [SignalR] joinSignalRGroups() - Uniéndose a grupos SignalR...');
+            console.log('📋 [SignalR] joinSignalRGroups() - TableId:', tableId, 'OrderId:', orderId);
+            
             if (tableId) {
-                console.log('[SignalR] Uniéndose al grupo de mesa:', tableId);
                 await signalRConnection.invoke("JoinTableGroup", tableId);
-                console.log('[SignalR] Unido exitosamente al grupo de mesa:', tableId);
+                console.log('✅ [SignalR] joinSignalRGroups() - Unido al grupo de mesa:', tableId);
             }
             if (orderId) {
-                console.log('[SignalR] Uniéndose al grupo de orden:', orderId);
                 await signalRConnection.invoke("JoinOrderGroup", orderId);
-                console.log('[SignalR] Unido exitosamente al grupo de orden:', orderId);
+                console.log('✅ [SignalR] joinSignalRGroups() - Unido al grupo de orden:', orderId);
             }
+            
+            // ✅ NUEVO: Unirse al grupo 'orders' para recibir notificaciones de cambio de estado
+            await signalRConnection.invoke("JoinOrdersGroup");
+            console.log('✅ [SignalR] joinSignalRGroups() - Unido al grupo de órdenes (orders)');
+            
         } catch (error) {
-            console.error("[SignalR] Error al unirse a grupos:", error);
+            console.error('❌ [SignalR] joinSignalRGroups() - Error al unirse a grupos:', error);
         }
     } else {
-        console.warn('[SignalR] No se puede unir a grupos - SignalR no está conectado');
+        console.warn('⚠️ [SignalR] joinSignalRGroups() - Conexión SignalR no está conectada');
     }
 }
 
@@ -190,6 +316,76 @@ function showNewOrderNotification(orderId, tableNumber) {
         toast: true,
         position: 'top-end'
     });
+}
+
+// ✅ NUEVO: Mostrar notificación de cambio de estado de mesa
+function showTableStatusNotification(message, type = 'info') {
+    try {
+        console.log('🔔 [SignalR] showTableStatusNotification() - Mostrando notificación:', { message, type });
+        
+        const iconMap = {
+            'success': 'success',
+            'error': 'error', 
+            'warning': 'warning',
+            'info': 'info',
+            'table_status_changed': 'info'
+        };
+        
+        const icon = iconMap[type] || 'info';
+        
+        Swal.fire({
+            title: 'Estado de Mesa',
+            text: message,
+            icon: icon,
+            timer: 4000,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+        });
+    } catch (error) {
+        console.error('❌ [SignalR] showTableStatusNotification() - Error:', error);
+        alert(message); // Fallback
+    }
+}
+
+// ✅ NUEVO: Mostrar notificación de orden completada
+function showOrderCompletedNotification(message, type = 'success') {
+    try {
+        console.log('🔔 [SignalR] showOrderCompletedNotification() - Mostrando notificación:', { message, type });
+        
+        Swal.fire({
+            title: 'Orden Completada',
+            text: message,
+            icon: 'success',
+            timer: 5000,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+        });
+    } catch (error) {
+        console.error('❌ [SignalR] showOrderCompletedNotification() - Error:', error);
+        alert(message); // Fallback
+    }
+}
+
+// ✅ NUEVO: Mostrar notificación de item eliminado
+function showOrderItemDeletedNotification(message, type = 'warning') {
+    try {
+        console.log('🔔 [SignalR] showOrderItemDeletedNotification() - Mostrando notificación:', { message, type });
+        
+        Swal.fire({
+            title: 'Item Eliminado',
+            text: message,
+            icon: 'warning',
+            timer: 4000,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+        });
+    } catch (error) {
+        console.error('❌ [SignalR] showOrderItemDeletedNotification() - Error:', error);
+        alert(message); // Fallback
+    }
 }
 
 // Mostrar notificación de actualización de cocina
@@ -207,7 +403,6 @@ function showKitchenUpdateNotification() {
 
 // Manejar pago procesado
 async function handlePaymentProcessed(amount, method, isFullyPaid) {
-    console.log(`[SignalR] handlePaymentProcessed: $${amount} (${method}) - Completo: ${isFullyPaid}`);
     
     // Mostrar notificación de pago
     const title = isFullyPaid ? 'Pago Completado' : 'Pago Parcial Procesado';
@@ -227,7 +422,6 @@ async function handlePaymentProcessed(amount, method, isFullyPaid) {
     
     if (isFullyPaid) {
         // Pago completo: la orden está completada, limpiar UI para nuevo pedido
-        console.log(`[SignalR] Pago completo - Limpiando UI para nueva orden`);
         
         // Limpiar la orden actual pero mantener la mesa seleccionada
         const currentTableId = currentOrder.tableId;
@@ -254,7 +448,6 @@ async function handlePaymentProcessed(amount, method, isFullyPaid) {
         clearPaymentSummary();
         if (typeof updatePaymentInfo === 'function') {
             await updatePaymentInfo();
-            console.log(`[SignalR] Información de pagos limpiada para nueva orden`);
         }
         
         // Mostrar mensaje adicional
@@ -274,33 +467,27 @@ async function handlePaymentProcessed(amount, method, isFullyPaid) {
         // Pago parcial: actualizar información manteniendo la orden
         if (typeof updatePaymentInfo === 'function') {
             await updatePaymentInfo();
-            console.log(`[SignalR] Información de pagos actualizada para pago parcial`);
         }
         
         // Refrescar el estado completo de la orden
         if (currentOrder.orderId) {
             await refreshOrderStatus(currentOrder.orderId);
-            console.log(`[SignalR] Estado de orden refrescado`);
         }
     }
 }
 
 // Función para limpiar el resumen de pagos
 function clearPaymentSummary() {
-    console.log('[SignalR] clearPaymentSummary iniciado - Limpiando resumen de pagos');
-    
     // Limpiar elementos de pago
     const totalPaidElement = document.getElementById('totalPaid');
     const remainingAmountElement = document.getElementById('remainingAmount');
     
     if (totalPaidElement) {
         totalPaidElement.textContent = '$0.00';
-        console.log('[SignalR] totalPaid limpiado');
     }
     
     if (remainingAmountElement) {
         remainingAmountElement.textContent = '$0.00';
-        console.log('[SignalR] remainingAmount limpiado');
     }
     
     // Ocultar botones de pago
@@ -309,15 +496,11 @@ function clearPaymentSummary() {
     
     if (paymentBtn) {
         paymentBtn.style.display = 'none';
-        console.log('[SignalR] Botón de pago parcial ocultado');
     }
     
     if (historyBtn) {
         historyBtn.style.display = 'none';
-        console.log('[SignalR] Botón de historial ocultado');
     }
-    
-    console.log('[SignalR] clearPaymentSummary completado');
 }
 
 // Exportar función para uso global

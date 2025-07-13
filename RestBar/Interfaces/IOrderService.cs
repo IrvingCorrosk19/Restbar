@@ -30,6 +30,8 @@ namespace RestBar.Interfaces
         Task<Order> AddOrUpdateOrderWithPendingItemsAsync(SendOrderDto dto, Guid? userId);
         Task<List<OrderItem>> SendPendingItemsToKitchenAsync(Guid orderId);
         Task MarkItemAsReadyAsync(Guid orderId, Guid itemId);
+        Task CancelOrderItemAsync(Guid orderId, Guid itemId);
+        Task MarkItemAsPreparingAsync(Guid orderId, Guid itemId);
         
         // Métodos para KitchenOrders y validación
         Task<List<KitchenOrderViewModel>> GetKitchenOrdersAsync();
@@ -46,5 +48,9 @@ namespace RestBar.Interfaces
         Task CheckAndUpdateTableStatusAsync(Guid orderId);
         Task<Order> UpdateOrderCompleteAsync(Guid orderId, List<UpdateOrderItemDto> items);
         Task<List<OrderItem>> GetOrderItemsByOrderIdAsync(Guid orderId);
+        Task<bool> SetTableOccupiedAsync(Guid tableId);
+        
+        // Método para obtener órdenes con pagos pendientes
+        Task<IEnumerable<Order>> GetPendingPaymentOrdersAsync();
     }
 } 

@@ -17,7 +17,8 @@
             </p>
         </div>
         <div class="hero-actions">
-            <button class="btn btn-primary btn-lg modern-btn" data-bs-toggle="modal" data-bs-target="#createBranchModal">
+            @* Botón deshabilitado para administradores - Solo SuperAdmin puede crear sucursales *@
+            <button class="btn btn-secondary btn-lg modern-btn" disabled title="Solo SuperAdmin puede crear nuevas sucursales">
                 <i class="fas fa-plus me-2"></i>
                 Nueva Sucursal
             </button>
@@ -113,7 +114,8 @@
                                 <button class="btn btn-outline-primary btn-sm modern-btn-sm" onclick="editBranch('@branch.Id')" title="Editar">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <button class="btn btn-outline-danger btn-sm modern-btn-sm" onclick="deleteBranch('@branch.Id')" title="Eliminar">
+                                @* Botón de eliminar deshabilitado para administradores - Solo SuperAdmin puede eliminar sucursales *@
+                                <button class="btn btn-outline-secondary btn-sm modern-btn-sm" disabled title="Solo SuperAdmin puede eliminar sucursales">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -130,7 +132,7 @@
             </div>
             <h3 class="empty-title">No se encontraron sucursales</h3>
             <p class="empty-description">Prueba ajustando los filtros de búsqueda o crea una nueva sucursal</p>
-            <button class="btn btn-primary modern-btn" data-bs-toggle="modal" data-bs-target="#createBranchModal">
+            <button class="btn btn-secondary modern-btn" disabled title="Solo SuperAdmin puede crear nuevas sucursales">
                 <i class="fas fa-plus me-2"></i>
                 Crear Primera Sucursal
             </button>
@@ -161,11 +163,15 @@
                             <div class="modern-form-group">
                                 <label class="form-label">
                                     <i class="fas fa-building me-2"></i>
-                                    Compañía *
+                                    Compañía
                                 </label>
-                                <select class="form-select modern-select" name="CompanyId" id="createCompanyId" required>
-                                    <option value="">Cargando compañías...</option>
-                                </select>
+                                <input type="text" class="form-control modern-input" id="currentCompanyDisplay" readonly 
+                                       placeholder="Compañía actual" style="background-color: #f8f9fa;">
+                                <input type="hidden" name="CompanyId" id="currentCompanyId">
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    La sucursal se creará automáticamente en tu compañía actual
+                                </small>
                             </div>
                         </div>
                         <div class="col-md-12">
@@ -246,17 +252,21 @@
                 <div class="modal-body modern-modal-body">
                     <input type="hidden" name="Id">
                     <div class="row g-3">
-                        <div class="col-md-12">
-                            <div class="modern-form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-building me-2"></i>
-                                    Compañía *
-                                </label>
-                                <select class="form-select modern-select" name="CompanyId" id="editCompanyId" required>
-                                    <option value="">Cargando compañías...</option>
-                                </select>
-                            </div>
-                        </div>
+                                                 <div class="col-md-12">
+                             <div class="modern-form-group">
+                                 <label class="form-label">
+                                     <i class="fas fa-building me-2"></i>
+                                     Compañía
+                                 </label>
+                                 <input type="text" class="form-control modern-input" id="editCompanyDisplay" readonly 
+                                        placeholder="Compañía actual" style="background-color: #f8f9fa;">
+                                 <input type="hidden" name="CompanyId" id="editCompanyId">
+                                 <small class="form-text text-muted">
+                                     <i class="fas fa-info-circle me-1"></i>
+                                     La compañía se mantiene automáticamente de tu usuario actual
+                                 </small>
+                             </div>
+                         </div>
                         <div class="col-md-12">
                             <div class="modern-form-group">
                                 <label class="form-label">
@@ -354,36 +364,118 @@
             updateEmptyState();
         }
 
-        // Función para cargar compañías en selects
-        function loadCompaniesSelect(selectId, selectedId) {
-            $.get('/Company/GetCompanies', function (res) {
-                var select = $(selectId);
-                if (res.success) {
-                    select.empty();
-                    select.append('<option value="">Seleccione una compañía</option>');
-                    res.data.forEach(function (c) {
-                        select.append('<option value="' + c.id + '">' + c.name + '</option>');
-                    });
-                    select.prop('disabled', false);
+                 // Función para cargar la compañía actual del usuario (para creación)
+         function loadCurrentUserCompany() {
+            
+            
+            $.get('/User/GetCurrentUser', function (res) {
+                if (res.success && res.data) {
                     
-                    // Seleccionar la compañía después de poblar el select
-                    if (selectedId) {
-                        setTimeout(function() {
-                            select.val(selectedId);
-                        }, 0);
-                    }
                     
-                    if (selectId === '#createCompanyId') {
+                    if (res.data.branch && res.data.branch.company) {
+                        $('#currentCompanyDisplay').val(res.data.branch.company.name);
+                        $('#currentCompanyId').val(res.data.branch.company.id);
+                        
+                        
+                        
+                        // Habilitar botón de crear
                         $('#createBranchModal').find('button.btn-primary').prop('disabled', false);
+                    } else {
+                        
+                        $('#currentCompanyDisplay').val('Error: Usuario sin compañía asignada');
+                        $('#currentCompanyId').val('');
                     }
                 } else {
-                    select.empty().append('<option value="">No hay compañías disponibles</option>');
+                    
+                    $('#currentCompanyDisplay').val('Error al cargar compañía');
+                    $('#currentCompanyId').val('');
                 }
-            }).fail(function() {
-                var select = $(selectId);
-                select.empty().append('<option value="">Error al cargar compañías</option>');
+            }).fail(function(error) {
+                
+                $('#currentCompanyDisplay').val('Error de conexión');
+                $('#currentCompanyId').val('');
             });
-        }
+                 }
+
+         // Función para cargar la compañía actual del usuario (para edición)
+         function loadCurrentUserCompanyForEdit() {
+             
+             
+             $.get('/User/GetCurrentUser', function (res) {
+                 if (res.success && res.data) {
+                     
+                     
+                     if (res.data.branch && res.data.branch.company) {
+                         $('#editCompanyDisplay').val(res.data.branch.company.name);
+                         $('#editCompanyId').val(res.data.branch.company.id);
+                         
+                         
+                     } else {
+                         
+                         $('#editCompanyDisplay').val('Error: Usuario sin compañía asignada');
+                         $('#editCompanyId').val('');
+                     }
+                 } else {
+                     
+                     $('#editCompanyDisplay').val('Error al cargar compañía');
+                     $('#editCompanyId').val('');
+                 }
+             }).fail(function(error) {
+                 
+                 $('#editCompanyDisplay').val('Error de conexión');
+                 $('#editCompanyId').val('');
+             });
+         }
+
+                  // Función para cargar compañías en selects (para edición) - YA NO SE USA
+         /*
+         function loadCompaniesSelect(selectId, selectedId) {
+             
+             
+             var select = $(selectId);
+             select.empty().append('<option value="">Cargando compañías...</option>').prop('disabled', true);
+             
+             $.get('/User/GetCompanies', function (res) {
+                 
+                 
+                 if (res.success) {
+                     select.empty();
+                     select.append('<option value="">Seleccione una compañía</option>');
+                     if (res.data && Array.isArray(res.data)) {
+                         
+                         
+                         res.data.forEach(function (c) {
+                             var option = $('<option value="' + c.id + '">' + c.name + '</option>');
+                             if (selectedId && c.id === selectedId) {
+                                 option.prop('selected', true);
+                                 
+                             }
+                             select.append(option);
+                         });
+                     }
+                     select.prop('disabled', false);
+                     
+                     // Forzar actualización del valor seleccionado
+                     if (selectedId) {
+                         select.val(selectedId);
+                         select.trigger('change');
+                     }
+                     
+                     if (selectId === '#createCompanyId') {
+                         $('#createBranchModal').find('button.btn-primary').prop('disabled', false);
+                     }
+                     
+                     
+                 } else {
+                     
+                     select.empty().append('<option value="">No hay compañías disponibles</option>').prop('disabled', true);
+                 }
+             }).fail(function(error) {
+                 
+                 select.empty().append('<option value="">Error al cargar compañías</option>').prop('disabled', true);
+             });
+         }
+         */
 
         // Eventos
         $(document).ready(function () {
@@ -394,18 +486,14 @@
 
         // Eventos de modales
         $('#createBranchModal').on('show.bs.modal', function () {
-            var select = $('#createCompanyId');
             var btn = $(this).find('button.btn-primary');
-            select.empty().append('<option>Cargando compañías...</option>').prop('disabled', true);
             btn.prop('disabled', true);
-            loadCompaniesSelect('#createCompanyId');
-            select.val('');
+            
+            // Cargar información de la compañía actual del usuario
+            loadCurrentUserCompany();
         });
 
-        $('#editBranchModal').on('show.bs.modal', function () {
-            var selectedId = $('#editBranchForm [name="CompanyId"]').val();
-            loadCompaniesSelect('#editCompanyId', selectedId);
-        });
+        // Evento eliminado - la carga de compañías se maneja en editBranch()
 
         // Función para crear sucursal
         window.createBranch = function () {
@@ -422,9 +510,7 @@
             if (!formData.Name || formData.Name.trim() === "") {
                 errors.push('El nombre es requerido');
             }
-            if (!formData.CompanyId) {
-                errors.push('La compañía es requerida');
-            }
+            // CompanyId se asigna automáticamente del usuario actual
             
             if (errors.length > 0) {
                 Swal.fire({
@@ -498,24 +584,27 @@
                 url: `/Branch/Get/${id}`,
                 method: 'GET',
                 success: function (response) {
-                    Swal.close();
                     if (response.success) {
                         const branch = response.data;
                         const form = $('#editBranchForm');
                         
+                        // Limpiar y llenar el formulario
                         form[0].reset();
                         form.find('[name="Id"]').val(branch.id);
                         form.find('[name="Name"]').val(branch.name);
-                        form.find('[name="Address"]').val(branch.address);
-                        form.find('[name="Phone"]').val(branch.phone);
+                        form.find('[name="Address"]').val(branch.address || '');
+                        form.find('[name="Phone"]').val(branch.phone || '');
                         form.find('[name="IsActive"]').prop('checked', branch.isActive);
-                        form.find('[name="CompanyId"]').val(branch.companyId);
                         
-                        loadCompaniesSelect('#editCompanyId', branch.companyId);
+                                                 // Cargar la compañía actual del usuario
+                         loadCurrentUserCompanyForEdit();
                         
+                        // Cerrar el loading y mostrar el modal
+                        Swal.close();
                         const editModal = new bootstrap.Modal(document.getElementById('editBranchModal'));
                         editModal.show();
                     } else {
+                        Swal.close();
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
@@ -524,6 +613,7 @@
                     }
                 },
                 error: function (xhr, status, error) {
+                    Swal.close();
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
@@ -544,13 +634,11 @@
             });
             formData.IsActive = form.find('[name="IsActive"]').is(':checked');
             
-            // Validaciones
-            if (!formData.Name || formData.Name.trim() === "") {
-                errors.push('El nombre es requerido');
-            }
-            if (!formData.CompanyId) {
-                errors.push('La compañía es requerida');
-            }
+                         // Validaciones
+             if (!formData.Name || formData.Name.trim() === "") {
+                 errors.push('El nombre es requerido');
+             }
+             // CompanyId se asigna automáticamente del usuario actual
             
             if (errors.length > 0) {
                 Swal.fire({

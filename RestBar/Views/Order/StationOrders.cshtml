@@ -1,0 +1,538 @@
+@model List<RestBar.ViewModel.KitchenOrderViewModel>
+@{
+    ViewData["Title"] = ViewBag.StationTitle ?? "Órdenes de Estación";
+    Layout = "_KitchenLayout";
+    
+    var stationType = ViewBag.StationType?.ToString().ToLower() ?? "kitchen";
+    var stationIcon = stationType switch
+    {
+        "kitchen" or "cocina" => "fas fa-fire",
+        "bar" => "fas fa-glass-martini-alt",
+        _ => "fas fa-utensils"
+    };
+    
+    var stationName = ViewBag.StationTitle?.ToString() ?? "Órdenes de Estación";
+    var themeClass = stationType switch
+    {
+        "kitchen" or "cocina" => "kitchen-theme",
+        "bar" => "bar-theme",
+        _ => "kitchen-theme"
+    };
+}
+
+<link href="~/css/modern-kitchen.css" rel="stylesheet" asp-append-version="true" />
+
+<div class="modern-kitchen-container @themeClass">
+    <div class="modern-kitchen-header">
+        <div class="modern-kitchen-title">
+            <div class="station-icon">
+                <i class="@stationIcon"></i>
+            </div>
+            <div>
+                <h1>@stationName</h1>
+            <p>Pedidos pendientes de preparación</p>
+            </div>
+        </div>
+        <div class="modern-kitchen-controls">
+            <button class="modern-kitchen-btn btn-primary" onclick="refreshOrdersList()">
+                <i class="fas fa-sync-alt"></i> Actualizar
+            </button>
+            <a href="/Home/Index" class="modern-kitchen-btn btn-secondary">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger" style="background: linear-gradient(135deg, #dc3545, #c82333); color: white; padding: 20px; border-radius: 15px; margin-bottom: 30px; border: none; box-shadow: 0 10px 25px rgba(220, 53, 69, 0.3);">
+            <i class="fas fa-exclamation-triangle"></i>
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="modern-orders-grid">
+        @if (!Model.Any())
+        {
+            <div class="modern-empty-state">
+                <div class="modern-empty-icon">
+                    <i class="@stationIcon"></i>
+                </div>
+                <h3>No hay órdenes pendientes</h3>
+                <p>Todas las órdenes de @stationName.ToLower() están completadas</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var order in Model)
+            {
+                <div class="modern-order-card" data-order-id="@order.OrderId">
+                    <div class="modern-order-header">
+                        <div class="modern-order-info">
+                            <h3>Mesa @order.TableNumber</h3>
+                            <span class="modern-order-time">@(order.OpenedAt?.ToString("HH:mm") ?? "N/A")</span>
+                        </div>
+                        <div class="modern-order-status">
+                            <span class="modern-status-badge">
+                                @(string.IsNullOrEmpty(order.OrderStatus) ? "En Proceso" : order.OrderStatus)
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="modern-order-items">
+                        @foreach (var item in order.Items)
+                        {
+                            <div class="modern-order-item @(item.KitchenStatus.ToLower() == "ready" ? "ready" : "pending")" data-item-id="@item.ItemId">
+                                <div class="modern-item-info">
+                                    <h4>@item.ProductName</h4>
+                                    <span class="modern-quantity">x@item.Quantity</span>
+                                    @if (!string.IsNullOrEmpty(item.Notes))
+                                    {
+                                        <p class="modern-notes"><i class="fas fa-sticky-note"></i> @item.Notes</p>
+                                    }
+                                </div>
+                                <div class="modern-item-status">
+                                    <span class="modern-status-indicator @item.KitchenStatus.ToLower()">
+                                        @item.KitchenStatus
+                                    </span>
+                                    <div class="modern-item-actions">
+                                        <button class="modern-status-btn btn-ready" onclick="updateItemStatus('@item.ItemId', '@order.OrderId', 'Ready')" title="Marcar como listo">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                        <button class="modern-status-btn btn-cancel" onclick="deleteItem('@item.ItemId', '@order.OrderId')" title="Eliminar item">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="modern-order-summary">
+                        <div class="modern-summary-stats">
+                            <span class="modern-stat">
+                                <i class="fas fa-clock"></i> @order.PendingItems pendiente(s)
+                            </span>
+                            <span class="modern-stat">
+                                <i class="fas fa-check-circle"></i> @order.ReadyItems listo(s)
+                            </span>
+                        </div>
+                        <div class="order-actions">
+                            <button class="modern-complete-btn" onclick="completeOrder('@order.OrderId')">
+                                <i class="fas fa-check-double"></i> Completar Orden
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/order/signalr.js" asp-append-version="true"></script>
+    <script src="https://unpkg.com/@@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
+    <script>
+        console.log('🔍 [StationOrders] Script cargado - Iniciando...');
+        console.log('📋 [StationOrders] Modelo recibido:', @Html.Raw(Json.Serialize(Model)));
+        console.log('📋 [StationOrders] Total órdenes en modelo:', @Model.Count);
+        console.log('📋 [StationOrders] StationType:', '@ViewBag.StationType');
+        console.log('📋 [StationOrders] StationTitle:', '@ViewBag.StationTitle');
+        
+        @if (Model.Any())
+        {
+            <text>
+            console.log('✅ [StationOrders] Hay órdenes para mostrar');
+            @foreach (var order in Model)
+            {
+                <text>
+                console.log('🍽️ [StationOrders] Orden:', '@order.OrderId', 'Mesa:', '@order.TableNumber', 'Items:', @order.Items.Count);
+                @foreach (var item in order.Items)
+                {
+                    <text>
+                    console.log('  📦 [StationOrders] Item:', '@item.ProductName', 'Estación:', '@item.StationName', 'Estado:', '@item.KitchenStatus');
+                    </text>
+                }
+                </text>
+            }
+            </text>
+        }
+        else
+        {
+            <text>
+            console.log('⚠️ [StationOrders] No hay órdenes para mostrar');
+            </text>
+        }
+
+        // ✅ NUEVO: Variable para almacenar la conexión SignalR (usar la global si existe)
+        if (typeof signalRConnection === 'undefined') {
+            window.signalRConnection = null;
+        }
+        const stationType = '@ViewBag.StationType';
+
+        // ✅ NUEVO: Inicializar SignalR para StationOrders
+        async function initializeStationSignalR() {
+            try {
+                console.log('🔍 [StationOrders] initializeStationSignalR() - Iniciando conexión SignalR...');
+                
+                window.signalRConnection = new signalR.HubConnectionBuilder()
+                    .withUrl("/orderHub")
+                    .withAutomaticReconnect()
+                    .build();
+
+                // ✅ NUEVO: Escuchar actualizaciones de items
+                window.signalRConnection.on("OrderItemStatusChanged", (data) => {
+                    console.log('📡 [StationOrders] OrderItemStatusChanged recibido:', data);
+                    console.log('🔍 [StationOrders] OrderItemStatusChanged - Parámetros:', data);
+                    
+                    // ✅ NUEVO: Mostrar notificación detallada
+                    if (data.Message) {
+                        showNotification(data.Message, data.Type || 'info');
+                    }
+                    
+                    console.log('🎯 [StationOrders] OrderItemStatusChanged - Llamando updateItemStatusInUI...');
+                    updateItemStatusInUI(data.ItemId, data.Status);
+                    console.log('✅ [StationOrders] OrderItemStatusChanged - updateItemStatusInUI completado');
+                });
+
+                // ✅ NUEVO: Escuchar nuevas órdenes
+                window.signalRConnection.on("NewOrder", (data) => {
+                    console.log('📡 [StationOrders] NewOrder recibido:', data);
+                    console.log('📋 [StationOrders] NewOrder - OrderId:', data.OrderId, 'TableNumber:', data.TableNumber);
+                    
+                    // ✅ NUEVO: Mostrar notificación detallada
+                    if (data.Message) {
+                        showNotification(data.Message, data.Type || 'success');
+                    }
+                    
+                    // ✅ CORREGIDO: No verificar Items, siempre actualizar ya que el backend ya filtró por estación
+                    showNewOrderNotification(data.OrderId, data.TableNumber);
+                    refreshOrdersList(); // Actualizar la lista sin recargar
+                });
+
+                // ✅ NUEVO: Escuchar actualizaciones de cocina
+                window.signalRConnection.on("KitchenUpdate", () => {
+                    console.log('📡 [StationOrders] KitchenUpdate recibido');
+                    refreshOrdersList(); // Actualizar la lista sin recargar
+                });
+
+                // ✅ NUEVO: Escuchar órdenes completadas
+                window.signalRConnection.on("OrderCompleted", (data) => {
+                    console.log('📡 [StationOrders] OrderCompleted recibido:', data);
+                    
+                    // ✅ NUEVO: Mostrar notificación detallada
+                    if (data.Message) {
+                        showNotification(data.Message, data.Type || 'success');
+                    }
+                    
+                    // Actualizar la lista para remover la orden completada
+                    refreshOrdersList();
+                });
+
+                await window.signalRConnection.start();
+                console.log('✅ [StationOrders] SignalR conectado exitosamente');
+                console.log('🔗 [StationOrders] Connection ID:', window.signalRConnection.connectionId);
+
+                // Unirse al grupo de cocina
+                console.log('🔍 [StationOrders] Uniéndose al grupo de cocina...');
+                await window.signalRConnection.invoke("JoinKitchenGroup");
+                console.log('✅ [StationOrders] Unido al grupo de cocina exitosamente');
+
+            } catch (error) {
+                console.error('❌ [StationOrders] Error inicializando SignalR:', error);
+            }
+        }
+
+        // ✅ NUEVO: Actualizar estado de item en la UI sin recargar
+        function updateItemStatusInUI(itemId, newStatus) {
+            console.log('🔍 ENTRADA: updateItemStatusInUI() - itemId:', itemId, 'newStatus:', newStatus);
+            console.log('🔄 [StationOrders] updateItemStatusInUI() - Iniciando actualización UI...');
+            console.log('📋 [StationOrders] updateItemStatusInUI() - Parámetros:', { itemId, newStatus });
+            
+            const itemElement = document.querySelector(`[data-item-id="${itemId}"]`);
+            console.log('🔍 [StationOrders] updateItemStatusInUI() - Elemento encontrado:', itemElement);
+            
+            if (itemElement) {
+                // ✅ NUEVO: Si el item se cancela, removerlo de la vista
+                if (newStatus.toLowerCase() === 'cancelled') {
+                    console.log('🗑️ [StationOrders] updateItemStatusInUI() - Removiendo item cancelado');
+                    itemElement.remove();
+                    
+                    // Verificar si la orden queda vacía
+                    const orderElement = itemElement.closest('.modern-order-card');
+                    const remainingItems = orderElement.querySelectorAll('.modern-order-item').length;
+                    if (remainingItems === 0) {
+                        console.log('📋 [StationOrders] updateItemStatusInUI() - Orden vacía, removiendo orden completa');
+                        orderElement.remove();
+                    }
+                } else {
+                    // Actualizar indicador de estado
+                    const statusIndicator = itemElement.querySelector('.modern-status-indicator');
+                    if (statusIndicator) {
+                        statusIndicator.textContent = newStatus;
+                        statusIndicator.className = `modern-status-indicator ${newStatus.toLowerCase()}`;
+                    }
+
+                    // Actualizar clase del item
+                    if (newStatus.toLowerCase() === 'ready') {
+                        itemElement.classList.add('ready');
+                        itemElement.classList.remove('pending');
+                    } else {
+                        itemElement.classList.add('pending');
+                        itemElement.classList.remove('ready');
+                    }
+
+                    // Mostrar notificación
+                    const productName = itemElement.querySelector('.modern-item-info h4').textContent;
+                    showItemReadyNotification(productName, newStatus);
+                }
+            }
+
+            // Actualizar contadores de la orden
+            updateOrderCounters();
+        }
+
+        // ✅ NUEVO: Función para mostrar notificaciones con SweetAlert
+        function showNotification(message, type = 'info') {
+            try {
+                console.log('🔔 [StationOrders] showNotification() - Mostrando notificación:', { message, type });
+                
+                const iconMap = {
+                    'success': 'success',
+                    'error': 'error', 
+                    'warning': 'warning',
+                    'info': 'info',
+                    'new_order': 'success',
+                    'item_deleted': 'error',
+                    'item_updated': 'success',
+                    'table_status_changed': 'info'
+                };
+                
+                const icon = iconMap[type] || 'info';
+                
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'Notificación',
+                        text: message,
+                        icon: icon,
+                        timer: 4000,
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end',
+                        background: '#2d2d2d',
+                        color: '#ffffff'
+                    });
+                } else {
+                    console.log('🔔 [StationOrders] SweetAlert no disponible, usando alert simple');
+                    alert(message);
+                }
+            } catch (error) {
+                console.error('❌ [StationOrders] showNotification() - Error:', error);
+                alert(message); // Fallback
+            }
+        }
+
+        // ✅ NUEVO: Mostrar notificación cuando un item está listo
+        function showItemReadyNotification(productName, status) {
+            if (status.toLowerCase() === 'ready') {
+                // Usar SweetAlert si está disponible, sino alert simple
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'Item Listo!',
+                        text: `${productName} está listo para servir`,
+                        icon: 'success',
+                        timer: 3000,
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end'
+                    });
+                } else {
+                    alert(`${productName} está listo!`);
+                }
+            }
+        }
+
+        // ✅ NUEVO: Actualizar contadores de órdenes
+        function updateOrderCounters() {
+            document.querySelectorAll('.modern-order-card').forEach(card => {
+                const orderId = card.dataset.orderId;
+                const items = Array.from(card.querySelectorAll('.modern-order-item'));
+                
+                const pendingItems = items.filter(item => item.classList.contains('pending')).length;
+                const readyItems = items.filter(item => item.classList.contains('ready')).length;
+                
+                // Actualizar contadores
+                const pendingCounter = card.querySelector('.modern-stat:first-child');
+                const readyCounter = card.querySelector('.modern-stat:last-child');
+                
+                if (pendingCounter) {
+                    pendingCounter.innerHTML = `<i class="fas fa-clock"></i> ${pendingItems} pendiente(s)`;
+                }
+                if (readyCounter) {
+                    readyCounter.innerHTML = `<i class="fas fa-check-circle"></i> ${readyItems} listo(s)`;
+                }
+            });
+        }
+
+        // ✅ NUEVO: Refrescar lista de órdenes sin recargar página
+        async function refreshOrdersList() {
+            try {
+                console.log('🔄 [StationOrders] refreshOrdersList() - Actualizando lista...');
+                
+                const response = await fetch(`/Order/StationOrders?stationType=${stationType}`);
+                if (response.ok) {
+                    const html = await response.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newOrdersGrid = doc.querySelector('.modern-orders-grid');
+                    
+                    if (newOrdersGrid) {
+                        const currentOrdersGrid = document.querySelector('.modern-orders-grid');
+                        currentOrdersGrid.innerHTML = newOrdersGrid.innerHTML;
+                        console.log('✅ [StationOrders] Lista actualizada sin recargar página');
+                    }
+                }
+            } catch (error) {
+                console.error('❌ [StationOrders] Error actualizando lista:', error);
+            }
+        }
+
+        // ✅ NUEVO: Mostrar notificación de nueva orden
+        function showNewOrderNotification(orderId, tableNumber) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Nueva Orden!',
+                    text: `Nueva orden recibida para Mesa ${tableNumber}`,
+                    icon: 'info',
+                    timer: 3000,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end'
+                });
+            }
+        }
+
+        // ✅ NUEVO: Función para eliminar item
+        window.deleteItem = function(itemId, orderId) {
+            console.log('🔍 ENTRADA: deleteItem() - itemId:', itemId, 'orderId:', orderId);
+            try {
+                console.log('🗑️ [StationOrders] deleteItem() - Iniciando eliminación...');
+                console.log('📋 [StationOrders] deleteItem() - Parámetros:', { itemId, orderId });
+                
+                // Mostrar confirmación
+                if (confirm('¿Estás seguro de que quieres eliminar este item?')) {
+                    console.log('✅ [StationOrders] deleteItem() - Usuario confirmó eliminación, llamando updateItemStatus...');
+                    // Llamar a updateItemStatus con estado "Cancelled"
+                    updateItemStatus(itemId, orderId, 'Cancelled');
+                } else {
+                    console.log('❌ [StationOrders] deleteItem() - Usuario canceló eliminación');
+                }
+            } catch (error) {
+                console.error('❌ [StationOrders] deleteItem() - Error:', error);
+                alert('Error al eliminar el item: ' + error.message);
+            }
+        }
+
+        // ✅ MODIFICADO: Función de actualizar estado sin recargar (GLOBAL)
+        window.updateItemStatus = function(itemId, orderId, status) {
+            console.log('🔍 ENTRADA: updateItemStatus() - itemId:', itemId, 'orderId:', orderId, 'status:', status);
+            try {
+                console.log('🔍 [StationOrders] updateItemStatus() - Iniciando actualización de estado...');
+                console.log('📋 [StationOrders] updateItemStatus() - Parámetros:', { itemId, orderId, status });
+                console.log('🌐 [StationOrders] updateItemStatus() - Enviando petición a /Order/UpdateItemStatus');
+            
+            fetch(`/Order/UpdateItemStatus`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    itemId: itemId,
+                    orderId: orderId,
+                    status: status
+                })
+            })
+                .then(response => {
+                    console.log('📡 [StationOrders] updateItemStatus() - Respuesta recibida:', response.status, response.statusText);
+                    return response.json();
+                })
+            .then(data => {
+                    console.log('📡 [StationOrders] updateItemStatus() - Datos recibidos:', data);
+                if (data.success) {
+                        console.log('✅ [StationOrders] updateItemStatus() - Item actualizado exitosamente');
+                        // ✅ NUEVO: Actualizar UI directamente en lugar de recargar
+                        updateItemStatusInUI(itemId, status);
+                } else {
+                        console.log('❌ [StationOrders] updateItemStatus() - Error en respuesta:', data.message);
+                        alert('Error al actualizar el estado del item: ' + (data.message || 'Error desconocido'));
+                }
+            })
+            .catch(error => {
+                    console.error('❌ [StationOrders] updateItemStatus() - Error de conexión:', error);
+                    alert('Error de conexión: ' + error.message);
+            });
+            } catch (error) {
+                console.error('❌ [StationOrders] updateItemStatus() - Error:', error);
+                alert('Error: ' + error.message);
+            }
+        }
+
+        window.completeOrder = function(orderId) {
+            
+            
+            if (confirm('¿Estás seguro de que quieres marcar esta orden como completada?')) {
+                fetch(`/Order/CompleteOrder`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        orderId: orderId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        
+                        location.reload();
+                    } else {
+                        
+                        alert('Error al completar la orden');
+                    }
+                })
+                .catch(error => {
+                    
+                    alert('Error de conexión');
+                });
+            }
+        }
+
+        // ✅ NUEVO: Inicializar SignalR cuando se carga la página
+        // ✅ NUEVO: Función para inicializar contadores al cargar la página
+        function initializeOrderCounters() {
+            console.log('🔍 [StationOrders] initializeOrderCounters() - Inicializando contadores...');
+            
+            // Actualizar contadores inmediatamente al cargar
+            updateOrderCounters();
+            
+            // Actualizar contadores cada 5 segundos para mantener sincronización
+            setInterval(updateOrderCounters, 5000);
+            
+            console.log('✅ [StationOrders] initializeOrderCounters() - Contadores inicializados');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 [StationOrders] DOM cargado - Inicializando SignalR...');
+            initializeStationSignalR();
+            initializeOrderCounters(); // ✅ NUEVO: Inicializar contadores
+        });
+
+        // ✅ NUEVO: Limpiar conexión SignalR cuando se cierra la página
+        window.addEventListener('beforeunload', function() {
+            if (signalRConnection) {
+                console.log('🔌 [StationOrders] Cerrando conexión SignalR...');
+                signalRConnection.stop();
+            }
+        });
+    </script>
+}

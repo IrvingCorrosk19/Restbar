@@ -1,0 +1,299 @@
+@model RestBar.Models.User
+@{
+    ViewData["Title"] = "Crear Usuario";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-primary">
+                        <i class="fas fa-user-plus me-2"></i>
+                        Crear Nuevo Usuario
+                    </h1>
+                    <p class="text-muted mb-0">
+                        @if (User.IsInRole("superadmin"))
+                        {
+                            <text>Registra un nuevo usuario en cualquier sucursal del sistema</text>
+                        }
+                        else
+                        {
+                            <text>Registra un nuevo usuario en tu sucursal</text>
+                        }
+                    </p>
+                </div>
+                <div>
+                    <a href="@Url.Action("Index", "UserManagement")" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>
+                        Volver a Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-user me-2"></i>
+                        Información del Usuario
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" method="post">
+                        @Html.AntiForgeryToken()
+                        
+                        <div class="row">
+                            <!-- Nombre Completo -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="FullName" class="form-label">
+                                    <i class="fas fa-user me-1"></i>
+                                    Nombre Completo *
+                                </label>
+                                <input asp-for="FullName" class="form-control" placeholder="Ej: Juan Pérez" required />
+                                <span asp-validation-for="FullName" class="text-danger"></span>
+                            </div>
+
+                            <!-- Email -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Email" class="form-label">
+                                    <i class="fas fa-envelope me-1"></i>
+                                    Email *
+                                </label>
+                                <input asp-for="Email" type="email" class="form-control" placeholder="usuario@sucursal.com" required />
+                                <span asp-validation-for="Email" class="text-danger"></span>
+                                <div class="form-text">Este será el usuario para iniciar sesión</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Rol -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Role" class="form-label">
+                                    <i class="fas fa-user-tag me-1"></i>
+                                    Rol *
+                                </label>
+                                <select asp-for="Role" class="form-select" required>
+                                    <option value="">Selecciona un rol</option>
+                                    <option value="manager">Gerente</option>
+                                    <option value="supervisor">Supervisor</option>
+                                    <option value="waiter">Mesero</option>
+                                    <option value="cashier">Cajero</option>
+                                    <option value="chef">Cocinero</option>
+                                    <option value="bartender">Bartender</option>
+                                    <option value="accountant">Contador</option>
+                                    <option value="support">Soporte Técnico</option>
+                                </select>
+                                <span asp-validation-for="Role" class="text-danger"></span>
+                            </div>
+
+                            <!-- Sucursal (solo para SuperAdmin) -->
+                            @if (ViewBag.Branches != null)
+                            {
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="BranchId" class="form-label">
+                                        <i class="fas fa-store me-1"></i>
+                                        Sucursal *
+                                    </label>
+                                    <select asp-for="BranchId" class="form-select" required>
+                                        <option value="">Selecciona una sucursal</option>
+                                        @foreach (var branch in (List<RestBar.Models.Branch>)ViewBag.Branches)
+                                        {
+                                            <option value="@branch.Id">@branch.Company?.Name - @branch.Name</option>
+                                        }
+                                    </select>
+                                    <span asp-validation-for="BranchId" class="text-danger"></span>
+                                </div>
+                            }
+                            else
+                            {
+                                <!-- Para Admin, mostrar sucursal fija -->
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        <i class="fas fa-store me-1"></i>
+                                        Sucursal
+                                    </label>
+                                    <input type="text" class="form-control" value="@ViewBag.BranchName" readonly />
+                                    <input type="hidden" asp-for="BranchId" value="@ViewBag.BranchId" />
+                                    <div class="form-text">@ViewBag.CompanyName</div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="row">
+                            <!-- Contraseña -->
+                            <div class="col-md-6 mb-3">
+                                <label for="password" class="form-label">
+                                    <i class="fas fa-lock me-1"></i>
+                                    Contraseña *
+                                </label>
+                                <input type="password" id="password" name="password" class="form-control" placeholder="Mínimo 8 caracteres" required minlength="8" />
+                                <div class="form-text">Mínimo 8 caracteres</div>
+                            </div>
+
+                            <!-- Confirmar Contraseña -->
+                            <div class="col-md-6 mb-3">
+                                <label for="confirmPassword" class="form-label">
+                                    <i class="fas fa-lock me-1"></i>
+                                    Confirmar Contraseña *
+                                </label>
+                                <input type="password" id="confirmPassword" class="form-control" placeholder="Repite la contraseña" required />
+                                <div class="form-text">Debe coincidir con la contraseña</div>
+                            </div>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="row">
+                            <div class="col-12">
+                                <hr>
+                                <div class="d-flex justify-content-between">
+                                    <a href="@Url.Action("Index", "UserManagement")" class="btn btn-secondary">
+                                        <i class="fas fa-times me-1"></i>
+                                        Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-1"></i>
+                                        Crear Usuario
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel de Ayuda -->
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Información Importante
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-lightbulb me-1"></i>
+                            Consejos
+                        </h6>
+                        <ul class="mb-0">
+                            <li>El email debe ser único en el sistema</li>
+                            <li>La contraseña debe tener al menos 8 caracteres</li>
+                            <li>Los roles determinan los permisos del usuario</li>
+                            <li>Puedes cambiar la contraseña después de crear el usuario</li>
+                        </ul>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            Permisos por Rol
+                        </h6>
+                        <ul class="mb-0">
+                            <li><strong>Gerente:</strong> Acceso completo a la sucursal</li>
+                            <li><strong>Supervisor:</strong> Órdenes, cocina, pagos, mesas</li>
+                            <li><strong>Mesero:</strong> Órdenes, mesas, clientes</li>
+                            <li><strong>Cajero:</strong> Órdenes, pagos, clientes</li>
+                            <li><strong>Cocinero:</strong> Cocina, órdenes</li>
+                            <li><strong>Bartender:</strong> Órdenes, cocina</li>
+                            <li><strong>Contador:</strong> Pagos, reportes</li>
+                            <li><strong>Soporte:</strong> Órdenes, usuarios</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const passwordInput = document.getElementById('password');
+            const confirmPasswordInput = document.getElementById('confirmPassword');
+            const form = document.querySelector('form');
+
+            // Validación de contraseñas
+            function validatePasswords() {
+                const password = passwordInput.value;
+                const confirmPassword = confirmPasswordInput.value;
+                
+                if (confirmPassword && password !== confirmPassword) {
+                    confirmPasswordInput.setCustomValidity('Las contraseñas no coinciden');
+                    confirmPasswordInput.classList.add('is-invalid');
+                } else {
+                    confirmPasswordInput.setCustomValidity('');
+                    confirmPasswordInput.classList.remove('is-invalid');
+                    if (confirmPassword) {
+                        confirmPasswordInput.classList.add('is-valid');
+                    }
+                }
+            }
+
+            passwordInput.addEventListener('input', validatePasswords);
+            confirmPasswordInput.addEventListener('input', validatePasswords);
+
+            // Validación en tiempo real
+            const inputs = [document.querySelector('input[name="FullName"]'), document.querySelector('input[name="Email"]')];
+            
+            inputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    if (this.value.trim().length < 2) {
+                        this.classList.add('is-invalid');
+                    } else {
+                        this.classList.remove('is-invalid');
+                        this.classList.add('is-valid');
+                    }
+                });
+            });
+
+            // Validación del formulario antes de enviar
+            form.addEventListener('submit', function(e) {
+                let isValid = true;
+
+                // Validar campos obligatorios
+                const requiredFields = [
+                    { element: document.querySelector('input[name="FullName"]'), message: 'El nombre es obligatorio' },
+                    { element: document.querySelector('input[name="Email"]'), message: 'El email es obligatorio' },
+                    { element: document.querySelector('select[name="Role"]'), message: 'Debes seleccionar un rol' },
+                    { element: passwordInput, message: 'La contraseña es obligatoria' },
+                    { element: confirmPasswordInput, message: 'Debes confirmar la contraseña' }
+                ];
+
+                requiredFields.forEach(field => {
+                    if (!field.element.value.trim()) {
+                        field.element.classList.add('is-invalid');
+                        isValid = false;
+                    } else {
+                        field.element.classList.remove('is-invalid');
+                    }
+                });
+
+                // Validar contraseñas
+                if (passwordInput.value !== confirmPasswordInput.value) {
+                    confirmPasswordInput.classList.add('is-invalid');
+                    isValid = false;
+                }
+
+                // Validar longitud de contraseña
+                if (passwordInput.value.length < 8) {
+                    passwordInput.classList.add('is-invalid');
+                    isValid = false;
+                }
+
+                if (!isValid) {
+                    e.preventDefault();
+                    alert('Por favor, completa todos los campos correctamente');
+                }
+            });
+        });
+    </script>
+}

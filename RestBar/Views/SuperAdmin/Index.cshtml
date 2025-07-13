@@ -1,0 +1,307 @@
+@using System.Linq
+@{
+    ViewData["Title"] = "Super Administrador";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-primary">
+                        <i class="fas fa-crown me-2"></i>
+                        Super Administrador
+                    </h1>
+                    <p class="text-muted mb-0">Panel de control global - Acceso a todo el sistema</p>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-warning text-dark fs-6">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        Super Admin
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Compañías
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.Stats.TotalCompanies</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-building fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total Sucursales
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.Stats.TotalBranches</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-store fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Administradores
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.Stats.TotalAdmins</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users-cog fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Activos
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.Stats.ActiveCompanies</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones Rápidas -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-bolt me-2"></i>
+                        Acciones Rápidas
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="@Url.Action("CreateCompany", "SuperAdmin")" class="btn btn-primary btn-block w-100">
+                                <i class="fas fa-plus me-2"></i>
+                                Nueva Compañía
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="@Url.Action("CreateBranch", "SuperAdmin")" class="btn btn-success btn-block w-100">
+                                <i class="fas fa-store me-2"></i>
+                                Nueva Sucursal
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="@Url.Action("CreateAdmin", "SuperAdmin")" class="btn btn-info btn-block w-100">
+                                <i class="fas fa-user-plus me-2"></i>
+                                Nuevo Admin
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="@Url.Action("Companies", "SuperAdmin")" class="btn btn-warning btn-block w-100">
+                                <i class="fas fa-list me-2"></i>
+                                Ver Todo
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compañías Recientes -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-building me-2"></i>
+                        Compañías
+                    </h6>
+                    <a href="@Url.Action("Companies", "SuperAdmin")" class="btn btn-sm btn-primary">
+                        Ver Todas
+                    </a>
+                </div>
+                <div class="card-body">
+                    @if (ViewBag.Companies != null && ((List<Company>)ViewBag.Companies).Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Sucursales</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var company in ((List<Company>)ViewBag.Companies).Take(5))
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@company.Name</strong>
+                                                @if (!string.IsNullOrEmpty(company.LegalId))
+                                                {
+                                                    <br><small class="text-muted">ID: @company.LegalId</small>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">@company.Branches.Count sucursales</span>
+                                            </td>
+                                            <td>
+                                                @if (company.IsActive)
+                                                {
+                                                    <span class="badge bg-success">Activa</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger">Inactiva</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" title="Ver detalles">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-warning" title="Editar">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-building fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No hay compañías registradas</p>
+                            <a href="@Url.Action("CreateCompany", "SuperAdmin")" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>
+                                Crear Primera Compañía
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Administradores -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-users-cog me-2"></i>
+                        Administradores
+                    </h6>
+                </div>
+                <div class="card-body">
+                    @if (ViewBag.Admins != null && ((List<User>)ViewBag.Admins).Any())
+                    {
+                        @foreach (var admin in ((List<User>)ViewBag.Admins).Take(5))
+                        {
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user text-white"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <div class="fw-bold">@admin.FullName</div>
+                                    <div class="text-muted small">@admin.Email</div>
+                                    @if (admin.Branch != null)
+                                    {
+                                        <div class="text-muted small">
+                                            <i class="fas fa-store me-1"></i>
+                                            @admin.Branch.Name
+                                        </div>
+                                    }
+                                </div>
+                                <div class="flex-shrink-0">
+                                    @if (admin.Role == UserRole.superadmin)
+                                    {
+                                        <span class="badge bg-warning text-dark">Super Admin</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-info">Admin</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-users-cog fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">No hay administradores</p>
+                            <a href="@Url.Action("CreateAdmin", "SuperAdmin")" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus me-2"></i>
+                                Crear Admin
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto-refresh de estadísticas cada 30 segundos
+        setInterval(function() {
+            // Aquí podrías hacer una llamada AJAX para actualizar las estadísticas
+        }, 30000);
+
+        // Confirmación para acciones importantes
+        document.addEventListener('DOMContentLoaded', function() {
+            const deleteButtons = document.querySelectorAll('[data-action="delete"]');
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    if (!confirm('¿Estás seguro de que quieres eliminar este elemento?')) {
+                        e.preventDefault();
+                    }
+                });
+            });
+        });
+    </script>
+}

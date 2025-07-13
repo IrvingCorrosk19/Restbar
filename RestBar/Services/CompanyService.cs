@@ -4,13 +4,11 @@ using RestBar.Models;
 
 namespace RestBar.Services
 {
-    public class CompanyService : ICompanyService
+    public class CompanyService : BaseTrackingService, ICompanyService
     {
-        private readonly RestBarContext _context;
-
-        public CompanyService(RestBarContext context)
+        public CompanyService(RestBarContext context, IHttpContextAccessor httpContextAccessor) 
+            : base(context, httpContextAccessor)
         {
-            _context = context;
         }
 
         public async Task<IEnumerable<Company>> GetAllAsync()
@@ -29,16 +27,53 @@ namespace RestBar.Services
 
         public async Task<Company> CreateAsync(Company company)
         {
-            company.CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
-            _context.Companies.Add(company);
-            await _context.SaveChangesAsync();
-            return company;
+            try
+            {
+                if (string.IsNullOrWhiteSpace(company.Name))
+                    throw new ArgumentException("El nombre es requerido", nameof(company.Name));
+
+                var newCompany = new Company
+                {
+                    Id = Guid.NewGuid(),
+                    Name = company.Name,
+                    LegalId = company.LegalId,
+                    TaxId = company.TaxId,
+                    Address = company.Address,
+                    Phone = company.Phone,
+                    Email = company.Email,
+                    IsActive = true, // Activo por defecto
+                    // ✅ Fechas se manejan automáticamente por el modelo
+                    CreatedBy = string.IsNullOrWhiteSpace(company.CreatedBy) ? "Sistema" : company.CreatedBy
+                };
+
+                _context.Companies.Add(newCompany);
+                await _context.SaveChangesAsync();
+
+                return newCompany;
+            }
+            catch (ArgumentException ex)
+            {
+                // Error de validación
+                throw;
+            }
+            catch (DbUpdateException ex)
+            {
+                // Error de base de datos
+                throw new ApplicationException("Ocurrió un error al guardar la compañía en la base de datos.", ex);
+            }
+            catch (Exception ex)
+            {
+                // Error general
+                throw new ApplicationException("Ocurrió un error inesperado al crear la compañía.", ex);
+            }
         }
+
 
         public async Task UpdateAsync(Company company)
         {
             try
             {
+                // El tracking automático se maneja en el contexto
                 // Buscar si hay una entidad con el mismo ID siendo rastreada
                 var existingEntity = _context.ChangeTracker.Entries<Company>()
                     .FirstOrDefault(e => e.Entity.Id == company.Id);
@@ -61,9 +96,18 @@ namespace RestBar.Services
 
         public async Task DeleteAsync(Guid id)
         {
-            var company = await _context.Companies.FindAsync(id);
+            var company = await _context.Companies
+                .Include(c => c.Branches)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
             if (company != null)
             {
+                // Verificar si la compañía tiene sucursales asociadas
+                if (company.Branches.Any())
+                {
+                    throw new InvalidOperationException($"No se puede eliminar la compañía '{company.Name}' porque tiene {company.Branches.Count} sucursal(es) asociada(s). Debe eliminar o reasignar todas las sucursales antes de continuar.");
+                }
+
                 _context.Companies.Remove(company);
                 await _context.SaveChangesAsync();
             }

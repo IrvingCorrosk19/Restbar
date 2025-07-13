@@ -1,0 +1,215 @@
+@model RestBar.ViewModels.AuditLogViewModel
+@{
+    ViewData["Title"] = "Logs de Auditoría";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-clipboard-list"></i>
+                        @ViewData["Title"]
+                    </h3>
+                    <div class="card-tools">
+                        <a href="@Url.Action("Export", "Audit")" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-download"></i> Exportar CSV
+                        </a>
+                        <a href="@Url.Action("Errors", "Audit")" class="btn btn-sm btn-outline-danger">
+                            <i class="fas fa-exclamation-triangle"></i> Ver Errores
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Filtros -->
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-2">
+                            <label class="form-label">Módulo</label>
+                            <select name="module" class="form-select">
+                                <option value="">Todos</option>
+                                @foreach (var module in Model.AvailableModules)
+                                {
+                                    <option value="@module" selected="@(Model.ModuleFilter == module)">@module</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Acción</label>
+                            <select name="action" class="form-select">
+                                <option value="">Todas</option>
+                                @foreach (var action in Model.AvailableActions)
+                                {
+                                    <option value="@action" selected="@(Model.ActionFilter == action)">@action</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Nivel</label>
+                            <select name="logLevel" class="form-select">
+                                <option value="">Todos</option>
+                                @foreach (var level in Model.AvailableLogLevels)
+                                {
+                                    <option value="@level" selected="@(Model.LogLevelFilter == level)">@level</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Desde</label>
+                            <input type="date" name="startDate" class="form-control" value="@(Model.StartDate?.ToString("yyyy-MM-dd"))" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Hasta</label>
+                            <input type="date" name="endDate" class="form-control" value="@(Model.EndDate?.ToString("yyyy-MM-dd"))" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Filtrar
+                                </button>
+                                <a href="@Url.Action("Index", "Audit")" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Limpiar
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Tabla de logs -->
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Fecha/Hora</th>
+                                <th>Módulo</th>
+                                <th>Acción</th>
+                                <th>Descripción</th>
+                                <th>Usuario</th>
+                                <th>Compañía</th>
+                                <th>Sucursal</th>
+                                <th>Nivel</th>
+                                <th>IP</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.AuditLogs.Any())
+                            {
+                                @foreach (var log in Model.AuditLogs)
+                                {
+                                    <tr class="@(log.IsError ? "table-danger" : log.LogLevel == "WARNING" ? "table-warning" : "")">
+                                        <td>
+                                            <small>@log.Timestamp?.ToString("dd/MM/yyyy HH:mm:ss")</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">@log.Module</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">@log.Action</span>
+                                        </td>
+                                        <td>
+                                            <div class="text-truncate" style="max-width: 200px;" title="@log.Description">
+                                                @log.Description
+                                            </div>
+                                        </td>
+                                        <td>
+                                            @if (log.User != null)
+                                            {
+                                                <small>@log.User.FullName</small>
+                                            }
+                                            else
+                                            {
+                                                <small class="text-muted">Sistema</small>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (log.Company != null)
+                                            {
+                                                <small>@log.Company.Name</small>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (log.Branch != null)
+                                            {
+                                                <small>@log.Branch.Name</small>
+                                            }
+                                        </td>
+                                        <td>
+                                            @{
+                                                var badgeClass = log.LogLevel switch
+                                                {
+                                                    "ERROR" => "bg-danger",
+                                                    "WARNING" => "bg-warning",
+                                                    "CRITICAL" => "bg-dark",
+                                                    _ => "bg-success"
+                                                };
+                                            }
+                                            <span class="badge @badgeClass">@log.LogLevel</span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">@log.IpAddress</small>
+                                        </td>
+                                        <td>
+                                            <a href="@Url.Action("Details", "Audit", new { id = log.Id })" 
+                                               class="btn btn-sm btn-outline-info" 
+                                               title="Ver detalles">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="10" class="text-center text-muted">
+                                        <i class="fas fa-info-circle"></i>
+                                        No se encontraron logs de auditoría con los filtros aplicados.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación -->
+                @if (Model.AuditLogs.Count() >= 1000)
+                {
+                    <div class="card-footer">
+                        <div class="text-center">
+                            <small class="text-muted">
+                                Mostrando los últimos 1000 registros. Use los filtros para ver registros específicos.
+                            </small>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Auto-submit form when filters change
+            $('select[name="module"], select[name="action"], select[name="logLevel"]').change(function() {
+                $(this).closest('form').submit();
+            });
+
+            // Tooltip initialization
+            $('[title]').tooltip();
+
+            // Highlight error rows
+            $('.table-danger').each(function() {
+                $(this).find('td').css('background-color', '#f8d7da');
+            });
+
+            // Highlight warning rows
+            $('.table-warning').each(function() {
+                $(this).find('td').css('background-color', '#fff3cd');
+            });
+        });
+    </script>
+} 

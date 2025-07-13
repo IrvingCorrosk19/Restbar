@@ -7,7 +7,7 @@ function safeJsonParse(jsonString, defaultValue = {}) {
     try {
         return JSON.parse(jsonString);
     } catch (e) {
-        console.error('[Utilities] Error parseando JSON:', e);
+        
         return defaultValue;
     }
 }
@@ -21,7 +21,7 @@ function formatCurrency(amount) {
             currency: 'CRC'
         }).format(numAmount);
     } catch (e) {
-        console.error('[Utilities] Error formateando moneda:', e);
+        
         return `₡${amount || 0}`;
     }
 }
@@ -30,7 +30,7 @@ function formatCurrency(amount) {
 
 // Función para mostrar mensajes de error
 function showError(message, title = 'Error') {
-    console.error(`[${title}] ${message}`);
+    
     if (typeof Swal !== 'undefined') {
         Swal.fire({
             title: title,
@@ -45,7 +45,6 @@ function showError(message, title = 'Error') {
 
 // Función para mostrar mensajes de éxito
 function showSuccess(message, title = 'Éxito') {
-    console.log(`[${title}] ${message}`);
     if (typeof Swal !== 'undefined') {
         Swal.fire({
             title: title,
@@ -74,8 +73,6 @@ async function getCurrentUser() {
             return currentUser;
         }
 
-        console.log('[Utilities] Obteniendo usuario actual...');
-        
         const response = await fetch('/Auth/CurrentUser', {
             method: 'GET',
             headers: {
@@ -86,7 +83,6 @@ async function getCurrentUser() {
 
         if (!response.ok) {
             if (response.status === 401) {
-                console.warn('[Utilities] Usuario no autenticado, redirigiendo al login');
                 window.location.href = '/Auth/Login';
                 return null;
             }
@@ -97,14 +93,13 @@ async function getCurrentUser() {
         
         if (result.success && result.user) {
             currentUser = result.user;
-            console.log('[Utilities] Usuario actual obtenido:', currentUser);
             return currentUser;
         } else {
-            console.error('[Utilities] Error en respuesta del usuario:', result);
+            
             return null;
         }
     } catch (error) {
-        console.error('[Utilities] Error obteniendo usuario actual:', error);
+        
         return null;
     }
 }
@@ -115,7 +110,7 @@ async function getCurrentUserId() {
         const user = await getCurrentUser();
         return user ? user.id : null;
     } catch (error) {
-        console.error('[Utilities] Error obteniendo ID del usuario:', error);
+        
         return null;
     }
 }
@@ -123,8 +118,6 @@ async function getCurrentUserId() {
 // Función para verificar permisos del usuario
 async function checkUserPermission(action) {
     try {
-        console.log(`[Utilities] Verificando permiso para acción: ${action}`);
-        
         const response = await fetch('/Auth/CheckPermission', {
             method: 'POST',
             headers: {
@@ -135,14 +128,12 @@ async function checkUserPermission(action) {
         });
 
         if (!response.ok) {
-            console.error(`[Utilities] Error verificando permisos: ${response.status}`);
             return false;
         }
 
         const result = await response.json();
         return result.success && result.hasPermission;
     } catch (error) {
-        console.error('[Utilities] Error verificando permisos:', error);
         return false;
     }
 }
@@ -150,7 +141,6 @@ async function checkUserPermission(action) {
 // Función para limpiar información del usuario (logout)
 function clearCurrentUser() {
     currentUser = null;
-    console.log('[Utilities] Información del usuario limpiada');
 }
 
 // Función para mostrar información del usuario en la UI
@@ -174,12 +164,9 @@ function displayUserInfo() {
 
 // Inicializar información del usuario cuando se carga la página
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('[Utilities] DOM cargado, obteniendo usuario actual...');
     await getCurrentUser();
     displayUserInfo();
 });
-
-console.log('[Utilities] ✅ Utilidades cargadas correctamente');
 
 // Utility Functions and Helpers
 
@@ -373,11 +360,11 @@ async function loadSupervisors() {
         if (result.success) {
             return result.data;
         } else {
-            console.error('Error al cargar supervisores:', result.message);
+            
             return [];
         }
     } catch (error) {
-        console.error('Error al cargar supervisores:', error);
+        
         return [];
     }
 }
@@ -499,4 +486,3 @@ function getStatusDisplay(status) {
 } 
 
 // ✅ Utilities cargadas correctamente - v2.0
-console.log('[Utilities] ✅ Módulo de utilidades cargado correctamente v2.0');

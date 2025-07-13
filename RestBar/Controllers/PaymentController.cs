@@ -18,19 +18,30 @@ namespace RestBar.Controllers
         private readonly IOrderService _orderService;
         private readonly RestBarContext _context;
         private readonly IOrderHubService _orderHubService;
+        private readonly IProductService _productService;
+        private readonly IEmailService _emailService;
+
+
 
         public PaymentController(
             IPaymentService paymentService,
             ISplitPaymentService splitPaymentService,
             IOrderService orderService,
             RestBarContext context,
-            IOrderHubService orderHubService)
+            IOrderHubService orderHubService,
+            IProductService productService,
+            IEmailService emailService)
         {
+            Console.WriteLine($"[PaymentController] 🔥🔥🔥 CONSTRUCTOR PaymentController LLAMADO 🔥🔥🔥");
             _paymentService = paymentService;
             _splitPaymentService = splitPaymentService;
             _orderService = orderService;
             _context = context;
             _orderHubService = orderHubService;
+            _productService = productService;
+            _emailService = emailService;
+
+            Console.WriteLine($"[PaymentController] ✅ Constructor completado - ProductService: {_productService != null}, EmailService: {_emailService != null}");
         }
 
         [HttpPost("partial")]
@@ -38,6 +49,7 @@ namespace RestBar.Controllers
         {
             try
             {
+                Console.WriteLine($"[PaymentController] 🔥🔥🔥 MÉTODO CreatePartialPayment LLAMADO 🔥🔥🔥");
                 Console.WriteLine($"[PaymentController] === INICIANDO PROCESAMIENTO DE PAGO ===");
                 Console.WriteLine($"[PaymentController] OrderId: {request.OrderId}");
                 Console.WriteLine($"[PaymentController] Amount: ${request.Amount}");
@@ -45,6 +57,14 @@ namespace RestBar.Controllers
                 Console.WriteLine($"[PaymentController] IsShared: {request.IsShared}");
                 Console.WriteLine($"[PaymentController] PayerName: {request.PayerName}");
                 Console.WriteLine($"[PaymentController] Split Payments Count: {request.SplitPayments?.Count ?? 0}");
+                
+                var order = await _orderService.GetOrderWithDetailsAsync(request.OrderId);
+                if (order == null)
+                {
+                    Console.WriteLine($"[PaymentController] ERROR: Orden no encontrada");
+                    return NotFound("Orden no encontrada");
+                }
+                Console.WriteLine($"[PaymentController] ✅ Orden encontrada - Items: {order.OrderItems?.Count ?? 0}");
                 
                 // Validar lógica de pagos compartidos
                 if (request.IsShared)
@@ -77,16 +97,6 @@ namespace RestBar.Controllers
                     
                     Console.WriteLine($"[PaymentController] ✅ Validación de pago individual exitosa");
                 }
-
-                // Validar que la orden existe
-                Console.WriteLine($"[PaymentController] Validando que la orden existe...");
-                var order = await _orderService.GetOrderWithDetailsAsync(request.OrderId);
-                if (order == null)
-                {
-                    Console.WriteLine($"[PaymentController] ERROR: Orden no encontrada");
-                    return NotFound("Orden no encontrada");
-                }
-                Console.WriteLine($"[PaymentController] ✅ Orden encontrada - Items: {order.OrderItems?.Count ?? 0}");
 
                 // Validar que el monto no exceda el total de la orden
                 Console.WriteLine($"[PaymentController] Calculando montos de la orden...");
@@ -126,6 +136,8 @@ namespace RestBar.Controllers
                     Console.WriteLine($"[PaymentController] ✅ Validación de split payments exitosa");
                 }
 
+
+
                 // Crear el pago principal
                 Console.WriteLine($"[PaymentController] Creando pago principal...");
                 var payment = new Payment
@@ -136,7 +148,7 @@ namespace RestBar.Controllers
                     Method = request.Method,
                     IsShared = request.IsShared,
                     PayerName = request.PayerName,
-                    PaidAt = DateTime.UtcNow,
+                    PaidAt = DateTime.UtcNow, // ✅ Fecha específica de pago
                     IsVoided = false
                 };
                 Console.WriteLine($"[PaymentController] Pago principal creado con ID: {payment.Id}");
@@ -184,7 +196,9 @@ namespace RestBar.Controllers
                     // Pago completo: cambiar orden a Completed
                     Console.WriteLine($"[PaymentController] Pago completo - Cambiando orden de {order.Status} a Completed");
                     order.Status = OrderStatus.Completed;
-                    order.ClosedAt = DateTime.UtcNow;
+                    order.ClosedAt = DateTime.UtcNow; // ✅ Fecha específica de cierre de orden
+                    
+
                     
                     // Cambiar todos los items a Served
                     foreach (var item in order.OrderItems)
@@ -202,10 +216,12 @@ namespace RestBar.Controllers
                         var table = await _context.Tables.FindAsync(order.TableId.Value);
                         if (table != null)
                         {
-                            table.Status = "Disponible";
+                            table.Status = TableStatus.Disponible;
                             Console.WriteLine($"[PaymentController] Mesa {table.TableNumber} cambiada a Disponible");
                         }
                     }
+
+
                 }
                 else
                 {
@@ -219,6 +235,9 @@ namespace RestBar.Controllers
 
                 await _context.SaveChangesAsync();
                 Console.WriteLine($"[PaymentController] Estados actualizados - Orden: {order.Status}");
+
+                // 🎯 LOG ESTRATÉGICO: PAGO PROCESADO
+                Console.WriteLine($"🚀 [PaymentController] ProcessPayment() - PAGO PROCESADO - ${request.Amount} ({request.Method}) - Completo: {isFullyPaid}");
 
                 // Enviar notificaciones SignalR sobre cambios de estado
                 if (isFullyPaid)
@@ -240,6 +259,8 @@ namespace RestBar.Controllers
                     // Notificar cambio de estado de mesa
                     if (order.TableId.HasValue)
                     {
+                        // 🎯 LOG ESTRATÉGICO: MESA LIBERADA
+                        Console.WriteLine($"🚀 [PaymentController] ProcessPayment() - MESA LIBERADA - Mesa liberada después del pago completo");
                         await _orderHubService.NotifyTableStatusChanged(order.TableId.Value, "Disponible");
                         Console.WriteLine($"[PaymentController] Notificación enviada: Mesa disponible");
                     }
@@ -263,6 +284,46 @@ namespace RestBar.Controllers
                 await _orderHubService.NotifyPaymentProcessed(order.Id, request.Amount, request.Method, isFullyPaid);
                 Console.WriteLine($"[PaymentController] Notificación enviada: Pago procesado - ${request.Amount} ({request.Method}) - Completo: {isFullyPaid}");
 
+                // ✅ NUEVO: Enviar email de confirmación si el pago está completo
+                if (isFullyPaid)
+                {
+                    try
+                    {
+                        Console.WriteLine("📧 [PaymentController] ProcessPayment() - Enviando email de confirmación...");
+                        
+                        // Obtener email del cliente si existe
+                        var customerEmail = order.Customer?.Email;
+                        if (string.IsNullOrEmpty(customerEmail))
+                        {
+                            // Si no hay cliente asociado, intentar obtener email del usuario que creó la orden
+                            var orderUser = await _context.Users.FindAsync(order.UserId);
+                            customerEmail = orderUser?.Email;
+                        }
+
+                        if (!string.IsNullOrEmpty(customerEmail))
+                        {
+                            var emailSent = await _emailService.SendOrderConfirmationAsync(order, customerEmail);
+                            if (emailSent)
+                            {
+                                Console.WriteLine($"✅ [PaymentController] ProcessPayment() - Email de confirmación enviado a: {customerEmail}");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"⚠️ [PaymentController] ProcessPayment() - No se pudo enviar email de confirmación");
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("⚠️ [PaymentController] ProcessPayment() - No hay email disponible para enviar confirmación");
+                        }
+                    }
+                    catch (Exception emailEx)
+                    {
+                        Console.WriteLine($"❌ [PaymentController] ProcessPayment() - Error al enviar email: {emailEx.Message}");
+                        // No lanzar excepción para no afectar el flujo del pago
+                    }
+                }
+
                 // Obtener el pago con sus splits para la respuesta
                 var paymentWithSplits = await _paymentService.GetPaymentWithSplitsAsync(createdPayment.Id);
                 
@@ -272,15 +333,15 @@ namespace RestBar.Controllers
                     OrderId = paymentWithSplits.OrderId!.Value,
                     Amount = paymentWithSplits.Amount,
                     Method = paymentWithSplits.Method!,
-                    PaidAt = paymentWithSplits.PaidAt!.Value,
-                    IsVoided = paymentWithSplits.IsVoided ?? false,
+                    PaidAt = paymentWithSplits.PaidAt,
+                    IsVoided = paymentWithSplits.IsVoided,
                     IsShared = paymentWithSplits.IsShared,
                     PayerName = paymentWithSplits.PayerName,
                     SplitPayments = paymentWithSplits.SplitPayments.Select(sp => new SplitPaymentResponseDto
                     {
                         Id = sp.Id,
                         PersonName = sp.PersonName!,
-                        Amount = sp.Amount!.Value,
+                        Amount = sp.Amount ?? 0,
                         Method = sp.Method!
                     }).ToList()
                 };
@@ -335,13 +396,13 @@ namespace RestBar.Controllers
                         OrderId = p.OrderId!.Value,
                         Amount = p.Amount,
                         Method = p.Method!,
-                        PaidAt = p.PaidAt!.Value,
-                        IsVoided = p.IsVoided ?? false,
+                        PaidAt = p.PaidAt,
+                        IsVoided = p.IsVoided,
                         SplitPayments = p.SplitPayments.Select(sp => new SplitPaymentResponseDto
                         {
                             Id = sp.Id,
                             PersonName = sp.PersonName!,
-                            Amount = sp.Amount!.Value
+                            Amount = sp.Amount ?? 0
                         }).ToList()
                     }).ToList()
                 };
@@ -366,13 +427,13 @@ namespace RestBar.Controllers
                     OrderId = p.OrderId!.Value,
                     Amount = p.Amount,
                     Method = p.Method!,
-                    PaidAt = p.PaidAt!.Value,
-                    IsVoided = p.IsVoided ?? false,
+                    PaidAt = p.PaidAt,
+                    IsVoided = p.IsVoided,
                     SplitPayments = p.SplitPayments.Select(sp => new SplitPaymentResponseDto
                     {
                         Id = sp.Id,
                         PersonName = sp.PersonName!,
-                        Amount = sp.Amount!.Value
+                        Amount = sp.Amount ?? 0
                     }).ToList()
                 });
 

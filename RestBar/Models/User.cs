@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace RestBar.Models;
 
-public partial class User
+public partial class User : ITrackableEntity
 {
     public Guid Id { get; set; }
 
@@ -17,9 +17,13 @@ public partial class User
 
     public UserRole Role { get; set; }  // Aquí el cambio importante
 
-    public bool? IsActive { get; set; }
+    public bool IsActive { get; set; } = true;
 
-    public DateTime? CreatedAt { get; set; }
+    // ✅ CAMPOS DE AUDITORÍA ESTANDARIZADOS
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public string? CreatedBy { get; set; }
+    public string? UpdatedBy { get; set; }
 
     public virtual ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
 
@@ -30,6 +34,7 @@ public partial class User
 
 public enum UserRole
 {
+    superadmin,     // Super Administrador del Sistema
     admin,          // Administrador del Sistema
     manager,        // Gerente de Sucursal
     supervisor,     // Supervisor
@@ -37,7 +42,7 @@ public enum UserRole
     cashier,        // Cajero
     chef,           // Cocinero
     bartender,      // Bartender
-    inventory,      // Inventarista
+
     accountant,     // Contador
     support         // Soporte Técnico
 }

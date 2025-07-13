@@ -104,12 +104,11 @@ namespace RestBar.Services
             Console.WriteLine($"[KitchenService] Orden encontrada - Status actual: {order.Status}");
             Console.WriteLine($"[KitchenService] TableId: {order.TableId}");
 
-            order.Status = OrderStatus.Ready;
-            order.ClosedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
+            // 🎯 LOG ESTRATÉGICO: MÉTODO EJECUTADO
+            Console.WriteLine($"🚀 [KitchenService] MarkOrderAsReadyAsync() - MÉTODO EJECUTADO - Cambiando orden a Ready");
             
-            // Validación de desarrollo para asegurar que las fechas sean UTC
-            if (order.ClosedAt.HasValue && order.ClosedAt.Value.Kind == DateTimeKind.Unspecified)
-                throw new InvalidOperationException("ClosedAt no debe ser Unspecified para columnas timestamp with time zone");
+            order.Status = OrderStatus.Ready;
+            order.ClosedAt = DateTime.UtcNow;
             
             Console.WriteLine($"[KitchenService] Status actualizado a: {order.Status}");
             Console.WriteLine($"[KitchenService] ClosedAt establecido a: {order.ClosedAt}");
@@ -131,7 +130,9 @@ namespace RestBar.Services
                 // Si no hay más órdenes pendientes, cambiar el estado de la mesa
                 if (pendingOrdersForTable == 0)
                 {
-                    order.Table.Status = TableStatus.ParaPago.ToString();
+                    // 🎯 LOG ESTRATÉGICO: MESA CAMBIA A PARA PAGO
+                    Console.WriteLine($"🚀 [KitchenService] MarkOrderAsReadyAsync() - MESA CAMBIA A PARA PAGO - Mesa {order.Table.TableNumber}");
+                    order.Table.Status = TableStatus.ParaPago;
                     Console.WriteLine($"[KitchenService] Estado de mesa actualizado a: {order.Table.Status}");
                 }
             }
@@ -202,11 +203,7 @@ namespace RestBar.Services
             {
                 item.Status = OrderItemStatus.Ready;
                 item.PreparedByStationId = station.Id;
-                item.PreparedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
-                
-                // Validación de desarrollo para asegurar que las fechas sean UTC
-                if (item.PreparedAt.HasValue && item.PreparedAt.Value.Kind == DateTimeKind.Unspecified)
-                    throw new InvalidOperationException("PreparedAt no debe ser Unspecified para columnas timestamp with time zone");
+                item.PreparedAt = DateTime.UtcNow;
                 
                 Console.WriteLine($"[KitchenService] Item marcado como listo: {item.Product?.Name}");
             }
@@ -223,11 +220,7 @@ namespace RestBar.Services
             {
                 Console.WriteLine($"[KitchenService] Todos los items están listos, marcando orden como lista");
                 order.Status = OrderStatus.Ready;
-                order.ClosedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
-                
-                // Validación de desarrollo para asegurar que las fechas sean UTC
-                if (order.ClosedAt.HasValue && order.ClosedAt.Value.Kind == DateTimeKind.Unspecified)
-                    throw new InvalidOperationException("ClosedAt no debe ser Unspecified para columnas timestamp with time zone");
+                order.ClosedAt = DateTime.UtcNow;
                 
                 // Actualizar el estado de la mesa usando el método auxiliar
                 await UpdateTableStatusIfAllItemsReadyAsync(order);
@@ -259,7 +252,7 @@ namespace RestBar.Services
             await _orderHubService.NotifyOrderStatusChanged(orderId, order.Status);
             if (order.Table != null)
             {
-                await _orderHubService.NotifyTableStatusChanged(order.Table.Id, order.Table.Status);
+                await _orderHubService.NotifyTableStatusChanged(order.Table.Id, order.Table.Status.ToString());
             }
             await _orderHubService.NotifyKitchenUpdate();
         }
@@ -302,7 +295,7 @@ namespace RestBar.Services
                     // Si no hay más órdenes pendientes, cambiar el estado de la mesa
                     if (pendingOrdersForTable == 0)
                     {
-                        order.Table.Status = TableStatus.ParaPago.ToString();
+                        order.Table.Status = TableStatus.ParaPago;
                         Console.WriteLine($"[KitchenService] Estado de mesa actualizado a: {order.Table.Status}");
                     }
                     else
@@ -375,11 +368,11 @@ namespace RestBar.Services
             // Marcar el item como listo
             itemToMark.Status = OrderItemStatus.Ready;
             itemToMark.PreparedByStationId = station.Id;
-            itemToMark.PreparedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
+            itemToMark.PreparedAt = DateTime.UtcNow;
             
             // Validación de desarrollo para asegurar que las fechas sean UTC
-            if (itemToMark.PreparedAt.HasValue && itemToMark.PreparedAt.Value.Kind == DateTimeKind.Unspecified)
-                throw new InvalidOperationException("PreparedAt no debe ser Unspecified para columnas timestamp with time zone");
+            if (itemToMark.PreparedAt.HasValue && itemToMark.PreparedAt.Value.Kind != DateTimeKind.Utc)
+                throw new InvalidOperationException("PreparedAt debe ser UTC para columnas timestamp with time zone");
             
             Console.WriteLine($"[KitchenService] Item marcado como listo: {itemToMark.Product?.Name}");
 
@@ -395,11 +388,7 @@ namespace RestBar.Services
             {
                 Console.WriteLine($"[KitchenService] Todos los items están listos, marcando orden como lista");
                 order.Status = OrderStatus.Ready;
-                order.ClosedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
-                
-                // Validación de desarrollo para asegurar que las fechas sean UTC
-                if (order.ClosedAt.HasValue && order.ClosedAt.Value.Kind == DateTimeKind.Unspecified)
-                    throw new InvalidOperationException("ClosedAt no debe ser Unspecified para columnas timestamp with time zone");
+                order.ClosedAt = DateTime.UtcNow;
                 
                 // Actualizar el estado de la mesa usando el método auxiliar
                 await UpdateTableStatusIfAllItemsReadyAsync(order);

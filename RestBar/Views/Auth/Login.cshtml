@@ -46,9 +46,9 @@
                    name="email" 
                    class="form-control" 
                    placeholder="Correo electrónico" 
-                   required 
-                   autocomplete="email"
-                   value="@(TempData["LastEmail"] ?? "")" />
+                   value="admin@restbar.com"
+                   required autocomplete="username" 
+                   autocomplete="off" />
         </div>
 
         <div class="form-group">
@@ -57,6 +57,7 @@
                    name="password" 
                    class="form-control" 
                    placeholder="Contraseña" 
+                   value="123456"
                    required 
                    autocomplete="current-password" />
         </div>

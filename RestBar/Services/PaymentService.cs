@@ -4,13 +4,13 @@ using RestBar.Models;
 
 namespace RestBar.Services
 {
-    public class PaymentService : IPaymentService
+    public class PaymentService : BaseTrackingService, IPaymentService
     {
-        private readonly RestBarContext _context;
 
-        public PaymentService(RestBarContext context)
+
+        public PaymentService(RestBarContext context, IHttpContextAccessor httpContextAccessor)
+            : base(context, httpContextAccessor)
         {
-            _context = context;
         }
 
         public async Task<IEnumerable<Payment>> GetAllAsync()
@@ -39,7 +39,7 @@ namespace RestBar.Services
                 Console.WriteLine($"[PaymentService] Amount: ${payment.Amount}");
                 Console.WriteLine($"[PaymentService] Method: {payment.Method}");
                 
-                payment.PaidAt = DateTime.UtcNow;
+                payment.PaidAt = DateTime.UtcNow; // ✅ Fecha específica de pago
                 Console.WriteLine($"[PaymentService] PaidAt configurado como UTC: {payment.PaidAt}");
                 
                 payment.IsVoided = false;
@@ -50,6 +50,8 @@ namespace RestBar.Services
                 
                 await _context.SaveChangesAsync();
                 Console.WriteLine($"[PaymentService] ✅ Payment guardado exitosamente");
+                
+
                 
                 return payment;
             }
@@ -189,6 +191,55 @@ namespace RestBar.Services
                 .Include(p => p.SplitPayments)
                 .Where(p => p.IsVoided == true)
                 .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Payment>> GetPaymentsByDateRangeAsync(DateTime startDate, DateTime endDate)
+        {
+            return await _context.Payments
+                .Include(p => p.Order)
+                .Include(p => p.Order.Table)
+                .Include(p => p.SplitPayments)
+                .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && p.IsVoided == false)
+                .OrderByDescending(p => p.PaidAt)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Payment>> GetPaymentsByStatusAsync(string status)
+        {
+            return await _context.Payments
+                .Include(p => p.Order)
+                .Include(p => p.Order.Table)
+                .Include(p => p.SplitPayments)
+                .Where(p => p.Status.ToUpper() == status.ToUpper() && p.IsVoided == false)
+                .OrderByDescending(p => p.PaidAt)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Payment>> GetPaymentsByMethodAsync(string method)
+        {
+            return await _context.Payments
+                .Include(p => p.Order)
+                .Include(p => p.Order.Table)
+                .Include(p => p.SplitPayments)
+                .Where(p => p.Method == method && p.IsVoided == false)
+                .OrderByDescending(p => p.PaidAt)
+                .ToListAsync();
+        }
+
+        public async Task<decimal> GetTotalRevenueAsync(DateTime startDate, DateTime endDate)
+        {
+            return await _context.Payments
+                .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && p.IsVoided == false)
+                .SumAsync(p => p.Amount);
+        }
+
+        public async Task<int> GetTotalOrdersPaidAsync(DateTime startDate, DateTime endDate)
+        {
+            return await _context.Payments
+                .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && p.IsVoided == false)
+                .Select(p => p.OrderId)
+                .Distinct()
+                .CountAsync();
         }
     }
 } 

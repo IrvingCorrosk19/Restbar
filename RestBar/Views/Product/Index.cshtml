@@ -4,12 +4,24 @@
     ViewData["Title"] = "Productos";
 }
 
+<!-- Error Message -->
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert" style="background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; padding: 1rem 2rem; border-radius: 20px; margin: 2rem auto; max-width: 800px; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <i class="fas fa-exclamation-triangle"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
 <!-- Hero Section -->
 <div class="products-hero">
     <div class="hero-content">
         <div class="hero-text">
             <h1>Gestión de Productos</h1>
             <p>Administra tu catálogo de productos de manera eficiente</p>
+            <span style="font-size: 0.8rem; color: #fff; opacity: 0.8; margin-top: 0.5rem; display: block;">
+                (@Model.Count() productos encontrados)
+            </span>
         </div>
         <div class="hero-actions">
             <button type="button" class="btn btn-hero" data-bs-toggle="modal" data-bs-target="#createProductModal">
@@ -371,6 +383,12 @@
                     <div class="mb-3">
                         <label class="form-label">Tipo</label>
                         <input type="text" class="form-control modern-input" name="Type" placeholder="Cocina, Bar, Café, etc." required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Área</label>
+                        <select class="form-select modern-select" name="AreaId">
+                            <option value="">Seleccione un área</option>
+                        </select>
                     </div>
                 </form>
             </div>
@@ -899,15 +917,15 @@
                                     if (res.success) {
                                         $('#createCategoryModal').modal('hide');
                                         form[0].reset();
-                                        loadCategories(function (newId) {
-                                            $('#productCategorySelect').val(res.data.id);
-                                        });
+                                        // loadCategories(function (newId) {
+                                        //     $('#productCategorySelect').val(res.data.id);
+                                        // });
                                         Swal.fire('¡Éxito!', 'Categoría creada correctamente.', 'success');
                                     } else {
                                         Swal.fire('Error', res.message || 'No se pudo crear la categoría.', 'error');
                                     }
                                 } catch (innerErr) {
-                                    console.error('Error en success:', innerErr);
+                                    
                                     Swal.fire('Error', 'Ocurrió un problema al procesar la respuesta.', 'error');
                                 }
                             },
@@ -917,7 +935,7 @@
                             }
                         });
                     } catch (err) {
-                        console.error('Error externo al ejecutar la solicitud AJAX:', err);
+                        
                         Swal.fire('Error', 'Se produjo un error inesperado.', 'error');
                     }
                 });
@@ -926,7 +944,8 @@
                     const form = $('#createStationForm');
                     const data = {
                         Name: form.find('[name="Name"]').val(),
-                        Type: form.find('[name="Type"]').val()
+                        Type: form.find('[name="Type"]').val(),
+                        AreaId: form.find('[name="AreaId"]').val() || null
                     };
                     Swal.fire({
                         title: 'Creando estación...',
@@ -967,21 +986,42 @@
                 $('#editProductModal').on('hidden.bs.modal', function () {
                     $('#editProductForm')[0].reset();
                 });
+
+                // Event handlers para el modal de estación
+                $('#createStationModal').on('show.bs.modal', function () {
+                    loadAreas();
+                });
+
+                $('#createStationModal').on('hidden.bs.modal', function () {
+                    $('#createStationForm')[0].reset();
+                });
             });
 
             function loadCategories(callback) {
                 $.get('/Product/GetCategories', function (res) {
+                    
                     if (res.success) {
+                        // Manejar serialización de Entity Framework
+                        const dataArray = res.data.$values || res.data;
+                        
+                        
                         const selects = ['#productCategorySelect', '#editProductForm select[name="CategoryId"]'];
                         selects.forEach(selectId => {
                             const select = $(selectId);
                             const current = select.val();
                             select.empty().append('<option value="">Seleccione una categoría</option>');
-                            res.data.forEach(cat => {
-                                select.append(`<option value="${cat.id || cat.Id}">${cat.name || cat.Name}</option>`);
-                            });
-                            if (callback && selectId === '#productCategorySelect') {
-                                callback(res.data[res.data.length - 1].id || res.data[res.data.length - 1].Id);
+                            if (dataArray && Array.isArray(dataArray)) {
+                                dataArray.forEach(cat => {
+                                    if (cat && (cat.id || cat.Id)) {
+                                        select.append(`<option value="${cat.id || cat.Id}">${cat.name || cat.Name || 'Sin nombre'}</option>`);
+                                    }
+                                });
+                            }
+                            if (callback && selectId === '#productCategorySelect' && dataArray && dataArray.length > 0) {
+                                const lastCat = dataArray[dataArray.length - 1];
+                                if (lastCat && (lastCat.id || lastCat.Id)) {
+                                    callback(lastCat.id || lastCat.Id);
+                                }
                             } else {
                                 select.val(current);
                             }
@@ -990,9 +1030,13 @@
                         const filterSelect = $('#categoryFilter');
                         const filterCurrent = filterSelect.val();
                         filterSelect.empty().append('<option value="">Todas las categorías</option>');
-                        res.data.forEach(cat => {
-                            filterSelect.append(`<option value="${cat.id || cat.Id}">${cat.name || cat.Name}</option>`);
-                        });
+                        if (dataArray && Array.isArray(dataArray)) {
+                            dataArray.forEach(cat => {
+                                if (cat && (cat.id || cat.Id)) {
+                                    filterSelect.append(`<option value="${cat.id || cat.Id}">${cat.name || cat.Name || 'Sin nombre'}</option>`);
+                                }
+                            });
+                        }
                         filterSelect.val(filterCurrent);
                     }
                 });
@@ -1000,22 +1044,64 @@
 
             function loadStations(callback) {
                 $.get('/Station/GetStations', function (res) {
+                    
                     if (res.success) {
+                        // Manejar serialización de Entity Framework
+                        const dataArray = res.data.$values || res.data;
+                        
+                        
                         const selects = ['#productStationSelect', '#editProductForm select[name="StationId"]'];
                         selects.forEach(selectId => {
                             const select = $(selectId);
                             const current = select.val();
                             select.empty().append('<option value="">Seleccione una estación</option>');
-                            res.data.forEach(st => {
-                                select.append(`<option value="${st.id}">${st.name} (${st.type})</option>`);
-                            });
-                            if (callback && selectId === '#productStationSelect') {
-                                callback(res.data[res.data.length - 1].id);
+                            if (dataArray && Array.isArray(dataArray)) {
+                                dataArray.forEach(st => {
+                                    if (st && st.id) {
+                                        select.append(`<option value="${st.id}">${st.name || 'Sin nombre'} (${st.type || 'Sin tipo'})</option>`);
+                                    }
+                                });
+                            }
+                            if (callback && selectId === '#productStationSelect' && dataArray && dataArray.length > 0) {
+                                const lastStation = dataArray[dataArray.length - 1];
+                                if (lastStation && lastStation.id) {
+                                    callback(lastStation.id);
+                                }
                             } else {
                                 select.val(current);
                             }
                         });
                     }
+                });
+            }
+
+            function loadAreas() {
+                
+                $.get('/Area/GetAreas', function (res) {
+                    
+                    if (res.success) {
+                        // Manejar serialización de Entity Framework
+                        const dataArray = res.data.$values || res.data;
+                        
+                        
+                        const select = $('#createStationForm select[name="AreaId"]');
+                        const current = select.val();
+                        select.empty().append('<option value="">Seleccione un área</option>');
+                        
+                        if (dataArray && Array.isArray(dataArray)) {
+                            dataArray.forEach(area => {
+                                if (area && (area.id || area.Id)) {
+                                    select.append(`<option value="${area.id || area.Id}">${area.name || area.Name || 'Sin nombre'}</option>`);
+                                }
+                            });
+                        }
+                        select.val(current);
+                        
+                    } else {
+                        
+                    }
+                }).fail(function (xhr, status, error) {
+                    
                 });
             }
 
@@ -1161,7 +1247,7 @@
                         },
                         error: function (xhr, status, error) {
                             Swal.close();
-                            console.error('Error:', error);
+                            
                             showError('Error al cargar el producto. Por favor, intente nuevamente.');
                         }
                     });
@@ -1243,7 +1329,7 @@
                     },
                     error: function (xhr, status, error) {
                         Swal.close();
-                        console.error('Error:', error);
+                        
                         showError('Error al actualizar el producto. Por favor, intente nuevamente.');
                     }
                 });

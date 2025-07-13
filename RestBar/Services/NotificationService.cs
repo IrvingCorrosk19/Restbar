@@ -5,13 +5,11 @@ using RestBar.Models;
 
 namespace RestBar.Services
 {
-    public class NotificationService : INotificationService
+    public class NotificationService : BaseTrackingService, INotificationService
     {
-        private readonly RestBarContext _context;
-
-        public NotificationService(RestBarContext context)
+        public NotificationService(RestBarContext context, IHttpContextAccessor httpContextAccessor) 
+            : base(context, httpContextAccessor)
         {
-            _context = context;
         }
 
         public async Task<IEnumerable<Notification>> GetAllAsync()
@@ -31,12 +29,7 @@ namespace RestBar.Services
 
         public async Task<Notification> CreateAsync(Notification notification)
         {
-            notification.CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
-            
-            // Validación de desarrollo para asegurar que las fechas sean UTC
-            if (notification.CreatedAt.HasValue && notification.CreatedAt.Value.Kind == DateTimeKind.Unspecified)
-                throw new InvalidOperationException("CreatedAt no debe ser Unspecified para columnas timestamp with time zone");
-            
+            // ✅ Fechas se manejan automáticamente por el modelo y BaseTrackingService
             notification.IsRead = false;
             _context.Notifications.Add(notification);
             await _context.SaveChangesAsync();

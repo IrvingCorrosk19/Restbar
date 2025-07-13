@@ -12,5 +12,12 @@ namespace RestBar.Interfaces
 
         // Extra: Obtener áreas por sucursal
         Task<IEnumerable<Area>> GetByBranchIdAsync(Guid branchId);
+        
+        // ✅ NUEVO: Obtener usuario actual con asignaciones
+        Task<User?> GetCurrentUserWithAssignmentsAsync();
+        Task<User?> GetCurrentUserWithAssignmentsAsync(Guid userId);
+        
+        // ✅ NUEVO: Obtener áreas por CompanyId y BranchId específicos
+        Task<IEnumerable<Area>> GetAreasByCompanyAndBranchAsync(Guid companyId, Guid branchId);
     }
 }

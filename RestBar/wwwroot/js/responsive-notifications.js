@@ -329,5 +329,4 @@
         });
     }
 
-    console.log('🔔 Sistema de notificaciones responsivas iniciado');
 })(); 

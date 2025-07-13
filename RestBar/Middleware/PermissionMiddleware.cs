@@ -53,6 +53,14 @@ namespace RestBar.Middleware
                 return;
             }
 
+            // SuperAdmin tiene acceso a todo, no necesita validación adicional
+            if (roleClaim?.ToLower() == "superadmin")
+            {
+                _logger.LogInformation($"[PermissionMiddleware] SuperAdmin {userId} accedió a {context.Request.Path}");
+                await _next(context);
+                return;
+            }
+
             // Determinar la acción requerida basada en la ruta
             var requiredAction = GetRequiredActionFromPath(context.Request.Path);
             
@@ -103,7 +111,7 @@ namespace RestBar.Middleware
                 _ when pathValue.StartsWith("/product") => "products",
                 
                 // Rutas de inventario
-                _ when pathValue.StartsWith("/inventory") => "inventory",
+    
                 
                 // Rutas de usuarios
                 _ when pathValue.StartsWith("/user") => "users",
@@ -117,6 +125,9 @@ namespace RestBar.Middleware
                 _ when pathValue.StartsWith("/category") => "admin_only",
                 _ when pathValue.StartsWith("/area") => "admin_only",
                 _ when pathValue.StartsWith("/station") => "admin_only",
+                
+                // Rutas del SuperAdmin (solo para superadmin)
+                _ when pathValue.StartsWith("/superadmin") => "superadmin_only",
                 
                 // Rutas públicas o sin restricciones específicas
                 _ => ""

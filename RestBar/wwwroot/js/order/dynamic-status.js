@@ -194,7 +194,7 @@ class DynamicStatusManager {
 function initializeDynamicStatusSystem() {
     if (typeof window.dynamicStatusManager === 'undefined') {
         window.dynamicStatusManager = new DynamicStatusManager();
-        console.log('✅ Sistema de estados dinámicos inicializado');
+    
     }
 }
 

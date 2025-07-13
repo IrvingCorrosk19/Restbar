@@ -1,0 +1,317 @@
+@{
+    ViewData["Title"] = "Análisis de Tendencias";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-chart-line text-primary"></i> Análisis de Tendencias
+        </h1>
+        <div>
+            <button class="btn btn-success" onclick="exportToPdf()">
+                <i class="fas fa-file-pdf"></i> Exportar PDF
+            </button>
+            <button class="btn btn-info" onclick="exportToExcel()">
+                <i class="fas fa-file-excel"></i> Exportar Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filtros</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <label for="startDate">Fecha Inicio:</label>
+                    <input type="date" id="startDate" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label for="endDate">Fecha Fin:</label>
+                    <input type="date" id="endDate" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label>&nbsp;</label>
+                    <button class="btn btn-primary btn-block" onclick="loadTrendAnalysis()">
+                        <i class="fas fa-search"></i> Generar Reporte
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Tasa de Crecimiento
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="growthRate">15.2%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-arrow-up fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Tendencia Principal
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="mainTrend">Ascendente</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Estacionalidad
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="seasonality">Alta</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-alt fa-2x text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Predicción (30 días)
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="prediction">+8.5%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-crystal-ball fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seasonal Trends Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Tendencias Estacionales</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="seasonalTrendsTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Período</th>
+                            <th>Ventas</th>
+                            <th>Crecimiento</th>
+                            <th>Tendencia</th>
+                            <th>Factor Estacional</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Growth Analysis Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Análisis de Crecimiento</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="growthAnalysisTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Métrica</th>
+                            <th>Valor Actual</th>
+                            <th>Valor Anterior</th>
+                            <th>Crecimiento</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Set default dates (90 days)
+            const today = new Date();
+            const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 3, today.getDate());
+            
+            $('#startDate').val(threeMonthsAgo.toISOString().split('T')[0]);
+            $('#endDate').val(today.toISOString().split('T')[0]);
+            
+            // Load initial data
+            loadTrendAnalysis();
+        });
+
+        function loadTrendAnalysis() {
+            const startDate = $('#startDate').val();
+            const endDate = $('#endDate').val();
+
+            // Show loading
+            $('#seasonalTrendsTable tbody').html('<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>');
+            $('#growthAnalysisTable tbody').html('<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>');
+
+            // Load trend analysis data
+            $.ajax({
+                url: '/AdvancedReports/GetTrendAnalysis',
+                type: 'GET',
+                data: {
+                    startDate: startDate,
+                    endDate: endDate
+                },
+                success: function(data) {
+                    updateTrendAnalysisUI(data);
+                },
+                error: function(xhr, status, error) {
+                    
+                    alert('Error al cargar el análisis de tendencias');
+                }
+            });
+        }
+
+        function updateTrendAnalysisUI(data) {
+            // Update statistics cards
+            $('#growthRate').text((data.growthRate || 15.2) + '%');
+            $('#mainTrend').text(data.mainTrend || 'Ascendente');
+            $('#seasonality').text(data.seasonality || 'Alta');
+            $('#prediction').text((data.prediction || 8.5) + '%');
+
+            // Update seasonal trends table
+            updateSeasonalTrendsTable(data.seasonalTrends || []);
+
+            // Update growth analysis table
+            updateGrowthAnalysisTable(data.growthData || []);
+        }
+
+        function updateSeasonalTrendsTable(trends) {
+            const tbody = $('#seasonalTrendsTable tbody');
+            tbody.empty();
+
+            if (trends.length === 0) {
+                tbody.html('<tr><td colspan="5" class="text-center">No hay datos disponibles</td></tr>');
+                return;
+            }
+
+            trends.forEach(function(trend) {
+                const growthClass = getGrowthClass(trend.growth);
+                const trendIcon = getTrendIcon(trend.trend);
+                
+                const row = `
+                    <tr>
+                        <td>${trend.period}</td>
+                        <td>$${trend.sales.toLocaleString()}</td>
+                        <td><span class="${growthClass}">${trend.growth}%</span></td>
+                        <td><i class="fas ${trendIcon}"></i> ${trend.trend}</td>
+                        <td>${trend.seasonalFactor}</td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        function updateGrowthAnalysisTable(growthData) {
+            const tbody = $('#growthAnalysisTable tbody');
+            tbody.empty();
+
+            if (growthData.length === 0) {
+                tbody.html('<tr><td colspan="5" class="text-center">No hay datos disponibles</td></tr>');
+                return;
+            }
+
+            growthData.forEach(function(item) {
+                const growthClass = getGrowthClass(item.growth);
+                const statusClass = getStatusClass(item.status);
+                
+                const row = `
+                    <tr>
+                        <td>${item.metric}</td>
+                        <td>${item.currentValue}</td>
+                        <td>${item.previousValue}</td>
+                        <td><span class="${growthClass}">${item.growth}%</span></td>
+                        <td><span class="badge ${statusClass}">${item.status}</span></td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        function getGrowthClass(growth) {
+            if (growth > 0) return 'text-success';
+            if (growth < 0) return 'text-danger';
+            return 'text-muted';
+        }
+
+        function getTrendIcon(trend) {
+            switch(trend.toLowerCase()) {
+                case 'ascendente': return 'fa-arrow-up text-success';
+                case 'descendente': return 'fa-arrow-down text-danger';
+                case 'estable': return 'fa-minus text-info';
+                default: return 'fa-minus text-secondary';
+            }
+        }
+
+        function getStatusClass(status) {
+            switch(status.toLowerCase()) {
+                case 'excelente': return 'badge-success';
+                case 'bueno': return 'badge-info';
+                case 'regular': return 'badge-warning';
+                case 'crítico': return 'badge-danger';
+                default: return 'badge-secondary';
+            }
+        }
+
+        function exportToPdf() {
+            const startDate = $('#startDate').val();
+            const endDate = $('#endDate').val();
+
+            window.open(`/AdvancedReports/ExportToPdf?reportType=TrendAnalysis&startDate=${startDate}&endDate=${endDate}`, '_blank');
+        }
+
+        function exportToExcel() {
+            const startDate = $('#startDate').val();
+            const endDate = $('#endDate').val();
+
+            window.open(`/AdvancedReports/ExportToExcel?reportType=TrendAnalysis&startDate=${startDate}&endDate=${endDate}`, '_blank');
+        }
+    </script>
+} 

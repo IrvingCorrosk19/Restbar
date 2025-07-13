@@ -9,19 +9,68 @@ let modifiedItems = [];
 let newItems = [];
 let deletedItems = [];
 
+// ✅ NUEVO: Función para mostrar resumen de la orden
+function showOrderSummary(order) {
+    if (!order || !order.items || order.items.length === 0) {
+        return '<p>No hay items en esta orden.</p>';
+    }
+    
+    // ✅ NUEVO: Filtrar items cancelados del resumen
+    const activeItems = order.items.filter(item => item.status !== 'cancelled' && item.status !== 'Cancelled');
+    
+    if (activeItems.length === 0) {
+        return '<p>No hay items activos en esta orden (todos fueron cancelados).</p>';
+    }
+    
+    let html = '<div class="order-summary">';
+    html += '<h5>Resumen de la Orden</h5>';
+    html += '<div class="table-responsive">';
+    html += '<table class="table table-sm table-bordered">';
+    html += '<thead class="table-dark">';
+    html += '<tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Estado</th></tr>';
+    html += '</thead><tbody>';
+    
+    // ✅ NUEVO: Usar solo items activos en el resumen
+    activeItems.forEach(item => {
+        const statusClass = getStatusClass(item.status);
+        html += `<tr>
+            <td>${item.productName}</td>
+            <td>${item.quantity}</td>
+            <td>$${item.price.toFixed(2)}</td>
+            <td><span class="badge ${statusClass}">${item.status}</span></td>
+        </tr>`;
+    });
+    
+    html += '</tbody></table>';
+    
+    // ✅ NUEVO: Calcular total solo con items activos
+    const activeTotal = activeItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    html += `<div class="mt-3"><strong>Total: $${activeTotal.toFixed(2)}</strong></div>`;
+    html += '</div></div>';
+    
+    return html;
+}
+
+// ✅ NUEVO: Función auxiliar para obtener clase CSS del estado
+function getStatusClass(status) {
+    switch(status.toLowerCase()) {
+        case 'pending': return 'bg-warning';
+        case 'preparing': return 'bg-info';
+        case 'ready': return 'bg-success';
+        case 'served': return 'bg-primary';
+        case 'cancelled': return 'bg-danger';
+        default: return 'bg-secondary';
+    }
+}
+
 // Modificar la función handleTableClick para incluir SignalR
 async function handleTableClick(tableId, tableNumber, status) {
-    console.log('[Frontend] handleTableClick iniciado');
-    console.log('[Frontend] tableId recibido:', tableId);
-    console.log('[Frontend] tableId type:', typeof tableId);
-    console.log('[Frontend] tableNumber:', tableNumber);
-    console.log('[Frontend] status:', status);
+    console.log('🔍 [OrderManagement] handleTableClick() - Función ejecutada correctamente');
+    console.log('📋 [OrderManagement] handleTableClick() - Parámetros:', { tableId, tableNumber, status });
     
     // Asignar el tableId recibido a currentOrder antes de cualquier proceso
     if (!currentOrder) currentOrder = {};
     currentOrder.tableId = tableId;
-    
-    console.log('[Frontend] currentOrder.tableId asignado:', currentOrder.tableId);
     
     // Siempre intentar cargar la orden existente primero
     const existingOrder = await loadExistingOrder(tableId);
@@ -31,6 +80,13 @@ async function handleTableClick(tableId, tableNumber, status) {
     
     // Si hay una orden existente, refrescar usando forceRefreshOrder para asegurar agrupación correcta
     if (existingOrder && existingOrder.hasActiveOrder) {
+        // ✅ NUEVO: Actualizar UI local para mesa ocupada
+        console.log('🔄 [OrderManagement] handleTableClick() - Mesa ya ocupada, actualizando UI local...');
+        if (typeof updateTableStatus === 'function') {
+            updateTableStatus(tableId, 'Ocupada');
+            console.log('✅ [OrderManagement] handleTableClick() - UI local actualizada para mesa ocupada');
+        }
+        
         await forceRefreshOrder();
         // Mostrar opciones como antes (opcional)
         let messageTitle = 'Orden Existente Encontrada';
@@ -81,33 +137,15 @@ async function handleTableClick(tableId, tableNumber, status) {
 
 async function loadExistingOrder(tableId) {
     try {
-        console.log('[Frontend] loadExistingOrder iniciado - tableId:', tableId);
+        console.log('🔍 [OrderManagement] loadExistingOrder() - Cargando orden existente para mesa:', tableId);
         
         const response = await fetch(`/Order/GetActiveOrder?tableId=${tableId}`);
+        
         if (response.ok) {
             const result = await response.json();
-            console.log('[Frontend] Resultado completo de GetActiveOrder:', result);
-            console.log('[Frontend] result.orderId:', result.orderId);
-            console.log('[Frontend] result.hasActiveOrder:', result.hasActiveOrder);
+            console.log('📡 [OrderManagement] loadExistingOrder() - Respuesta recibida:', result);
             
             if (result.hasActiveOrder) {
-                console.log('[Frontend] Items recibidos del servidor:', result.items);
-                
-                // ✅ LOGGING DETALLADO DE ITEMS RECIBIDOS
-                console.log('[Frontend] === DETALLE DE ITEMS RECIBIDOS DEL SERVIDOR ===');
-                if (result.items) {
-                    result.items.forEach((item, index) => {
-                        console.log(`[Frontend] Item ${index + 1}:`, {
-                            id: item.id,
-                            productId: item.productId,
-                            quantity: item.quantity,
-                            status: item.status,
-                            isGuid: item.id && item.id.length === 36
-                        });
-                    });
-                }
-                console.log('[Frontend] === FIN DETALLE DE ITEMS ===');
-                
                 // Hay una orden activa, cargarla
                 currentOrder = {
                     orderId: result.orderId || null,
@@ -123,15 +161,12 @@ async function loadExistingOrder(tableId) {
                         preparedAt: item.preparedAt,
                         preparedByStation: item.preparedByStation,
                         notes: item.notes,
+                        taxRate: item.taxRate || 0,
                         isFromBackend: true // ✅ PARÁMETRO PARA IDENTIFICAR ITEMS DEL BACKEND
                     })),
                     total: result.totalAmount || 0,
                     status: result.status || null
                 };
-                
-                console.log('[Frontend] currentOrder configurado:', currentOrder);
-                console.log('[Frontend] currentOrder.orderId:', currentOrder.orderId);
-                console.log('[Frontend] Items en currentOrder:', currentOrder.items);
                 
                 updateOrderUI();
                 highlightSelectedTable(tableId);
@@ -139,32 +174,16 @@ async function loadExistingOrder(tableId) {
                 
                 // Cambiar el texto del botón según el estado
                 const sendButton = document.getElementById('sendToKitchen');
-                console.log('[Frontend] Estado de orden recibido:', result.status);
                 
                 if (result.status === 'SentToKitchen' || result.status === 'Preparing') {
                     sendButton.textContent = 'Agregar a Cocina';
-                    console.log('[Frontend] ✅ Botón configurado como "Agregar a Cocina" para orden en SentToKitchen');
                 } else {
                     sendButton.textContent = 'Enviar a Cocina';
-                    console.log('[Frontend] Botón configurado como "Enviar a Cocina" para orden en estado:', result.status);
                 }
-                
-                // Verificar que el estado sea el esperado
-                if (result.status === 'SentToKitchen') {
-                    console.log('[Frontend] ✅ Orden correctamente en estado SentToKitchen');
-                } else {
-                    console.log('[Frontend] ⚠️ Orden en estado inesperado:', result.status);
-                }
-                
-                // Verificar y actualizar el estado de la mesa si es necesario
-                // Nota: Esta funcionalidad se maneja automáticamente vía SignalR
-                
-                console.log('[Frontend] Orden existente cargada exitosamente');
                 
                 // Unirse al grupo de SignalR para esta orden
                 if (signalRConnection && signalRConnection.state === signalR.HubConnectionState.Connected) {
                     await signalRConnection.invoke("JoinOrderGroup", currentOrder.orderId);
-                    console.log('[Frontend] Unido al grupo de SignalR para la orden:', currentOrder.orderId);
                 }
                 
                 // Actualizar información de pagos
@@ -172,25 +191,94 @@ async function loadExistingOrder(tableId) {
                     await updatePaymentInfo();
                 }
                 
+                // ✅ NUEVO: Cargar descuento si existe en la orden
+                if (result.discount && result.discount.amount > 0) {
+                    if (typeof currentDiscount !== 'undefined') {
+                        currentDiscount = {
+                            type: result.discount.type || 'amount',
+                            value: result.discount.value || result.discount.amount,
+                            amount: result.discount.amount,
+                            reason: result.discount.reason || '',
+                            applied: true
+                        };
+                    }
+                }
+                
                 return result;
             } else {
-                console.log('[Frontend] No hay orden activa');
                 return null;
             }
         } else {
-            throw new Error('Error al obtener orden activa');
+            const errorText = await response.text();
+            console.error('❌ [OrderManagement] loadExistingOrder() - Error HTTP:', response.status, errorText);
+            
+            // Intentar parsear el error como JSON
+            try {
+                const errorResult = JSON.parse(errorText);
+                console.error('❌ [OrderManagement] loadExistingOrder() - Error del servidor:', errorResult);
+                
+                if (errorResult.error && errorResult.error.includes('Orden no encontrada')) {
+                    console.log('ℹ️ [OrderManagement] loadExistingOrder() - No hay orden activa para esta mesa, iniciando nueva orden');
+                    return null; // No mostrar error, simplemente iniciar nueva orden
+                }
+                
+                throw new Error(`Error al obtener orden activa: ${errorResult.error}`);
+            } catch (parseError) {
+                throw new Error(`Error al obtener orden activa (HTTP ${response.status}): ${errorText}`);
+            }
         }
     } catch (error) {
-        console.error('[Frontend] Error al cargar orden existente:', error);
-        Swal.fire('Error', 'No se pudo cargar la orden existente', 'error');
+        console.error('❌ [OrderManagement] loadExistingOrder() - Error:', error);
+        
+        // Si el error es "Orden no encontrada", no mostrar error al usuario
+        if (error.message && error.message.includes('Orden no encontrada')) {
+            console.log('ℹ️ [OrderManagement] loadExistingOrder() - No hay orden activa, continuando con nueva orden');
+            return null;
+        }
+        
+        Swal.fire('Error', `No se pudo cargar la orden existente: ${error.message}`, 'error');
         return null;
     }
 }
 
 async function startNewOrder(tableId, tableNumber) {
-    console.log('[Frontend] startNewOrder iniciado');
-    console.log('[Frontend] tableId recibido:', tableId);
-    console.log('[Frontend] tableNumber recibido:', tableNumber);
+    try {
+        console.log('🔍 [OrderManagement] startNewOrder() - Iniciando nueva orden...');
+        console.log('📋 [OrderManagement] startNewOrder() - TableId:', tableId, 'TableNumber:', tableNumber);
+        
+        // ✅ NUEVO: Marcar mesa como ocupada inmediatamente
+        console.log('🔄 [OrderManagement] startNewOrder() - Marcando mesa como ocupada...');
+        const response = await fetch('/Order/SetTableOccupied', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ TableId: tableId })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ [OrderManagement] startNewOrder() - Mesa marcada como ocupada exitosamente');
+                console.log('📤 [OrderManagement] startNewOrder() - Notificación SignalR enviada automáticamente');
+                
+                // ✅ NUEVO: Actualizar UI local inmediatamente
+                console.log('🔄 [OrderManagement] startNewOrder() - Actualizando UI local inmediatamente...');
+                if (typeof updateTableStatus === 'function') {
+                    updateTableStatus(tableId, 'Ocupada');
+                    console.log('✅ [OrderManagement] startNewOrder() - UI local actualizada');
+                } else {
+                    console.warn('⚠️ [OrderManagement] startNewOrder() - Función updateTableStatus no disponible');
+                }
+            } else {
+                console.warn('⚠️ [OrderManagement] startNewOrder() - No se pudo marcar la mesa como ocupada:', result.message);
+            }
+        } else {
+            console.error('❌ [OrderManagement] startNewOrder() - Error HTTP al marcar mesa como ocupada:', response.status);
+        }
+    } catch (error) {
+        console.error('❌ [OrderManagement] startNewOrder() - Error al marcar mesa como ocupada:', error);
+    }
     
     currentOrder = { 
         items: [], 
@@ -199,9 +287,6 @@ async function startNewOrder(tableId, tableNumber) {
         orderId: null, 
         status: null 
     };
-    
-    console.log('[Frontend] currentOrder configurado:', currentOrder);
-    console.log('[Frontend] currentOrder.tableId después de configurar:', currentOrder.tableId);
     
     updateOrderUI();
     highlightSelectedTable(tableId);
@@ -216,16 +301,16 @@ async function startNewOrder(tableId, tableNumber) {
         await updatePaymentInfo();
     }
     
-    console.log('[Frontend] Nueva orden iniciada:', currentOrder);
+    console.log('✅ [OrderManagement] startNewOrder() - Nueva orden iniciada exitosamente');
 }
 
 // Función para forzar la actualización de la orden
 async function forceRefreshOrder() {
     if (currentOrder && currentOrder.orderId) {
-        console.log('[Frontend] Forzando actualización de orden:', currentOrder.orderId);
+
         await refreshOrderStatus(currentOrder.orderId);
     } else {
-        console.log('[Frontend] No hay orden activa para actualizar');
+
         Swal.fire('Info', 'No hay una orden activa para actualizar', 'info');
     }
 }
@@ -233,17 +318,12 @@ async function forceRefreshOrder() {
 // Refrescar estado de la orden desde el servidor
 async function refreshOrderStatus(orderId) {
     try {
-        console.log('[Frontend] refreshOrderStatus iniciado para orderId:', orderId);
-        
         const response = await fetch(`/Order/GetOrderStatus/${orderId}`);
-        console.log('[Frontend] Respuesta del servidor - Status:', response.status);
         
         if (response.ok) {
             const result = await response.json();
-            console.log('[Frontend] Datos completos recibidos del servidor:', result);
             
             if (result.success) {
-                console.log('[Frontend] Items recibidos del servidor:', result.items);
                 
                 // Actualizar la orden actual con los datos del servidor
                 currentOrder.orderId = result.orderId;
@@ -263,11 +343,16 @@ async function refreshOrderStatus(orderId) {
                     isFromBackend: true // ✅ PARÁMETRO PARA IDENTIFICAR ITEMS DEL BACKEND
                 }));
                 
-                console.log('[Frontend] currentOrder actualizado:', currentOrder);
-                console.log('[Frontend] Items en currentOrder después de actualizar:', currentOrder.items);
-                
                 // Actualizar la UI con los nuevos datos
                 updateOrderUI();
+                
+        // 🎯 LOG ESTRATÉGICO: ORDEN EXISTENTE CARGADA
+        console.log('🚀 [OrderManagement] loadExistingOrder() - ORDEN EXISTENTE CARGADA - Estado:', result.status, 'Items:', result.items?.length || 0);
+        
+        // ✅ NUEVO: Inicializar sistema de cuentas separadas
+        if (typeof initializeSeparateAccounts === 'function') {
+            initializeSeparateAccounts(result.orderId);
+        }
                 
                 // Actualizar información de pagos
                 if (typeof updatePaymentInfo === 'function') {
@@ -282,15 +367,11 @@ async function refreshOrderStatus(orderId) {
                     timer: 2000,
                     showConfirmButton: false
                 });
-                
-                console.log('[Frontend] refreshOrderStatus completado exitosamente');
             } else {
-                console.error('[Frontend] Error en respuesta del servidor:', result.error);
                 Swal.fire('Error', 'Error al obtener datos del servidor: ' + result.error, 'error');
             }
         } else if (response.status === 404) {
             // Orden no existe, limpiar UI
-            console.warn('[Frontend] La orden ya no existe en el servidor. Limpiando UI.');
             currentOrder = { items: [], total: 0, tableId: null, orderId: null, status: null };
             updateOrderUI();
             Swal.fire({
@@ -301,13 +382,9 @@ async function refreshOrderStatus(orderId) {
                 showConfirmButton: false
             });
         } else {
-            console.error('[Frontend] Error HTTP al obtener estado de orden:', response.status);
-            const errorText = await response.text();
-            console.error('[Frontend] Error text:', errorText);
             Swal.fire('Error', 'Error HTTP: ' + response.status, 'error');
         }
     } catch (error) {
-        console.error('[Frontend] Error al refrescar estado de orden:', error);
         Swal.fire('Error', 'Error al refrescar orden: ' + error.message, 'error');
     }
 }
@@ -315,6 +392,9 @@ async function refreshOrderStatus(orderId) {
 // Actualizar estado de la orden
 function updateOrderStatus(newStatus) {
     if (currentOrder) {
+        // 🎯 LOG ESTRATÉGICO: ESTADO DE ORDEN ACTUALIZADO
+        console.log('🚀 [OrderManagement] updateOrderStatus() - ESTADO DE ORDEN ACTUALIZADO - Nuevo estado:', newStatus);
+        
         currentOrder.status = newStatus;
         updateOrderUI();
         
@@ -366,9 +446,6 @@ function handleOrderCancelled() {
 
 // Función para limpiar solo los items nuevos sin afectar la orden existente
 function clearNewItemsOnly() {
-    console.log('[Frontend] clearNewItemsOnly iniciado');
-    console.log('[Frontend] currentOrder antes de limpiar items nuevos:', currentOrder);
-    
     // Preservar orderId, status y tableId
     const orderId = currentOrder.orderId;
     const status = currentOrder.status;
@@ -388,9 +465,6 @@ function clearNewItemsOnly() {
         orderId: orderId,
         status: status
     };
-    
-    console.log('[Frontend] currentOrder después de limpiar items nuevos:', currentOrder);
-    console.log('[Frontend] Items preservados:', existingItems.length);
     
     // Limpiar controles de cantidad
     document.querySelectorAll('.quantity').forEach(q => {
@@ -431,14 +505,11 @@ function clearNewItemsOnly() {
         disableConfirmButton();
     }
     
-    console.log('[Frontend] clearNewItemsOnly completado exitosamente');
+
 }
 
 // Vaciar orden
 async function clearOrder() {
-    console.log('[Frontend] clearOrder iniciado');
-    console.log('[Frontend] currentOrder:', currentOrder);
-    
     const result = await Swal.fire({
         title: '¿Vaciar orden?',
         text: '¿Estás seguro de que deseas vaciar toda la orden?',
@@ -447,17 +518,20 @@ async function clearOrder() {
         confirmButtonText: 'Sí, vaciar',
         cancelButtonText: 'Cancelar'
     });
-
-    console.log('[Frontend] Resultado de confirmación clearOrder:', result);
     if (result.isConfirmed) {
-        console.log('[Frontend] Usuario confirmó vaciar orden');
-        
         try {
+            // 🎯 NUEVO: Verificar si la orden quedará vacía antes de limpiar
+            const willBeEmpty = !currentOrder.items || currentOrder.items.length === 0;
+            
             // Simplemente limpiar la interfaz sin cancelar la orden en el backend
-            console.log('[Frontend] Llamando limpiarUIYEstadoLocal...');
             limpiarUIYEstadoLocal();
             
-            console.log('[Frontend] Mostrando mensaje de éxito...');
+            // 🎯 NUEVO: Si la orden quedó vacía, verificar estado de mesa
+            if (willBeEmpty && currentOrder.orderId) {
+                console.log('🔍 [OrderManagement] clearOrder() - Orden vaciada, verificando estado de mesa');
+                await checkAndUpdateTableIfOrderEmpty();
+            }
+            
             await Swal.fire({
                 title: 'Orden Vaciada',
                 text: 'La orden ha sido vaciada de la interfaz',
@@ -465,34 +539,17 @@ async function clearOrder() {
                 timer: 1500,
                 showConfirmButton: false
             });
-            
-            console.log('[Frontend] clearOrder completado exitosamente');
         } catch (error) {
-            console.error('[Frontend] Error en clearOrder:', error);
-            console.error('[Frontend] Error name:', error.name);
-            console.error('[Frontend] Error message:', error.message);
-            console.error('[Frontend] Error stack:', error.stack);
-            
             Swal.fire('Error', 'No se pudo vaciar la orden', 'error');
         }
-    } else {
-        console.log('[Frontend] Usuario canceló la operación de vaciar');
     }
 }
 
 function limpiarUIYEstadoLocal() {
-    console.log('[Frontend] limpiarUIYEstadoLocal iniciado');
-    console.log('[Frontend] currentOrder antes de limpiar:', currentOrder);
-    
     // Preservar orderId y status si existe una orden activa
     const orderId = currentOrder.orderId;
     const status = currentOrder.status;
     const tableId = currentOrder.tableId;
-    
-    console.log('[Frontend] Valores preservados:');
-    console.log('[Frontend]   - orderId:', orderId);
-    console.log('[Frontend]   - status:', status);
-    console.log('[Frontend]   - tableId:', tableId);
     
     // Limpiar solo los items y total
     currentOrder = { 
@@ -503,14 +560,10 @@ function limpiarUIYEstadoLocal() {
         status: status
     };
     
-    console.log('[Frontend] currentOrder después de limpiar:', currentOrder);
-    
     try {
-        console.log('[Frontend] Limpiando selección de mesas...');
         // Limpiar selección de mesas
         document.querySelectorAll('.mesa-btn').forEach(btn => btn.classList.remove('active'));
         
-        console.log('[Frontend] Limpiando tarjetas de productos...');
         // Limpiar tarjetas de productos
         document.querySelectorAll('.product-card').forEach(card => {
             card.classList.remove('selected-product');
@@ -520,14 +573,12 @@ function limpiarUIYEstadoLocal() {
             card.style.boxShadow = '';
         });
         
-        console.log('[Frontend] Limpiando controles de cantidad...');
         // Limpiar controles de cantidad
         document.querySelectorAll('.quantity').forEach(q => {
             q.textContent = '0';
             q.style.display = 'none';
         });
         
-        console.log('[Frontend] Ocultando botones de incremento/decremento...');
         // Ocultar botones de incremento/decremento
         document.querySelectorAll('[id^="decrease-"]').forEach(btn => {
             btn.style.display = 'none';
@@ -536,27 +587,26 @@ function limpiarUIYEstadoLocal() {
             btn.style.display = 'none';
         });
         
-        console.log('[Frontend] Actualizando UI de la orden...');
         // Actualizar UI de la orden
         updateOrderUI();
         
-        console.log('[Frontend] Deshabilitando botón de confirmar...');
+        // ✅ NUEVO: Limpiar descuento
+        if (typeof initializeDiscount === 'function') {
+            initializeDiscount();
+        }
+        
         disableConfirmButton();
         
-        console.log('[Frontend] Reseteando texto del botón...');
         // Resetear texto del botón
         const sendButton = document.getElementById('sendToKitchen');
         sendButton.textContent = 'Confirmar Pedido';
-        
-        console.log('[Frontend] limpiarUIYEstadoLocal completado exitosamente');
-        console.log('[Frontend] Orden limpiada completamente:', currentOrder);
     } catch (error) {
-        console.error('[Frontend] Error en limpiarUIYEstadoLocal:', error);
-        console.error('[Frontend] Error name:', error.name);
-        console.error('[Frontend] Error message:', error.message);
-        console.error('[Frontend] Error stack:', error.stack);
         throw error;
     }
 }
 
-window.currentOrder = currentOrder; 
+window.currentOrder = currentOrder;
+
+// ✅ LOG: Confirmar que el archivo se carga correctamente
+console.log('✅ [OrderManagement] order-management.js cargado correctamente');
+console.log('✅ [OrderManagement] handleTableClick disponible:', typeof handleTableClick === 'function'); 

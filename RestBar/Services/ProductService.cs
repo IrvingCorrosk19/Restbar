@@ -8,13 +8,11 @@ using System.Threading.Tasks;
 
 namespace RestBar.Services
 {
-    public class ProductService : IProductService
+    public class ProductService : BaseTrackingService, IProductService
     {
-        private readonly RestBarContext _context;
-
-        public ProductService(RestBarContext context)
+        public ProductService(RestBarContext context, IHttpContextAccessor httpContextAccessor) 
+            : base(context, httpContextAccessor)
         {
-            _context = context;
         }
 
         public async Task<IEnumerable<Product>> GetAllAsync()
@@ -29,14 +27,13 @@ namespace RestBar.Services
 
         public async Task<Product> CreateAsync(Product product)
         {
-         
             try
             {
                 if (product == null)
                     throw new ArgumentNullException(nameof(product), "El producto no puede ser null.");
 
                 product.Id = Guid.NewGuid();
-                product.CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
+                // El tracking automático se maneja en el contexto
                 _context.Products.Add(product);
                 await _context.SaveChangesAsync();
 
@@ -45,7 +42,7 @@ namespace RestBar.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"[ProductService] Error en CreateAsync: {ex.Message}");
-                throw; // Deja que el controlador maneje la excepci�n
+                throw; // Deja que el controlador maneje la excepción
             }
         }
 
@@ -54,6 +51,7 @@ namespace RestBar.Services
             var existing = await _context.Products.FindAsync(id);
             if (existing == null)
                 throw new KeyNotFoundException($"Producto con ID {id} no encontrado");
+            
             // Actualizar campos
             existing.Name = product.Name;
             existing.Description = product.Description;
@@ -65,6 +63,8 @@ namespace RestBar.Services
             existing.IsActive = product.IsActive;
             existing.CategoryId = product.CategoryId;
             existing.StationId = product.StationId;
+            
+            // El tracking automático se maneja en el contexto
             await _context.SaveChangesAsync();
             return existing;
         }
@@ -95,14 +95,7 @@ namespace RestBar.Services
                 .ToListAsync();
         }
 
-        public async Task<Product?> GetProductWithInventoryAsync(Guid id)
-        {
-            return await _context.Products
-                .Include(p => p.Category)
-                .Include(p => p.Inventories)
-                    .ThenInclude(i => i.Branch)
-                .FirstOrDefaultAsync(p => p.Id == id);
-        }
+
 
         public async Task<Product?> GetProductWithModifiersAsync(Guid id)
         {
@@ -159,7 +152,9 @@ namespace RestBar.Services
                     categoryId = p.CategoryId,
                     categoryName = p.Category.Name,
                     stationId = p.StationId,
-                    stationName = p.Station.Name
+                    stationName = p.Station.Name,
+
+                    taxRate = p.TaxRate  // ✅ AGREGADO: Campo taxRate
                 })
                 .ToListAsync();
         }

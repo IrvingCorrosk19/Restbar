@@ -1,0 +1,302 @@
+@model IEnumerable<RestBar.Models.Branch>
+@{
+    ViewData["Title"] = "Gestionar Sucursales";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-primary">
+                        <i class="fas fa-store me-2"></i>
+                        Gestionar Sucursales
+                    </h1>
+                    <p class="text-muted mb-0">Administra las sucursales del sistema</p>
+                </div>
+                <div>
+                    <a href="@Url.Action("Index", "SuperAdmin")" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left me-1"></i>
+                        Volver
+                    </a>
+                    <a href="@Url.Action("CreateBranch", "SuperAdmin")" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>
+                        Nueva Sucursal
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mensajes -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Tabla de Sucursales -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-list me-2"></i>
+                Lista de Sucursales (@Model.Count())
+            </h6>
+        </div>
+        <div class="card-body">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Compañía</th>
+                                <th>Dirección</th>
+                                <th>Teléfono</th>
+                                <th>Estado</th>
+                                <th>Fecha Creación</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var branch in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-shrink-0">
+                                                <div class="bg-success rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                    <i class="fas fa-store text-white"></i>
+                                                </div>
+                                            </div>
+                                            <div class="flex-grow-1 ms-3">
+                                                <div class="fw-bold">@branch.Name</div>
+                                                <div class="text-muted small">
+                                                    <i class="fas fa-hashtag me-1"></i>
+                                                    ID: @branch.Id.ToString().Substring(0, 8)...
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @if (branch.Company != null)
+                                        {
+                                            <div class="d-flex align-items-center">
+                                                <div class="flex-shrink-0">
+                                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                                        <i class="fas fa-building text-white" style="font-size: 12px;"></i>
+                                                    </div>
+                                                </div>
+                                                <div class="flex-grow-1 ms-2">
+                                                    <div class="fw-bold small">@branch.Company.Name</div>
+                                                    @if (!string.IsNullOrEmpty(branch.Company.LegalId))
+                                                    {
+                                                        <div class="text-muted" style="font-size: 11px;">
+                                                            ID: @branch.Company.LegalId
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Sin compañía</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(branch.Address))
+                                        {
+                                            <div class="text-truncate" style="max-width: 200px;" title="@branch.Address">
+                                                <i class="fas fa-map-marker-alt me-1 text-muted"></i>
+                                                @branch.Address
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(branch.Phone))
+                                        {
+                                            <a href="tel:@branch.Phone" class="text-decoration-none">
+                                                <i class="fas fa-phone me-1"></i>
+                                                @branch.Phone
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (branch.IsActive)
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>
+                                                Activa
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times me-1"></i>
+                                                Inactiva
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            @branch.CreatedAt.ToString("dd/MM/yyyy")
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" title="Ver detalles" onclick="viewBranch('@branch.Id')">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-warning" title="Editar" onclick="editBranch('@branch.Id')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-info" title="Ver usuarios" onclick="viewUsers('@branch.Id')">
+                                                <i class="fas fa-users"></i>
+                                            </button>
+                                            @if (branch.IsActive)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-danger" title="Desactivar" onclick="toggleBranch('@branch.Id', false)">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-success" title="Activar" onclick="toggleBranch('@branch.Id', true)">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-store fa-4x text-muted mb-4"></i>
+                    <h4 class="text-muted">No hay sucursales registradas</h4>
+                    <p class="text-muted mb-4">Comienza creando la primera sucursal del sistema</p>
+                    <a href="@Url.Action("CreateBranch", "SuperAdmin")" class="btn btn-primary btn-lg">
+                        <i class="fas fa-plus me-2"></i>
+                        Crear Primera Sucursal
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function viewBranch(branchId) {
+            console.log('Ver sucursal:', branchId);
+            alert('Función de ver detalles en desarrollo');
+        }
+
+        function editBranch(branchId) {
+            window.location.href = '@Url.Action("EditBranch", "SuperAdmin")' + '?id=' + branchId;
+        }
+
+        function viewUsers(branchId) {
+            window.location.href = '@Url.Action("Users", "SuperAdmin")' + '?branchId=' + branchId;
+        }
+
+        function toggleBranch(branchId, activate) {
+            const action = activate ? 'activar' : 'desactivar';
+            if (confirm(`¿Estás seguro de que quieres ${action} esta sucursal?`)) {
+                // Llamada AJAX para cambiar el estado
+                fetch('@Url.Action("ToggleBranch", "SuperAdmin")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({
+                        id: branchId,
+                        isActive: activate
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert(data.message, 'success');
+                        // Recargar la página después de 2 segundos
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        showAlert(data.message, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('Error al cambiar el estado de la sucursal', 'danger');
+                });
+            }
+        }
+
+        function showAlert(message, type) {
+            // Remover alertas existentes
+            const existingAlerts = document.querySelectorAll('.alert-custom');
+            existingAlerts.forEach(alert => alert.remove());
+
+            // Crear nueva alerta
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-' + type + ' alert-custom alert-dismissible fade show';
+            alertDiv.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            // Insertar al inicio del contenido
+            const container = document.querySelector('.container-fluid');
+            container.insertBefore(alertDiv, container.firstChild);
+
+            // Auto-remover después de 5 segundos
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+
+        // Auto-hide alerts después de 5 segundos
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.remove();
+                    }
+                }, 5000);
+            });
+        });
+    </script>
+}

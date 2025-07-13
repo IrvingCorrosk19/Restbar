@@ -1,0 +1,578 @@
+@{
+    ViewData["Title"] = "Reportes de Ventas";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <!-- Header del Reporte -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="mb-0 text-primary">
+                                <i class="fas fa-chart-line me-2"></i>
+                                Reportes de Ventas
+                            </h2>
+                            <p class="text-muted mb-0">Análisis detallado de ventas y rendimiento</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-primary" onclick="exportToPdf()">
+                                <i class="fas fa-file-pdf me-1"></i> Exportar PDF
+                            </button>
+                            <button class="btn btn-outline-success" onclick="exportToExcel()">
+                                <i class="fas fa-file-excel me-1"></i> Exportar Excel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros del Reporte -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter me-2"></i>
+                        Filtros del Reporte
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="reportFiltersForm">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label class="form-label">Fecha Inicio</label>
+                                <input type="date" class="form-control" id="startDate" name="startDate" 
+                                       value="@DateTime.Today.AddDays(-30).ToString("yyyy-MM-dd")">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Fecha Fin</label>
+                                <input type="date" class="form-control" id="endDate" name="endDate" 
+                                       value="@DateTime.Today.ToString("yyyy-MM-dd")">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Período</label>
+                                <select class="form-select" id="period" name="period">
+                                    <option value="day">Día</option>
+                                    <option value="week">Semana</option>
+                                    <option value="month" selected>Mes</option>
+                                    <option value="year">Año</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Sucursal</label>
+                                <select class="form-select" id="branchId" name="branchId">
+                                    <option value="">Todas las sucursales</option>
+                                    <!-- Se llenará dinámicamente -->
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">&nbsp;</label>
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-search me-1"></i> Generar
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Métricas Principales -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Ingresos Totales
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalRevenue">$0.00</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Órdenes Totales
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalOrders">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-shopping-cart fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Ticket Promedio
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="averageTicket">$0.00</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-receipt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Margen de Ganancia
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="profitMargin">0%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos y Tablas -->
+    <div class="row">
+        <!-- Gráfico de Ventas Diarias -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Ventas Diarias</h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+                             aria-labelledby="dropdownMenuLink">
+                            <div class="dropdown-header">Opciones del gráfico:</div>
+                            <a class="dropdown-item" href="#" onclick="updateChart('revenue')">Ingresos</a>
+                            <a class="dropdown-item" href="#" onclick="updateChart('orders')">Órdenes</a>
+                            <a class="dropdown-item" href="#" onclick="updateChart('items')">Artículos</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area">
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico de Categorías -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Ventas por Categoría</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-pie pt-4 pb-2">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tablas de Datos -->
+    <div class="row">
+        <!-- Top Productos -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Top 10 Productos Más Vendidos</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="topProductsTable" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Producto</th>
+                                    <th>Categoría</th>
+                                    <th>Cantidad</th>
+                                    <th>Ingresos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Se llenará dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ventas por Empleado -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Ventas por Empleado</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="employeeSalesTable" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Empleado</th>
+                                    <th>Rol</th>
+                                    <th>Órdenes</th>
+                                    <th>Ingresos</th>
+                                    <th>Promedio</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Se llenará dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reporte de Descuentos -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Reporte de Descuentos y Promociones</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="discountsTable" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Categoría</th>
+                                    <th>Precio Original</th>
+                                    <th>Descuento</th>
+                                    <th>Empleado</th>
+                                    <th>Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Se llenará dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Variables globales para los gráficos
+        let salesChart;
+        let categoryChart;
+
+        // Inicializar reportes al cargar la página
+        $(document).ready(function() {
+            loadReport();
+            loadBranches();
+        });
+
+        // Cargar sucursales
+        function loadBranches() {
+            $.get('/Branch/GetAll', function(data) {
+                if (data.success) {
+                    const select = $('#branchId');
+                    data.data.forEach(branch => {
+                        select.append(`<option value="${branch.id}">${branch.name}</option>`);
+                    });
+                }
+            }).fail(function() {
+                
+                // Si falla, simplemente no cargamos las sucursales
+            });
+        }
+
+        // Cargar reporte completo
+        function loadReport() {
+            const filters = getFilters();
+            
+            // Mostrar loading
+            showLoading();
+            
+            // Cargar métricas
+            loadMetrics(filters);
+            
+            // Cargar gráficos
+            loadSalesChart(filters);
+            loadCategoryChart(filters);
+            
+            // Cargar tablas
+            loadTopProducts(filters);
+            loadEmployeeSales(filters);
+            loadDiscounts(filters);
+        }
+
+        // Obtener filtros del formulario
+        function getFilters() {
+            return {
+                startDate: $('#startDate').val(),
+                endDate: $('#endDate').val(),
+                period: $('#period').val(),
+                branchId: $('#branchId').val() || null
+            };
+        }
+
+        // Cargar métricas principales
+        function loadMetrics(filters) {
+            $.get('/Reports/GetSalesMetrics', filters, function(response) {
+                if (response.success) {
+                    const data = response.data;
+                    $('#totalRevenue').text(formatCurrency(data.totalRevenue));
+                    $('#totalOrders').text(data.totalOrders);
+                    $('#averageTicket').text(formatCurrency(data.averageTicket));
+                    $('#profitMargin').text(data.profitMargin.toFixed(1) + '%');
+                }
+            });
+        }
+
+        // Cargar gráfico de ventas diarias
+        function loadSalesChart(filters) {
+            $.get('/Reports/GetDailySales', filters, function(response) {
+                if (response.success) {
+                    createSalesChart(response.data);
+                }
+            });
+        }
+
+        // Crear gráfico de ventas
+        function createSalesChart(data) {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            
+            if (salesChart) {
+                salesChart.destroy();
+            }
+
+            salesChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => formatDate(d.date)),
+                    datasets: [{
+                        label: 'Ingresos',
+                        data: data.map(d => d.revenue),
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Cargar gráfico de categorías
+        function loadCategoryChart(filters) {
+            $.get('/Reports/GetCategorySales', filters, function(response) {
+                if (response.success) {
+                    createCategoryChart(response.data);
+                }
+            });
+        }
+
+        // Crear gráfico de categorías
+        function createCategoryChart(data) {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            
+            if (categoryChart) {
+                categoryChart.destroy();
+            }
+
+            categoryChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.map(d => d.categoryName),
+                    datasets: [{
+                        data: data.map(d => d.revenue),
+                        backgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#4BC0C0',
+                            '#9966FF',
+                            '#FF9F40'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Cargar top productos
+        function loadTopProducts(filters) {
+            $.get('/Reports/GetTopProducts', filters, function(response) {
+                if (response.success) {
+                    populateTopProductsTable(response.data);
+                }
+            });
+        }
+
+        // Poblar tabla de top productos
+        function populateTopProductsTable(data) {
+            const tbody = $('#topProductsTable tbody');
+            tbody.empty();
+            
+            data.forEach(product => {
+                tbody.append(`
+                    <tr>
+                        <td>${product.rank}</td>
+                        <td>${product.productName}</td>
+                        <td>${product.categoryName}</td>
+                        <td>${product.quantitySold}</td>
+                        <td>${formatCurrency(product.revenue)}</td>
+                    </tr>
+                `);
+            });
+        }
+
+        // Cargar ventas por empleado
+        function loadEmployeeSales(filters) {
+            $.get('/Reports/GetEmployeeSales', filters, function(response) {
+                if (response.success) {
+                    populateEmployeeSalesTable(response.data);
+                }
+            });
+        }
+
+        // Poblar tabla de ventas por empleado
+        function populateEmployeeSalesTable(data) {
+            const tbody = $('#employeeSalesTable tbody');
+            tbody.empty();
+            
+            data.forEach(employee => {
+                tbody.append(`
+                    <tr>
+                        <td>${employee.employeeName}</td>
+                        <td>${employee.role}</td>
+                        <td>${employee.ordersHandled}</td>
+                        <td>${formatCurrency(employee.revenue)}</td>
+                        <td>${formatCurrency(employee.averageTicket)}</td>
+                    </tr>
+                `);
+            });
+        }
+
+        // Cargar descuentos
+        function loadDiscounts(filters) {
+            $.get('/Reports/GetDiscounts', filters, function(response) {
+                if (response.success) {
+                    populateDiscountsTable(response.data);
+                }
+            });
+        }
+
+        // Poblar tabla de descuentos
+        function populateDiscountsTable(data) {
+            const tbody = $('#discountsTable tbody');
+            tbody.empty();
+            
+            data.forEach(discount => {
+                tbody.append(`
+                    <tr>
+                        <td>${discount.productName}</td>
+                        <td>${discount.categoryName}</td>
+                        <td>${formatCurrency(discount.originalPrice)}</td>
+                        <td>${formatCurrency(discount.discountAmount)} (${discount.discountPercentage.toFixed(1)}%)</td>
+                        <td>${discount.employeeName}</td>
+                        <td>${formatDate(discount.orderDate)}</td>
+                    </tr>
+                `);
+            });
+        }
+
+        // Funciones de utilidad
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('es-MX', {
+                style: 'currency',
+                currency: 'MXN'
+            }).format(amount);
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('es-MX');
+        }
+
+        function showLoading() {
+            // Mostrar indicador de carga
+            $('.card-body').append('<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>');
+        }
+
+        // Event listeners
+        $('#reportFiltersForm').on('submit', function(e) {
+            e.preventDefault();
+            loadReport();
+        });
+
+        function exportToPdf() {
+            const filters = getFilters();
+            $.get('/Reports/ExportPdf', filters, function(response) {
+                if (response.success) {
+                    alert('Exportación a PDF en desarrollo');
+                }
+            });
+        }
+
+        function exportToExcel() {
+            const filters = getFilters();
+            $.get('/Reports/ExportExcel', filters, function(response) {
+                if (response.success) {
+                    alert('Exportación a Excel en desarrollo');
+                }
+            });
+        }
+    </script>
+} 

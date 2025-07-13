@@ -189,15 +189,15 @@ La página de órdenes (`Index.cshtml`) ha sido refactorizada para mejorar la ma
 ### Logs Importantes
 ```javascript
 // Para verificar estados
-console.log('[Frontend] currentOrder.status:', currentOrder.status);
-console.log('[Frontend] item.status:', item.status);
+
+
 
 // Para verificar controles de cantidad
-console.log('[renderItemRow] Can edit:', canEdit);
+
 
 // Para verificar llamadas al backend
-console.log('[increaseQuantity] Orden existente, llamando al backend...');
-console.log('[increaseQuantity] Orden nueva, actualizando solo en frontend...');
+
+
 ```
 
 ### Verificación de Funciones

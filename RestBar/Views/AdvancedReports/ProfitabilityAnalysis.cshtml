@@ -1,0 +1,319 @@
+@{
+    ViewData["Title"] = "Análisis de Rentabilidad";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-chart-line text-primary"></i> Análisis de Rentabilidad
+        </h1>
+        <div>
+            <button class="btn btn-success" onclick="exportToExcel()">
+                <i class="fas fa-file-excel"></i> Exportar a Excel
+            </button>
+            <button class="btn btn-danger" onclick="exportToPdf()">
+                <i class="fas fa-file-pdf"></i> Exportar a PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filtros</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <label>Fecha Inicio:</label>
+                    <input type="date" id="startDate" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label>Fecha Fin:</label>
+                    <input type="date" id="endDate" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label>&nbsp;</label>
+                    <button class="btn btn-primary btn-block" onclick="loadProfitabilityAnalysis()">
+                        <i class="fas fa-search"></i> Generar Reporte
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumen de Rentabilidad -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Ingresos Totales
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalRevenue">$0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Costos Totales
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalCost">$0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calculator fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Ganancia Bruta
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="grossProfit">$0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-bar fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Margen de Ganancia
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="profitMargin">0%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rentabilidad por Producto -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Rentabilidad por Producto</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="productProfitabilityTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Categoría</th>
+                            <th>Ingresos</th>
+                            <th>Costos</th>
+                            <th>Ganancia</th>
+                            <th>Margen %</th>
+                            <th>Unidades Vendidas</th>
+                            <th>Precio Promedio</th>
+                            <th>Costo Promedio</th>
+                            <th>Nivel de Rentabilidad</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productProfitabilityTableBody">
+                        <!-- Los datos se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rentabilidad por Categoría -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Rentabilidad por Categoría</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="categoryProfitabilityTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Categoría</th>
+                            <th>Ingresos</th>
+                            <th>Costos</th>
+                            <th>Ganancia</th>
+                            <th>Margen %</th>
+                            <th>Productos</th>
+                            <th>Unidades Vendidas</th>
+                            <th>Calificación</th>
+                        </tr>
+                    </thead>
+                    <tbody id="categoryProfitabilityTableBody">
+                        <!-- Los datos se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Inicializar fechas
+            var today = new Date();
+            var lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+            
+            $('#startDate').val(lastMonth.toISOString().split('T')[0]);
+            $('#endDate').val(today.toISOString().split('T')[0]);
+            
+            // Cargar datos iniciales
+            loadProfitabilityAnalysis();
+        });
+
+        function loadProfitabilityAnalysis() {
+            var startDate = $('#startDate').val();
+            var endDate = $('#endDate').val();
+
+            // Mostrar loading
+            showLoading();
+
+            $.ajax({
+                url: '/AdvancedReports/GetProfitabilityAnalysis',
+                type: 'GET',
+                data: {
+                    startDate: startDate,
+                    endDate: endDate
+                },
+                success: function(data) {
+                    updateStatistics(data);
+                    updateProductProfitabilityTable(data.productProfitability);
+                    updateCategoryProfitabilityTable(data.categoryProfitability);
+                    hideLoading();
+                },
+                error: function(xhr, status, error) {
+                    
+                    hideLoading();
+                    showError('Error al cargar el análisis de rentabilidad');
+                }
+            });
+        }
+
+        function updateStatistics(data) {
+            $('#totalRevenue').text('$' + data.totalRevenue.toFixed(2));
+            $('#totalCost').text('$' + data.totalCost.toFixed(2));
+            $('#grossProfit').text('$' + data.grossProfit.toFixed(2));
+            $('#profitMargin').text(data.profitMargin.toFixed(2) + '%');
+        }
+
+        function updateProductProfitabilityTable(productProfitability) {
+            var tbody = $('#productProfitabilityTableBody');
+            tbody.empty();
+
+            productProfitability.forEach(function(item) {
+                var row = `
+                    <tr>
+                        <td>${item.productName}</td>
+                        <td>${item.categoryName}</td>
+                        <td>$${item.revenue.toFixed(2)}</td>
+                        <td>$${item.cost.toFixed(2)}</td>
+                        <td>$${item.profit.toFixed(2)}</td>
+                        <td>${item.profitMargin.toFixed(2)}%</td>
+                        <td>${item.unitsSold}</td>
+                        <td>$${item.averagePrice.toFixed(2)}</td>
+                        <td>$${item.averageCost.toFixed(2)}</td>
+                        <td><span class="badge badge-${getProfitabilityBadgeClass(item.profitabilityLevel)}">${item.profitabilityLevel}</span></td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        function updateCategoryProfitabilityTable(categoryProfitability) {
+            var tbody = $('#categoryProfitabilityTableBody');
+            tbody.empty();
+
+            categoryProfitability.forEach(function(item) {
+                var row = `
+                    <tr>
+                        <td>${item.categoryName}</td>
+                        <td>$${item.revenue.toFixed(2)}</td>
+                        <td>$${item.cost.toFixed(2)}</td>
+                        <td>$${item.profit.toFixed(2)}</td>
+                        <td>${item.profitMargin.toFixed(2)}%</td>
+                        <td>${item.productsCount}</td>
+                        <td>${item.totalUnitsSold}</td>
+                        <td><span class="badge badge-${getPerformanceBadgeClass(item.performanceRating)}">${item.performanceRating}</span></td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        function getProfitabilityBadgeClass(level) {
+            switch(level) {
+                case 'High': return 'success';
+                case 'Medium': return 'warning';
+                case 'Low': return 'danger';
+                default: return 'secondary';
+            }
+        }
+
+        function getPerformanceBadgeClass(rating) {
+            switch(rating) {
+                case 'Excellent': return 'success';
+                case 'Good': return 'info';
+                case 'Average': return 'warning';
+                case 'Poor': return 'danger';
+                default: return 'secondary';
+            }
+        }
+
+        function exportToExcel() {
+            var startDate = $('#startDate').val();
+            var endDate = $('#endDate').val();
+
+            window.location.href = `/AdvancedReports/ExportToExcel?reportType=ProfitabilityAnalysis&startDate=${startDate}&endDate=${endDate}`;
+        }
+
+        function exportToPdf() {
+            var startDate = $('#startDate').val();
+            var endDate = $('#endDate').val();
+
+            window.location.href = `/AdvancedReports/ExportToPdf?reportType=ProfitabilityAnalysis&startDate=${startDate}&endDate=${endDate}`;
+        }
+
+        function showLoading() {
+            // Implementar loading spinner
+        }
+
+        function hideLoading() {
+            // Ocultar loading spinner
+        }
+
+        function showError(message) {
+            // Mostrar mensaje de error
+            alert(message);
+        }
+    </script>
+} 

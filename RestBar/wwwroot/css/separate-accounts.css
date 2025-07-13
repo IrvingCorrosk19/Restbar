@@ -1,0 +1,325 @@
+/* 🚀 ESTILOS PARA SISTEMA DE CUENTAS SEPARADAS - RestBar */
+
+/* Modal de gestión de personas */
+.separate-accounts-popup {
+    border-radius: 15px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.separate-accounts-popup .swal2-popup {
+    border-radius: 15px !important;
+    overflow: hidden;
+}
+
+/* Container principal */
+.separate-accounts-container {
+    padding: 10px;
+}
+
+/* Input de nombre de persona */
+#personNameInput {
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+#personNameInput:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Lista de personas */
+.persons-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 10px;
+    background: #f8f9fa;
+}
+
+.person-item {
+    background: white;
+    border: 1px solid #dee2e6 !important;
+    transition: all 0.3s ease;
+}
+
+.person-item:hover {
+    background: #f8f9fa;
+    border-color: #007bff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+}
+
+.person-item i.fa-user {
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+/* Modal de asignación de items */
+.item-assignment-popup {
+    border-radius: 15px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.item-assignment-container {
+    padding: 10px;
+}
+
+/* Lista de items para asignación */
+.items-list {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    background: #f8f9fa;
+}
+
+.item-assignment-item {
+    background: white;
+    border: 1px solid #dee2e6 !important;
+    transition: all 0.3s ease;
+}
+
+.item-assignment-item:hover {
+    background: #f8f9fa;
+    border-color: #007bff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+}
+
+.item-assignment-item h6 {
+    color: #495057;
+    margin-bottom: 5px;
+}
+
+.item-assignment-item small {
+    color: #6c757d;
+}
+
+/* Select de asignación */
+.item-assignment-item select {
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    transition: all 0.3s ease;
+}
+
+.item-assignment-item select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Badges de estado */
+.badge {
+    font-size: 0.75em;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+}
+
+.bg-primary {
+    background-color: #007bff !important;
+}
+
+.bg-warning {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+}
+
+.bg-secondary {
+    background-color: #6c757d !important;
+}
+
+/* Botones personalizados */
+.btn {
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border: none;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    border: none;
+}
+
+.btn-outline-danger {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    transform: translateY(-1px);
+}
+
+/* Scroll personalizado */
+.persons-list::-webkit-scrollbar,
+.items-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.persons-list::-webkit-scrollbar-track,
+.items-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.persons-list::-webkit-scrollbar-thumb,
+.items-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.persons-list::-webkit-scrollbar-thumb:hover,
+.items-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Estados vacíos */
+.text-center.text-muted {
+    padding: 20px;
+    font-style: italic;
+}
+
+.text-center.text-muted i {
+    font-size: 24px;
+    margin-bottom: 10px;
+    opacity: 0.5;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.person-item,
+.item-assignment-item {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .separate-accounts-popup .swal2-popup,
+    .item-assignment-popup .swal2-popup {
+        width: 95% !important;
+        margin: 10px auto !important;
+    }
+    
+    .item-assignment-item .row {
+        flex-direction: column;
+    }
+    
+    .item-assignment-item .col-md-6 {
+        margin-bottom: 10px;
+    }
+    
+    .item-assignment-item .col-8,
+    .item-assignment-item .col-4 {
+        width: 100% !important;
+        margin-bottom: 10px;
+    }
+}
+
+/* Efectos de hover mejorados */
+.person-item:hover .btn-outline-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+/* Indicadores de estado */
+.status-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.status-assigned {
+    background-color: #28a745;
+}
+
+.status-shared {
+    background-color: #ffc107;
+}
+
+.status-unassigned {
+    background-color: #6c757d;
+}
+
+/* Loading states */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Mejoras de accesibilidad */
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+/* Estados de validación */
+.is-valid {
+    border-color: #28a745;
+}
+
+.is-invalid {
+    border-color: #dc3545;
+}
+
+/* Tooltips personalizados */
+.tooltip-custom {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip-custom .tooltiptext {
+    visibility: hidden;
+    width: 120px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -60px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.tooltip-custom:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}

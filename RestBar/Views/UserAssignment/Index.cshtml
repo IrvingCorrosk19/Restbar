@@ -1,0 +1,1415 @@
+@{
+    ViewData["Title"] = "Asignaciones de Personal";
+}
+
+<div class="assignment-container">
+    <!-- Panel de creación de asignaciones -->
+    <div class="assignment-form-panel">
+        <div class="panel-header">
+            <div class="header-content">
+                <i class="fas fa-users-cog header-icon"></i>
+                <div>
+                    <h3 class="header-title">Crear Nueva Asignación</h3>
+                    <p class="header-subtitle">Asigna personal a estaciones, áreas y mesas</p>
+                </div>
+            </div>
+        </div>
+        
+        <form id="assignmentFormPanel" onsubmit="event.preventDefault(); submitPanelAssignment();">
+            <div class="form-section">
+                <label class="section-label">
+                    <i class="fas fa-user-tag"></i>
+                    Selecciona el Rol
+                </label>
+                <div class="role-selection">
+                    <label class="role-option">
+                        <input type="radio" name="role" value="chef" onchange="panelRoleChanged()">
+                        <div class="role-card">
+                            <i class="fas fa-utensils role-icon"></i>
+                            <span>Cocinero</span>
+                        </div>
+                    </label>
+                    <label class="role-option">
+                        <input type="radio" name="role" value="bartender" onchange="panelRoleChanged()">
+                        <div class="role-card">
+                            <i class="fas fa-wine-glass-alt role-icon"></i>
+                            <span>Bartender</span>
+                        </div>
+                    </label>
+                    <label class="role-option">
+                        <input type="radio" name="role" value="waiter" onchange="panelRoleChanged()">
+                        <div class="role-card">
+                            <i class="fas fa-concierge-bell role-icon"></i>
+                            <span>Mesero</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <label class="section-label">
+                    <i class="fas fa-user"></i>
+                    Selecciona el Usuario
+                </label>
+                <div id="userSelectionPanel" class="user-selection">
+                    <div class="text-muted" id="userLoadingMsg">Cargando usuarios...</div>
+                </div>
+            </div>
+
+            <div class="form-section" id="panelStationGroup" style="display:none;">
+                <label class="section-label">
+                    <i class="fas fa-store"></i>
+                    Selecciona la Estación
+                </label>
+                <select id="panelStationSelect" name="stationId" class="form-select-custom">
+                    <option value="">Selecciona una estación</option>
+                </select>
+            </div>
+
+            <div class="form-section" id="panelAreaGroup" style="display:none;">
+                <label class="section-label">
+                    <i class="fas fa-th-large"></i>
+                    Selecciona el Área
+                </label>
+                <select id="panelAreaSelect" name="areaId" class="form-select-custom" onchange="panelAreaChanged()">
+                    <option value="">Selecciona un área</option>
+                </select>
+            </div>
+
+            <div class="form-section" id="panelTablesGroup" style="display:none;">
+                <label class="section-label">
+                    <i class="fas fa-chair"></i>
+                    Selecciona las Mesas
+                </label>
+                <div id="panelTablesCheckboxes" class="tables-grid"></div>
+            </div>
+
+            <button type="submit" class="submit-btn">
+                <i class="fas fa-plus"></i>
+                <span>Crear Asignación</span>
+            </button>
+        </form>
+    </div>
+
+    <!-- Panel de tabla de asignaciones -->
+    <div class="assignments-table-panel">
+        <div class="table-header">
+            <div class="header-content">
+                <i class="fas fa-list-alt header-icon"></i>
+                <div>
+                    <h3 class="header-title">Asignaciones Activas</h3>
+                    <p class="header-subtitle">Gestión de personal asignado</p>
+                </div>
+            </div>
+            <button class="refresh-btn" onclick="loadAssignments()">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+        
+        <div id="assignmentsTableContainer" class="table-container">
+            <!-- La tabla se carga dinámicamente aquí -->
+        </div>
+    </div>
+</div>
+
+<style>
+/* Variables CSS */
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    --danger-gradient: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+    --dark-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    --light-bg: #f8f9fa;
+    --border-radius: 16px;
+    --shadow: 0 8px 32px rgba(0,0,0,0.1);
+    --shadow-hover: 0 12px 40px rgba(0,0,0,0.15);
+}
+
+/* Contenedor principal */
+.assignment-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2vw 2vw 3vw 2vw;
+    display: grid;
+    grid-template-columns: 0.36fr 0.64fr;
+    gap: 2vw;
+    min-height: 90vh;
+    align-items: start;
+}
+
+/* Panel de formulario */
+.assignment-form-panel {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(44,62,80,0.10);
+    overflow: hidden;
+    margin: 0;
+    height: fit-content;
+    min-width: 340px;
+}
+
+.assignment-form-panel:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+}
+
+.panel-header {
+    background: var(--primary-gradient);
+    padding: 2rem;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+}
+
+.panel-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    opacity: 0.3;
+}
+
+.header-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-icon {
+    font-size: 2rem;
+    opacity: 0.95;
+    color: #fff !important;
+}
+
+.header-title, .header-subtitle {
+    color: #fff !important;
+    text-shadow: 0 2px 4px rgba(44,62,80,0.10);
+}
+
+.header-subtitle {
+    margin: 0.25rem 0 0 0;
+    opacity: 0.9;
+    font-size: 0.9rem;
+}
+
+/* Formulario */
+form {
+    padding: 2rem;
+}
+
+.form-section {
+    margin-bottom: 2rem;
+}
+
+.section-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+}
+
+.section-label i {
+    color: #667eea;
+    width: 20px;
+}
+
+/* Selección de roles */
+.role-selection {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.role-option {
+    cursor: pointer;
+    margin: 0;
+}
+
+.role-option input[type="radio"] {
+    display: none;
+}
+
+.role-card {
+    background: #fff !important;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 1.1rem 0.7rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    color: #2c3e50 !important;
+    min-width: 120px;
+    max-width: 220px;
+    margin: 0 auto 0.5rem auto;
+    box-shadow: none;
+}
+
+.role-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--primary-gradient);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 0;
+}
+
+.role-card:hover {
+    border-color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+}
+
+.role-option input[type="radio"]:checked + .role-card {
+    border-color: #667eea;
+    background: #e6eaff !important;
+    color: #222 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.role-option input[type="radio"]:checked + .role-card::before {
+    opacity: 1;
+}
+
+.role-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.role-card span {
+    font-weight: 600;
+    position: relative;
+    z-index: 1;
+}
+
+/* Selects personalizados */
+.form-select-custom {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    background: #fff !important;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 1rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    color: #2c3e50 !important;
+}
+
+.form-select-custom:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    color: #2c3e50 !important;
+    background: #fff !important;
+}
+
+/* Grid de mesas */
+.tables-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.75rem;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 0.5rem;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    background: #f8fafd;
+}
+
+.tables-grid label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    color: #2c3e50 !important;
+}
+
+.tables-grid label:hover {
+    border-color: #667eea;
+    background: #f8f9ff;
+}
+
+.tables-grid input[type="checkbox"]:checked + span {
+    color: #667eea;
+    font-weight: 600;
+}
+
+/* Botón de envío */
+.submit-btn {
+    width: 100%;
+    background: #667eea;
+    color: #fff !important;
+    border: none;
+    border-radius: 12px;
+    padding: 0.85rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    color: #2c3e50 !important;
+    background: #fff !important;
+    margin-top: 0.5rem;
+    box-shadow: none;
+    transition: background 0.2s;
+}
+
+.submit-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.submit-btn:hover::before {
+    left: 100%;
+}
+
+.submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(79, 172, 254, 0.3);
+    background: #4f5bd5;
+}
+
+/* Panel de tabla */
+.assignments-table-panel {
+    background: #fff;
+    border-radius: 0 16px 16px 0;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-right: 0;
+    width: 100%;
+    min-width: 480px;
+}
+
+.table-header {
+    background: #f5f6fa;
+    color: #222;
+    padding: 1.5rem 2rem 1rem 2rem;
+    border-bottom: 1px solid #e9ecef;
+    border-radius: 18px 18px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.table-header .header-title, .table-header .header-subtitle {
+    color: #222 !important;
+    text-shadow: none;
+}
+
+.table-header .header-icon {
+    color: #667eea !important;
+    opacity: 1;
+}
+
+.refresh-btn {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: #fff;
+    border-radius: 8px;
+    padding: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.refresh-btn:hover {
+    background: rgba(255,255,255,0.22);
+    color: #fff;
+    transform: rotate(180deg);
+}
+
+.table-container {
+    padding: 0 1.5rem 1.5rem 1.5rem;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+/* Tabla personalizada */
+.table-responsive {
+    border-radius: 0 0 18px 18px;
+    overflow: hidden;
+    box-shadow: none;
+    background: #fff;
+    padding: 0 1.5rem 1.5rem 1.5rem;
+}
+
+.table {
+    margin: 0;
+    border: none;
+    background: #fff;
+}
+
+.table thead th {
+    background: #f5f6fa !important;
+    color: #000 !important;
+    border: none;
+    padding: 0.85rem 0.5rem;
+    font-weight: 700;
+    font-size: 0.92rem;
+    letter-spacing: 0.2px;
+}
+
+.table thead th i {
+    color: #000 !important;
+}
+
+.table thead th,
+.table thead th * {
+    color: #000 !important;
+}
+
+/* Forzar color negro con mayor especificidad */
+.assignments-table-panel .table thead th,
+.assignments-table-panel .table thead th *,
+.assignments-table-panel .table thead th i,
+.assignments-table-panel .table thead th span,
+.assignments-table-panel .table thead th strong {
+    color: #000 !important;
+    font-weight: 700 !important;
+}
+
+/* Aplicar directamente a los elementos específicos */
+.assignments-table-panel .table thead th {
+    color: #000 !important;
+    font-weight: 700 !important;
+}
+
+.table tbody tr {
+    transition: all 0.3s ease;
+    border-bottom: 1px solid #f1f3f4;
+    color: #2c3e50 !important;
+    background: #fff !important;
+    transition: background 0.2s;
+}
+
+.table tbody tr:hover {
+    background: #f5f6fa;
+    transform: scale(1.01);
+}
+
+.table tbody td {
+    padding: 0.85rem 0.5rem;
+    border: none;
+    vertical-align: middle;
+    color: #222 !important;
+    background: #fff !important;
+}
+
+/* Badges mejorados */
+.badge {
+    padding: 0.35rem 0.7rem;
+    border-radius: 16px;
+    font-weight: 600;
+    font-size: 0.82rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    margin: 0.1rem;
+    background: #f5f6fa !important;
+    color: #667eea !important;
+    border: 1px solid #e9ecef;
+    box-shadow: none;
+}
+
+.badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.bg-primary {
+    background: var(--primary-gradient) !important;
+}
+
+.bg-info {
+    background: var(--secondary-gradient) !important;
+}
+
+.bg-success {
+    background: var(--success-gradient) !important;
+}
+
+.bg-warning {
+    background: var(--warning-gradient) !important;
+}
+
+.bg-danger {
+    background: var(--danger-gradient) !important;
+}
+
+.bg-dark {
+    background: var(--dark-gradient) !important;
+    color: #fff !important;
+}
+
+.bg-secondary {
+    color: #fff !important;
+}
+
+/* Botones de acción */
+.btn {
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn-danger {
+    background: var(--danger-gradient);
+    color: #fff !important;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+}
+
+/* Estados de carga */
+.text-center {
+    text-align: center;
+}
+
+.text-muted {
+    color: #888 !important;
+}
+
+.text-danger {
+    color: #dc3545;
+}
+
+.py-3 {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+/* Responsive */
+@@media (max-width: 1200px) {
+    .assignment-container {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        padding: 2vw 1vw 3vw 1vw;
+    }
+    
+    .role-selection {
+        grid-template-columns: 1fr;
+    }
+    .assignments-table-panel, .assignment-form-panel {
+        min-width: 0;
+    }
+}
+
+@@media (max-width: 768px) {
+    .assignment-container {
+        padding: 1vw 0.5vw 2vw 0.5vw;
+    }
+    
+    .panel-header,
+    .table-header {
+        padding: 1.5rem;
+    }
+    
+    form {
+        padding: 1.5rem;
+    }
+    
+    .table-container {
+        padding: 1rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.9rem;
+    }
+}
+
+/* Scrollbar personalizado */
+.table-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+}
+
+/* Animaciones */
+@@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.assignment-form-panel,
+.assignments-table-panel {
+    animation: fadeIn 0.6s ease-out;
+}
+
+/* Efectos de hover para la tabla */
+.table tbody tr {
+    position: relative;
+}
+
+.table tbody tr::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.table tbody tr:hover::after {
+    transform: scaleX(1);
+}
+
+/* Cards de usuario visuales como los roles */
+.user-selection {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.user-option {
+    cursor: pointer;
+    margin: 0;
+}
+
+.user-option input[type="radio"] {
+    display: none;
+}
+
+.user-card {
+    background: #fff;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 1.1rem 0.7rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    color: #000 !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 120px;
+    max-width: 220px;
+    margin: 0 auto 0.5rem auto;
+    box-shadow: none;
+}
+
+.user-card .user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #e6eaff;
+    color: #667eea;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 2px 8px rgba(102,126,234,0.10);
+}
+
+.user-card .user-name {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 0.15rem;
+    color: #000 !important;
+}
+
+.user-card .user-email {
+    font-size: 0.85rem;
+    color: #000 !important;
+    opacity: 0.85;
+}
+
+.user-card:hover {
+    border-color: #667eea;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+    transform: translateY(-2px);
+}
+
+.user-option input[type="radio"]:checked + .user-card {
+    border-color: #667eea;
+    background: #e6eaff;
+    color: #000 !important;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.user-option input[type="radio"]:checked + .user-card .user-avatar {
+    background: #fff;
+    color: #667eea;
+}
+
+.user-option input[type="radio"]:checked + .user-card .user-email {
+    color: #000 !important;
+    opacity: 0.95;
+}
+
+/* Contraste fuerte para textos importantes */
+body {
+    background: #f5f6fa !important;
+}
+.assignment-form-panel, .assignments-table-panel, .table, .user-card, .role-card, .form-select-custom, .tables-grid label {
+    color: #222 !important;
+}
+
+.header-title, .header-subtitle, .table-header, .table thead th, .badge.bg-dark, .badge.bg-primary, .badge.bg-info, .badge.bg-success, .badge.bg-warning, .badge.bg-danger, .refresh-btn, .btn-action {
+    color: #fff !important;
+}
+
+/* Acciones SIEMPRE visibles y accesibles */
+.table-responsive {
+    overflow-x: auto;
+    min-width: 100%;
+}
+
+.table-actions {
+    display: flex;
+    gap: 0.25rem;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.btn-action {
+    background: #fff;
+    color: #667eea !important;
+    border: 1.5px solid #e9ecef;
+    border-radius: 8px;
+    padding: 0.35rem 0.5rem;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, box-shadow 0.2s, color 0.2s;
+    box-shadow: none;
+    cursor: pointer;
+}
+.btn-action:hover {
+    background: #f5f6fa;
+    color: #222 !important;
+    border-color: #bfc9d8;
+}
+
+.btn-action[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    background: #222;
+    color: #fff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    top: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    z-index: 10;
+}
+
+/* Modal de edición */
+#editAssignmentModal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0; top: 0; right: 0; bottom: 0;
+    background: rgba(44,62,80,0.25);
+    align-items: center;
+    justify-content: center;
+}
+#editAssignmentModal .modal-content {
+    background: #fff;
+    border-radius: 16px;
+    max-width: 480px;
+    margin: auto;
+    padding: 2rem 2.5rem;
+    box-shadow: 0 8px 32px rgba(44,62,80,0.18);
+    color: #222;
+}
+#editAssignmentModal .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+#editAssignmentModal .close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #222;
+    cursor: pointer;
+}
+</style>
+
+<script>
+let panelState = {
+    role: null,
+    userId: null,
+    stationId: null,
+    areaId: null,
+    mesas: []
+};
+
+function panelRoleChanged() {
+    const role = document.querySelector('input[name="role"]:checked')?.value;
+    panelState.role = role;
+    
+    // Mostrar/ocultar secciones según el rol
+    document.getElementById('panelStationGroup').style.display = (role === 'chef' || role === 'bartender') ? 'block' : 'none';
+    document.getElementById('panelAreaGroup').style.display = (role === 'waiter') ? 'block' : 'none';
+    document.getElementById('panelTablesGroup').style.display = 'none';
+    
+    // Cargar usuarios como cards
+    const userPanel = document.getElementById('userSelectionPanel');
+    userPanel.innerHTML = '<div class="text-muted" id="userLoadingMsg">Cargando usuarios...</div>';
+    fetch(`/UserAssignment/GetUnassignedUsers?role=${role}`)
+        .then(r => r.json())
+        .then(result => {
+            if (result.success) {
+                renderUserSelection(result.data);
+            } else {
+                userPanel.innerHTML = '<div class="text-danger">Error al cargar usuarios</div>';
+            }
+        });
+    
+    // Cargar estaciones para cocineros y bartenders
+    if (role === 'chef' || role === 'bartender') {
+        fetch('/UserAssignment/GetStations')
+            .then(r => r.json())
+            .then(result => {
+                if (result.success) {
+                    document.getElementById('panelStationSelect').innerHTML = '<option value="">Selecciona una estación</option>' +
+                        result.data.map(s => `<option value="${s.id}">${s.name} (${s.type})</option>`).join('');
+                } else {
+                    document.getElementById('panelStationSelect').innerHTML = '<option value="">Error al cargar estaciones</option>';
+                }
+            });
+    }
+    
+    // Cargar áreas para meseros
+    if (role === 'waiter') {
+        fetch('/UserAssignment/GetAreas')
+            .then(r => r.json())
+            .then(result => {
+                if (result.success) {
+                    document.getElementById('panelAreaSelect').innerHTML = '<option value="">Selecciona un área</option>' +
+                        result.data.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+                } else {
+                    document.getElementById('panelAreaSelect').innerHTML = '<option value="">Error al cargar áreas</option>';
+                }
+            });
+    }
+}
+
+function panelAreaChanged() {
+    const areaId = document.getElementById('panelAreaSelect').value;
+    if (!areaId) {
+        document.getElementById('panelTablesGroup').style.display = 'none';
+        document.getElementById('panelTablesCheckboxes').innerHTML = '';
+        return;
+    }
+    
+    fetch(`/UserAssignment/GetTables?areaId=${areaId}`)
+        .then(r => r.json())
+        .then(result => {
+            if (result.success && result.data.length > 0) {
+                document.getElementById('panelTablesGroup').style.display = 'block';
+                document.getElementById('panelTablesCheckboxes').innerHTML = result.data.map(t =>
+                    `<label><input type="checkbox" value="${t.id}"><span>Mesa ${t.tableNumber} (${t.capacity} personas)</span></label>`
+                ).join('');
+            } else {
+                document.getElementById('panelTablesGroup').style.display = 'none';
+                document.getElementById('panelTablesCheckboxes').innerHTML = '';
+            }
+        });
+}
+
+function submitPanelAssignment() {
+    const role = document.querySelector('input[name="role"]:checked')?.value;
+    const userId = document.querySelector('input[name="userId"]:checked')?.value;
+    const stationId = document.getElementById('panelStationSelect').value;
+    const areaId = document.getElementById('panelAreaSelect').value;
+    const mesas = Array.from(document.querySelectorAll('#panelTablesCheckboxes input[type="checkbox"]:checked')).map(cb => cb.value);
+    
+    if (!role || !userId || ((role === 'chef' || role === 'bartender') && !stationId) || (role === 'waiter' && !areaId)) {
+        Swal.fire({
+            title: 'Campos Requeridos',
+            text: 'Completa todos los campos requeridos',
+            icon: 'warning',
+            confirmButtonColor: '#667eea'
+        });
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('UserId', userId);
+    
+    if (role === 'chef' || role === 'bartender') {
+        formData.append('StationId', stationId);
+    } else if (role === 'waiter') {
+        formData.append('AreaId', areaId);
+        if (mesas.length > 0) {
+            formData.append('assignedTableIdsJson', JSON.stringify(mesas));
+        }
+    }
+    
+    // Mostrar loading
+    const submitBtn = document.querySelector('.submit-btn');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Creando...</span>';
+    submitBtn.disabled = true;
+    
+    fetch('/UserAssignment/CreateAssignment', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.success) {
+            Swal.fire({
+                title: '¡Asignación Creada!',
+                text: 'La asignación se ha creado exitosamente',
+                icon: 'success',
+                confirmButtonColor: '#667eea'
+            }).then(() => {
+                // Limpiar formulario
+                document.getElementById('assignmentFormPanel').reset();
+                document.getElementById('panelStationGroup').style.display = 'none';
+                document.getElementById('panelAreaGroup').style.display = 'none';
+                document.getElementById('panelTablesGroup').style.display = 'none';
+                
+                // Ocultar secciones de usuario
+                document.getElementById('userSelectionPanel').innerHTML = '<div class="text-muted" id="userLoadingMsg">Cargando usuarios...</div>';
+                
+                // Recargar tabla
+                loadAssignments();
+                
+                // Refrescar la página completa después de un breve delay
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            });
+        } else {
+            Swal.fire({
+                title: 'Error',
+                text: result.message || 'Error al crear asignación',
+                icon: 'error',
+                confirmButtonColor: '#667eea'
+            });
+        }
+    })
+    .catch(() => {
+        Swal.fire({
+            title: 'Error',
+            text: 'Error al crear asignación',
+            icon: 'error',
+            confirmButtonColor: '#667eea'
+        });
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+function loadAssignments() {
+    const container = document.getElementById('assignmentsTableContainer');
+    container.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="text-muted mt-2">Cargando asignaciones...</p>
+        </div>
+    `;
+    
+    fetch('/UserAssignment/GetAssignments')
+        .then(r => r.json())
+        .then(result => {
+            if (!result.success || !result.data || result.data.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-users-slash text-muted" style="font-size: 3rem; opacity: 0.5;"></i>
+                        <h5 class="text-muted mt-3">No hay asignaciones activas</h5>
+                        <p class="text-muted">Crea una nueva asignación usando el panel de la izquierda</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-user me-2"></i>USUARIO</th>
+                                <th><i class="fas fa-user-tag me-2"></i>ROL</th>
+                                <th><i class="fas fa-map-marker-alt me-2"></i>ASIGNACIÓN</th>
+                                <th><i class="fas fa-calendar me-2"></i>DESDE</th>
+                                <th><i class="fas fa-circle me-2"></i>ESTADO</th>
+                                <th style="min-width:120px;text-align:right;"><i class="fas fa-cogs me-2"></i>ACCIONES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            for (const a of result.data) {
+                let asignacion = '';
+                if (a.stationId) {
+                    asignacion = `<span class="badge bg-primary"><i class="fas fa-store"></i> ${a.stationName || 'Estación'}</span>`;
+                } else if (a.areaId && (!a.assignedTableIds || a.assignedTableIds.length === 0)) {
+                    asignacion = `<span class="badge bg-info"><i class="fas fa-th-large"></i> ${a.areaName || 'Área'}</span>`;
+                } else if (a.areaId && a.assignedTableIds && a.assignedTableIds.length > 0) {
+                    asignacion = `
+                        <span class="badge bg-info"><i class="fas fa-th-large"></i> ${a.areaName || 'Área'}</span>
+                        <span class="badge bg-success"><i class="fas fa-chair"></i> ${a.assignedTableIds.length} mesa(s)</span>
+                    `;
+                } else {
+                    asignacion = '<span class="text-muted">-</span>';
+                }
+                
+                let estado = a.isActive ? 
+                    `<span class="badge bg-success"><i class="fas fa-check-circle"></i> Activo</span>` : 
+                    `<span class="badge bg-secondary"><i class="fas fa-pause-circle"></i> Inactivo</span>`;
+                
+                html += `
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center me-3">
+                                    <i class="fas fa-user text-white"></i>
+                                </div>
+                                <div>
+                                    <strong>${a.userName}</strong><br>
+                                    <small class="text-muted">${a.userEmail}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-dark text-capitalize"><i class="fas fa-user-tag"></i> ${a.userRole}</span></td>
+                        <td>${asignacion}</td>
+                        <td><span class="small">${a.assignedAt ? new Date(a.assignedAt).toLocaleString() : '-'}</span></td>
+                        <td>${estado}</td>
+                        <td style="text-align:right;">
+                            <div class="table-actions">
+                                <button class="btn-action" title="Editar" onclick="openEditModal('${a.id}')"><i class="fas fa-pen"></i></button>
+                                <button class="btn-action" title="Desasignar" onclick="unassignUser('${a.userId}')"><i class="fas fa-user-slash"></i></button>
+                                <button class="btn-action" title="Eliminar" onclick="deleteAssignment('${a.id}')"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+            
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        })
+        .catch(() => {
+            container.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
+                    <h5 class="text-danger mt-3">Error al cargar asignaciones</h5>
+                    <p class="text-muted">Intenta recargar la página</p>
+                </div>
+            `;
+        });
+}
+
+function unassignUser(userId) {
+    Swal.fire({
+        title: '¿Desasignar usuario?',
+        text: '¿Estás seguro de desasignar a este usuario? La asignación se marcará como inactiva.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, desasignar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('/UserAssignment/UnassignUser', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `userId=${encodeURIComponent(userId)}`
+            })
+            .then(r => r.json())
+            .then(result => {
+                if (result.success) {
+                    Swal.fire({
+                        title: 'Usuario Desasignado',
+                        text: 'El usuario ha sido desasignado exitosamente.',
+                        icon: 'success',
+                        confirmButtonColor: '#667eea'
+                    });
+                    loadAssignments();
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: result.message || 'No se pudo desasignar al usuario',
+                        icon: 'error',
+                        confirmButtonColor: '#667eea'
+                    });
+                }
+            })
+            .catch(() => {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'No se pudo desasignar al usuario',
+                    icon: 'error',
+                    confirmButtonColor: '#667eea'
+                });
+            });
+        }
+    });
+}
+
+// Cargar asignaciones al iniciar
+document.addEventListener('DOMContentLoaded', function() {
+    loadAssignments();
+});
+
+// JS para renderizar usuarios como cards visuales
+function renderUserSelection(users) {
+    const panel = document.getElementById('userSelectionPanel');
+    if (!users || users.length === 0) {
+        panel.innerHTML = '<div class="text-muted">No hay usuarios disponibles</div>';
+        return;
+    }
+    panel.innerHTML = users.map(u => `
+        <label class="user-option">
+            <input type="radio" name="userId" value="${u.id}" onchange="panelUserChanged()">
+            <div class="user-card">
+                <div class="user-avatar"><i class="fas fa-user"></i></div>
+                <div class="user-name">${u.fullName}</div>
+                <div class="user-email">${u.email}</div>
+            </div>
+        </label>
+    `).join('');
+}
+
+function panelUserChanged() {
+    // Si necesitas lógica extra al seleccionar usuario, agrégala aquí
+}
+
+// Funciones para acciones
+function openEditModal(assignmentId) {
+    // Cargar datos de la asignación y mostrar modal
+    fetch(`/UserAssignment/GetAssignments`)
+        .then(r => r.json())
+        .then(result => {
+            if (!result.success) return;
+            const assignment = result.data.find(a => a.id === assignmentId);
+            if (!assignment) return;
+            document.getElementById('editAssignmentId').value = assignment.id;
+            document.getElementById('editRole').value = assignment.userRole;
+            // Cargar usuarios para el rol
+            fetch(`/UserAssignment/GetUnassignedUsers?role=${assignment.userRole}`)
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success && res.data && Array.isArray(res.data)) {
+                        let html = '';
+                        res.data.forEach(u => {
+                            html += `<option value="${u.id}"${u.id === assignment.userId ? ' selected' : ''}>${u.fullName} (${u.email})</option>`;
+                        });
+                        document.getElementById('editUserId').innerHTML = html;
+                    } else {
+                        
+                        document.getElementById('editUserId').innerHTML = '<option value="">No hay usuarios disponibles</option>';
+                    }
+                })
+                .catch(error => {
+                    
+                    document.getElementById('editUserId').innerHTML = '<option value="">Error al cargar usuarios</option>';
+                });
+            // Cargar estaciones/áreas/mesas según rol
+            if (assignment.userRole === 'chef' || assignment.userRole === 'bartender') {
+                document.getElementById('editStationGroup').style.display = 'block';
+                document.getElementById('editAreaGroup').style.display = 'none';
+                document.getElementById('editTablesGroup').style.display = 'none';
+                fetch('/UserAssignment/GetStations')
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res.success && res.data && Array.isArray(res.data)) {
+                            let html = '';
+                            res.data.forEach(s => {
+                                html += `<option value="${s.id}"${s.id === assignment.stationId ? ' selected' : ''}>${s.name} (${s.type})</option>`;
+                            });
+                            document.getElementById('editStationId').innerHTML = html;
+                        } else {
+                            
+                            document.getElementById('editStationId').innerHTML = '<option value="">No hay estaciones disponibles</option>';
+                        }
+                    })
+                    .catch(error => {
+                        
+                        document.getElementById('editStationId').innerHTML = '<option value="">Error al cargar estaciones</option>';
+                    });
+            } else if (assignment.userRole === 'waiter') {
+                document.getElementById('editStationGroup').style.display = 'none';
+                document.getElementById('editAreaGroup').style.display = 'block';
+                fetch('/UserAssignment/GetAreas')
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res.success && res.data && Array.isArray(res.data)) {
+                            let html = '';
+                            res.data.forEach(a => {
+                                html += `<option value="${a.id}"${a.id === assignment.areaId ? ' selected' : ''}>${a.name}</option>`;
+                            });
+                            document.getElementById('editAreaId').innerHTML = html;
+                        } else {
+                            
+                            document.getElementById('editAreaId').innerHTML = '<option value="">No hay áreas disponibles</option>';
+                        }
+                    })
+                    .catch(error => {
+                        
+                        document.getElementById('editAreaId').innerHTML = '<option value="">Error al cargar áreas</option>';
+                    });
+                // Cargar mesas
+                document.getElementById('editTablesGroup').style.display = 'block';
+                fetch(`/UserAssignment/GetTables?areaId=${assignment.areaId}`)
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res.success && res.data && Array.isArray(res.data)) {
+                            let html = '';
+                            res.data.forEach(t => {
+                                const checked = assignment.assignedTableIds && assignment.assignedTableIds.includes(t.id) ? 'checked' : '';
+                                html += `<label><input type="checkbox" value="${t.id}" ${checked}><span>Mesa ${t.tableNumber} (${t.capacity} personas)</span></label>`;
+                            });
+                            document.getElementById('editTablesCheckboxes').innerHTML = html;
+                        } else {
+                            
+                            document.getElementById('editTablesCheckboxes').innerHTML = '<p>No hay mesas disponibles</p>';
+                        }
+                    })
+                    .catch(error => {
+                        
+                        document.getElementById('editTablesCheckboxes').innerHTML = '<p>Error al cargar mesas</p>';
+                    });
+            } else {
+                document.getElementById('editStationGroup').style.display = 'none';
+                document.getElementById('editAreaGroup').style.display = 'none';
+                document.getElementById('editTablesGroup').style.display = 'none';
+            }
+            document.getElementById('editAssignmentModal').style.display = 'flex';
+        });
+}
+function closeEditModal() {
+    document.getElementById('editAssignmentModal').style.display = 'none';
+}
+function submitEditAssignment() {
+    const id = document.getElementById('editAssignmentId').value;
+    const role = document.getElementById('editRole').value;
+    const userId = document.getElementById('editUserId').value;
+    const stationId = document.getElementById('editStationId').value;
+    const areaId = document.getElementById('editAreaId').value;
+    const mesas = Array.from(document.querySelectorAll('#editTablesCheckboxes input[type="checkbox"]:checked')).map(cb => cb.value);
+    const formData = new FormData();
+    formData.append('Id', id);
+    formData.append('UserId', userId);
+    if (role === 'chef' || role === 'bartender') {
+        formData.append('StationId', stationId);
+    } else if (role === 'waiter') {
+        formData.append('AreaId', areaId);
+        if (mesas.length > 0) {
+            formData.append('assignedTableIdsJson', JSON.stringify(mesas));
+        }
+    }
+    fetch('/UserAssignment/UpdateAssignment', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.success) {
+            Swal.fire('Éxito', 'Asignación actualizada', 'success');
+            closeEditModal();
+            loadAssignments();
+        } else {
+            Swal.fire('Error', result.message || 'No se pudo actualizar', 'error');
+        }
+    })
+    .catch(() => Swal.fire('Error', 'No se pudo actualizar', 'error'));
+}
+function deleteAssignment(id) {
+    Swal.fire({
+        title: '¿Eliminar asignación?',
+        text: 'Esta acción no se puede deshacer',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/UserAssignment/DeleteAssignment/${id}`, { method: 'DELETE' })
+                .then(r => r.json())
+                .then(result => {
+                    if (result.success) {
+                        Swal.fire('Eliminado', 'La asignación ha sido eliminada', 'success');
+                        loadAssignments();
+                    } else {
+                        Swal.fire('Error', result.message || 'No se pudo eliminar', 'error');
+                    }
+                })
+                .catch(() => Swal.fire('Error', 'No se pudo eliminar', 'error'));
+        }
+    });
+}
+</script> 

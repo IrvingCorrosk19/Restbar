@@ -20,24 +20,67 @@ namespace RestBar.Controllers
         private readonly ICategoryService _categoryService;
         private readonly IStationService _stationService;
         private readonly IProductService _productService;
+        private readonly IAreaService _areaService;
 
-        public ProductController(RestBarContext context, ILogger<ProductController> logger, ICategoryService categoryService, IStationService stationService, IProductService productService)
+        public ProductController(RestBarContext context, ILogger<ProductController> logger, ICategoryService categoryService, IStationService stationService, IProductService productService, IAreaService areaService)
         {
             _context = context;
             _logger = logger;
             _categoryService = categoryService;
             _stationService = stationService;
             _productService = productService;
+            _areaService = areaService;
         }
 
         // GET: Product
         public async Task<IActionResult> Index()
         {
-            var products = await _context.Products
-                .Include(p => p.Category)
-                .OrderBy(p => p.Name)
-                .ToListAsync();
-            return View(products);
+            try
+            {
+                Console.WriteLine("🔍 [ProductController] Index() - Iniciando carga de productos...");
+                
+                // Obtener el usuario actual para filtrar por multi-tenant
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (userIdClaim == null)
+                {
+                    Console.WriteLine("❌ [ProductController] Index() - Usuario no autenticado");
+                    return RedirectToAction("Login", "Account");
+                }
+
+                var currentUser = await _areaService.GetCurrentUserWithAssignmentsAsync(Guid.Parse(userIdClaim.Value));
+                if (currentUser == null || currentUser.Branch == null)
+                {
+                    Console.WriteLine("❌ [ProductController] Index() - Usuario o sucursal no encontrado");
+                    return RedirectToAction("Login", "Account");
+                }
+
+                var allProducts = await _context.Products
+                    .Include(p => p.Category)
+                    .Include(p => p.Station)
+                    .OrderBy(p => p.Name)
+                    .ToListAsync();
+                
+                // Filtrar productos por la sucursal del usuario actual
+                var filteredProducts = allProducts.Where(p => 
+                    p.BranchId == currentUser.BranchId || 
+                    p.BranchId == null
+                ).ToList();
+                
+                Console.WriteLine($"✅ [ProductController] Index() - Usuario: {currentUser.Email}");
+                Console.WriteLine($"🏢 [ProductController] Index() - Compañía: {currentUser.Branch.CompanyId}");
+                Console.WriteLine($"🏪 [ProductController] Index() - Sucursal: {currentUser.BranchId}");
+                Console.WriteLine($"📊 [ProductController] Index() - Total productos: {allProducts.Count()}");
+                Console.WriteLine($"📊 [ProductController] Index() - Productos filtrados: {filteredProducts.Count}");
+                
+                return View(filteredProducts);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [ProductController] Index() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [ProductController] Index() - StackTrace: {ex.StackTrace}");
+                TempData["ErrorMessage"] = "Error al cargar los productos";
+                return View(new List<Product>());
+            }
         }
 
         // GET: Product/GetProducts
@@ -46,16 +89,46 @@ namespace RestBar.Controllers
         {
             try
             {
-                var products = await _context.Products
+                Console.WriteLine("🔍 [ProductController] GetProducts() - Iniciando carga de productos...");
+                
+                // Obtener el usuario actual para filtrar por multi-tenant
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (userIdClaim == null)
+                {
+                    Console.WriteLine("❌ [ProductController] GetProducts() - Usuario no autenticado");
+                    return Json(new { success = false, message = "Usuario no autenticado" });
+                }
+
+                var currentUser = await _areaService.GetCurrentUserWithAssignmentsAsync(Guid.Parse(userIdClaim.Value));
+                if (currentUser == null || currentUser.Branch == null)
+                {
+                    Console.WriteLine("❌ [ProductController] GetProducts() - Usuario o sucursal no encontrado");
+                    return Json(new { success = false, message = "Usuario o sucursal no encontrado" });
+                }
+
+                var allProducts = await _context.Products
                     .Include(p => p.Category)
+                    .Include(p => p.Station)
                     .OrderBy(p => p.Name)
                     .ToListAsync();
+                
+                // Filtrar productos por la sucursal del usuario actual
+                var filteredProducts = allProducts.Where(p => 
+                    p.BranchId == currentUser.BranchId || 
+                    p.BranchId == null
+                ).ToList();
+                
+                Console.WriteLine($"✅ [ProductController] GetProducts() - Usuario: {currentUser.Email}");
+                Console.WriteLine($"🏢 [ProductController] GetProducts() - Compañía: {currentUser.Branch.CompanyId}");
+                Console.WriteLine($"🏪 [ProductController] GetProducts() - Sucursal: {currentUser.BranchId}");
+                Console.WriteLine($"📊 [ProductController] GetProducts() - Productos encontrados: {filteredProducts.Count}");
 
-                return Json(new { success = true, data = products });
+                return Json(new { success = true, data = filteredProducts });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener productos");
+                Console.WriteLine($"❌ [ProductController] GetProducts() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [ProductController] GetProducts() - StackTrace: {ex.StackTrace}");
                 return Json(new { success = false, message = "Error al obtener los productos" });
             }
         }
@@ -66,15 +139,49 @@ namespace RestBar.Controllers
         {
             try
             {
-                var categories = await _context.Categories
+                Console.WriteLine("🔍 [ProductController] GetCategories() - Iniciando carga de categorías...");
+                
+                // Obtener el usuario actual para filtrar por multi-tenant
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (userIdClaim == null)
+                {
+                    Console.WriteLine("❌ [ProductController] GetCategories() - Usuario no autenticado");
+                    return Json(new { success = false, message = "Usuario no autenticado" });
+                }
+
+                var currentUser = await _areaService.GetCurrentUserWithAssignmentsAsync(Guid.Parse(userIdClaim.Value));
+                if (currentUser == null || currentUser.Branch == null)
+                {
+                    Console.WriteLine("❌ [ProductController] GetCategories() - Usuario o sucursal no encontrado");
+                    return Json(new { success = false, message = "Usuario o sucursal no encontrado" });
+                }
+
+                var allCategories = await _context.Categories
                     .OrderBy(c => c.Name)
                     .ToListAsync();
+                
+                // Filtrar categorías por la sucursal del usuario actual
+                var filteredCategories = allCategories.Where(c => 
+                    c.BranchId == currentUser.BranchId || 
+                    c.BranchId == null
+                ).ToList();
+                
+                Console.WriteLine($"✅ [ProductController] GetCategories() - Usuario: {currentUser.Email}");
+                Console.WriteLine($"🏢 [ProductController] GetCategories() - Compañía: {currentUser.Branch.CompanyId}");
+                Console.WriteLine($"🏪 [ProductController] GetCategories() - Sucursal: {currentUser.BranchId}");
+                Console.WriteLine($"📊 [ProductController] GetCategories() - Categorías encontradas: {filteredCategories.Count}");
+                Console.WriteLine($"🔍 [ProductController] GetCategories() - Estructura de datos:");
+                foreach (var cat in filteredCategories.Take(3))
+                {
+                    Console.WriteLine($"  - ID: {cat.Id}, Name: {cat.Name}, BranchId: {cat.BranchId}");
+                }
 
-                return Json(new { success = true, data = categories });
+                return Json(new { success = true, data = filteredCategories });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener categorías");
+                Console.WriteLine($"❌ [ProductController] GetCategories() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [ProductController] GetCategories() - StackTrace: {ex.StackTrace}");
                 return Json(new { success = false, message = "Error al obtener las categorías" });
             }
         }
@@ -90,6 +197,23 @@ namespace RestBar.Controllers
                     return Json(new { success = false, message = "Datos inválidos" });
                 }
 
+                // Obtener el usuario actual para auditoría y multi-tenant
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                var userNameClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Name);
+                
+                if (userIdClaim == null)
+                {
+                    Console.WriteLine("❌ [ProductController] Create() - Usuario no autenticado");
+                    return Json(new { success = false, message = "Usuario no autenticado" });
+                }
+
+                var currentUser = await _areaService.GetCurrentUserWithAssignmentsAsync(Guid.Parse(userIdClaim.Value));
+                if (currentUser == null || currentUser.Branch == null)
+                {
+                    Console.WriteLine("❌ [ProductController] Create() - Usuario o sucursal no encontrado");
+                    return Json(new { success = false, message = "Usuario o sucursal no encontrado" });
+                }
+
                 var product = new Product
                 {
                     Name = model.Name,
@@ -102,8 +226,19 @@ namespace RestBar.Controllers
                     IsActive = model.IsActive,
                     CategoryId = model.CategoryId,
                     StationId = model.StationId,
-                    CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified)
+                    // ✅ Fechas se manejan automáticamente por el modelo y BaseTrackingService
+                    CreatedBy = userNameClaim?.Value ?? currentUser.Email,
+                    UpdatedBy = userNameClaim?.Value ?? currentUser.Email,
+                    CompanyId = currentUser.Branch.CompanyId,
+                    BranchId = currentUser.BranchId
                 };
+
+                Console.WriteLine($"✅ [ProductController] Create() - Usuario: {currentUser.Email}");
+                Console.WriteLine($"🏢 [ProductController] Create() - Compañía: {currentUser.Branch.CompanyId}");
+                Console.WriteLine($"🏪 [ProductController] Create() - Sucursal: {currentUser.BranchId}");
+                Console.WriteLine($"📝 [ProductController] Create() - Producto: {product.Name}");
+                Console.WriteLine($"👤 [ProductController] Create() - Creado por: {product.CreatedBy}");
+                Console.WriteLine($"🕒 [ProductController] Create() - Creado en: {product.CreatedAt}");
 
                 var created = await _productService.CreateAsync(product);
                 return Json(new { success = true, data = created });
@@ -147,6 +282,23 @@ namespace RestBar.Controllers
                     return Json(new { success = false, message = "Producto no encontrado" });
                 }
 
+                // Obtener el usuario actual para auditoría y multi-tenant
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                var userNameClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Name);
+                
+                if (userIdClaim == null)
+                {
+                    Console.WriteLine("❌ [ProductController] Edit() - Usuario no autenticado");
+                    return Json(new { success = false, message = "Usuario no autenticado" });
+                }
+
+                var currentUser = await _areaService.GetCurrentUserWithAssignmentsAsync(Guid.Parse(userIdClaim.Value));
+                if (currentUser == null || currentUser.Branch == null)
+                {
+                    Console.WriteLine("❌ [ProductController] Edit() - Usuario o sucursal no encontrado");
+                    return Json(new { success = false, message = "Usuario o sucursal no encontrado" });
+                }
+
                 // Actualizar las propiedades
                 existingProduct.Name = model.Name;
                 existingProduct.Description = model.Description;
@@ -158,7 +310,17 @@ namespace RestBar.Controllers
                 existingProduct.IsActive = model.IsActive;
                 existingProduct.CategoryId = model.CategoryId;
                 existingProduct.StationId = model.StationId;
-               // existingProduct.UpdatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
+                // ✅ Fechas se manejan automáticamente por el modelo y BaseTrackingService
+                existingProduct.UpdatedBy = userNameClaim?.Value ?? currentUser.Email;
+                existingProduct.CompanyId = currentUser.Branch.CompanyId;
+                existingProduct.BranchId = currentUser.BranchId;
+
+                Console.WriteLine($"✅ [ProductController] Edit() - Usuario: {currentUser.Email}");
+                Console.WriteLine($"🏢 [ProductController] Edit() - Compañía: {currentUser.Branch.CompanyId}");
+                Console.WriteLine($"🏪 [ProductController] Edit() - Sucursal: {currentUser.BranchId}");
+                Console.WriteLine($"📝 [ProductController] Edit() - Producto: {existingProduct.Name}");
+                Console.WriteLine($"👤 [ProductController] Edit() - Actualizado por: {existingProduct.UpdatedBy}");
+                Console.WriteLine($"🕒 [ProductController] Edit() - Actualizado en: {existingProduct.UpdatedAt}");
 
                 _context.Update(existingProduct);
                 await _context.SaveChangesAsync();
@@ -210,22 +372,64 @@ namespace RestBar.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateCategoryAjax([FromForm] Category category)
         {
-            if (!ModelState.IsValid)
-                return Json(new { success = false, message = "Datos inválidos" });
+            try
+            {
+                Console.WriteLine("🔍 [ProductController] CreateCategoryAjax() - Iniciando creación de categoría...");
+                
+                if (!ModelState.IsValid)
+                {
+                    Console.WriteLine("⚠️ [ProductController] CreateCategoryAjax() - ModelState inválido");
+                    return Json(new { success = false, message = "Datos inválidos" });
+                }
 
-            var created = await _categoryService.CreateCategoryAsync(category);
-            return Json(new { success = true, data = new { id = created.Id, name = created.Name } });
+                var created = await _categoryService.CreateCategoryAsync(category);
+                
+                Console.WriteLine($"✅ [ProductController] CreateCategoryAjax() - Categoría creada exitosamente: {created.Name}");
+                return Json(new { success = true, data = new { id = created.Id, name = created.Name } });
+            }
+            catch (InvalidOperationException ex)
+            {
+                Console.WriteLine($"⚠️ [ProductController] CreateCategoryAjax() - Error de validación: {ex.Message}");
+                return Json(new { success = false, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [ProductController] CreateCategoryAjax() - Error inesperado: {ex.Message}");
+                Console.WriteLine($"🔍 [ProductController] CreateCategoryAjax() - StackTrace: {ex.StackTrace}");
+                return Json(new { success = false, message = "Error interno al crear la categoría" });
+            }
         }
 
         [HttpPost]
        // [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateStationAjax([FromForm] Station station)
         {
-            if (!ModelState.IsValid)
-                return Json(new { success = false, message = "Datos inválidos" });
+            try
+            {
+                Console.WriteLine("🔍 [ProductController] CreateStationAjax() - Iniciando creación de estación...");
+                
+                if (!ModelState.IsValid)
+                {
+                    Console.WriteLine("⚠️ [ProductController] CreateStationAjax() - ModelState inválido");
+                    return Json(new { success = false, message = "Datos inválidos" });
+                }
 
-            var created = await _stationService.CreateStationAsync(station);
-            return Json(new { success = true, data = new { id = created.Id, name = created.Name, type = created.Type } });
+                var created = await _stationService.CreateStationAsync(station);
+                
+                Console.WriteLine($"✅ [ProductController] CreateStationAjax() - Estación creada exitosamente: {created.Name}");
+                return Json(new { success = true, data = new { id = created.Id, name = created.Name, type = created.Type } });
+            }
+            catch (InvalidOperationException ex)
+            {
+                Console.WriteLine($"⚠️ [ProductController] CreateStationAjax() - Error de validación: {ex.Message}");
+                return Json(new { success = false, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [ProductController] CreateStationAjax() - Error inesperado: {ex.Message}");
+                Console.WriteLine($"🔍 [ProductController] CreateStationAjax() - StackTrace: {ex.StackTrace}");
+                return Json(new { success = false, message = "Error interno al crear la estación" });
+            }
         }
 
         [HttpGet]

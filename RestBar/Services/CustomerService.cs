@@ -4,13 +4,11 @@ using RestBar.Models;
 
 namespace RestBar.Services
 {
-    public class CustomerService : ICustomerService
+    public class CustomerService : BaseTrackingService, ICustomerService
     {
-        private readonly RestBarContext _context;
-
-        public CustomerService(RestBarContext context)
+        public CustomerService(RestBarContext context, IHttpContextAccessor httpContextAccessor) 
+            : base(context, httpContextAccessor)
         {
-            _context = context;
         }
 
         public async Task<IEnumerable<Customer>> GetAllAsync()
@@ -25,7 +23,7 @@ namespace RestBar.Services
 
         public async Task<Customer> CreateAsync(Customer customer)
         {
-            customer.CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
+            // ✅ Fechas se manejan automáticamente por el modelo y BaseTrackingService
             customer.LoyaltyPoints = 0;
             _context.Customers.Add(customer);
             await _context.SaveChangesAsync();

@@ -56,14 +56,34 @@
                         <textarea class="form-control" id="editNotes" rows="3" placeholder="Ej: Sin cebolla, bien cocido, extra queso..."></textarea>
                     </div>
                     
-                    <div class="mb-3">
-                        <label class="form-label">Precio Unitario</label>
-                        <div class="form-control-plaintext" id="editUnitPrice">$0.00</div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Precio Unitario</label>
+                            <div class="form-control-plaintext" id="editUnitPrice">$0.00</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Impuesto</label>
+                            <div class="form-control-plaintext" id="editTaxRate">0%</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Precio con IVA</label>
+                            <div class="form-control-plaintext" id="editPriceWithTax">$0.00</div>
+                        </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label class="form-label">Total</label>
-                        <div class="form-control-plaintext fw-bold" id="editTotalPrice">$0.00</div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Subtotal</label>
+                            <div class="form-control-plaintext" id="editSubtotal">$0.00</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">IVA</label>
+                            <div class="form-control-plaintext" id="editTaxAmount">$0.00</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Total</label>
+                            <div class="form-control-plaintext fw-bold" id="editTotalPrice">$0.00</div>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -96,14 +116,40 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                            <strong>Subtotal: <span id="paymentOrderSubtotal">$0.00</span></strong>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>IVA: <span id="paymentOrderTax">$0.00</span></strong>
+                        </div>
+                        <div class="col-md-3">
                             <strong>Total Orden: <span id="paymentOrderTotal">$0.00</span></strong>
                         </div>
-                        <div class="col-md-4">
-                            <strong>Ya Pagado: <span id="paymentTotalPaid">$0.00</span></strong>
-                        </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <strong>Pendiente: <span id="paymentRemaining">$0.00</span></strong>
+                        </div>
+                    </div>
+                    
+                    <!-- ✅ NUEVO: Desglose detallado de impuestos -->
+                    <div class="mt-3" id="paymentTaxBreakdown" style="display: none;">
+                        <div class="alert alert-info">
+                            <h6 class="mb-2"><i class="fas fa-calculator me-2"></i>Desglose de Impuestos</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <small><strong>Subtotal sin IVA:</strong> <span id="paymentSubtotalBreakdown">$0.00</span></small>
+                                </div>
+                                <div class="col-md-6">
+                                    <small><strong>Total IVA:</strong> <span id="paymentTaxBreakdown">$0.00</span></small>
+                                </div>
+                            </div>
+                            <div class="row mt-1">
+                                <div class="col-md-6">
+                                    <small><strong>Total con IVA:</strong> <span id="paymentTotalBreakdown">$0.00</span></small>
+                                </div>
+                                <div class="col-md-6">
+                                    <small><strong>Ya pagado:</strong> <span id="paymentPaidBreakdown">$0.00</span></small>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -152,7 +198,7 @@
                                     <option value="">Seleccionar método</option>
                                     <option value="Efectivo">Efectivo</option>
                                     <option value="Tarjeta">Tarjeta</option>
-                                    <option value="Transferencia">Transferencia</option>
+            
                                     <option value="Compartido">Compartido</option>
                                     <option value="Otro">Otro</option>
                                 </select>
@@ -238,33 +284,46 @@
     @Html.RenderPermissionScript()
     
     <!-- JavaScript modular - Orden de carga importante -->
-    <script src="~/js/order/utilities.js"></script>
-    <script src="~/js/order/dynamic-status.js"></script>
-    <script src="~/js/order/order-management.js"></script>
-    <script src="~/js/order/order-ui.js"></script>
-    <script src="~/js/order/order-operations.js"></script>
-    <script src="~/js/order/tables.js"></script>
-    <script src="~/js/order/categories.js"></script>
-    <script src="~/js/order/signalr.js"></script>
-    <script src="~/js/order/payments.js"></script>
+    <script src="~/js/order/utilities.js" asp-append-version="true"></script>
+    <script src="~/js/order/dynamic-status.js" asp-append-version="true"></script>
+    <script src="~/js/order/order-ui.js" asp-append-version="true"></script>
+    <script src="~/js/order/order-management.js" asp-append-version="true"></script>
+
+    <script src="~/js/order/order-operations.js" asp-append-version="true"></script>
+    <script src="~/js/order/tables.js" asp-append-version="true"></script>
+    <script src="~/js/order/categories.js" asp-append-version="true"></script>
+    <script src="~/js/order/signalr.js" asp-append-version="true"></script>
+    <script src="~/js/order/payments.js" asp-append-version="true"></script>
+    
+    <!-- ✅ NUEVO: Script para descuentos -->
+    <script src="~/js/order/discounts.js" asp-append-version="true"></script>
     
     <!-- Script de prueba para verificar carga -->
-    <script src="~/js/order/test-loading.js"></script>
+    <script src="~/js/order/test-loading.js" asp-append-version="true"></script>
     
     <!-- Script de debug para SignalR -->
-    <script src="~/js/order/debug-signalr.js"></script>
+    <script src="~/js/order/debug-signalr.js" asp-append-version="true"></script>
     
     <!-- Script de prueba para múltiples pantallas -->
-    <script src="~/js/order/test-multi-screen.js"></script>
+    <script src="~/js/order/test-multi-screen.js" asp-append-version="true"></script>
+    
+    <!-- ✅ NUEVO: Script para actualizaciones de stock en tiempo real -->
+    <script src="~/js/order/stock-updates.js" asp-append-version="true"></script>
+    
+    <!-- ✅ NUEVO: Script de prueba para descuentos -->
+    <script src="~/js/order/test-discount.js" asp-append-version="true"></script>
     
     <script>
         // Inicializar cuando se carga la página
         document.addEventListener('DOMContentLoaded', function() {
             try {
-                console.log('[Main] Iniciando carga de la aplicación...');
+                
                 
                 // Inicializar SignalR primero
             initializeSignalR();
+                
+                // ✅ NUEVO: Inicializar actualizaciones de stock
+            initializeStockUpdates();
                 
                 // Cargar datos
             loadTables();
@@ -290,9 +349,36 @@
                 // Deshabilitar botón inicialmente
                         disableConfirmButton();
                 
-                console.log('[Main] Aplicación cargada exitosamente');
+                // ✅ NUEVO: Agregar event listener para el botón de descuento
+                const discountBtn = document.getElementById('discountBtn');
+                if (discountBtn) {
+                    
+                    discountBtn.addEventListener('click', function(e) {
+                        
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        // Verificar si la función está disponible
+                        if (typeof showDiscountModal === 'function') {
+                            
+                            showDiscountModal();
+                        } else {
+                            
+                            // Intentar abrir modal manualmente
+                            const modalElement = document.getElementById('discountModal');
+                            if (modalElement && typeof bootstrap !== 'undefined') {
+                                const modal = new bootstrap.Modal(modalElement);
+                                modal.show();
+                            }
+                        }
+                    });
+                } else {
+                    
+                }
+                
+                
                 } catch (error) {
-                console.error('[Main] Error al inicializar la aplicación:', error);
+                
             }
         });
     </script>
