@@ -69,9 +69,7 @@ namespace RestBar.Controllers
             if (existingCompany != null)
                 return Json(new { success = false, message = "Ya existe una compañía con este ID legal" });
             
-            if (model.CreatedAt == null)
-                model.CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
-            
+            // Remover asignación manual de fecha - se maneja en el servicio o BD
             var created = await _companyService.CreateAsync(model);
             return Json(new { success = true, data = created });
         }
@@ -92,8 +90,19 @@ namespace RestBar.Controllers
         [HttpDelete]
         public async Task<IActionResult> Delete(Guid id)
         {
-            await _companyService.DeleteAsync(id);
-            return Json(new { success = true });
+            try
+            {
+                await _companyService.DeleteAsync(id);
+                return Json(new { success = true });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error interno del servidor. Por favor intenta nuevamente." });
+            }
         }
 
         // Obtener compañía con sucursales

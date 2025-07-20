@@ -18,5 +18,12 @@ namespace RestBar.Interfaces
         Task<decimal> GetTotalPaymentsByOrderAsync(Guid orderId);
         Task VoidPaymentAsync(Guid id);
         Task<IEnumerable<Payment>> GetVoidedPaymentsAsync();
+        
+        // Métodos adicionales para la gestión de pagos
+        Task<IEnumerable<Payment>> GetPaymentsByDateRangeAsync(DateTime startDate, DateTime endDate);
+        Task<IEnumerable<Payment>> GetPaymentsByStatusAsync(string status);
+        Task<IEnumerable<Payment>> GetPaymentsByMethodAsync(string method);
+        Task<decimal> GetTotalRevenueAsync(DateTime startDate, DateTime endDate);
+        Task<int> GetTotalOrdersPaidAsync(DateTime startDate, DateTime endDate);
     }
 } 

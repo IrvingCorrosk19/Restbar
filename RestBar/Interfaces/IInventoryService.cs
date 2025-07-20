@@ -1,4 +1,5 @@
 using RestBar.Models;
+using RestBar.Services;
 
 namespace RestBar.Interfaces
 {
@@ -16,5 +17,13 @@ namespace RestBar.Interfaces
         Task<IEnumerable<Inventory>> GetLowStockItemsAsync();
         Task<Inventory?> GetByBranchAndProductAsync(Guid branchId, Guid productId);
         Task UpdateStockAsync(Guid id, decimal quantity);
+        Task<Inventory> AdjustStockAsync(Guid productId, Guid branchId, decimal adjustment);
+        Task<bool> DecrementStockAsync(Guid productId, decimal quantity, IOrderHubService? orderHubService = null);
+        Task<IEnumerable<object>> GetStockHistoryAsync(Guid productId, Guid branchId);
+        
+        // ✅ NUEVOS MÉTODOS para manejo de stock dual
+        Task SyncGlobalStockAsync(Guid productId);
+        Task SyncAllProductsStockAsync();
+        Task<IEnumerable<object>> GetStockReportByBranchAsync();
     }
 } 

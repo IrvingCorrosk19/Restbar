@@ -55,16 +55,24 @@ public partial class RestBarContext : DbContext
     public virtual DbSet<Category> Categories { get; set; }
 
     public virtual DbSet<Station> Stations { get; set; }
-    //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-    // => optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=RestBar;Username=postgres;Password=Panama2020$");
-
-
+    
+    public virtual DbSet<UserAssignment> UserAssignments { get; set; }
+    
+    // Contabilidad
+    public virtual DbSet<Account> Accounts { get; set; }
+    public virtual DbSet<JournalEntry> JournalEntries { get; set; }
+    public virtual DbSet<JournalEntryDetail> JournalEntryDetails { get; set; }
+    
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        optionsBuilder.UseNpgsql("Host=dpg-d1pffq3uibrs73dna8cg-a;Port=5432;Database=restbar_omzm;Username=admin;Password=05i7r62GYkoupNL6Gmc8oFQVV8OotGjc;Ssl Mode=Require;Trust Server Certificate=true");
-    }
+ => optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=RestBar;Username=postgres;Password=Panama2020$");
+
+
+    //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    //    {
+    //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+    //        optionsBuilder.UseNpgsql("Host=dpg-d1pffq3uibrs73dna8cg-a;Port=5432;Database=restbar_omzm;Username=admin;Password=05i7r62GYkoupNL6Gmc8oFQVV8OotGjc;Ssl Mode=Require;Trust Server Certificate=true");
+    //    }
 
 
     // optionsBuilder.UseNpgsql("Host=dpg-d1otd649c44c7380il7g-a;Port=5432;Database=restbar_92si;Username=admin;Password=KMTp5bPR7rlkSDizV1t5RlDJTEFIjAdr;Ssl Mode=Require;Trust Server Certificate=true");
@@ -260,6 +268,14 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.Unit)
                 .HasMaxLength(20)
                 .HasColumnName("unit");
+            
+            // ✅ NUEVAS PROPIEDADES para las columnas adicionales en la BD
+            entity.Property(e => e.Stock)
+                .HasColumnName("stock");
+            entity.Property(e => e.MinStock)
+                .HasColumnName("min_stock");
+            entity.Property(e => e.MaxStock)
+                .HasColumnName("max_stock");
 
             entity.HasOne(d => d.Branch).WithMany(p => p.Inventories)
                 .HasForeignKey(d => d.BranchId)
@@ -387,6 +403,9 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.Notes)
                 .HasMaxLength(500)
                 .HasColumnName("notes");
+            entity.Property(e => e.OrderNumber)
+                .HasMaxLength(50)
+                .HasColumnName("OrderNumber");
 
             entity.HasOne(d => d.Customer).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.CustomerId)
@@ -510,6 +529,14 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.PayerName)
                 .HasMaxLength(100)
                 .HasColumnName("payer_name");
+            entity.Property(e => e.Status)
+                .HasMaxLength(20)
+                .HasDefaultValue("COMPLETED")
+                .HasColumnName("status");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("created_at");
 
             entity.HasOne(d => d.Order).WithMany(p => p.Payments)
                 .HasForeignKey(d => d.OrderId)
@@ -687,6 +714,226 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.Type)
                 .HasMaxLength(50)
                 .HasColumnName("type");
+            entity.Property(e => e.Icon)
+                .HasMaxLength(50)
+                .HasColumnName("icon");
+            entity.Property(e => e.AreaId)
+                .HasColumnName("area_id");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+
+            // Configurar la relación con Area
+            entity.HasOne(s => s.Area)
+                .WithMany(a => a.Stations)
+                .HasForeignKey(s => s.AreaId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<UserAssignment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.ToTable("user_assignments");
+            
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.StationId).HasColumnName("station_id");
+            entity.Property(e => e.AreaId).HasColumnName("area_id");
+            entity.Property(e => e.AssignedTableIds)
+                .HasColumnType("jsonb")
+                .HasColumnName("assigned_table_ids");
+            entity.Property(e => e.AssignedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("assigned_at");
+            entity.Property(e => e.UnassignedAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("unassigned_at");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.Notes)
+                .HasMaxLength(500)
+                .HasColumnName("notes");
+
+            entity.HasOne(d => d.User).WithMany()
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("user_assignments_user_id_fkey");
+            entity.HasOne(d => d.Station).WithMany()
+                .HasForeignKey(d => d.StationId)
+                .HasConstraintName("user_assignments_station_id_fkey");
+            entity.HasOne(d => d.Area).WithMany()
+                .HasForeignKey(d => d.AreaId)
+                .HasConstraintName("user_assignments_area_id_fkey");
+        });
+
+        // Configuración para entidades de contabilidad
+        modelBuilder.Entity<Account>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.ToTable("accounts");
+            
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.Code)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasColumnName("code");
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(200)
+                .HasColumnName("name");
+            entity.Property(e => e.Description)
+                .HasMaxLength(500)
+                .HasColumnName("description");
+            entity.Property(e => e.Type)
+                .IsRequired()
+                .HasColumnName("type");
+            entity.Property(e => e.Category)
+                .IsRequired()
+                .HasColumnName("category");
+            entity.Property(e => e.Nature)
+                .IsRequired()
+                .HasColumnName("nature");
+            entity.Property(e => e.ParentAccountId)
+                .HasColumnName("parent_account_id");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.IsSystem)
+                .HasDefaultValue(false)
+                .HasColumnName("is_system");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.CreatedBy)
+                .HasMaxLength(100)
+                .HasColumnName("created_by");
+            entity.Property(e => e.UpdatedBy)
+                .HasMaxLength(100)
+                .HasColumnName("updated_by");
+
+            // Relación con cuenta padre
+            entity.HasOne(d => d.ParentAccount)
+                .WithMany(p => p.SubAccounts)
+                .HasForeignKey(d => d.ParentAccountId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<JournalEntry>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.ToTable("journal_entries");
+            
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.EntryNumber)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasColumnName("entry_number");
+            entity.Property(e => e.EntryDate)
+                .IsRequired()
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("entry_date");
+            entity.Property(e => e.Type)
+                .IsRequired()
+                .HasColumnName("type");
+            entity.Property(e => e.Description)
+                .IsRequired()
+                .HasMaxLength(200)
+                .HasColumnName("description");
+            entity.Property(e => e.Reference)
+                .HasMaxLength(500)
+                .HasColumnName("reference");
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasDefaultValue(JournalEntryStatus.Draft)
+                .HasColumnName("status");
+            entity.Property(e => e.PostedAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("posted_at");
+            entity.Property(e => e.PostedBy)
+                .HasMaxLength(100)
+                .HasColumnName("posted_by");
+            entity.Property(e => e.TotalDebit)
+                .HasPrecision(18, 2)
+                .HasColumnName("total_debit");
+            entity.Property(e => e.TotalCredit)
+                .HasPrecision(18, 2)
+                .HasColumnName("total_credit");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.CreatedBy)
+                .HasMaxLength(100)
+                .HasColumnName("created_by");
+            entity.Property(e => e.UpdatedBy)
+                .HasMaxLength(100)
+                .HasColumnName("updated_by");
+            entity.Property(e => e.OrderId)
+                .HasColumnName("order_id");
+            entity.Property(e => e.PaymentId)
+                .HasColumnName("payment_id");
+
+            // Relaciones opcionales
+            entity.HasOne(d => d.Order)
+                .WithMany()
+                .HasForeignKey(d => d.OrderId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(d => d.Payment)
+                .WithMany()
+                .HasForeignKey(d => d.PaymentId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<JournalEntryDetail>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.ToTable("journal_entry_details");
+            
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.JournalEntryId)
+                .IsRequired()
+                .HasColumnName("journal_entry_id");
+            entity.Property(e => e.AccountId)
+                .IsRequired()
+                .HasColumnName("account_id");
+            entity.Property(e => e.DebitAmount)
+                .HasPrecision(18, 2)
+                .HasColumnName("debit_amount");
+            entity.Property(e => e.CreditAmount)
+                .HasPrecision(18, 2)
+                .HasColumnName("credit_amount");
+            entity.Property(e => e.Description)
+                .HasMaxLength(500)
+                .HasColumnName("description");
+            entity.Property(e => e.Reference)
+                .HasMaxLength(100)
+                .HasColumnName("reference");
+
+            // Relaciones
+            entity.HasOne(d => d.JournalEntry)
+                .WithMany(p => p.Details)
+                .HasForeignKey(d => d.JournalEntryId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(d => d.Account)
+                .WithMany()
+                .HasForeignKey(d => d.AccountId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         OnModelCreatingPartial(modelBuilder);

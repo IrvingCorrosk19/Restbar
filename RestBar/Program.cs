@@ -6,6 +6,7 @@ using RestBar.Services;
 using RestBar.Hubs;
 using RestBar.Middleware;
 using RestBar.Helpers;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,12 +61,21 @@ builder.Services.AddAuthorization(options =>
     // Políticas para área de reportes
     options.AddPolicy("ReportAccess", policy => policy.RequireRole("admin", "manager", "accountant"));
     
+    // Políticas para área de contabilidad
+    options.AddPolicy("AccountingAccess", policy => policy.RequireRole("admin", "manager", "accountant"));
+    
     // Políticas para área de configuración
     options.AddPolicy("SystemConfig", policy => policy.RequireRole("admin"));
 });
 
 // Agregar HttpContextAccessor para el AuthService
 builder.Services.AddHttpContextAccessor();
+
+// Habilitar Newtonsoft.Json para Npgsql 8+
+AppContext.SetSwitch("Npgsql.EnableLegacyJsonNet", true);
+
+// Habilitar serialización dinámica de JSON para Npgsql 8+
+NpgsqlConnection.GlobalTypeMapper.EnableDynamicJson();
 
 builder.Services.AddDbContext<RestBarContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -82,6 +92,7 @@ builder.Services.AddScoped<IAreaService, AreaService>();
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IBranchService, BranchService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IUserAssignmentService, UserAssignmentService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IOrderItemService, OrderItemService>();
@@ -94,6 +105,13 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IProductCategoryService, ProductCategoryService>();
 builder.Services.AddScoped<ISplitPaymentService, SplitPaymentService>();
+
+// ✅ Agregar servicio de reportes de ventas
+builder.Services.AddScoped<ISalesReportService, SalesReportService>();
+
+// ✅ Agregar servicios de contabilidad
+builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IJournalEntryService, JournalEntryService>();
 
 // Agregar servicio de autenticación
 builder.Services.AddScoped<IAuthService, AuthService>();

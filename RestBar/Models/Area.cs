@@ -16,4 +16,7 @@ public partial class Area
     public virtual Branch? Branch { get; set; }
 
     public virtual ICollection<Table> Tables { get; set; } = new List<Table>();
+    
+    // Relación con estaciones ubicadas en esta área
+    public virtual ICollection<Station> Stations { get; set; } = new List<Station>();
 }

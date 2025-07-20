@@ -159,7 +159,9 @@ namespace RestBar.Services
                     categoryId = p.CategoryId,
                     categoryName = p.Category.Name,
                     stationId = p.StationId,
-                    stationName = p.Station.Name
+                    stationName = p.Station.Name,
+                    stock = p.Stock,  // ✅ AGREGADO: Campo stock
+                    taxRate = p.TaxRate  // ✅ AGREGADO: Campo taxRate
                 })
                 .ToListAsync();
         }

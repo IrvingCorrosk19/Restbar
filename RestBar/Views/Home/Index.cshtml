@@ -1,32 +1,9 @@
-﻿@model IEnumerable<RestBar.Models.Station>
+﻿@model RestBar.Controllers.DashboardViewModel
 @using RestBar.Helpers
 @{
     ViewData["Title"] = "Dashboard RestBar";
 }
 
-<!-- Hero Section -->
-<div class="hero-section">
-    <div class="hero-content">
-        <div class="hero-text">
-            <h1>Bienvenido a RestBar</h1>
-            <p>Sistema de gestión integral para restaurantes</p>
-        </div>
-        <div class="hero-stats">
-            <div class="stat-item">
-                <i class="fas fa-chart-line"></i>
-                <span>En tiempo real</span>
-            </div>
-            <div class="stat-item">
-                <i class="fas fa-shield-alt"></i>
-                <span>Seguro</span>
-            </div>
-            <div class="stat-item">
-                <i class="fas fa-mobile-alt"></i>
-                <span>Responsive</span>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Main Dashboard -->
 <div class="dashboard-container">
@@ -39,61 +16,70 @@
         
         <div class="row g-4 mb-5">
             <!-- Pedidos -->
-            <div class="col-lg-3 col-md-6">
-                <a href="@Url.Action("Index", "Order")" class="dashboard-card card-orders">
-                    <div class="card-icon">
-                        <i class="fas fa-shopping-cart"></i>
-                    </div>
-                    <div class="card-content">
-                        <h3>Pedidos</h3>
-                        <p>Gestión completa de órdenes</p>
-                        <div class="card-btn">
-                            <span>Acceder</span>
-                            <i class="fas fa-arrow-right"></i>
+            @if (Model.VisibleCards.Orders)
+            {
+                <div class="col-lg-3 col-md-6">
+                    <a href="@Url.Action("Index", "Order")" class="dashboard-card card-orders">
+                        <div class="card-icon">
+                            <i class="fas fa-shopping-cart"></i>
                         </div>
-                    </div>
-                    <div class="card-overlay"></div>
-                </a>
-            </div>
+                        <div class="card-content">
+                            <h3>Pedidos</h3>
+                            <p>Gestión completa de órdenes</p>
+                            <div class="card-btn">
+                                <span>Acceder</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+                        <div class="card-overlay"></div>
+                    </a>
+                </div>
+            }
 
             <!-- Productos -->
-            <div class="col-lg-3 col-md-6">
-                <a href="@Url.Action("Index", "Product")" class="dashboard-card card-products">
-                    <div class="card-icon">
-                        <i class="fas fa-box-open"></i>
-                    </div>
-                    <div class="card-content">
-                        <h3>Productos</h3>
-                        <p>Administra tu catálogo</p>
-                        <div class="card-btn">
-                            <span>Acceder</span>
-                            <i class="fas fa-arrow-right"></i>
+            @if (Model.VisibleCards.Products)
+            {
+                <div class="col-lg-3 col-md-6">
+                    <a href="@Url.Action("Index", "Product")" class="dashboard-card card-products">
+                        <div class="card-icon">
+                            <i class="fas fa-box-open"></i>
                         </div>
-                    </div>
-                    <div class="card-overlay"></div>
-                </a>
-            </div>
+                        <div class="card-content">
+                            <h3>Productos</h3>
+                            <p>Administra tu catálogo</p>
+                            <div class="card-btn">
+                                <span>Acceder</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+                        <div class="card-overlay"></div>
+                    </a>
+                </div>
+            }
 
             <!-- Mesas -->
-            <div class="col-lg-3 col-md-6">
-                <a href="@Url.Action("Index", "Table")" class="dashboard-card card-tables">
-                    <div class="card-icon">
-                        <i class="fas fa-chair"></i>
-                    </div>
-                    <div class="card-content">
-                        <h3>Mesas</h3>
-                        <p>Control de ocupación</p>
-                        <div class="card-btn">
-                            <span>Acceder</span>
-                            <i class="fas fa-arrow-right"></i>
+            @if (Model.VisibleCards.Tables)
+            {
+                <div class="col-lg-3 col-md-6">
+                    <a href="@Url.Action("Index", "Table")" class="dashboard-card card-tables">
+                        <div class="card-icon">
+                            <i class="fas fa-chair"></i>
                         </div>
-                    </div>
-                    <div class="card-overlay"></div>
-                </a>
-            </div>
+                        <div class="card-content">
+                            <h3>Mesas</h3>
+                            <p>Control de ocupación</p>
+                            <div class="card-btn">
+                                <span>Acceder</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+                        <div class="card-overlay"></div>
+                    </a>
+                </div>
+            }
 
             <!-- Usuarios y Roles -->
-            @if (Html.HasAnyRole("admin", "manager", "support"))
+            @if (Model.VisibleCards.UserManagement)
             {
                 <div class="col-lg-3 col-md-6">
                     <a href="@Url.Action("UserManagement", "User")" class="dashboard-card card-users-management">
@@ -104,7 +90,7 @@
                             <h3>Usuarios & Roles</h3>
                             <p>Gestión de permisos</p>
                             <div class="card-badge">
-                                @Html.RenderRoleBadge(Html.GetCurrentUserRole())
+                                @Html.RenderRoleBadge(Model.UserInfo.Role)
                             </div>
                             <div class="card-btn">
                                 <span>Acceder</span>
@@ -115,20 +101,129 @@
                     </a>
                 </div>
             }
-            else
+
+            <!-- Asignaciones de Personal -->
+            @if (Model.VisibleCards.UserAssignments)
             {
-                <!-- Usuarios básico (solo visualización) -->
                 <div class="col-lg-3 col-md-6">
-                    <a href="@Url.Action("Index", "User")" class="dashboard-card card-users">
+                    <a href="@Url.Action("Index", "UserAssignment")" class="dashboard-card card-user-assignments">
                         <div class="card-icon">
-                            <i class="fas fa-users"></i>
+                            <i class="fas fa-user-cog"></i>
                         </div>
                         <div class="card-content">
-                            <h3>Usuarios</h3>
-                            <p>Información de personal</p>
+                            <h3>Asignaciones</h3>
+                            <p>Personal y estaciones</p>
+                            <div class="card-badge">
+                                @Html.RenderRoleBadge(Model.UserInfo.Role)
+                            </div>
                             <div class="card-btn">
-                                <span>Ver</span>
-                                <i class="fas fa-eye"></i>
+                                <span>Acceder</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+                        <div class="card-overlay"></div>
+                    </a>
+                </div>
+            }
+
+            <!-- Pagos -->
+            @if (Model.VisibleCards.Payments)
+            {
+                <div class="col-lg-3 col-md-6">
+                    <a href="@Url.Action("Index", "PaymentView")" class="dashboard-card card-payments">
+                        <div class="card-icon">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Pagos</h3>
+                            <p>Gestión de cobranza</p>
+                            <div class="card-btn">
+                                <span>Acceder</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+                        <div class="card-overlay"></div>
+                    </a>
+                </div>
+            }
+
+            <!-- Contabilidad -->
+            @if (Model.VisibleCards.Accounting)
+            {
+                <div class="col-lg-3 col-md-6">
+                    <a href="@Url.Action("Index", "Accounting")" class="dashboard-card card-accounting">
+                        <div class="card-icon">
+                            <i class="fas fa-calculator"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Contabilidad</h3>
+                            <p>Gestión financiera</p>
+                            <div class="card-btn">
+                                <span>Acceder</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+                        <div class="card-overlay"></div>
+                    </a>
+                </div>
+            }
+
+            <!-- Cocina -->
+            @if (Model.VisibleCards.Kitchen)
+            {
+                <div class="col-lg-3 col-md-6">
+                    <a href="@Url.Action("Index", "StationOrders")" class="dashboard-card card-kitchen">
+                        <div class="card-icon">
+                            <i class="fas fa-utensils"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Cocina</h3>
+                            <p>Gestión de preparación</p>
+                            <div class="card-btn">
+                                <span>Acceder</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+                        <div class="card-overlay"></div>
+                    </a>
+                </div>
+            }
+
+            <!-- Inventario -->
+            @if (Model.VisibleCards.Inventory)
+            {
+                <div class="col-lg-3 col-md-6">
+                    <a href="@Url.Action("Index", "Inventory")" class="dashboard-card card-inventory">
+                        <div class="card-icon">
+                            <i class="fas fa-boxes"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Inventario</h3>
+                            <p>Control de stock</p>
+                            <div class="card-btn">
+                                <span>Acceder</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+                        <div class="card-overlay"></div>
+                    </a>
+                </div>
+            }
+
+            <!-- Reportes -->
+            @if (Model.VisibleCards.Reports)
+            {
+                <div class="col-lg-3 col-md-6">
+                    <a href="@Url.Action("Index", "Reports")" class="dashboard-card card-reports">
+                        <div class="card-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Reportes</h3>
+                            <p>Análisis y estadísticas</p>
+                            <div class="card-btn">
+                                <span>Acceder</span>
+                                <i class="fas fa-arrow-right"></i>
                             </div>
                         </div>
                         <div class="card-overlay"></div>
@@ -145,98 +240,113 @@
 
         <div class="row g-4 mb-5">
             <!-- Categorías -->
-            <div class="col-lg-4 col-md-6">
-                <a href="@Url.Action("Index", "Category")" class="dashboard-card card-categories">
-                    <div class="card-icon">
-                        <i class="fas fa-tags"></i>
-                    </div>
-                    <div class="card-content">
-                        <h3>Categorías</h3>
-                        <p>Organiza tus productos</p>
-                        <div class="card-btn">
-                            <span>Acceder</span>
-                            <i class="fas fa-arrow-right"></i>
+            @if (Model.VisibleCards.Categories)
+            {
+                <div class="col-lg-4 col-md-6">
+                    <a href="@Url.Action("Index", "Category")" class="dashboard-card card-categories">
+                        <div class="card-icon">
+                            <i class="fas fa-tags"></i>
                         </div>
-                    </div>
-                    <div class="card-overlay"></div>
-                </a>
-            </div>
+                        <div class="card-content">
+                            <h3>Categorías</h3>
+                            <p>Organiza tus productos</p>
+                            <div class="card-btn">
+                                <span>Acceder</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+                        <div class="card-overlay"></div>
+                    </a>
+                </div>
+            }
 
             <!-- Estaciones -->
-            <div class="col-lg-4 col-md-6">
-                <a href="@Url.Action("Index", "Station")" class="dashboard-card card-stations">
-                    <div class="card-icon">
-                        <i class="fas fa-fire"></i>
-                    </div>
-                    <div class="card-content">
-                        <h3>Estaciones</h3>
-                        <p>Cocina y preparación</p>
-                        <div class="card-btn">
-                            <span>Acceder</span>
-                            <i class="fas fa-arrow-right"></i>
+            @if (Model.VisibleCards.Stations)
+            {
+                <div class="col-lg-4 col-md-6">
+                    <a href="@Url.Action("Index", "Station")" class="dashboard-card card-stations">
+                        <div class="card-icon">
+                            <i class="fas fa-fire"></i>
                         </div>
-                    </div>
-                    <div class="card-overlay"></div>
-                </a>
-            </div>
+                        <div class="card-content">
+                            <h3>Estaciones</h3>
+                            <p>Cocina y preparación</p>
+                            <div class="card-btn">
+                                <span>Acceder</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+                        <div class="card-overlay"></div>
+                    </a>
+                </div>
+            }
 
             <!-- Áreas -->
-            <div class="col-lg-4 col-md-6">
-                <a href="@Url.Action("Index", "Area")" class="dashboard-card card-areas">
-                    <div class="card-icon">
-                        <i class="fas fa-th-large"></i>
-                    </div>
-                    <div class="card-content">
-                        <h3>Áreas</h3>
-                        <p>Zonificación del local</p>
-                        <div class="card-btn">
-                            <span>Acceder</span>
-                            <i class="fas fa-arrow-right"></i>
+            @if (Model.VisibleCards.Areas)
+            {
+                <div class="col-lg-4 col-md-6">
+                    <a href="@Url.Action("Index", "Area")" class="dashboard-card card-areas">
+                        <div class="card-icon">
+                            <i class="fas fa-th-large"></i>
                         </div>
-                    </div>
-                    <div class="card-overlay"></div>
-                </a>
-            </div>
+                        <div class="card-content">
+                            <h3>Áreas</h3>
+                            <p>Zonificación del local</p>
+                            <div class="card-btn">
+                                <span>Acceder</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+                        <div class="card-overlay"></div>
+                    </a>
+                </div>
+            }
 
             <!-- Compañías -->
-            <div class="col-lg-4 col-md-6">
-                <a href="@Url.Action("Index", "Company")" class="dashboard-card card-companies">
-                    <div class="card-icon">
-                        <i class="fas fa-building"></i>
-                    </div>
-                    <div class="card-content">
-                        <h3>Compañías</h3>
-                        <p>Gestión empresarial</p>
-                        <div class="card-btn">
-                            <span>Acceder</span>
-                            <i class="fas fa-arrow-right"></i>
+            @if (Model.VisibleCards.Companies)
+            {
+                <div class="col-lg-4 col-md-6">
+                    <a href="@Url.Action("Index", "Company")" class="dashboard-card card-companies">
+                        <div class="card-icon">
+                            <i class="fas fa-building"></i>
                         </div>
-                    </div>
-                    <div class="card-overlay"></div>
-                </a>
-            </div>
+                        <div class="card-content">
+                            <h3>Compañías</h3>
+                            <p>Gestión empresarial</p>
+                            <div class="card-btn">
+                                <span>Acceder</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+                        <div class="card-overlay"></div>
+                    </a>
+                </div>
+            }
 
             <!-- Sucursales -->
-            <div class="col-lg-4 col-md-6">
-                <a href="@Url.Action("Index", "Branch")" class="dashboard-card card-branches">
-                    <div class="card-icon">
-                        <i class="fas fa-store"></i>
-                    </div>
-                    <div class="card-content">
-                        <h3>Sucursales</h3>
-                        <p>Múltiples ubicaciones</p>
-                        <div class="card-btn">
-                            <span>Acceder</span>
-                            <i class="fas fa-arrow-right"></i>
+            @if (Model.VisibleCards.Branches)
+            {
+                <div class="col-lg-4 col-md-6">
+                    <a href="@Url.Action("Index", "Branch")" class="dashboard-card card-branches">
+                        <div class="card-icon">
+                            <i class="fas fa-store"></i>
                         </div>
-                    </div>
-                    <div class="card-overlay"></div>
-                </a>
-            </div>
+                        <div class="card-content">
+                            <h3>Sucursales</h3>
+                            <p>Múltiples ubicaciones</p>
+                            <div class="card-btn">
+                                <span>Acceder</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+                        <div class="card-overlay"></div>
+                    </a>
+                </div>
+            }
         </div>
 
         <!-- Security Administration Section - Solo para Administradores -->
-        @if (Html.HasRole("admin"))
+        @if (Model.VisibleCards.SecurityAdmin)
         {
             <div class="section-header security-section">
                 <h2>
@@ -319,7 +429,7 @@
         }
 
         <!-- Stations Section -->
-        @if (Model != null && Model.Any())
+        @if (Model.VisibleCards.Kitchen && Model.Stations != null && Model.Stations.Any())
         {
             <div class="section-header">
                 <h2>Estaciones de Trabajo</h2>
@@ -327,7 +437,7 @@
             </div>
 
             <div class="row g-4">
-                @foreach (var station in Model)
+                @foreach (var station in Model.Stations)
                 {
                     <div class="col-lg-4 col-md-6">
                         <a asp-controller="StationOrders" asp-action="Index" asp-route-stationName="@station.Name" asp-route-stationType="@station.Type" asp-route-stationIcon="@station.Icon" class="dashboard-card card-station-work">
@@ -847,6 +957,24 @@
             z-index: 2;
         }
 
+        /* Tarjeta de Asignaciones de Personal */
+        .card-user-assignments .card-icon { 
+            background: linear-gradient(135deg, #9b59b6 0%, #bb7bd6 100%); 
+            box-shadow: 0 4px 15px rgba(155, 89, 182, 0.4);
+        }
+        .card-user-assignments:hover { 
+            background: linear-gradient(135deg, var(--home-bg-secondary) 0%, rgba(155, 89, 182, 0.15) 100%);
+            border: 1px solid rgba(155, 89, 182, 0.3);
+            box-shadow: 0 8px 25px rgba(155, 89, 182, 0.3);
+        }
+
+        .card-user-assignments .card-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            z-index: 2;
+        }
+
         /* Tarjetas de Seguridad */
         .card-security-primary .card-icon-security { 
             background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%); 
@@ -1076,10 +1204,209 @@
                 font-size: 0.9rem;
             }
         }
+
+        /* ========================
+           NUEVAS CARDS - COLORES ESPECÍFICOS POR ROL
+           ======================== */
+        .card-payments {
+            background: linear-gradient(135deg, var(--home-success) 0%, var(--home-success-light) 100%);
+        }
+
+        .card-payments:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--home-shadow-lg);
+        }
+
+        .card-kitchen {
+            background: linear-gradient(135deg, var(--home-warning) 0%, var(--home-warning-light) 100%);
+        }
+
+        .card-kitchen:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--home-shadow-lg);
+        }
+
+        .card-inventory {
+            background: linear-gradient(135deg, var(--home-purple) 0%, var(--home-purple-light) 100%);
+        }
+
+        .card-inventory:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--home-shadow-lg);
+        }
+
+        .card-reports {
+            background: linear-gradient(135deg, var(--home-info) 0%, var(--home-info-light) 100%);
+        }
+
+        .card-reports:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--home-shadow-lg);
+        }
+
+        /* ========================
+           INDICADORES DE ROL ESPECÍFICO
+           ======================== */
+        .role-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--home-text-primary);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            backdrop-filter: blur(8px);
+        }
+
+        .role-admin { border-left: 4px solid var(--home-danger); }
+        .role-manager { border-left: 4px solid var(--home-primary); }
+        .role-supervisor { border-left: 4px solid var(--home-warning); }
+        .role-waiter { border-left: 4px solid var(--home-success); }
+        .role-cashier { border-left: 4px solid var(--home-info); }
+        .role-chef { border-left: 4px solid var(--home-warning); }
+        .role-bartender { border-left: 4px solid var(--home-teal); }
+        .role-inventory { border-left: 4px solid var(--home-purple); }
+        .role-accountant { border-left: 4px solid var(--home-success); }
+        .role-support { border-left: 4px solid var(--home-info); }
+
+        /* ========================
+           ANIMACIONES DE CARDS ESPECÍFICAS POR ROL
+           ======================== */
+        .dashboard-card[data-role="admin"] {
+            animation: pulse-admin 2s ease-in-out infinite;
+        }
+
+        .dashboard-card[data-role="manager"] {
+            animation: pulse-manager 2s ease-in-out infinite;
+        }
+
+        @@keyframes pulse-admin {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+        }
+
+        @@keyframes pulse-manager {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(30, 64, 175, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(30, 64, 175, 0); }
+        }
     </style>
 }
 
 @section Scripts {
-    <!-- Sistema de autorización y permisos -->
-    @Html.RenderPermissionScript()
+    <script>
+        // Información del usuario y rol actual
+        const userInfo = {
+            id: '@Model.UserInfo.Id',
+            name: '@Model.UserInfo.Name',
+            role: '@Model.UserInfo.Role',
+            isAuthenticated: @Model.UserInfo.IsAuthenticated.ToString().ToLower()
+        };
+
+        // Configuración de cards visibles
+        const visibleCards = {
+            orders: @Model.VisibleCards.Orders.ToString().ToLower(),
+            products: @Model.VisibleCards.Products.ToString().ToLower(),
+            tables: @Model.VisibleCards.Tables.ToString().ToLower(),
+            userManagement: @Model.VisibleCards.UserManagement.ToString().ToLower(),
+            categories: @Model.VisibleCards.Categories.ToString().ToLower(),
+            stations: @Model.VisibleCards.Stations.ToString().ToLower(),
+            areas: @Model.VisibleCards.Areas.ToString().ToLower(),
+            companies: @Model.VisibleCards.Companies.ToString().ToLower(),
+            branches: @Model.VisibleCards.Branches.ToString().ToLower(),
+            kitchen: @Model.VisibleCards.Kitchen.ToString().ToLower(),
+            payments: @Model.VisibleCards.Payments.ToString().ToLower(),
+            reports: @Model.VisibleCards.Reports.ToString().ToLower(),
+            inventory: @Model.VisibleCards.Inventory.ToString().ToLower(),
+            securityAdmin: @Model.VisibleCards.SecurityAdmin.ToString().ToLower()
+        };
+
+        // Función para obtener el nombre amigable del rol
+        function getFriendlyRoleName(role) {
+            const roleNames = {
+                'admin': 'Administrador',
+                'manager': 'Gerente',
+                'supervisor': 'Supervisor',
+                'waiter': 'Mesero',
+                'cashier': 'Cajero',
+                'chef': 'Cocinero',
+                'bartender': 'Bartender',
+                'inventory': 'Inventarista',
+                'accountant': 'Contador',
+                'support': 'Soporte Técnico'
+            };
+            return roleNames[role.toLowerCase()] || role;
+        }
+
+        // Función para contar cards visibles
+        function countVisibleCards() {
+            return Object.values(visibleCards).filter(visible => visible).length;
+        }
+
+        // Mostrar información del dashboard en la consola (para desarrollo)
+        console.log('=== RESTBAR DASHBOARD ===');
+        console.log('Usuario:', userInfo.name);
+        console.log('Rol:', getFriendlyRoleName(userInfo.role));
+        console.log('Cards visibles:', countVisibleCards());
+        console.log('Configuración de visibilidad:', visibleCards);
+
+        // Agregar indicadores visuales de rol
+        document.addEventListener('DOMContentLoaded', function() {
+            // Agregar clase de rol al body para estilos específicos
+            document.body.classList.add('role-' + userInfo.role.toLowerCase());
+            
+            // Agregar data-role a las cards para animaciones específicas
+            const cards = document.querySelectorAll('.dashboard-card');
+            cards.forEach(card => {
+                card.setAttribute('data-role', userInfo.role.toLowerCase());
+            });
+            
+            // Mostrar tooltip con información del rol
+            const heroText = document.querySelector('.hero-text');
+            if (heroText) {
+                const roleInfo = document.createElement('div');
+                roleInfo.className = 'role-info';
+                roleInfo.innerHTML = `
+                    <div class="role-badge role-${userInfo.role.toLowerCase()}">
+                        ${getFriendlyRoleName(userInfo.role)}
+                    </div>
+                    <small>Tienes acceso a ${countVisibleCards()} módulos</small>
+                `;
+                roleInfo.style.cssText = `
+                    position: absolute;
+                    top: 20px;
+                    right: 20px;
+                    text-align: center;
+                    background: rgba(255, 255, 255, 0.1);
+                    padding: 1rem;
+                    border-radius: 12px;
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                `;
+                heroText.parentElement.style.position = 'relative';
+                heroText.parentElement.appendChild(roleInfo);
+            }
+        });
+
+        // Función para redireccionar con verificación de permisos
+        function redirectIfAllowed(url, permission) {
+            if (visibleCards[permission]) {
+                window.location.href = url;
+            } else {
+                alert('No tienes permisos para acceder a esta funcionalidad.');
+            }
+        }
+
+        // Exponer funciones globalmente para uso en otras partes
+        window.RestBar = {
+            userInfo: userInfo,
+            visibleCards: visibleCards,
+            getFriendlyRoleName: getFriendlyRoleName,
+            countVisibleCards: countVisibleCards,
+            redirectIfAllowed: redirectIfAllowed
+        };
+    </script>
 }

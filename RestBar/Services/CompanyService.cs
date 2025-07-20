@@ -29,7 +29,12 @@ namespace RestBar.Services
 
         public async Task<Company> CreateAsync(Company company)
         {
-            company.CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
+            // Solo asignar fecha si no viene del cliente y no tiene valor por defecto de BD
+            if (company.CreatedAt == null)
+            {
+                company.CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
+            }
+            
             _context.Companies.Add(company);
             await _context.SaveChangesAsync();
             return company;
@@ -61,9 +66,18 @@ namespace RestBar.Services
 
         public async Task DeleteAsync(Guid id)
         {
-            var company = await _context.Companies.FindAsync(id);
+            var company = await _context.Companies
+                .Include(c => c.Branches)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
             if (company != null)
             {
+                // Verificar si la compañía tiene sucursales asociadas
+                if (company.Branches.Any())
+                {
+                    throw new InvalidOperationException($"No se puede eliminar la compañía '{company.Name}' porque tiene {company.Branches.Count} sucursal(es) asociada(s). Debe eliminar o reasignar todas las sucursales antes de continuar.");
+                }
+
                 _context.Companies.Remove(company);
                 await _context.SaveChangesAsync();
             }

@@ -5,7 +5,7 @@ using RestBar.Models;
 
 namespace RestBar.Controllers
 {
-    [Authorize]
+    [Authorize(Policy = "UserManagement")] // Roles: admin, manager, support
     public class UserController : Controller
     {
         private readonly IUserService _userService;
@@ -173,6 +173,9 @@ namespace RestBar.Controllers
                     return Json(new { success = false, message = "Los datos del usuario no pueden estar vacíos" });
                 }
 
+                // Debug: Log para verificar IsActive
+                System.Diagnostics.Debug.WriteLine($"Create - IsActive recibido: {user.IsActive}");
+
                 // Validar que el password no esté vacío
                 if (string.IsNullOrEmpty(password))
                 {
@@ -220,7 +223,7 @@ namespace RestBar.Controllers
                 // Limpiar campos que no deben ser establecidos por el cliente
                 user.Id = Guid.NewGuid();
                 user.CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
-                user.IsActive = true;
+                // IsActive viene del formulario, no se fuerza
 
                 var createdUser = await _userService.CreateAsync(user);
                 
@@ -256,6 +259,9 @@ namespace RestBar.Controllers
                 {
                     return Json(new { success = false, message = "Los datos del usuario no pueden estar vacíos" });
                 }
+
+                // Debug: Log para verificar IsActive
+                System.Diagnostics.Debug.WriteLine($"Update - IsActive recibido: {user.IsActive}");
 
                 // Validar que el usuario exista
                 var existingUser = await _userService.GetByIdAsync(user.Id);
@@ -348,10 +354,12 @@ namespace RestBar.Controllers
         }
 
         [HttpGet]
+        [Authorize] // Menos restrictivo - cualquier usuario autenticado
         public async Task<IActionResult> GetCompanies()
         {
-            var permissionCheck = await CheckUserManagementPermissionAsync();
-            if (permissionCheck != null) return permissionCheck;
+            // Removemos la validación restrictiva para datos de referencia
+            // var permissionCheck = await CheckUserManagementPermissionAsync();
+            // if (permissionCheck != null) return permissionCheck;
 
             try
             {
@@ -369,10 +377,12 @@ namespace RestBar.Controllers
         }
 
         [HttpGet]
+        [Authorize] // Menos restrictivo - cualquier usuario autenticado
         public async Task<IActionResult> GetBranches()
         {
-            var permissionCheck = await CheckUserManagementPermissionAsync();
-            if (permissionCheck != null) return permissionCheck;
+            // Removemos la validación restrictiva para datos de referencia
+            // var permissionCheck = await CheckUserManagementPermissionAsync();
+            // if (permissionCheck != null) return permissionCheck;
 
             try
             {
@@ -392,10 +402,12 @@ namespace RestBar.Controllers
         }
 
         [HttpGet]
+        [Authorize] // Menos restrictivo - cualquier usuario autenticado
         public async Task<IActionResult> GetSupervisors()
         {
-            var permissionCheck = await CheckUserManagementPermissionAsync();
-            if (permissionCheck != null) return permissionCheck;
+            // Removemos la validación restrictiva para datos de referencia
+            // var permissionCheck = await CheckUserManagementPermissionAsync();
+            // if (permissionCheck != null) return permissionCheck;
 
             try
             {

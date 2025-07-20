@@ -66,9 +66,25 @@ namespace RestBar.Services
 
         public async Task DeleteAsync(Guid id)
         {
-            var branch = await _context.Branches.FindAsync(id);
+            var branch = await _context.Branches
+                .Include(b => b.Areas)
+                .Include(b => b.Users)
+                .FirstOrDefaultAsync(b => b.Id == id);
+
             if (branch != null)
             {
+                // Verificar si la sucursal tiene áreas asociadas
+                if (branch.Areas.Any())
+                {
+                    throw new InvalidOperationException($"No se puede eliminar la sucursal '{branch.Name}' porque tiene {branch.Areas.Count} área(s) asociada(s). Debe eliminar o reasignar todas las áreas antes de continuar.");
+                }
+
+                // Verificar si la sucursal tiene usuarios asociados
+                if (branch.Users.Any())
+                {
+                    throw new InvalidOperationException($"No se puede eliminar la sucursal '{branch.Name}' porque tiene {branch.Users.Count} usuario(s) asociado(s). Debe eliminar o reasignar todos los usuarios antes de continuar.");
+                }
+
                 _context.Branches.Remove(branch);
                 await _context.SaveChangesAsync();
             }

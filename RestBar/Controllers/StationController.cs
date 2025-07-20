@@ -1,20 +1,25 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RestBar.Interfaces;
 using RestBar.Models;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace RestBar.Controllers
 {
+    [Authorize(Roles = "admin,manager")]
     public class StationController : Controller
     {
         private readonly IStationService _stationService;
+        private readonly IAreaService _areaService;
 
-        public StationController(IStationService stationService)
+        public StationController(IStationService stationService, IAreaService areaService)
         {
             _stationService = stationService;
+            _areaService = areaService;
         }
 
         // GET: Station
@@ -56,6 +61,16 @@ namespace RestBar.Controllers
                             <dt class='col-sm-4'>Tipo:</dt>
                             <dd class='col-sm-8'>
                                 <span class='badge bg-info'>{station.Type}</span>
+                            </dd>
+                            <dt class='col-sm-4'>Área:</dt>
+                            <dd class='col-sm-8'>
+                                <span class='badge bg-secondary'>{(station.Area?.Name ?? "No asignada")}</span>
+                            </dd>
+                            <dt class='col-sm-4'>Estado:</dt>
+                            <dd class='col-sm-8'>
+                                <span class='badge {(station.IsActive ? "bg-success" : "bg-danger")}'>
+                                    {(station.IsActive ? "Activa" : "Inactiva")}
+                                </span>
                             </dd>
                             <dt class='col-sm-4'>Productos:</dt>
                             <dd class='col-sm-8'>
@@ -103,19 +118,24 @@ namespace RestBar.Controllers
         }
 
         // GET: Station/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
+            await PopulateAreasDropdown();
             return View();
         }
 
         // POST: Station/Create
         [HttpPost]
-        public async Task<IActionResult> Create([Bind("Name,Type")] Station station)
+        public async Task<IActionResult> Create([Bind("Name,Type,Icon,AreaId,IsActive")] Station station)
         {
             if (ModelState.IsValid)
             {
                 try
                 {
+                    // Convertir string vacío a null para Icon
+                    if (string.IsNullOrWhiteSpace(station.Icon))
+                        station.Icon = null;
+                    
                     await _stationService.CreateStationAsync(station);
                     return RedirectToAction(nameof(Index));
                 }
@@ -128,6 +148,8 @@ namespace RestBar.Controllers
                     ModelState.AddModelError("", ex.Message);
                 }
             }
+            
+            await PopulateAreasDropdown(station.AreaId);
             return View(station);
         }
 
@@ -155,13 +177,25 @@ namespace RestBar.Controllers
                 if (station.Id == Guid.Empty)
                     station.Id = Guid.NewGuid();
 
+                // Convertir string vacío a null para Icon
+                if (string.IsNullOrWhiteSpace(station.Icon))
+                    station.Icon = null;
+
                 var created = await _stationService.CreateStationAsync(station);
 
                 return Json(new
                 {
                     success = true,
                     message = "Estación creada correctamente",
-                    data = new { id = created.Id, name = created.Name, type = created.Type }
+                    data = new { 
+                        id = created.Id, 
+                        name = created.Name, 
+                        type = created.Type,
+                        areaId = created.AreaId,
+                        areaName = created.Area?.Name,
+                        isActive = created.IsActive,
+                        icon = created.Icon
+                    }
                 });
             }
             catch (InvalidOperationException ex)
@@ -188,12 +222,13 @@ namespace RestBar.Controllers
             if (station == null)
                 return NotFound();
 
+            await PopulateAreasDropdown(station.AreaId);
             return View(station);
         }
 
         // POST: Station/Edit/5
         [HttpPost]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name,Type")] Station station)
+        public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name,Type,Icon,AreaId,IsActive")] Station station)
         {
             if (id != station.Id)
                 return NotFound();
@@ -202,6 +237,10 @@ namespace RestBar.Controllers
             {
                 try
                 {
+                    // Convertir string vacío a null para Icon
+                    if (string.IsNullOrWhiteSpace(station.Icon))
+                        station.Icon = null;
+                    
                     await _stationService.UpdateStationAsync(id, station);
                     return RedirectToAction(nameof(Index));
                 }
@@ -218,11 +257,14 @@ namespace RestBar.Controllers
                     ModelState.AddModelError("", ex.Message);
                 }
             }
+            
+            await PopulateAreasDropdown(station.AreaId);
             return View(station);
         }
 
         // POST: Station/Edit/5 (AJAX)
         [HttpPost]
+        [Route("Station/EditAjax/{id}")]
         public async Task<IActionResult> EditAjax(Guid id, [FromForm] Station station)
         {
             if (id != station.Id)
@@ -233,11 +275,23 @@ namespace RestBar.Controllers
 
             try
             {
+                // Convertir string vacío a null para Icon
+                if (string.IsNullOrWhiteSpace(station.Icon))
+                    station.Icon = null;
+
                 var updated = await _stationService.UpdateStationAsync(id, station);
                 return Json(new { 
                     success = true, 
                     message = "Estación actualizada correctamente",
-                    data = new { id = updated.Id, name = updated.Name, type = updated.Type }
+                    data = new { 
+                        id = updated.Id, 
+                        name = updated.Name, 
+                        type = updated.Type,
+                        areaId = updated.AreaId,
+                        areaName = updated.Area?.Name,
+                        isActive = updated.IsActive,
+                        icon = updated.Icon
+                    }
                 });
             }
             catch (KeyNotFoundException)
@@ -303,6 +357,7 @@ namespace RestBar.Controllers
 
         // POST: Station/Delete/5 (AJAX)
         [HttpPost]
+        [Route("Station/DeleteAjax/{id}")]
         public async Task<IActionResult> DeleteAjax(Guid id)
         {
             try
@@ -336,6 +391,10 @@ namespace RestBar.Controllers
                 id = s.Id, 
                 name = s.Name, 
                 type = s.Type,
+                areaId = s.AreaId,
+                areaName = s.Area?.Name,
+                isActive = s.IsActive,
+                icon = s.Icon,
                 productCount = s.Products.Count
             }).ToList();
             return Json(new { success = true, data });
@@ -349,6 +408,7 @@ namespace RestBar.Controllers
         }
 
         [HttpGet]
+        [Route("Station/GetStationById/{id}")]
         public async Task<IActionResult> GetStationById(Guid id)
         {
             var station = await _stationService.GetStationByIdAsync(id);
@@ -360,10 +420,34 @@ namespace RestBar.Controllers
                 id = station.Id,
                 name = station.Name,
                 type = station.Type,
+                areaId = station.AreaId,
+                areaName = station.Area?.Name,
+                isActive = station.IsActive,
+                icon = station.Icon,
                 productCount = station.Products.Count
             };
 
             return Json(new { success = true, data });
+        }
+
+        [HttpGet]
+        [Route("Station/GetAreas")]
+        public async Task<IActionResult> GetAreas()
+        {
+            var areas = await _areaService.GetAllAsync();
+            var data = areas.Select(a => new {
+                id = a.Id,
+                name = a.Name,
+                description = a.Description
+            }).ToList();
+            return Json(new { success = true, data });
+        }
+
+        // Métodos auxiliares
+        private async Task PopulateAreasDropdown(Guid? selectedAreaId = null)
+        {
+            var areas = await _areaService.GetAllAsync();
+            ViewBag.AreaId = new SelectList(areas, "Id", "Name", selectedAreaId);
         }
     }
 } 

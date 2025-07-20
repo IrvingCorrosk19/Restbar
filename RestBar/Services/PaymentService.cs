@@ -190,5 +190,54 @@ namespace RestBar.Services
                 .Where(p => p.IsVoided == true)
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<Payment>> GetPaymentsByDateRangeAsync(DateTime startDate, DateTime endDate)
+        {
+            return await _context.Payments
+                .Include(p => p.Order)
+                .Include(p => p.Order.Table)
+                .Include(p => p.SplitPayments)
+                .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && p.IsVoided == false)
+                .OrderByDescending(p => p.PaidAt)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Payment>> GetPaymentsByStatusAsync(string status)
+        {
+            return await _context.Payments
+                .Include(p => p.Order)
+                .Include(p => p.Order.Table)
+                .Include(p => p.SplitPayments)
+                .Where(p => p.Status.ToUpper() == status.ToUpper() && p.IsVoided == false)
+                .OrderByDescending(p => p.PaidAt)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Payment>> GetPaymentsByMethodAsync(string method)
+        {
+            return await _context.Payments
+                .Include(p => p.Order)
+                .Include(p => p.Order.Table)
+                .Include(p => p.SplitPayments)
+                .Where(p => p.Method == method && p.IsVoided == false)
+                .OrderByDescending(p => p.PaidAt)
+                .ToListAsync();
+        }
+
+        public async Task<decimal> GetTotalRevenueAsync(DateTime startDate, DateTime endDate)
+        {
+            return await _context.Payments
+                .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && p.IsVoided == false)
+                .SumAsync(p => p.Amount);
+        }
+
+        public async Task<int> GetTotalOrdersPaidAsync(DateTime startDate, DateTime endDate)
+        {
+            return await _context.Payments
+                .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && p.IsVoided == false)
+                .Select(p => p.OrderId)
+                .Distinct()
+                .CountAsync();
+        }
     }
 } 

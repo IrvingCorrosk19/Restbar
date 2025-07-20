@@ -8,6 +8,8 @@ public partial class Order
 {
     public Guid Id { get; set; }
 
+    public string OrderNumber { get; set; } = string.Empty;
+
     public Guid? TableId { get; set; }
 
     public Guid? CustomerId { get; set; }

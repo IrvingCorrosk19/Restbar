@@ -1,50 +1,325 @@
 ﻿/* Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
 for details on configuring this project to bundle and minify static web assets. */
 
+/* ===== OPTIMIZACIÓN MÁXIMA DE LATERALES ===== */
+
+/* Reset y configuración base para aprovechar todo el espacio */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header optimizado para aprovechar laterales */
+.main-header {
+    width: 100%;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    flex-shrink: 0;
+}
+
+.navbar {
+    padding: 0.5rem 0;
+    width: 100%;
+    margin: 0;
+}
+
+.navbar-container {
+    width: 100%;
+    max-width: 100%;
+    padding: 0 20px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Contenedor principal optimizado para aprovechar laterales */
+.main-container {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    min-height: calc(100vh - 120px);
+    margin: 0;
+    padding: 0;
+}
+
+.main-content {
+    flex: 1;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    background: var(--bs-body-bg);
+}
+
+.content-wrapper {
+    width: 100%;
+    max-width: 100%;
+    padding: 20px;
+    margin: 0;
+}
+
+/* Footer optimizado */
+.main-footer {
+    width: 100%;
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    color: white;
+    padding: 15px 0;
+    margin-top: auto;
+    flex-shrink: 0;
+}
+
+.footer-container {
+    width: 100%;
+    max-width: 100%;
+    padding: 0 20px;
+    margin: 0;
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+/* ===== OPTIMIZACIÓN RESPONSIVA AVANZADA ===== */
+
+/* Pantallas extra grandes - Máximo aprovechamiento de laterales */
+@media (min-width: 1400px) {
+    .navbar-container {
+        padding: 0 60px;
+    }
+    
+    .content-wrapper {
+        padding: 40px 60px;
+    }
+    
+    .footer-container {
+        padding: 0 60px;
+    }
+}
+
+/* Pantallas grandes - Aprovechamiento óptimo */
+@media (min-width: 1200px) {
+    .navbar-container {
+        padding: 0 40px;
+    }
+    
+    .content-wrapper {
+        padding: 30px 40px;
+    }
+    
+    .footer-container {
+        padding: 0 40px;
+    }
+}
+
+/* Pantallas medianas - Aprovechamiento moderado */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .navbar-container {
+        padding: 0 30px;
+    }
+    
+    .content-wrapper {
+        padding: 25px 30px;
+    }
+    
+    .footer-container {
+        padding: 0 30px;
+    }
+}
+
+/* Pantallas pequeñas - Aprovechamiento mínimo pero funcional */
+@media (max-width: 767px) {
+    .navbar-container {
+        padding: 0 15px;
+    }
+    
+    .content-wrapper {
+        padding: 15px;
+    }
+    
+    .footer-container {
+        padding: 0 15px;
+    }
+    
+    .footer-content {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+}
+
+/* Pantallas muy pequeñas - Máximo aprovechamiento */
+@media (max-width: 576px) {
+    .navbar-container {
+        padding: 0 10px;
+    }
+    
+    .content-wrapper {
+        padding: 10px;
+    }
+    
+    .footer-container {
+        padding: 0 10px;
+    }
+}
+
+/* ===== OPTIMIZACIÓN DE CONTENEDORES ===== */
+
+/* Eliminación de restricciones innecesarias */
+.container-fluid {
+    width: 100%;
+    max-width: 100%;
+    padding: 0 20px;
+    margin: 0;
+}
+
+.container {
+    width: 100%;
+    max-width: 100%;
+    padding: 0 20px;
+    margin: 0;
+}
+
+/* Optimización de grid para aprovechar laterales */
+.row {
+    margin: 0;
+    width: 100%;
+}
+
+.col, .col-1, .col-2, .col-3, .col-4, .col-5, .col-6, 
+.col-7, .col-8, .col-9, .col-10, .col-11, .col-12 {
+    padding: 0 10px;
+}
+
+/* ===== OPTIMIZACIÓN DE ELEMENTOS ===== */
+
+/* Cards optimizadas */
+.card {
+    width: 100%;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Tablas optimizadas */
+.table-responsive {
+    width: 100%;
+    margin: 0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+/* Formularios optimizados */
+.form-control, .form-select {
+    width: 100%;
+    border-radius: 8px;
+}
+
+/* Botones optimizados */
+.btn {
+    margin: 2px;
+    border-radius: 8px;
+}
+
+.btn-group {
+    width: 100%;
+    display: flex;
+    gap: 5px;
+}
+
+/* ===== OPTIMIZACIÓN DE MODALES ===== */
+
+.modal-dialog {
+    max-width: 95%;
+    margin: 1.75rem auto;
+}
+
+@media (min-width: 576px) {
+    .modal-dialog {
+        max-width: 90%;
+    }
+}
+
+@media (min-width: 768px) {
+    .modal-dialog {
+        max-width: 80%;
+    }
+}
+
+@media (min-width: 992px) {
+    .modal-dialog {
+        max-width: 70%;
+    }
+}
+
+@media (min-width: 1200px) {
+    .modal-dialog {
+        max-width: 60%;
+    }
+}
+
+/* ===== ESTILOS BASE MEJORADOS ===== */
+
 a.navbar-brand {
-  white-space: normal;
-  text-align: center;
-  word-break: break-all;
+    white-space: normal;
+    text-align: center;
+    word-break: break-all;
 }
 
 a {
-  color: #0077cc;
+    color: #0077cc;
 }
 
 .btn-primary {
-  color: #fff;
-  background-color: #1b6ec2;
-  border-color: #1861ac;
+    color: #fff;
+    background-color: #1b6ec2;
+    border-color: #1861ac;
 }
 
 .nav-pills .nav-link.active, .nav-pills .show > .nav-link {
-  color: #fff;
-  background-color: #1b6ec2;
-  border-color: #1861ac;
+    color: #fff;
+    background-color: #1b6ec2;
+    border-color: #1861ac;
 }
 
 .border-top {
-  border-top: 1px solid #e5e5e5;
+    border-top: 1px solid #e5e5e5;
 }
+
 .border-bottom {
-  border-bottom: 1px solid #e5e5e5;
+    border-bottom: 1px solid #e5e5e5;
 }
 
 .box-shadow {
-  box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05);
+    box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05);
 }
 
 button.accept-policy {
-  font-size: 1rem;
-  line-height: inherit;
-}
-
-.footer {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  white-space: nowrap;
-  line-height: 60px;
+    font-size: 1rem;
+    line-height: inherit;
 }
 
 .nav-link:hover, .nav-link:focus {
@@ -52,4 +327,71 @@ button.accept-policy {
     background-color: #e9ecef !important;
     border-radius: 0.25rem;
     transition: background 0.2s, color 0.2s;
+}
+
+/* ===== OPTIMIZACIONES ESPECÍFICAS ===== */
+
+/* Eliminación de márgenes innecesarios */
+.container-fluid, .container, .row, .col {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* Optimización de padding para aprovechar laterales */
+@media (min-width: 1400px) {
+    .container-fluid, .container {
+        padding-left: 60px;
+        padding-right: 60px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .container-fluid, .container {
+        padding-left: 40px;
+        padding-right: 40px;
+    }
+}
+
+@media (max-width: 1199px) {
+    .container-fluid, .container {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+}
+
+/* Optimización de elementos específicos */
+.jumbotron {
+    width: 100%;
+    margin: 0;
+    padding: 2rem;
+}
+
+.alert {
+    width: 100%;
+    margin: 0 0 1rem 0;
+}
+
+/* Optimización de navegación */
+.navbar-nav {
+    margin: 0;
+}
+
+.nav-item {
+    margin: 0 2px;
+}
+
+/* Optimización de dropdowns */
+.dropdown-menu {
+    width: auto;
+    min-width: 200px;
+}
+
+/* Optimización de badges y elementos pequeños */
+.badge {
+    margin: 0 2px;
+}
+
+/* Optimización de iconos */
+.fas, .far, .fab {
+    margin-right: 5px;
 }
