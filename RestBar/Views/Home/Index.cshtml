@@ -168,26 +168,7 @@
                 </div>
             }
 
-            <!-- Cocina -->
-            @if (Model.VisibleCards.Kitchen)
-            {
-                <div class="col-lg-3 col-md-6">
-                    <a href="@Url.Action("Index", "StationOrders")" class="dashboard-card card-kitchen">
-                        <div class="card-icon">
-                            <i class="fas fa-utensils"></i>
-                        </div>
-                        <div class="card-content">
-                            <h3>Cocina</h3>
-                            <p>Gestión de preparación</p>
-                            <div class="card-btn">
-                                <span>Acceder</span>
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </div>
-                        <div class="card-overlay"></div>
-                    </a>
-                </div>
-            }
+
 
             <!-- Inventario -->
             @if (Model.VisibleCards.Inventory)
@@ -1322,14 +1303,7 @@
             box-shadow: var(--home-shadow-lg);
         }
 
-        .card-kitchen {
-            background: linear-gradient(135deg, var(--home-warning) 0%, var(--home-warning-light) 100%);
-        }
 
-        .card-kitchen:hover {
-            transform: translateY(-8px);
-            box-shadow: var(--home-shadow-lg);
-        }
 
         .card-inventory {
             background: linear-gradient(135deg, var(--home-purple) 0%, var(--home-purple-light) 100%);

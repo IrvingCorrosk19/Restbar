@@ -822,6 +822,36 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
                 .HasColumnName("is_active");
+            entity.Property(e => e.CompanyId)
+                .HasColumnName("company_id");
+            entity.Property(e => e.BranchId)
+                .HasColumnName("branch_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.CreatedBy)
+                .HasColumnType("uuid")
+                .HasColumnName("created_by");
+            entity.Property(e => e.UpdatedBy)
+                .HasColumnType("uuid")
+                .HasColumnName("updated_by");
+
+            // Configurar la relación con Company
+            entity.HasOne(c => c.Company)
+                .WithMany()
+                .HasForeignKey(c => c.CompanyId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configurar la relación con Branch
+            entity.HasOne(c => c.Branch)
+                .WithMany()
+                .HasForeignKey(c => c.BranchId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Station>(entity =>

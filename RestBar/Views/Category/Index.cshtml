@@ -398,6 +398,18 @@
         box-shadow: 0 0 0 3px rgba(231, 126, 34, 0.1);
     }
 
+    .form-control:disabled {
+        background-color: #f8f9fa;
+        color: #6c757d;
+        cursor: not-allowed;
+    }
+
+    .form-control:disabled {
+        background-color: #f8f9fa;
+        color: #6c757d;
+        cursor: not-allowed;
+    }
+
     .form-check {
         display: flex;
         align-items: center;
@@ -420,6 +432,17 @@
     .form-check-label {
         font-weight: 500;
         color: var(--primary-color);
+    }
+
+    /* Form text styles */
+    .form-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+
+    .form-text i {
+        margin-right: 0.25rem;
     }
 
     .modal-footer {
@@ -476,6 +499,17 @@
         box-shadow: var(--shadow-medium);
     }
 
+    /* Form text styles */
+    .form-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+
+    .form-text i {
+        margin-right: 0.25rem;
+    }
+
     /* Responsive Design */
     @@media (max-width: 768px) {
         .hero-title {
@@ -506,7 +540,7 @@
             <p class="hero-subtitle">
                 Organiza y administra las categorías de productos de tu restaurante
             </p>
-            <button class="hero-button" data-bs-toggle="modal" data-bs-target="#createModal">
+            <button class="hero-button" onclick="openCreateModal()">
                 <i class="fas fa-plus"></i> Nueva Categoría
             </button>
         </div>
@@ -547,9 +581,9 @@
                                     @(category.IsActive ? "Activa" : "Inactiva")
                                 </span>
                                 <div class="category-actions">
-                                    <a asp-action="Edit" asp-route-id="@category.Id" class="category-action-btn edit">
+                                                                         <button type="button" class="category-action-btn edit" onclick="editCategory('@category.Id', '@category.Name', '@category.Description', '@category.BranchId', '@category.IsActive.ToString().ToLower()')">
                                         <i class="fas fa-edit"></i> Editar
-                                    </a>
+                                    </button>
                                     <button type="button" class="category-action-btn delete" 
                                             onclick="confirmDelete('@category.Id', '@category.Name')">
                                         <i class="fas fa-trash"></i> Eliminar
@@ -576,27 +610,51 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">
+                <h5 class="modal-title" id="modalTitle">
                     <i class="fas fa-plus"></i> Nueva Categoría
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="createCategoryForm">
+            <form id="createCategoryForm" autocomplete="off">
                 <div class="modal-body">
                     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                     
+                    <!-- Información Básica -->
                     <div class="form-group">
                         <label for="Name" class="form-label">
-                            <i class="fas fa-tag"></i> Nombre
+                            <i class="fas fa-tag"></i> Nombre *
                         </label>
-                        <input type="text" class="form-control" id="Name" name="Name" required placeholder="Ingrese el nombre de la categoría" />
+                        <input type="text" class="form-control" id="Name" name="Name" required placeholder="Ingrese el nombre de la categoría" autocomplete="off" />
                     </div>
                     
                     <div class="form-group">
                         <label for="Description" class="form-label">
                             <i class="fas fa-align-left"></i> Descripción
                         </label>
-                        <textarea class="form-control" id="Description" name="Description" rows="3" placeholder="Describa la categoría (opcional)"></textarea>
+                        <textarea class="form-control" id="Description" name="Description" rows="3" placeholder="Describa la categoría (opcional)" autocomplete="off"></textarea>
+                    </div>
+
+                    <!-- Ubicación Organizacional -->
+                    <div class="form-group">
+                        <label for="CompanyName" class="form-label">
+                            <i class="fas fa-building"></i> Compañía (Automática) *
+                        </label>
+                        <input type="text" class="form-control" id="CompanyName" name="CompanyName" readonly placeholder="Cargando compañía..." autocomplete="off" />
+                        <small class="form-text">
+                            <i class="fas fa-info-circle"></i> La compañía se asigna automáticamente según el usuario logueado
+                        </small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="BranchId" class="form-label">
+                            <i class="fas fa-store"></i> Sucursal *
+                        </label>
+                        <select class="form-control" id="BranchId" name="BranchId" required autocomplete="off">
+                            <option value="">Seleccione una sucursal...</option>
+                        </select>
+                        <small class="form-text">
+                            <i class="fas fa-info-circle"></i> Seleccione la sucursal donde se creará la categoría
+                        </small>
                     </div>
                     
                     <div class="form-group">
@@ -654,23 +712,135 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        // Variables globales
+        let isEditMode = false;
+        let currentCategoryId = null;
+
+        // Funciones globales
+        window.openCreateModal = function() {
+            isEditMode = false;
+            currentCategoryId = null;
+            window.currentBranchId = null; // Limpiar branchId para crear nueva categoría
+            $('#modalTitle').html('<i class="fas fa-plus"></i> Nueva Categoría');
+            $('#saveCategoryBtn').html('<i class="fas fa-save"></i> Guardar Categoría');
+            loadUserCompanyAndBranches();
+            $('#createModal').modal('show');
+        };
+
+        window.editCategory = function(id, name, description, branchId, isActive) {
+            isEditMode = true;
+            currentCategoryId = id;
+            $('#modalTitle').html('<i class="fas fa-edit"></i> Editar Categoría');
+            $('#saveCategoryBtn').html('<i class="fas fa-save"></i> Actualizar Categoría');
+            
+            // Llenar el formulario con los datos existentes
+            $('#Name').val(name);
+            $('#Description').val(description);
+            
+            // Manejar el checkbox correctamente
+            console.log('🔍 Valor isActive recibido:', isActive);
+            console.log('🔍 Tipo de isActive:', typeof isActive);
+            const isActiveBool = isActive === 'true' || isActive === true;
+            console.log('🔍 Valor booleano calculado:', isActiveBool);
+            $('#IsActive').prop('checked', isActiveBool);
+            
+            // Guardar el branchId para seleccionarlo después de cargar las sucursales
+            window.currentBranchId = branchId;
+            
+            loadUserCompanyAndBranches();
+            $('#createModal').modal('show');
+        };
+
+        window.deleteCategory = function(id) {
+            // Implementar si es necesario
+        };
+
+        window.viewCategory = function(id) {
+            // Implementar si es necesario
+        };
+
+        window.saveCategory = function() {
+            // Implementar si es necesario
+        };
+
         function confirmDelete(id, name) {
             document.getElementById('categoryId').value = id;
             document.getElementById('categoryName').textContent = name;
             new bootstrap.Modal(document.getElementById('deleteModal')).show();
         }
 
+        // Cargar compañía y sucursales
+        function loadUserCompanyAndBranches() {
+            console.log('🔍 Iniciando carga de compañía y sucursales...');
+            
+            // Cargar compañía
+            $.get('/Category/GetUserCompany', function(res) {
+                console.log('📡 Respuesta de compañía:', res);
+                if (res.success) {
+                    $('#CompanyName').val(res.data.companyName);
+                    console.log('✅ Compañía cargada:', res.data.companyName);
+                } else {
+                    console.error('❌ Error al cargar compañía:', res.message);
+                }
+            });
+
+            // Cargar sucursales
+            loadBranchesByUserCompany();
+        }
+
+        function loadBranchesByUserCompany() {
+            console.log('🔍 Iniciando carga de sucursales...');
+            
+            $.get('/Category/GetBranchesByUserCompany', function(res) {
+                console.log('📡 Respuesta de sucursales:', res);
+                
+                const branchSelect = $('#BranchId');
+                branchSelect.empty();
+                branchSelect.append('<option value="">Seleccione una sucursal...</option>');
+                
+                if (res.success && res.data) {
+                    console.log('✅ Sucursales encontradas:', res.data.length);
+                    res.data.forEach(function(branch) {
+                        console.log('➕ Agregando sucursal:', branch.name);
+                        branchSelect.append(`<option value="${branch.id}">${branch.name}</option>`);
+                    });
+                    
+                    // Si estamos en modo edición, seleccionar la sucursal correcta
+                    if (isEditMode && window.currentBranchId) {
+                        console.log('🎯 Seleccionando sucursal para edición:', window.currentBranchId);
+                        branchSelect.val(window.currentBranchId);
+                        console.log('✅ Sucursal seleccionada:', branchSelect.val());
+                    }
+                } else {
+                    console.error('❌ Error al cargar sucursales:', res.message);
+                }
+
+                // Información de depuración
+                if (res.debug) {
+                    console.log('=== INFORMACIÓN DE DEPURACIÓN ===');
+                    console.log('Compañía del usuario:', res.debug.userCompanyId);
+                    console.log('Total de sucursales en BD:', res.debug.totalBranchesInDb);
+                    console.log('Sucursales filtradas:', res.debug.filteredBranchesCount);
+                    console.log('Todas las sucursales:', res.debug.allBranches);
+                    console.log('=====================================');
+                }
+            });
+        }
+
         // Limpiar el formulario cuando se cierra el modal
-        document.getElementById('createModal').addEventListener('hidden.bs.modal', function () {
-            this.querySelector('form').reset();
+        $('#createModal').on('hidden.bs.modal', function () {
+            $('#createCategoryForm')[0].reset();
+            $('#CompanyName').val('');
+            $('#BranchId').empty().append('<option value="">Seleccione una sucursal...</option>');
         });
 
-        // Manejar la creación de categoría vía AJAX
+        // Manejar la creación/edición de categoría vía AJAX
         $('#saveCategoryBtn').on('click', function () {
             const form = $('#createCategoryForm');
             const data = {
                 Name: form.find('[name="Name"]').val(),
                 Description: form.find('[name="Description"]').val(),
+                BranchId: form.find('[name="BranchId"]').val(),
                 IsActive: form.find('[name="IsActive"]').is(':checked')
             };
 
@@ -684,14 +854,28 @@
                 return;
             }
 
+            if (!data.BranchId) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Debe seleccionar una sucursal',
+                    confirmButtonColor: '#e74c3c'
+                });
+                return;
+            }
+
+            const isCreating = !isEditMode;
+            const actionText = isCreating ? 'Creando' : 'Actualizando';
+            const url = isCreating ? '/Category/CreateAjax' : `/Category/EditAjax/${currentCategoryId}`;
+
             Swal.fire({
-                title: 'Creando categoría...',
+                title: `${actionText} categoría...`,
                 allowOutsideClick: false,
                 didOpen: () => { Swal.showLoading(); }
             });
 
             $.ajax({
-                url: '/Category/CreateAjax',
+                url: url,
                 type: 'POST',
                 data: data,
                 success: function (res) {
@@ -700,42 +884,56 @@
                         $('#createModal').modal('hide');
                         form[0].reset();
                         
-                        // Crear el nuevo elemento de categoría
-                        const newCategory = `
-                            <div class="category-card">
-                                <div class="category-card-header">
-                                    <h3 class="category-name">${data.Name}</h3>
-                                    <p class="category-description">${data.Description || 'Sin descripción disponible'}</p>
-                                </div>
-                                <div class="category-card-body">
-                                    <div class="category-status">
-                                        <span class="category-badge ${data.IsActive ? 'active' : 'inactive'}">
-                                            ${data.IsActive ? 'Activa' : 'Inactiva'}
-                                        </span>
-                                        <div class="category-actions">
-                                            <a href="/Category/Edit/${res.data.id}" class="category-action-btn edit">
-                                                <i class="fas fa-edit"></i> Editar
-                                            </a>
-                                            <button type="button" class="category-action-btn delete" 
-                                                    onclick="confirmDelete('${res.data.id}', '${data.Name}')">
-                                                <i class="fas fa-trash"></i> Eliminar
-                                            </button>
+                        if (isCreating) {
+                            // Crear el nuevo elemento de categoría
+                            const newCategory = `
+                                <div class="category-card">
+                                    <div class="category-card-header">
+                                        <h3 class="category-name">${data.Name}</h3>
+                                        <p class="category-description">${data.Description || 'Sin descripción disponible'}</p>
+                                    </div>
+                                    <div class="category-card-body">
+                                        <div class="category-status">
+                                            <span class="category-badge ${data.IsActive ? 'active' : 'inactive'}">
+                                                ${data.IsActive ? 'Activa' : 'Inactiva'}
+                                            </span>
+                                            <div class="category-actions">
+                                                <button type="button" class="category-action-btn edit" onclick="editCategory('${res.data.id}', '${data.Name}', '${data.Description}', '${data.BranchId}', ${data.IsActive})">
+                                                    <i class="fas fa-edit"></i> Editar
+                                                </button>
+                                                <button type="button" class="category-action-btn delete" 
+                                                        onclick="confirmDelete('${res.data.id}', '${data.Name}')">
+                                                    <i class="fas fa-trash"></i> Eliminar
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        `;
-                        
-                        // Agregar la nueva categoría al inicio de la lista
-                        $('.categories-grid').prepend(newCategory);
-                        
-                        // Eliminar el empty state si existe
-                        $('.empty-state').remove();
+                            `;
+                            
+                            // Agregar la nueva categoría al inicio de la lista
+                            $('.categories-grid').prepend(newCategory);
+                            
+                            // Eliminar el empty state si existe
+                            $('.empty-state').remove();
+                        } else {
+                            // Actualizar la categoría existente en el DOM
+                            const categoryCard = $(`.category-card:has(button[onclick*="${currentCategoryId}"])`);
+                            if (categoryCard.length) {
+                                categoryCard.find('.category-name').text(data.Name);
+                                categoryCard.find('.category-description').text(data.Description || 'Sin descripción disponible');
+                                categoryCard.find('.category-badge').removeClass('active inactive').addClass(data.IsActive ? 'active' : 'inactive').text(data.IsActive ? 'Activa' : 'Inactiva');
+                                
+                                // Actualizar el onclick del botón editar
+                                const editBtn = categoryCard.find('.category-action-btn.edit');
+                                editBtn.attr('onclick', `editCategory('${currentCategoryId}', '${data.Name}', '${data.Description}', '${data.BranchId}', ${data.IsActive})`);
+                            }
+                        }
                         
                         Swal.fire({
                             icon: 'success',
                             title: '¡Éxito!',
-                            text: 'Categoría creada correctamente.',
+                            text: isCreating ? 'Categoría creada correctamente.' : 'Categoría actualizada correctamente.',
                             timer: 2000,
                             showConfirmButton: false,
                             confirmButtonColor: '#27ae60'
@@ -744,7 +942,7 @@
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
-                            text: res.message || 'No se pudo crear la categoría.',
+                            text: res.message || `No se pudo ${isCreating ? 'crear' : 'actualizar'} la categoría.`,
                             confirmButtonColor: '#e74c3c'
                         });
                     }
@@ -754,7 +952,7 @@
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
-                        text: 'No se pudo crear la categoría.',
+                        text: `No se pudo ${isCreating ? 'crear' : 'actualizar'} la categoría.`,
                         confirmButtonColor: '#e74c3c'
                     });
                 }

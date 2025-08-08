@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace RestBar.Models
 {
-    public class Category : ITrackableEntity
+    public class Category
     {
         public Guid Id { get; set; }
 
@@ -17,11 +17,17 @@ namespace RestBar.Models
 
         public bool IsActive { get; set; } = true;
 
+        // Relaciones con Company y Branch
+        public Guid? CompanyId { get; set; }
+        public Guid? BranchId { get; set; }
+        public virtual Company? Company { get; set; }
+        public virtual Branch? Branch { get; set; }
+
         // Tracking fields
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
-        public string? CreatedBy { get; set; }
-        public string? UpdatedBy { get; set; }
+        public Guid? CreatedBy { get; set; }
+        public Guid? UpdatedBy { get; set; }
 
         // Relación con Productos
         public virtual ICollection<Product> Products { get; set; } = new List<Product>();

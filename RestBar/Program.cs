@@ -261,8 +261,4 @@ app.MapControllerRoute(
 app.MapHub<OrderHub>("/orderHub");
 
 
-
-
-
-
 app.Run();
