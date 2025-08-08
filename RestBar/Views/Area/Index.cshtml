@@ -424,6 +424,18 @@
         margin-bottom: 0.5rem;
     }
 
+    .form-text {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-top: 5px;
+        display: flex;
+        align-items: center;
+    }
+
+    .form-text i {
+        color: var(--info-color);
+    }
+
     .form-control {
         width: 100%;
         padding: 0.75rem 1rem;
@@ -648,17 +660,31 @@
                 <form id="createAreaForm">
                     <div class="form-group">
                         <label class="form-label">
-                            <i class="fas fa-th-large"></i> Nombre
+                            <i class="fas fa-building"></i> Compañía (Automática)
                         </label>
-                        <input type="text" class="form-control" name="Name" required placeholder="Ingrese el nombre del área">
+                        <input type="text" class="form-control" id="createCompanyDisplay" readonly placeholder="Cargando compañía...">
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            La compañía se asigna automáticamente según tu usuario logueado
+                        </small>
                     </div>
                     <div class="form-group">
                         <label class="form-label">
-                            <i class="fas fa-building"></i> Sucursal
+                            <i class="fas fa-store-alt"></i> Sucursal *
                         </label>
-                        <select class="form-control" name="BranchId" id="areaBranchSelect">
-                            <option value="">Seleccione una sucursal</option>
+                        <select class="form-control" name="BranchId" id="areaBranchSelect" required>
+                            <option value="">Cargando sucursales...</option>
                         </select>
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Solo se muestran las sucursales de su compañía
+                        </small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-th-large"></i> Nombre *
+                        </label>
+                        <input type="text" class="form-control" name="Name" required placeholder="Ingrese el nombre del área">
                     </div>
                     <div class="form-group">
                         <label class="form-label">
@@ -695,17 +721,31 @@
                     <input type="hidden" name="Id">
                     <div class="form-group">
                         <label class="form-label">
-                            <i class="fas fa-th-large"></i> Nombre
+                            <i class="fas fa-building"></i> Compañía (Automática)
                         </label>
-                        <input type="text" class="form-control" name="Name" required placeholder="Ingrese el nombre del área">
+                        <input type="text" class="form-control" id="editCompanyDisplay" readonly placeholder="Cargando compañía...">
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            La compañía se asigna automáticamente según tu usuario logueado
+                        </small>
                     </div>
                     <div class="form-group">
                         <label class="form-label">
-                            <i class="fas fa-building"></i> Sucursal
+                            <i class="fas fa-store-alt"></i> Sucursal *
                         </label>
-                        <select class="form-control" name="BranchId">
-                            <option value="">Seleccione una sucursal</option>
+                        <select class="form-control" name="BranchId" id="editBranchSelect" required>
+                            <option value="">Cargando sucursales...</option>
                         </select>
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Solo se muestran las sucursales de su compañía
+                        </small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-th-large"></i> Nombre *
+                        </label>
+                        <input type="text" class="form-control" name="Name" required placeholder="Ingrese el nombre del área">
                     </div>
                     <div class="form-group">
                         <label class="form-label">
@@ -731,10 +771,175 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(document).ready(function () {
-            loadBranches();
+            loadUserCompanyAndBranches();
             populateBranchFilter();
             $('#searchAreaInput').on('keyup', filterAreas);
             $('#branchFilter').on('change', filterAreas);
+        });
+
+        // Función para cargar la compañía del usuario y las sucursales de esa compañía
+        function loadUserCompanyAndBranches() {
+            // Cargar compañía del usuario
+            $.get('/Area/GetUserCompany', function (res) {
+                if (res.success) {
+                    $('#createCompanyDisplay').val(res.data.companyName);
+                    $('#editCompanyDisplay').val(res.data.companyName);
+                    
+                    // Cargar sucursales de la compañía del usuario
+                    loadBranchesByUserCompany();
+                } else {
+                    $('#createCompanyDisplay').val('Error al cargar compañía');
+                    $('#editCompanyDisplay').val('Error al cargar compañía');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: res.message || 'No se pudo cargar la compañía del usuario'
+                    });
+                }
+            }).fail(function() {
+                $('#createCompanyDisplay').val('Error al cargar compañía');
+                $('#editCompanyDisplay').val('Error al cargar compañía');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error al cargar la compañía del usuario'
+                });
+            });
+        }
+
+        // Función para cargar solo la compañía del usuario
+        function loadUserCompany() {
+            console.log('Iniciando carga de compañía...');
+            $.get('/Area/GetUserCompany', function (res) {
+                console.log('Respuesta de compañía:', res);
+                if (res.success) {
+                    console.log('Compañía cargada:', res.data.companyName);
+                    $('#createCompanyDisplay').val(res.data.companyName);
+                    $('#editCompanyDisplay').val(res.data.companyName);
+                } else {
+                    console.log('Error al cargar compañía:', res.message);
+                    $('#createCompanyDisplay').val('Error al cargar compañía');
+                    $('#editCompanyDisplay').val('Error al cargar compañía');
+                }
+            }).fail(function(xhr, status, error) {
+                console.log('Error en petición de compañía:', error);
+                $('#createCompanyDisplay').val('Error al cargar compañía');
+                $('#editCompanyDisplay').val('Error al cargar compañía');
+            });
+        }
+
+        // Función para cargar sucursales de la compañía del usuario
+        function loadBranchesByUserCompany() {
+            $.get('/Area/GetBranchesByUserCompany', function (res) {
+                if (res.success) {
+                    const selects = ['#areaBranchSelect', '#editBranchSelect'];
+                    selects.forEach(selectId => {
+                        const select = $(selectId);
+                        const current = select.val();
+                        select.empty().append('<option value="">Seleccione una sucursal</option>');
+                        if (res.data && Array.isArray(res.data)) {
+                            res.data.forEach(branch => {
+                                select.append(`<option value="${branch.id}">${branch.name}</option>`);
+                            });
+                        }
+                        select.val(current);
+                    });
+                } else {
+                    const selects = ['#areaBranchSelect', '#editBranchSelect'];
+                    selects.forEach(selectId => {
+                        $(selectId).empty().append('<option value="">Error al cargar sucursales</option>');
+                    });
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: res.message || 'No se pudieron cargar las sucursales'
+                    });
+                }
+            }).fail(function() {
+                const selects = ['#areaBranchSelect', '#editBranchSelect'];
+                selects.forEach(selectId => {
+                    $(selectId).empty().append('<option value="">Error al cargar sucursales</option>');
+                });
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error al cargar las sucursales'
+                });
+            });
+        }
+
+        // Función para cargar sucursales de la compañía del usuario (versión simplificada)
+        function loadBranchesByUserCompanySimple() {
+            console.log('Iniciando carga de sucursales...');
+            $.get('/Area/GetBranchesByUserCompany', function (res) {
+                console.log('Respuesta del servidor:', res);
+                if (res.success) {
+                    const selects = ['#areaBranchSelect', '#editBranchSelect'];
+                    selects.forEach(selectId => {
+                        const select = $(selectId);
+                        select.empty().append('<option value="">Seleccione una sucursal</option>');
+                        if (res.data && Array.isArray(res.data)) {
+                            console.log('Sucursales encontradas:', res.data.length);
+                            res.data.forEach(branch => {
+                                console.log('Agregando sucursal:', branch.name);
+                                select.append(`<option value="${branch.id}">${branch.name}</option>`);
+                            });
+                        } else if (res.data && res.data.$values && Array.isArray(res.data.$values)) {
+                            console.log('Sucursales encontradas (formato $values):', res.data.$values.length);
+                            res.data.$values.forEach(branch => {
+                                console.log('Agregando sucursal:', branch.name);
+                                select.append(`<option value="${branch.id}">${branch.name}</option>`);
+                            });
+                        } else {
+                            console.log('No hay datos de sucursales en la respuesta');
+                            console.log('Tipo de res.data:', typeof res.data);
+                            console.log('Contenido de res.data:', res.data);
+                        }
+                    });
+                    
+                    // Mostrar información de depuración si está disponible
+                    if (res.debug) {
+                        console.log('=== INFORMACIÓN DE DEPURACIÓN ===');
+                        console.log('Compañía del usuario:', res.debug.currentUserCompanyId);
+                        console.log('Total de sucursales en BD:', res.debug.totalBranches);
+                        console.log('Sucursales filtradas:', res.debug.filteredBranches);
+                        console.log('Todas las sucursales:', res.debug.allBranches);
+                        console.log('=====================================');
+                    }
+                } else {
+                    console.log('Error en la respuesta:', res.message);
+                    if (res.error) {
+                        console.log('Error detallado:', res.error);
+                    }
+                    const selects = ['#areaBranchSelect', '#editBranchSelect'];
+                    selects.forEach(selectId => {
+                        $(selectId).empty().append('<option value="">No hay sucursales disponibles</option>');
+                    });
+                }
+            }).fail(function(xhr, status, error) {
+                console.log('Error en la petición AJAX:', error);
+                console.log('Status:', status);
+                console.log('XHR:', xhr);
+                const selects = ['#areaBranchSelect', '#editBranchSelect'];
+                selects.forEach(selectId => {
+                    $(selectId).empty().append('<option value="">Error al cargar sucursales</option>');
+                });
+            });
+        }
+
+        // Eventos de modales
+        $('#createAreaModal').on('show.bs.modal', function () {
+            // Primero cargar la compañía
+            loadUserCompany();
+            // Luego cargar las sucursales
+            loadBranchesByUserCompanySimple();
+        });
+
+        $('#editAreaModal').on('show.bs.modal', function () {
+            // Primero cargar la compañía
+            loadUserCompany();
+            // Luego cargar las sucursales
+            loadBranchesByUserCompanySimple();
         });
 
         function loadBranches(callback) {
@@ -843,33 +1048,42 @@
                 allowOutsideClick: false,
                 didOpen: () => { Swal.showLoading(); }
             });
-            loadBranches(function () {
-                $.ajax({
-                    url: `/Area/Get/${id}`,
-                    method: 'GET',
-                    success: function (response) {
-                        Swal.close();
-                        if (response.success) {
-                            const area = response.data;
-                            const form = $('#editAreaForm');
-                            form[0].reset();
-                            form.find('[name="Id"]').val(area.id);
-                            form.find('[name="Name"]').val(area.name);
-                            form.find('[name="Description"]').val(area.description);
+            
+            // Cargar compañía y sucursales primero
+            loadUserCompany();
+            loadBranchesByUserCompanySimple();
+            
+            $.ajax({
+                url: `/Area/Get/${id}`,
+                method: 'GET',
+                success: function (response) {
+                    Swal.close();
+                    if (response.success) {
+                        const area = response.data;
+                        const form = $('#editAreaForm');
+                        form[0].reset();
+                        form.find('[name="Id"]').val(area.id);
+                        form.find('[name="Name"]').val(area.name);
+                        form.find('[name="Description"]').val(area.description);
+                        
+                        // Mostrar el modal
+                        const editModal = new bootstrap.Modal(document.getElementById('editAreaModal'));
+                        editModal.show();
+                        
+                        // Establecer la sucursal después de que el modal esté visible
+                        setTimeout(() => {
                             if (area.branchId) {
                                 form.find('[name="BranchId"]').val(area.branchId);
                             }
-                            const editModal = new bootstrap.Modal(document.getElementById('editAreaModal'));
-                            editModal.show();
-                        } else {
-                            showError(response.message || 'Error al cargar el área');
-                        }
-                    },
-                    error: function () {
-                        Swal.close();
-                        showError('Error al cargar el área.');
+                        }, 500);
+                    } else {
+                        showError(response.message || 'Error al cargar el área');
                     }
-                });
+                },
+                error: function () {
+                    Swal.close();
+                    showError('Error al cargar el área.');
+                }
             });
         }
 
