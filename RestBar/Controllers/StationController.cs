@@ -15,11 +15,15 @@ namespace RestBar.Controllers
     {
         private readonly IStationService _stationService;
         private readonly IAreaService _areaService;
+        private readonly IBranchService _branchService;
+        private readonly IAuthService _authService;
 
-        public StationController(IStationService stationService, IAreaService areaService)
+        public StationController(IStationService stationService, IAreaService areaService, IBranchService branchService, IAuthService authService)
         {
             _stationService = stationService;
             _areaService = areaService;
+            _branchService = branchService;
+            _authService = authService;
         }
 
         // GET: Station
@@ -126,7 +130,7 @@ namespace RestBar.Controllers
 
         // POST: Station/Create
         [HttpPost]
-        public async Task<IActionResult> Create([Bind("Name,Type,Icon,AreaId,IsActive")] Station station)
+        public async Task<IActionResult> Create([Bind("Name,Type,Icon,AreaId,CompanyId,BranchId,IsActive")] Station station)
         {
             if (ModelState.IsValid)
             {
@@ -228,7 +232,7 @@ namespace RestBar.Controllers
 
         // POST: Station/Edit/5
         [HttpPost]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name,Type,Icon,AreaId,IsActive")] Station station)
+        public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name,Type,Icon,AreaId,CompanyId,BranchId,IsActive")] Station station)
         {
             if (id != station.Id)
                 return NotFound();
@@ -422,6 +426,10 @@ namespace RestBar.Controllers
                 type = station.Type,
                 areaId = station.AreaId,
                 areaName = station.Area?.Name,
+                companyId = station.CompanyId,
+                companyName = station.Company?.Name,
+                branchId = station.BranchId,
+                branchName = station.Branch?.Name,
                 isActive = station.IsActive,
                 icon = station.Icon,
                 productCount = station.Products.Count
@@ -448,6 +456,108 @@ namespace RestBar.Controllers
         {
             var areas = await _areaService.GetAllAsync();
             ViewBag.AreaId = new SelectList(areas, "Id", "Name", selectedAreaId);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetUserCompany()
+        {
+            try
+            {
+                var currentUser = await _authService.GetCurrentUserAsync(User);
+                if (currentUser?.Branch?.CompanyId == null)
+                {
+                    return Json(new { success = false, message = "No se pudo determinar la compañía del usuario" });
+                }
+
+                return Json(new { 
+                    success = true, 
+                    data = new { 
+                        companyId = currentUser.Branch.CompanyId,
+                        companyName = currentUser.Branch.Company?.Name
+                    } 
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al obtener la compañía del usuario" });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetBranchesByUserCompany()
+        {
+            try
+            {
+                var currentUser = await _authService.GetCurrentUserAsync(User);
+                if (currentUser?.Branch?.CompanyId == null)
+                {
+                    return Json(new { success = false, message = "No se pudo determinar la compañía del usuario" });
+                }
+
+                var branches = await _branchService.GetAllAsync();
+                var userCompanyBranches = branches
+                    .Where(b => b.CompanyId == currentUser.Branch.CompanyId)
+                    .Select(b => new { id = b.Id, name = b.Name })
+                    .ToList();
+
+                // Agregar información de depuración
+                var debugInfo = new
+                {
+                    userCompanyId = currentUser.Branch.CompanyId,
+                    totalBranchesInDb = branches.Count(),
+                    filteredBranchesCount = userCompanyBranches.Count(),
+                    allBranches = branches.Select(b => new { id = b.Id, name = b.Name, companyId = b.CompanyId }).ToList()
+                };
+
+                return Json(new { 
+                    success = true, 
+                    data = userCompanyBranches,
+                    debug = debugInfo
+                }, new System.Text.Json.JsonSerializerOptions
+                {
+                    ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al obtener las sucursales" });
+            }
+        }
+
+        [HttpGet]
+        [Route("Station/GetAreasByBranch/{branchId}")]
+        public async Task<IActionResult> GetAreasByBranch(Guid branchId)
+        {
+            try
+            {
+                var areas = await _areaService.GetAllAsync();
+                var branchAreas = areas
+                    .Where(a => a.BranchId == branchId)
+                    .Select(a => new { id = a.Id, name = a.Name })
+                    .ToList();
+
+                // Agregar información de depuración
+                var debugInfo = new
+                {
+                    requestedBranchId = branchId,
+                    totalAreasInDb = areas.Count(),
+                    filteredAreasCount = branchAreas.Count(),
+                    allAreas = areas.Select(a => new { id = a.Id, name = a.Name, branchId = a.BranchId }).ToList()
+                };
+
+                return Json(new { 
+                    success = true, 
+                    data = branchAreas,
+                    debug = debugInfo
+                }, new System.Text.Json.JsonSerializerOptions
+                {
+                    ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al obtener las áreas de la sucursal" });
+            }
         }
     }
 } 

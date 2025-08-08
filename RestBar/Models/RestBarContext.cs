@@ -842,6 +842,10 @@ public partial class RestBarContext : DbContext
                 .HasColumnName("icon");
             entity.Property(e => e.AreaId)
                 .HasColumnName("area_id");
+            entity.Property(e => e.CompanyId)
+                .HasColumnName("company_id");
+            entity.Property(e => e.BranchId)
+                .HasColumnName("branch_id");
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
                 .HasColumnName("is_active");
@@ -850,6 +854,18 @@ public partial class RestBarContext : DbContext
             entity.HasOne(s => s.Area)
                 .WithMany(a => a.Stations)
                 .HasForeignKey(s => s.AreaId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configurar la relación con Company
+            entity.HasOne(s => s.Company)
+                .WithMany()
+                .HasForeignKey(s => s.CompanyId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configurar la relación con Branch
+            entity.HasOne(s => s.Branch)
+                .WithMany()
+                .HasForeignKey(s => s.BranchId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
 

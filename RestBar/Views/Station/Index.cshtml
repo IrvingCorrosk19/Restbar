@@ -556,11 +556,58 @@
         background: white;
     }
 
-    .form-control:focus {
-        outline: none;
-        border-color: var(--accent-color);
-        box-shadow: 0 0 0 3px rgba(231, 126, 34, 0.1);
-    }
+            .form-control:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(231, 126, 34, 0.1);
+        }
+
+        .form-text {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-text i {
+            color: var(--info-color);
+        }
+
+        /* Estilos para secciones del modal */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group:not(:last-child) {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            padding-bottom: 1rem;
+        }
+
+        /* Separadores visuales */
+        .form-group:has(+ .form-group) {
+            margin-bottom: 2rem;
+        }
+
+        /* Estilos para campos requeridos */
+        .form-label:has(+ .form-control[required]) {
+            font-weight: 600;
+        }
+
+        /* Mejorar espaciado en el modal */
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-body .form-group:first-child {
+            margin-top: 0;
+        }
+
+        .modal-body .form-group:last-child {
+            margin-bottom: 0;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
 
     .modal-footer {
         padding: 1.5rem;
@@ -932,15 +979,18 @@
             <div class="modal-body">
                 <form id="stationForm">
                     <input type="hidden" id="stationId" name="Id">
+                    
+                    <!-- 1. Información Básica -->
                     <div class="form-group">
                         <label for="stationName" class="form-label">
-                            <i class="fas fa-fire"></i> Nombre de la Estación
+                            <i class="fas fa-fire"></i> Nombre de la Estación *
                         </label>
                         <input type="text" class="form-control" id="stationName" name="Name" required placeholder="Ingrese el nombre de la estación">
                     </div>
+                    
                     <div class="form-group">
                         <label for="stationType" class="form-label">
-                            <i class="fas fa-tags"></i> Tipo de Estación
+                            <i class="fas fa-tags"></i> Tipo de Estación *
                         </label>
                         <select class="form-control" id="stationType" name="Type" required>
                             <option value="">Seleccione un tipo...</option>
@@ -954,15 +1004,46 @@
                             <option value="Otro">Otro</option>
                         </select>
                     </div>
+                    
+                    <!-- 2. Ubicación Organizacional -->
+                    <div class="form-group">
+                        <label for="stationCompany" class="form-label">
+                            <i class="fas fa-building"></i> Compañía (Automática)
+                        </label>
+                        <input type="text" class="form-control" id="stationCompany" readonly placeholder="Cargando compañía...">
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            La compañía se asigna automáticamente según tu usuario logueado
+                        </small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="stationBranch" class="form-label">
+                            <i class="fas fa-store-alt"></i> Sucursal *
+                        </label>
+                        <select class="form-control" id="stationBranch" name="BranchId" required>
+                            <option value="">Cargando sucursales...</option>
+                        </select>
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Solo se muestran las sucursales de su compañía
+                        </small>
+                    </div>
+                    
                     <div class="form-group">
                         <label for="stationArea" class="form-label">
                             <i class="fas fa-map-marker-alt"></i> Área
                         </label>
                         <select class="form-control" id="stationArea" name="AreaId">
-                            <option value="">Seleccione un área...</option>
-                            <!-- Opciones se cargarán dinámicamente -->
+                            <option value="">Seleccione una sucursal primero...</option>
                         </select>
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Las áreas se cargan automáticamente según la sucursal seleccionada
+                        </small>
                     </div>
+                    
+                    <!-- 3. Configuración Visual -->
                     <div class="form-group">
                         <label for="stationIcon" class="form-label">
                             <i class="fas fa-icons"></i> Ícono
@@ -991,6 +1072,8 @@
                             </select>
                         </div>
                     </div>
+                    
+                    <!-- 4. Estado -->
                     <div class="form-group">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="stationIsActive" name="IsActive" checked>
@@ -1038,8 +1121,255 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        // Variables globales
         let isEditMode = false;
         let currentStationId = null;
+
+        // Funciones globales
+        window.openCreateModal = function() {
+            isEditMode = false;
+            currentStationId = null;
+            $('#modalTitle').html('<i class="fas fa-plus"></i> Nueva Estación');
+            
+            // Cargar compañía y sucursales
+            loadUserCompanyAndBranches();
+            
+            // Resetear el formulario
+            $('#stationForm')[0].reset();
+            $('#stationId').val('');
+            $('#stationIsActive').prop('checked', true).trigger('change');
+            $('#modalIconPreview').removeClass().addClass('fas fa-fire');
+            $('#stationArea').empty().append('<option value="">Seleccione una sucursal primero...</option>');
+            $('#stationModal').modal('show');
+        };
+
+        window.editStation = function(id) {
+            isEditMode = true;
+            currentStationId = id;
+            $('#modalTitle').html('<i class="fas fa-edit"></i> Editar Estación');
+            
+            // Cargar compañía y sucursales
+            loadUserCompanyAndBranches();
+            
+            // Cargar datos de la estación
+            $.get(`/Station/GetStationById/${id}`)
+                .done(function(response) {
+                    if (response.success) {
+                        const station = response.data;
+                        
+                        // Poblar los campos con un pequeño delay para asegurar que se actualicen
+                        setTimeout(() => {
+                            $('#stationId').val(station.id);
+                            $('#stationName').val(station.name);
+                            $('#stationType').val(station.type);
+                            
+                            // Establecer la sucursal después de que se carguen
+                            if (station.branchId) {
+                                $('#stationBranch').val(station.branchId);
+                                // Cargar las áreas de esta sucursal
+                                loadAreasByBranch(station.branchId);
+                                
+                                // Establecer el área después de que se carguen las áreas
+                                setTimeout(() => {
+                                    if (station.areaId) {
+                                        const areaOption = $('#stationArea option[value="' + station.areaId + '"]');
+                                        if (areaOption.length > 0) {
+                                            $('#stationArea').val(station.areaId);
+                                        } else {
+                                            $('#stationArea').val('');
+                                        }
+                                    } else {
+                                        $('#stationArea').val('');
+                                    }
+                                }, 500);
+                            } else {
+                                $('#stationArea').empty().append('<option value="">Seleccione una sucursal primero...</option>');
+                            }
+                            
+                            $('#stationIcon').val(station.icon || '').trigger('change');
+                            $('#stationIsActive').prop('checked', station.isActive).trigger('change');
+                            
+                            $('#stationModal').modal('show');
+                        }, 100);
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: response.message || 'No se pudo cargar la estación',
+                            confirmButtonColor: '#e74c3c'
+                        });
+                    }
+                })
+                .fail(function() {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Error al cargar la estación',
+                        confirmButtonColor: '#e74c3c'
+                    });
+                });
+        };
+
+        window.deleteStation = function(id, name) {
+            Swal.fire({
+                title: '¿Está seguro?',
+                text: `¿Desea eliminar la estación "${name}"? Esta acción no se puede deshacer.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post(`/Station/DeleteAjax/${id}`)
+                    .done(function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Eliminado!',
+                                text: 'La estación ha sido eliminada correctamente',
+                                timer: 2000,
+                                showConfirmButton: false,
+                                confirmButtonColor: '#27ae60'
+                            }).then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: response.message || 'Error al eliminar la estación',
+                                confirmButtonColor: '#e74c3c'
+                            });
+                        }
+                    })
+                    .fail(function(xhr) {
+                        let errorMessage = 'Error al eliminar la estación';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: errorMessage,
+                            confirmButtonColor: '#e74c3c'
+                        });
+                    });
+                }
+            });
+        };
+
+        window.viewStation = function(id) {
+            $.get(`/Station/DetailsAjax/${id}`)
+                .done(function(response) {
+                    $('#detailsContent').html(response);
+                    $('#detailsModal').modal('show');
+                })
+                .fail(function() {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Error al cargar los detalles',
+                        confirmButtonColor: '#e74c3c'
+                    });
+                });
+        };
+
+        window.saveStation = function() {
+            const formData = new FormData();
+
+            // Solo enviamos el Id si estamos editando
+            if (isEditMode) {
+                formData.append('Id', $('#stationId').val());
+            }
+
+            const name = $('#stationName').val().trim();
+            const type = $('#stationType').val();
+            const icon = $('#stationIcon').val();
+            const areaId = $('#stationArea').val();
+            const isActive = $('#stationIsActive').is(':checked');
+
+            formData.append('Name', name);
+            formData.append('Type', type);
+            
+            // Solo enviar el ícono si no está vacío
+            if (icon && icon.trim() !== '') {
+                formData.append('Icon', icon.trim());
+            } else {
+                formData.append('Icon', '');
+            }
+            
+            formData.append('AreaId', areaId || '');
+            formData.append('IsActive', isActive);
+
+            // Validaciones frontend
+            if (!name) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'El nombre de la estación es requerido',
+                    confirmButtonColor: '#e74c3c'
+                });
+                return;
+            }
+
+            if (!type) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'El tipo de estación es requerido',
+                    confirmButtonColor: '#e74c3c'
+                });
+                return;
+            }
+
+            const url = isEditMode ? `/Station/EditAjax/${$('#stationId').val()}` : '/Station/CreateAjax';
+
+            $.ajax({
+                url: url,
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false
+            })
+            .done(function (response) {
+                if (response.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Éxito!',
+                        text: isEditMode ? 'Estación actualizada correctamente' : 'Estación creada correctamente',
+                        timer: 2000,
+                        showConfirmButton: false,
+                        confirmButtonColor: '#27ae60'
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: response.message || 'Error al guardar la estación',
+                        confirmButtonColor: '#e74c3c'
+                    });
+                    if (response.errors) {
+                        console.error("Errores del modelo:", response.errors);
+                    }
+                }
+            })
+            .fail(function (xhr) {
+                let errorMessage = 'Error al guardar la estación';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: errorMessage,
+                    confirmButtonColor: '#e74c3c'
+                });
+            });
+        };
 
         $(document).ready(function() {
             // Filtros
@@ -1077,8 +1407,15 @@
             // Guardar estación
             $('#saveStationBtn').on('click', saveStation);
 
-            // Cargar áreas al iniciar
-            loadAreas();
+            // Cargar datos iniciales
+            loadUserCompanyAndBranches();
+            
+            // Evento para cargar áreas cuando se selecciona una sucursal
+            $('#stationBranch').on('change', function() {
+                const branchId = $(this).val();
+                console.log('🔄 Evento change en stationBranch, branchId:', branchId);
+                loadAreasByBranch(branchId);
+            });
 
             // Preview del ícono en el modal
             $('#stationIcon').on('change', function() {
@@ -1179,6 +1516,139 @@
             filterStations();
         }
 
+        function loadUserCompanyAndBranches() {
+            console.log('🔍 Iniciando carga de compañía y sucursales...');
+            // Cargar compañía del usuario
+            $.get('/Station/GetUserCompany', function (res) {
+                console.log('📡 Respuesta de compañía:', res);
+                if (res.success) {
+                    console.log('✅ Compañía cargada:', res.data.companyName);
+                    $('#stationCompany').val(res.data.companyName);
+                    
+                    // Cargar sucursales de la compañía del usuario
+                    loadBranchesByUserCompany();
+                } else {
+                    console.log('❌ Error al cargar compañía:', res.message);
+                    $('#stationCompany').val('Error al cargar compañía');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: res.message || 'No se pudo cargar la compañía del usuario'
+                    });
+                }
+            }).fail(function(xhr, status, error) {
+                console.log('❌ Error en petición de compañía:', error);
+                $('#stationCompany').val('Error al cargar compañía');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error al cargar la compañía del usuario'
+                });
+            });
+        }
+
+        function loadBranchesByUserCompany() {
+            console.log('🔍 Iniciando carga de sucursales...');
+            $.get('/Station/GetBranchesByUserCompany', function (res) {
+                console.log('📡 Respuesta de sucursales:', res);
+                if (res.success) {
+                    const select = $('#stationBranch');
+                    select.empty().append('<option value="">Seleccione una sucursal</option>');
+                    if (res.data && Array.isArray(res.data)) {
+                        console.log('✅ Sucursales encontradas:', res.data.length);
+                        res.data.forEach(branch => {
+                            console.log('➕ Agregando sucursal:', branch.name);
+                            select.append(`<option value="${branch.id}">${branch.name}</option>`);
+                        });
+                    } else {
+                        console.log('⚠️ No hay datos de sucursales o formato incorrecto');
+                    }
+                    
+                    // Mostrar información de depuración si está disponible
+                    if (res.debug) {
+                        console.log('=== INFORMACIÓN DE DEPURACIÓN ===');
+                        console.log('Compañía del usuario:', res.debug.userCompanyId);
+                        console.log('Total de sucursales en BD:', res.debug.totalBranchesInDb);
+                        console.log('Sucursales filtradas:', res.debug.filteredBranchesCount);
+                        console.log('Todas las sucursales:', res.debug.allBranches);
+                        console.log('=====================================');
+                    }
+                } else {
+                    console.log('❌ Error al cargar sucursales:', res.message);
+                    const select = $('#stationBranch');
+                    select.empty().append('<option value="">Error al cargar sucursales</option>');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: res.message || 'No se pudieron cargar las sucursales'
+                    });
+                }
+            }).fail(function(xhr, status, error) {
+                console.log('❌ Error en petición de sucursales:', error);
+                const select = $('#stationBranch');
+                select.empty().append('<option value="">Error al cargar sucursales</option>');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error al cargar las sucursales'
+                });
+            });
+        }
+
+        function loadAreasByBranch(branchId) {
+            console.log('🔍 Iniciando carga de áreas para sucursal:', branchId);
+            if (!branchId) {
+                console.log('⚠️ No hay branchId, limpiando dropdown de áreas');
+                $('#stationArea').empty().append('<option value="">Seleccione una sucursal primero...</option>');
+                return;
+            }
+
+            $.get(`/Station/GetAreasByBranch/${branchId}`, function (res) {
+                console.log('📡 Respuesta de áreas:', res);
+                if (res.success) {
+                    const select = $('#stationArea');
+                    select.empty().append('<option value="">Seleccione un área...</option>');
+                    if (res.data && Array.isArray(res.data)) {
+                        console.log('✅ Áreas encontradas:', res.data.length);
+                        res.data.forEach(area => {
+                            console.log('➕ Agregando área:', area.name);
+                            select.append(`<option value="${area.id}">${area.name}</option>`);
+                        });
+                    } else {
+                        console.log('⚠️ No hay datos de áreas o formato incorrecto');
+                    }
+                    
+                    // Mostrar información de depuración si está disponible
+                    if (res.debug) {
+                        console.log('=== INFORMACIÓN DE DEPURACIÓN DE ÁREAS ===');
+                        console.log('Sucursal solicitada:', res.debug.requestedBranchId);
+                        console.log('Total de áreas en BD:', res.debug.totalAreasInDb);
+                        console.log('Áreas filtradas:', res.debug.filteredAreasCount);
+                        console.log('Todas las áreas:', res.debug.allAreas);
+                        console.log('===========================================');
+                    }
+                } else {
+                    console.log('❌ Error al cargar áreas:', res.message);
+                    const select = $('#stationArea');
+                    select.empty().append('<option value="">Error al cargar áreas</option>');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: res.message || 'No se pudieron cargar las áreas'
+                    });
+                }
+            }).fail(function(xhr, status, error) {
+                console.log('❌ Error en petición de áreas:', error);
+                const select = $('#stationArea');
+                select.empty().append('<option value="">Error al cargar áreas</option>');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error al cargar las áreas'
+                });
+            });
+        }
+
         function loadAreas() {
             $.get('/Station/GetAreas')
                 .done(function(response) {
@@ -1201,21 +1671,16 @@
             currentStationId = null;
             $('#modalTitle').html('<i class="fas fa-plus"></i> Nueva Estación');
             
-            // Cargar áreas y resetear el formulario
-            loadAreas().then(() => {
-                $('#stationForm')[0].reset();
-                $('#stationId').val('');
-                $('#stationIsActive').prop('checked', true).trigger('change');
-                $('#modalIconPreview').removeClass().addClass('fas fa-fire');
-                $('#stationModal').modal('show');
-            }).catch(error => {
-                // Aún así mostramos el modal, pero sin áreas cargadas
-                $('#stationForm')[0].reset();
-                $('#stationId').val('');
-                $('#stationIsActive').prop('checked', true).trigger('change');
-                $('#modalIconPreview').removeClass().addClass('fas fa-fire');
-                $('#stationModal').modal('show');
-            });
+            // Cargar compañía y sucursales
+            loadUserCompanyAndBranches();
+            
+            // Resetear el formulario
+            $('#stationForm')[0].reset();
+            $('#stationId').val('');
+            $('#stationIsActive').prop('checked', true).trigger('change');
+            $('#modalIconPreview').removeClass().addClass('fas fa-fire');
+            $('#stationArea').empty().append('<option value="">Seleccione una sucursal primero...</option>');
+            $('#stationModal').modal('show');
         }
 
         // Función para cargar áreas
@@ -1245,227 +1710,8 @@
             });
         }
 
-        function editStation(id) {
-            isEditMode = true;
-            currentStationId = id;
-            $('#modalTitle').html('<i class="fas fa-edit"></i> Editar Estación');
-            
-            // Cargar áreas primero y después cargar datos de la estación
-            loadAreas().then(() => {
-                // Cargar datos de la estación
-                $.get(`/Station/GetStationById/${id}`)
-                    .done(function(response) {
-                        if (response.success) {
-                            const station = response.data;
-                            
-                            // Poblar los campos con un pequeño delay para asegurar que se actualicen
-                            setTimeout(() => {
-                                $('#stationId').val(station.id);
-                                $('#stationName').val(station.name);
-                                $('#stationType').val(station.type);
-                                // Verificar que el área exista en el dropdown antes de seleccionarla
-                                if (station.areaId) {
-                                    const areaOption = $('#stationArea option[value="' + station.areaId + '"]');
-                                    if (areaOption.length > 0) {
-                                        $('#stationArea').val(station.areaId);
-                                    } else {
-                                        $('#stationArea').val('');
-                                    }
-                                } else {
-                                    $('#stationArea').val('');
-                                }
-                                
-                                $('#stationIcon').val(station.icon || '').trigger('change');
-                                $('#stationIsActive').prop('checked', station.isActive).trigger('change');
-                                
-                                $('#stationModal').modal('show');
-                            }, 100);
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: response.message || 'No se pudo cargar la estación',
-                                confirmButtonColor: '#e74c3c'
-                            });
-                        }
-                    })
-                    .fail(function(xhr, status, error) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Error al cargar la estación',
-                            confirmButtonColor: '#e74c3c'
-                        });
-                    });
-            }).catch(error => {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Error al cargar las áreas',
-                    confirmButtonColor: '#e74c3c'
-                });
-            });
-        }
 
-        function saveStation() {
-            const formData = new FormData();
 
-            // Solo enviamos el Id si estamos editando
-            if (isEditMode) {
-                formData.append('Id', $('#stationId').val());
-            }
 
-            const name = $('#stationName').val().trim();
-            const type = $('#stationType').val();
-            const icon = $('#stationIcon').val();
-            const areaId = $('#stationArea').val();
-            const isActive = $('#stationIsActive').is(':checked');
-
-            formData.append('Name', name);
-            formData.append('Type', type);
-            
-            // Solo enviar el ícono si no está vacío
-            if (icon && icon.trim() !== '') {
-                formData.append('Icon', icon.trim());
-            } else {
-                formData.append('Icon', '');
-            }
-            
-            formData.append('AreaId', areaId || '');
-            formData.append('IsActive', isActive);
-
-            // Validaciones frontend
-            if (!name) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'El nombre de la estación es requerido',
-                    confirmButtonColor: '#e74c3c'
-                });
-                return;
-            }
-
-            if (!type) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'El tipo de estación es requerido',
-                    confirmButtonColor: '#e74c3c'
-                });
-                return;
-            }
-
-            const url = isEditMode ? `/Station/EditAjax/${$('#stationId').val()}` : '/Station/CreateAjax';
-
-            $.ajax({
-                url: url,
-                method: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false
-            })
-            .done(function (response) {
-                if (response.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: '¡Éxito!',
-                        text: isEditMode ? 'Estación actualizada correctamente' : 'Estación creada correctamente',
-                        timer: 2000,
-                        showConfirmButton: false,
-                        confirmButtonColor: '#27ae60'
-                    }).then(() => {
-                        location.reload();
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: response.message || 'Error al guardar la estación',
-                        confirmButtonColor: '#e74c3c'
-                    });
-                    if (response.errors) {
-                        console.error("Errores del modelo:", response.errors);
-                    }
-                }
-            })
-            .fail(function (xhr) {
-                let errorMessage = 'Error al guardar la estación';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMessage = xhr.responseJSON.message;
-                }
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: errorMessage,
-                    confirmButtonColor: '#e74c3c'
-                });
-            });
-        }
-
-        function viewStation(id) {
-            $.get(`/Station/DetailsAjax/${id}`)
-                .done(function(response) {
-                    $('#detailsContent').html(response);
-                    $('#detailsModal').modal('show');
-                })
-                .fail(function() {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Error al cargar los detalles',
-                        confirmButtonColor: '#e74c3c'
-                    });
-                });
-        }
-
-        function deleteStation(id, name) {
-            Swal.fire({
-                title: '¿Está seguro?',
-                text: `¿Desea eliminar la estación "${name}"? Esta acción no se puede deshacer.`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#e74c3c',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Sí, eliminar',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.post(`/Station/DeleteAjax/${id}`)
-                    .done(function(response) {
-                        if (response.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: '¡Eliminado!',
-                                text: 'La estación ha sido eliminada correctamente',
-                                timer: 2000,
-                                showConfirmButton: false,
-                                confirmButtonColor: '#27ae60'
-                            }).then(() => {
-                                location.reload();
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: response.message || 'Error al eliminar la estación',
-                                confirmButtonColor: '#e74c3c'
-                            });
-                        }
-                    })
-                    .fail(function(xhr) {
-                        let errorMessage = 'Error al eliminar la estación';
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        }
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: errorMessage,
-                            confirmButtonColor: '#e74c3c'
-                        });
-                    });
-                }
-            });
-        }
     </script>
 } 
