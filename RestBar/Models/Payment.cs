@@ -23,6 +23,11 @@ public partial class Payment
 
     public string? PayerName { get; set; }
 
+    public string Status { get; set; } = "COMPLETED";
+
+    [Column(TypeName = "timestamp with time zone")]
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
     public virtual Order? Order { get; set; }
 
     public virtual ICollection<SplitPayment> SplitPayments { get; set; } = new List<SplitPayment>();

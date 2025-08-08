@@ -18,19 +18,30 @@ namespace RestBar.Controllers
         private readonly IOrderService _orderService;
         private readonly RestBarContext _context;
         private readonly IOrderHubService _orderHubService;
+        private readonly IProductService _productService;
+        private readonly IInventoryService _inventoryService;
+        private readonly IAccountingService _accountingService;
 
         public PaymentController(
             IPaymentService paymentService,
             ISplitPaymentService splitPaymentService,
             IOrderService orderService,
             RestBarContext context,
-            IOrderHubService orderHubService)
+            IOrderHubService orderHubService,
+            IProductService productService,
+            IInventoryService inventoryService,
+            IAccountingService accountingService)
         {
+            Console.WriteLine($"[PaymentController] 🔥🔥🔥 CONSTRUCTOR PaymentController LLAMADO 🔥🔥🔥");
             _paymentService = paymentService;
             _splitPaymentService = splitPaymentService;
             _orderService = orderService;
             _context = context;
             _orderHubService = orderHubService;
+            _productService = productService;
+            _inventoryService = inventoryService;
+            _accountingService = accountingService;
+            Console.WriteLine($"[PaymentController] ✅ Constructor completado - ProductService: {_productService != null}, InventoryService: {_inventoryService != null}");
         }
 
         [HttpPost("partial")]
@@ -38,6 +49,7 @@ namespace RestBar.Controllers
         {
             try
             {
+                Console.WriteLine($"[PaymentController] 🔥🔥🔥 MÉTODO CreatePartialPayment LLAMADO 🔥🔥🔥");
                 Console.WriteLine($"[PaymentController] === INICIANDO PROCESAMIENTO DE PAGO ===");
                 Console.WriteLine($"[PaymentController] OrderId: {request.OrderId}");
                 Console.WriteLine($"[PaymentController] Amount: ${request.Amount}");
@@ -45,6 +57,47 @@ namespace RestBar.Controllers
                 Console.WriteLine($"[PaymentController] IsShared: {request.IsShared}");
                 Console.WriteLine($"[PaymentController] PayerName: {request.PayerName}");
                 Console.WriteLine($"[PaymentController] Split Payments Count: {request.SplitPayments?.Count ?? 0}");
+                
+                // ✅ NUEVO: Verificar stock antes de procesar el pago
+                Console.WriteLine($"[PaymentController] Verificando stock disponible...");
+                var order = await _orderService.GetOrderWithDetailsAsync(request.OrderId);
+                if (order == null)
+                {
+                    Console.WriteLine($"[PaymentController] ERROR: Orden no encontrada");
+                    return NotFound("Orden no encontrada");
+                }
+                Console.WriteLine($"[PaymentController] ✅ Orden encontrada - Items: {order.OrderItems?.Count ?? 0}");
+
+                // Verificar stock para cada item de la orden
+                foreach (var item in order.OrderItems)
+                {
+                    if (item.ProductId.HasValue)
+                    {
+                        var product = await _productService.GetByIdAsync(item.ProductId.Value);
+                        if (product != null && product.Stock.HasValue)
+                        {
+                            Console.WriteLine($"[PaymentController] Verificando stock para {product.Name}: Disponible {product.Stock}, Requerido {item.Quantity}");
+                            
+                            if (product.Stock < item.Quantity)
+                            {
+                                Console.WriteLine($"[PaymentController] ❌ ERROR: Stock insuficiente para {product.Name}");
+                                Console.WriteLine($"[PaymentController] Stock disponible: {product.Stock}, Cantidad requerida: {item.Quantity}");
+                                return BadRequest($"Stock insuficiente para {product.Name}. Disponible: {product.Stock}, Requerido: {item.Quantity}");
+                            }
+                            
+                            if (product.Stock <= 0)
+                            {
+                                Console.WriteLine($"[PaymentController] ❌ ERROR: Producto {product.Name} está agotado");
+                                return BadRequest($"El producto '{product.Name}' está agotado.");
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[PaymentController] ⚠️ WARNING: Producto {item.Product?.Name} no tiene stock configurado");
+                        }
+                    }
+                }
+                Console.WriteLine($"[PaymentController] ✅ Verificación de stock completada - Stock suficiente para todos los productos");
                 
                 // Validar lógica de pagos compartidos
                 if (request.IsShared)
@@ -77,16 +130,6 @@ namespace RestBar.Controllers
                     
                     Console.WriteLine($"[PaymentController] ✅ Validación de pago individual exitosa");
                 }
-
-                // Validar que la orden existe
-                Console.WriteLine($"[PaymentController] Validando que la orden existe...");
-                var order = await _orderService.GetOrderWithDetailsAsync(request.OrderId);
-                if (order == null)
-                {
-                    Console.WriteLine($"[PaymentController] ERROR: Orden no encontrada");
-                    return NotFound("Orden no encontrada");
-                }
-                Console.WriteLine($"[PaymentController] ✅ Orden encontrada - Items: {order.OrderItems?.Count ?? 0}");
 
                 // Validar que el monto no exceda el total de la orden
                 Console.WriteLine($"[PaymentController] Calculando montos de la orden...");
@@ -124,6 +167,38 @@ namespace RestBar.Controllers
                         return BadRequest("La suma de los pagos divididos debe ser igual al monto total");
                     }
                     Console.WriteLine($"[PaymentController] ✅ Validación de split payments exitosa");
+                }
+
+                // ✅ NUEVO: Verificar stock ANTES de crear el pago (sin reducir aún)
+                Console.WriteLine($"[PaymentController] Verificando stock disponible para todos los items...");
+                
+                try
+                {
+                    foreach (var item in order.OrderItems)
+                    {
+                        if (item.ProductId.HasValue)
+                        {
+                            var product = await _productService.GetByIdAsync(item.ProductId.Value);
+                            if (product != null && product.Stock.HasValue)
+                            {
+                                // Verificar stock disponible
+                                if (product.Stock < item.Quantity)
+                                {
+                                    Console.WriteLine($"[PaymentController] ❌ ERROR: Stock insuficiente para {product.Name}");
+                                    throw new InvalidOperationException($"Stock insuficiente para {product.Name}. Disponible: {product.Stock}, Requerido: {item.Quantity}");
+                                }
+                                
+                                Console.WriteLine($"[PaymentController] ✅ Stock suficiente para {product.Name}: {product.Stock} >= {item.Quantity}");
+                            }
+                        }
+                    }
+                    
+                    Console.WriteLine($"[PaymentController] ✅ Verificación de stock completada - Stock suficiente para todos los productos");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[PaymentController] ❌ ERROR al verificar stock: {ex.Message}");
+                    return BadRequest($"Error al verificar stock: {ex.Message}");
                 }
 
                 // Crear el pago principal
@@ -186,6 +261,64 @@ namespace RestBar.Controllers
                     order.Status = OrderStatus.Completed;
                     order.ClosedAt = DateTime.UtcNow;
                     
+                    // ✅ NUEVO: Descontar stock cuando la orden se completa
+                    Console.WriteLine($"[PaymentController] 🔥🔥🔥 DESCONTANDO STOCK AL COMPLETAR ORDEN 🔥🔥🔥");
+                    var completedOrderReducedItems = new List<(Guid productId, decimal quantity)>();
+                    
+                    try
+                    {
+                        foreach (var item in order.OrderItems)
+                        {
+                            if (item.ProductId.HasValue)
+                            {
+                                // ✅ NUEVO: Usar el método DecrementStockAsync del InventoryService
+                                var success = await _inventoryService.DecrementStockAsync(item.ProductId.Value, item.Quantity, _orderHubService);
+                                
+                                if (success)
+                                {
+                                    completedOrderReducedItems.Add((item.ProductId.Value, item.Quantity));
+                                    Console.WriteLine($"[PaymentController] ✅ Stock descontado exitosamente para item: {item.Product?.Name}");
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"[PaymentController] ❌ ERROR: No se pudo descontar stock para {item.Product?.Name}");
+                                    throw new InvalidOperationException($"No se pudo descontar stock para {item.Product?.Name}");
+                                }
+                            }
+                        }
+                        
+                        Console.WriteLine($"[PaymentController] ✅ Stock actualizado en base de datos al completar orden");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[PaymentController] ❌ ERROR al descontar stock al completar orden: {ex.Message}");
+                        
+                        // Rollback: restaurar stock de los items que ya se procesaron
+                        Console.WriteLine($"[PaymentController] Realizando rollback del stock...");
+                        foreach (var (productId, quantity) in completedOrderReducedItems)
+                        {
+                            try
+                            {
+                                var product = await _productService.GetByIdAsync(productId);
+                                if (product != null && product.Stock.HasValue)
+                                {
+                                    product.Stock += quantity;
+                                    _context.Products.Update(product);
+                                    Console.WriteLine($"[PaymentController] ✅ Stock restaurado para producto {product.Name}");
+                                }
+                            }
+                            catch (Exception restoreEx)
+                            {
+                                Console.WriteLine($"[PaymentController] ERROR al restaurar stock para producto {productId}: {restoreEx.Message}");
+                            }
+                        }
+                        
+                        await _context.SaveChangesAsync();
+                        Console.WriteLine($"[PaymentController] ✅ Rollback completado");
+                        
+                        return BadRequest($"Error al procesar stock: {ex.Message}");
+                    }
+                    
                     // Cambiar todos los items a Served
                     foreach (var item in order.OrderItems)
                     {
@@ -204,6 +337,20 @@ namespace RestBar.Controllers
                         {
                             table.Status = "Disponible";
                             Console.WriteLine($"[PaymentController] Mesa {table.TableNumber} cambiada a Disponible");
+                        }
+                    }
+
+                    // ✅ NUEVO: Crear asiento contable automáticamente cuando se completa la orden
+                    if (isFullyPaid)
+                    {
+                        try
+                        {
+                            await _accountingService.CreateAccountingEntryFromOrderAsync(order.Id);
+                            Console.WriteLine($"[PaymentController] ✅ Asiento contable creado automáticamente para orden {order.OrderNumber}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[PaymentController] ❌ Error al crear asiento contable para orden {order.OrderNumber}: {ex.Message}");
                         }
                     }
                 }

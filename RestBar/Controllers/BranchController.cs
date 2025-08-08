@@ -1,19 +1,24 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using RestBar.Interfaces;
 using RestBar.Models;
 using System;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Security.Claims;
 
 namespace RestBar.Controllers
 {
+    [Authorize(Roles = "admin")]
     public class BranchController : Controller
     {
         private readonly IBranchService _branchService;
+        private readonly IAuthService _authService;
 
-        public BranchController(IBranchService branchService)
+        public BranchController(IBranchService branchService, IAuthService authService)
         {
             _branchService = branchService;
+            _authService = authService;
         }
 
         public async Task<IActionResult> Index()
@@ -38,6 +43,7 @@ namespace RestBar.Controllers
         }
 
         [HttpGet]
+        [Route("Branch/Get/{id}")]
         public async Task<IActionResult> Get(Guid id)
         {
             var branch = await _branchService.GetByIdAsync(id);
@@ -54,36 +60,106 @@ namespace RestBar.Controllers
             }});
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetUserCompany()
+        {
+            try
+            {
+                var currentUser = await _authService.GetCurrentUserAsync(User);
+                if (currentUser?.Branch?.CompanyId == null)
+                {
+                    return Json(new { success = false, message = "No se pudo determinar la compañía del usuario" });
+                }
+
+                return Json(new { 
+                    success = true, 
+                    data = new { 
+                        companyId = currentUser.Branch.CompanyId,
+                        companyName = currentUser.Branch.Company?.Name
+                    } 
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al obtener la compañía del usuario" });
+            }
+        }
+
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] Branch model)
         {
-            if (string.IsNullOrWhiteSpace(model.Name))
-                return Json(new { success = false, message = "El nombre es requerido" });
-            if (model.CompanyId == null)
-                return Json(new { success = false, message = "La compañía es requerida" });
-            model.CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
-            var created = await _branchService.CreateAsync(model);
-            return Json(new { success = true, data = created });
+            try
+            {
+                if (string.IsNullOrWhiteSpace(model.Name))
+                    return Json(new { success = false, message = "El nombre es requerido" });
+
+                // Obtener la compañía del usuario logueado
+                var currentUser = await _authService.GetCurrentUserAsync(User);
+                if (currentUser?.Branch?.CompanyId == null)
+                {
+                    return Json(new { success = false, message = "No se pudo determinar la compañía del usuario" });
+                }
+
+                // Asignar automáticamente la compañía del usuario logueado
+                model.CompanyId = currentUser.Branch.CompanyId.Value;
+                model.CreatedAt = DateTime.UtcNow;
+                
+                var created = await _branchService.CreateAsync(model);
+                return Json(new { success = true, data = created });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al crear la sucursal" });
+            }
         }
 
         [HttpPut]
+        [Route("Branch/Edit/{id}")]
         public async Task<IActionResult> Edit(Guid id, [FromBody] Branch model)
         {
-            if (id != model.Id)
-                return Json(new { success = false, message = "ID no coincide" });
-            if (string.IsNullOrWhiteSpace(model.Name))
-                return Json(new { success = false, message = "El nombre es requerido" });
-            if (model.CompanyId == null)
-                return Json(new { success = false, message = "La compañía es requerida" });
-            await _branchService.UpdateAsync(model);
-            return Json(new { success = true });
+            try
+            {
+                if (id != model.Id)
+                    return Json(new { success = false, message = "ID no coincide" });
+                if (string.IsNullOrWhiteSpace(model.Name))
+                    return Json(new { success = false, message = "El nombre es requerido" });
+
+                // Obtener la compañía del usuario logueado
+                var currentUser = await _authService.GetCurrentUserAsync(User);
+                if (currentUser?.Branch?.CompanyId == null)
+                {
+                    return Json(new { success = false, message = "No se pudo determinar la compañía del usuario" });
+                }
+
+                // Asignar automáticamente la compañía del usuario logueado
+                model.CompanyId = currentUser.Branch.CompanyId.Value;
+                
+                await _branchService.UpdateAsync(model);
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al actualizar la sucursal" });
+            }
         }
 
         [HttpDelete]
+        [Route("Branch/Delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            await _branchService.DeleteAsync(id);
-            return Json(new { success = true });
+            try
+            {
+                await _branchService.DeleteAsync(id);
+                return Json(new { success = true });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error interno del servidor. Por favor intenta nuevamente." });
+            }
         }
     }
 } 

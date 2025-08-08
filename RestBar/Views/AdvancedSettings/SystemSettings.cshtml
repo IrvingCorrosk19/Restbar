@@ -1,0 +1,220 @@
+@model IEnumerable<RestBar.Models.SystemSettings>
+@{
+    ViewData["Title"] = "Configuración del Sistema";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="card-title mb-0">
+                        <i class="fas fa-cog text-primary me-2"></i>
+                        Configuración del Sistema
+                    </h2>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSettingModal">
+                        <i class="fas fa-plus me-2"></i>
+                        Nueva Configuración
+                    </button>
+                </div>
+                <div class="card-body">
+                    @if (TempData["Success"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>
+                            @TempData["Success"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            @TempData["Error"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <!-- Configuraciones existentes -->
+                    <div class="row">
+                        @foreach (var category in Model.GroupBy(s => s.Category ?? "General"))
+                        {
+                            <div class="col-lg-6 col-md-12 mb-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">
+                                            <i class="fas fa-folder text-primary me-2"></i>
+                                            @category.Key
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        @foreach (var setting in category)
+                                        {
+                                            <div class="setting-item mb-3 p-3 border rounded">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div class="flex-grow-1">
+                                                        <h6 class="mb-1">@setting.SettingKey</h6>
+                                                        @if (!string.IsNullOrEmpty(setting.Description))
+                                                        {
+                                                            <p class="text-muted small mb-2">@setting.Description</p>
+                                                        }
+                                                        <div class="input-group">
+                                                            <input type="text" class="form-control setting-value" 
+                                                                   value="@setting.SettingValue" 
+                                                                   data-setting-id="@setting.Id"
+                                                                   data-setting-key="@setting.SettingKey">
+                                                            <button class="btn btn-outline-primary save-setting-btn" 
+                                                                    data-setting-id="@setting.Id">
+                                                                <i class="fas fa-save"></i>
+                                                            </button>
+                                                            <button class="btn btn-outline-danger delete-setting-btn" 
+                                                                    data-setting-id="@setting.Id"
+                                                                    data-setting-key="@setting.SettingKey">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    @if (!Model.Any())
+                    {
+                        <div class="text-center py-5">
+                            <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No hay configuraciones definidas</h5>
+                            <p class="text-muted">Agrega la primera configuración del sistema.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para agregar nueva configuración -->
+<div class="modal fade" id="addSettingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus text-primary me-2"></i>
+                    Nueva Configuración
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="SaveSystemSetting" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="key" class="form-label">Clave de Configuración</label>
+                        <input type="text" class="form-control" id="key" name="key" required>
+                        <div class="form-text">Identificador único para la configuración (ej: app.name, database.timeout)</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="value" class="form-label">Valor</label>
+                        <input type="text" class="form-control" id="value" name="value" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="description" name="description" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Categoría</label>
+                        <select class="form-select" id="category" name="category">
+                            <option value="">General</option>
+                            <option value="Database">Base de Datos</option>
+                            <option value="Email">Correo Electrónico</option>
+                            <option value="Security">Seguridad</option>
+                            <option value="Payment">Pagos</option>
+                            <option value="Notification">Notificaciones</option>
+                            <option value="Backup">Respaldos</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>
+                        Guardar Configuración
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Guardar configuración
+            $('.save-setting-btn').click(function() {
+                var settingId = $(this).data('setting-id');
+                var settingValue = $('input[data-setting-id="' + settingId + '"]').val();
+                
+                $.ajax({
+                    url: '@Url.Action("SaveSystemSetting", "AdvancedSettings")',
+                    type: 'POST',
+                    data: {
+                        settingId: settingId,
+                        value: settingValue
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            showAlert('Configuración guardada exitosamente', 'success');
+                        } else {
+                            showAlert('Error al guardar la configuración', 'danger');
+                        }
+                    },
+                    error: function() {
+                        showAlert('Error al guardar la configuración', 'danger');
+                    }
+                });
+            });
+
+            // Eliminar configuración
+            $('.delete-setting-btn').click(function() {
+                var settingId = $(this).data('setting-id');
+                var settingKey = $(this).data('setting-key');
+                
+                if (confirm('¿Estás seguro de que quieres eliminar la configuración "' + settingKey + '"?')) {
+                    $.ajax({
+                        url: '@Url.Action("DeleteSystemSetting", "AdvancedSettings")',
+                        type: 'POST',
+                        data: { settingId: settingId },
+                        success: function(response) {
+                            if (response.success) {
+                                location.reload();
+                            } else {
+                                showAlert('Error al eliminar la configuración', 'danger');
+                            }
+                        },
+                        error: function() {
+                            showAlert('Error al eliminar la configuración', 'danger');
+                        }
+                    });
+                }
+            });
+
+            function showAlert(message, type) {
+                var alertHtml = '<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
+                    '<i class="fas fa-' + (type === 'success' ? 'check-circle' : 'exclamation-triangle') + ' me-2"></i>' +
+                    message +
+                    '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                    '</div>';
+                
+                $('.card-body').prepend(alertHtml);
+                
+                setTimeout(function() {
+                    $('.alert').fadeOut();
+                }, 5000);
+            }
+        });
+    </script>
+} 

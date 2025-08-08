@@ -102,7 +102,7 @@ namespace RestBar.Controllers
                     IsActive = model.IsActive,
                     CategoryId = model.CategoryId,
                     StationId = model.StationId,
-                    CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified)
+                    CreatedAt = DateTime.UtcNow
                 };
 
                 var created = await _productService.CreateAsync(product);

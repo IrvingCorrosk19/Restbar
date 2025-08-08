@@ -330,6 +330,22 @@
         margin-bottom: 1.5rem;
     }
 
+    @@media (min-width: 1200px) {
+        .station-info {
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 0.75rem;
+        }
+        
+        .station-info-item {
+            text-align: center;
+        }
+        
+        .station-badge {
+            font-size: 0.75rem;
+            padding: 0.4rem 0.8rem;
+        }
+    }
+
     .station-info-item {
         text-align: center;
     }
@@ -360,6 +376,43 @@
 
     .station-badge.products-without {
         background: var(--gradient-danger);
+    }
+
+    .station-badge.area {
+        background: var(--gradient-info);
+    }
+
+    .station-badge.no-area {
+        background: var(--gradient-secondary);
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+    }
+
+    .station-badge.status-active {
+        background: var(--gradient-success);
+    }
+
+    .station-badge.status-inactive {
+        background: var(--gradient-danger);
+    }
+
+    .station-badge.inactive-badge {
+        background: var(--gradient-danger);
+        font-size: 0.75rem;
+        margin-left: 0.5rem;
+    }
+
+    /* Estilo para estaciones inactivas */
+    .station-card.station-inactive {
+        opacity: 0.7;
+        border-color: #dc3545;
+    }
+
+    .station-card.station-inactive::before {
+        background: var(--gradient-danger);
+    }
+
+    .station-card.station-inactive .station-card-header {
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
     }
 
     .station-card-footer {
@@ -706,6 +759,32 @@
                     <option value="without">Sin productos</option>
                 </select>
             </div>
+            <div class="filter-group">
+                <label class="filter-label">
+                    <i class="fas fa-map-marker-alt"></i> Filtrar por Área
+                </label>
+                <select class="filter-input" id="areaFilter">
+                    <option value="">Todas las áreas</option>
+                    @{
+                        var areas = Model.Where(s => s.Area != null).Select(s => s.Area).Distinct().OrderBy(a => a.Name);
+                    }
+                    @foreach (var area in areas)
+                    {
+                        <option value="@area.Name">@area.Name</option>
+                    }
+                    <option value="sin-area">Sin área asignada</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">
+                    <i class="fas fa-toggle-on"></i> Filtrar por Estado
+                </label>
+                <select class="filter-input" id="statusFilter">
+                    <option value="">Todos los estados</option>
+                    <option value="active">Activas</option>
+                    <option value="inactive">Inactivas</option>
+                </select>
+            </div>
         </div>
     </section>
 
@@ -717,21 +796,29 @@
         <div class="stations-grid" id="stationsContainer">
             @foreach (var station in Model)
             {
-                <div class="station-card" 
+                <div class="station-card @(station.IsActive ? "" : "station-inactive")" 
                      data-name="@station.Name.ToLower()" 
                      data-type="@station.Type" 
-                     data-products="@(station.Products.Any() ? "with" : "without")">
+                     data-products="@(station.Products.Any() ? "with" : "without")"
+                     data-area="@(station.Area?.Name ?? "sin-area")"
+                     data-status="@(station.IsActive ? "active" : "inactive")">
                     <div class="station-card-header">
                         <h3 class="station-name">
-                            @if (!string.IsNullOrEmpty(station.Icon))
+                            @if (!string.IsNullOrWhiteSpace(station.Icon))
                             {
-                                <i class="@station.Icon station-icon"></i>
+                                <i class="fas @station.Icon station-icon"></i>
                             }
                             else
                             {
                                 <i class="fas fa-fire station-icon"></i>
                             }
                             @station.Name
+                            @if (!station.IsActive)
+                            {
+                                <span class="station-badge inactive-badge">
+                                    <i class="fas fa-ban"></i> Inactiva
+                                </span>
+                            }
                         </h3>
                         <div class="station-actions">
                             <div class="dropdown">
@@ -760,14 +847,48 @@
                                 <span class="station-badge type">@station.Type</span>
                             </div>
                             <div class="station-info-item">
-                                <div class="station-info-label">Productos:</div>
-                                @if (station.Products.Any())
+                                <div class="station-info-label">Área:</div>
+                                @if (station.Area != null)
                                 {
-                                    <span class="station-badge products-with">@station.Products.Count producto(s)</span>
+                                    <span class="station-badge area">
+                                        <i class="fas fa-map-marker-alt"></i> @station.Area.Name
+                                    </span>
                                 }
                                 else
                                 {
-                                    <span class="station-badge products-without">Sin productos</span>
+                                    <span class="station-badge no-area">
+                                        <i class="fas fa-question-circle"></i> Sin área
+                                    </span>
+                                }
+                            </div>
+                            <div class="station-info-item">
+                                <div class="station-info-label">Estado:</div>
+                                @if (station.IsActive)
+                                {
+                                    <span class="station-badge status-active">
+                                        <i class="fas fa-check-circle"></i> Activa
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="station-badge status-inactive">
+                                        <i class="fas fa-ban"></i> Inactiva
+                                    </span>
+                                }
+                            </div>
+                            <div class="station-info-item">
+                                <div class="station-info-label">Productos:</div>
+                                @if (station.Products.Any())
+                                {
+                                    <span class="station-badge products-with">
+                                        <i class="fas fa-box"></i> @station.Products.Count producto(s)
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="station-badge products-without">
+                                        <i class="fas fa-inbox"></i> Sin productos
+                                    </span>
                                 }
                             </div>
                         </div>
@@ -834,10 +955,49 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="stationIcon" class="form-label">
-                            <i class="fas fa-icons"></i> Ícono (clase de Font Awesome)
+                        <label for="stationArea" class="form-label">
+                            <i class="fas fa-map-marker-alt"></i> Área
                         </label>
-                        <input type="text" class="form-control" id="stationIcon" name="Icon" placeholder="Ej: fas fa-utensils">
+                        <select class="form-control" id="stationArea" name="AreaId">
+                            <option value="">Seleccione un área...</option>
+                            <!-- Opciones se cargarán dinámicamente -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="stationIcon" class="form-label">
+                            <i class="fas fa-icons"></i> Ícono
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i id="modalIconPreview" class="fas fa-fire"></i>
+                            </span>
+                            <select class="form-control" id="stationIcon" name="Icon">
+                                <option value="">-- Seleccione un ícono --</option>
+                                <option value="fa-utensils">🍴 Utensils (Cocina)</option>
+                                <option value="fa-cocktail">🍸 Cocktail (Bar)</option>
+                                <option value="fa-coffee">☕ Coffee (Café)</option>
+                                <option value="fa-fire">🔥 Fire (Parrilla)</option>
+                                <option value="fa-pizza-slice">🍕 Pizza</option>
+                                <option value="fa-cookie-bite">🍪 Cookie (Postres)</option>
+                                <option value="fa-ice-cream">🍦 Ice Cream (Postres)</option>
+                                <option value="fa-fish">🐟 Fish (Sushi)</option>
+                                <option value="fa-hamburger">🍔 Hamburger</option>
+                                <option value="fa-wine-glass">🍷 Wine Glass (Bar)</option>
+                                <option value="fa-beer">🍺 Beer (Bar)</option>
+                                <option value="fa-mortar-pestle">🧪 Mortar (Especial)</option>
+                                <option value="fa-bread-slice">🍞 Bread (Panadería)</option>
+                                <option value="fa-cheese">🧀 Cheese (Lácteos)</option>
+                                <option value="fa-drumstick-bite">🍗 Chicken (Pollo)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="stationIsActive" name="IsActive" checked>
+                            <label class="form-check-label" for="stationIsActive">
+                                <i class="fas fa-toggle-on text-success"></i> Estación Activa
+                            </label>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -883,7 +1043,7 @@
 
         $(document).ready(function() {
             // Filtros
-            $('#searchInput, #typeFilter, #productFilter').on('input change', filterStations);
+            $('#searchInput, #typeFilter, #productFilter, #areaFilter, #statusFilter').on('input change', filterStations);
             
             // Auto-completar tipo personalizado
             $('#stationType').on('change', function() {
@@ -916,12 +1076,47 @@
 
             // Guardar estación
             $('#saveStationBtn').on('click', saveStation);
+
+            // Cargar áreas al iniciar
+            loadAreas();
+
+            // Preview del ícono en el modal
+            $('#stationIcon').on('change', function() {
+                var selectedIcon = $(this).val();
+                var iconPreview = $('#modalIconPreview');
+                
+                if (selectedIcon && selectedIcon.trim() !== '') {
+                    iconPreview.removeClass().addClass('fas ' + selectedIcon);
+                } else {
+                    iconPreview.removeClass().addClass('fas fa-fire');
+                }
+            });
+
+            // Toggle visual para IsActive en el modal
+            $('#stationIsActive').on('change', function() {
+                var label = $(this).next('label');
+                var icon = label.find('i');
+                
+                if ($(this).is(':checked')) {
+                    icon.removeClass('fa-toggle-off text-danger').addClass('fa-toggle-on text-success');
+                    label.contents().filter(function() {
+                        return this.nodeType === 3; // Text nodes
+                    }).first().replaceWith(' Estación Activa');
+                } else {
+                    icon.removeClass('fa-toggle-on text-success').addClass('fa-toggle-off text-danger');
+                    label.contents().filter(function() {
+                        return this.nodeType === 3; // Text nodes
+                    }).first().replaceWith(' Estación Inactiva');
+                }
+            });
         });
 
         function filterStations() {
             const searchTerm = $('#searchInput').val().toLowerCase();
             const typeFilter = $('#typeFilter').val();
             const productFilter = $('#productFilter').val();
+            const areaFilter = $('#areaFilter').val();
+            const statusFilter = $('#statusFilter').val();
             let visibleCount = 0;
 
             $('.station-card').each(function() {
@@ -929,6 +1124,8 @@
                 const name = card.data('name');
                 const type = card.data('type');
                 const products = card.data('products');
+                const area = card.data('area');
+                const status = card.data('status');
 
                 let show = true;
 
@@ -944,6 +1141,16 @@
 
                 // Filtro de productos
                 if (productFilter && products !== productFilter) {
+                    show = false;
+                }
+
+                // Filtro de área
+                if (areaFilter && area !== areaFilter) {
+                    show = false;
+                }
+
+                // Filtro de estado
+                if (statusFilter && status !== statusFilter) {
                     show = false;
                 }
 
@@ -967,16 +1174,75 @@
             $('#searchInput').val('');
             $('#typeFilter').val('');
             $('#productFilter').val('');
+            $('#areaFilter').val('');
+            $('#statusFilter').val('');
             filterStations();
+        }
+
+        function loadAreas() {
+            $.get('/Station/GetAreas')
+                .done(function(response) {
+                    if (response.success) {
+                        var areaSelect = $('#stationArea');
+                        areaSelect.find('option:not(:first)').remove();
+                        
+                        response.data.forEach(function(area) {
+                            areaSelect.append(new Option(area.name, area.id));
+                        });
+                    }
+                })
+                .fail(function() {
+                    console.error('Error al cargar las áreas');
+                });
         }
 
         function openCreateModal() {
             isEditMode = false;
             currentStationId = null;
             $('#modalTitle').html('<i class="fas fa-plus"></i> Nueva Estación');
-            $('#stationForm')[0].reset();
-            $('#stationId').val('');
-            $('#stationModal').modal('show');
+            
+            // Cargar áreas y resetear el formulario
+            loadAreas().then(() => {
+                $('#stationForm')[0].reset();
+                $('#stationId').val('');
+                $('#stationIsActive').prop('checked', true).trigger('change');
+                $('#modalIconPreview').removeClass().addClass('fas fa-fire');
+                $('#stationModal').modal('show');
+            }).catch(error => {
+                // Aún así mostramos el modal, pero sin áreas cargadas
+                $('#stationForm')[0].reset();
+                $('#stationId').val('');
+                $('#stationIsActive').prop('checked', true).trigger('change');
+                $('#modalIconPreview').removeClass().addClass('fas fa-fire');
+                $('#stationModal').modal('show');
+            });
+        }
+
+        // Función para cargar áreas
+        function loadAreas() {
+            return new Promise((resolve, reject) => {
+                $.get('/Station/GetAreas')
+                    .done(function(response) {
+                        if (response.success) {
+                            const areaSelect = $('#stationArea');
+                            areaSelect.empty();
+                            areaSelect.append('<option value="">Seleccione un área...</option>');
+                            
+                            if (response.data && response.data.length > 0) {
+                                response.data.forEach(function(area) {
+                                    areaSelect.append(`<option value="${area.id}">${area.name}</option>`);
+                                });
+                            }
+                            
+                            resolve();
+                        } else {
+                            reject(response.message || 'Error al cargar las áreas');
+                        }
+                    })
+                    .fail(function(xhr, status, error) {
+                        reject('Error al cargar las áreas');
+                    });
+            });
         }
 
         function editStation(id) {
@@ -984,33 +1250,61 @@
             currentStationId = id;
             $('#modalTitle').html('<i class="fas fa-edit"></i> Editar Estación');
             
-            // Cargar datos de la estación
-            $.get(`/Station/GetStationById/${id}`)
-                .done(function(response) {
-                    if (response.success) {
-                        const station = response.data;
-                        $('#stationId').val(station.id);
-                        $('#stationName').val(station.name);
-                        $('#stationType').val(station.type);
-                        $('#stationIcon').val(station.icon);
-                        $('#stationModal').modal('show');
-                    } else {
+            // Cargar áreas primero y después cargar datos de la estación
+            loadAreas().then(() => {
+                // Cargar datos de la estación
+                $.get(`/Station/GetStationById/${id}`)
+                    .done(function(response) {
+                        if (response.success) {
+                            const station = response.data;
+                            
+                            // Poblar los campos con un pequeño delay para asegurar que se actualicen
+                            setTimeout(() => {
+                                $('#stationId').val(station.id);
+                                $('#stationName').val(station.name);
+                                $('#stationType').val(station.type);
+                                // Verificar que el área exista en el dropdown antes de seleccionarla
+                                if (station.areaId) {
+                                    const areaOption = $('#stationArea option[value="' + station.areaId + '"]');
+                                    if (areaOption.length > 0) {
+                                        $('#stationArea').val(station.areaId);
+                                    } else {
+                                        $('#stationArea').val('');
+                                    }
+                                } else {
+                                    $('#stationArea').val('');
+                                }
+                                
+                                $('#stationIcon').val(station.icon || '').trigger('change');
+                                $('#stationIsActive').prop('checked', station.isActive).trigger('change');
+                                
+                                $('#stationModal').modal('show');
+                            }, 100);
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: response.message || 'No se pudo cargar la estación',
+                                confirmButtonColor: '#e74c3c'
+                            });
+                        }
+                    })
+                    .fail(function(xhr, status, error) {
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
-                            text: 'No se pudo cargar la estación',
+                            text: 'Error al cargar la estación',
                             confirmButtonColor: '#e74c3c'
                         });
-                    }
-                })
-                .fail(function() {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Error al cargar la estación',
-                        confirmButtonColor: '#e74c3c'
                     });
+            }).catch(error => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error al cargar las áreas',
+                    confirmButtonColor: '#e74c3c'
                 });
+            });
         }
 
         function saveStation() {
@@ -1024,10 +1318,21 @@
             const name = $('#stationName').val().trim();
             const type = $('#stationType').val();
             const icon = $('#stationIcon').val();
+            const areaId = $('#stationArea').val();
+            const isActive = $('#stationIsActive').is(':checked');
 
             formData.append('Name', name);
             formData.append('Type', type);
-            formData.append('Icon', icon);
+            
+            // Solo enviar el ícono si no está vacío
+            if (icon && icon.trim() !== '') {
+                formData.append('Icon', icon.trim());
+            } else {
+                formData.append('Icon', '');
+            }
+            
+            formData.append('AreaId', areaId || '');
+            formData.append('IsActive', isActive);
 
             // Validaciones frontend
             if (!name) {

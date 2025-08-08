@@ -745,9 +745,11 @@
                         const select = $(selectId);
                         const current = select.val();
                         select.empty().append('<option value="">Seleccione una sucursal</option>');
-                        res.data.forEach(branch => {
-                            select.append(`<option value="${branch.id}">${branch.name}</option>`);
-                        });
+                        if (res.data && Array.isArray(res.data)) {
+                            res.data.forEach(branch => {
+                                select.append(`<option value="${branch.id}">${branch.name}</option>`);
+                            });
+                        }
                         select.val(current);
                     });
                     if (callback) callback();
@@ -761,9 +763,11 @@
                     const select = $('#branchFilter');
                     const current = select.val();
                     select.empty().append('<option value="">Todas las sucursales</option>');
-                    res.data.forEach(branch => {
-                        select.append(`<option value="${branch.name}">${branch.name}</option>`);
-                    });
+                    if (res.data && Array.isArray(res.data)) {
+                        res.data.forEach(branch => {
+                            select.append(`<option value="${branch.name}">${branch.name}</option>`);
+                        });
+                    }
                     select.val(current);
                 }
             });

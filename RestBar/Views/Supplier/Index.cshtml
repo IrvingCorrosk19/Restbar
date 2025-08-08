@@ -1,0 +1,229 @@
+@model IEnumerable<RestBar.Models.Supplier>
+
+@{
+    ViewData["Title"] = "Gestión de Proveedores";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-truck me-2"></i>Gestión de Proveedores
+                        </h4>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-light btn-sm me-2" onclick="openCreateSupplierModal()">
+                                <i class="fas fa-plus me-1"></i>Nuevo Proveedor
+                            </button>
+                            <button type="button" class="btn btn-light btn-sm me-2" onclick="refreshSuppliers()">
+                                <i class="fas fa-sync-alt me-1"></i>Actualizar
+                            </button>
+                            <button type="button" class="btn btn-light btn-sm" onclick="exportSuppliers()">
+                                <i class="fas fa-download me-1"></i>Exportar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Filtros de búsqueda -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                                <input type="text" id="searchInput" class="form-control" placeholder="Buscar proveedores...">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="statusFilter" class="form-select">
+                                <option value="">Todos los estados</option>
+                                <option value="true">Activos</option>
+                                <option value="false">Inactivos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="cityFilter" class="form-select">
+                                <option value="">Todas las ciudades</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                                <i class="fas fa-times me-1"></i>Limpiar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de proveedores -->
+                    <div class="table-responsive">
+                        <table id="suppliersTable" class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Contacto</th>
+                                    <th>Email</th>
+                                    <th>Teléfono</th>
+                                    <th>Ciudad</th>
+                                    <th>Estado</th>
+                                    <th>Productos</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="suppliersTableBody">
+                                <!-- Los datos se cargarán dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="text-muted">
+                            <span id="suppliersCount">0</span> proveedores encontrados
+                        </div>
+                        <nav aria-label="Navegación de proveedores">
+                            <ul class="pagination pagination-sm mb-0" id="pagination">
+                                <!-- Paginación dinámica -->
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para crear/editar proveedor -->
+<div class="modal fade" id="supplierModal" tabindex="-1" aria-labelledby="supplierModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="supplierModalLabel">
+                    <i class="fas fa-truck me-2"></i>Nuevo Proveedor
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="supplierForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="supplierName" class="form-label">Nombre *</label>
+                                <input type="text" class="form-control" id="supplierName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="supplierDescription" class="form-label">Descripción</label>
+                                <textarea class="form-control" id="supplierDescription" rows="3"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="supplierContactPerson" class="form-label">Persona de Contacto</label>
+                                <input type="text" class="form-control" id="supplierContactPerson">
+                            </div>
+                            <div class="mb-3">
+                                <label for="supplierEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="supplierEmail">
+                            </div>
+                            <div class="mb-3">
+                                <label for="supplierPhone" class="form-label">Teléfono</label>
+                                <input type="tel" class="form-control" id="supplierPhone">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="supplierAddress" class="form-label">Dirección</label>
+                                <input type="text" class="form-control" id="supplierAddress">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="supplierCity" class="form-label">Ciudad</label>
+                                        <input type="text" class="form-control" id="supplierCity">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="supplierState" class="form-label">Estado/Provincia</label>
+                                        <input type="text" class="form-control" id="supplierState">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="supplierPostalCode" class="form-label">Código Postal</label>
+                                        <input type="text" class="form-control" id="supplierPostalCode">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="supplierCountry" class="form-label">País</label>
+                                        <input type="text" class="form-control" id="supplierCountry">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="supplierTaxId" class="form-label">ID Fiscal</label>
+                                <input type="text" class="form-control" id="supplierTaxId">
+                            </div>
+                            <div class="mb-3">
+                                <label for="supplierWebsite" class="form-label">Sitio Web</label>
+                                <input type="url" class="form-control" id="supplierWebsite">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="supplierNotes" class="form-label">Notas</label>
+                        <textarea class="form-control" id="supplierNotes" rows="3"></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="supplierIsActive" checked>
+                        <label class="form-check-label" for="supplierIsActive">
+                            Proveedor activo
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveSupplier()">
+                    <i class="fas fa-save me-1"></i>Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para detalles del proveedor -->
+<div class="modal fade" id="supplierDetailsModal" tabindex="-1" aria-labelledby="supplierDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="supplierDetailsModalLabel">
+                    <i class="fas fa-info-circle me-2"></i>Detalles del Proveedor
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="supplierDetailsContent">
+                    <!-- Contenido dinámico -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/supplier/supplier-management.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSuppliers();
+            setupFilters();
+        });
+    </script>
+} 

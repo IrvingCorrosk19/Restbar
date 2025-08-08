@@ -70,5 +70,30 @@ namespace RestBar.Services
             await _hubContext.Clients.Group($"order_{orderId}")
                 .SendAsync("PaymentProcessed", orderId, amount, method, isFullyPaid);
         }
+
+        // ✅ NUEVO: Métodos para notificar cambios de stock
+        public async Task NotifyStockUpdated(Guid productId, string productName, decimal newStock)
+        {
+            await _hubContext.Clients.Group("stock_updates")
+                .SendAsync("StockUpdated", new {
+                    ProductId = productId,
+                    ProductName = productName,
+                    NewStock = newStock,
+                    Timestamp = DateTime.UtcNow
+                });
+        }
+
+        public async Task NotifyStockReduced(Guid productId, string productName, decimal oldStock, decimal newStock, decimal quantityReduced)
+        {
+            await _hubContext.Clients.Group("stock_updates")
+                .SendAsync("StockReduced", new {
+                    ProductId = productId,
+                    ProductName = productName,
+                    OldStock = oldStock,
+                    NewStock = newStock,
+                    QuantityReduced = quantityReduced,
+                    Timestamp = DateTime.UtcNow
+                });
+        }
     }
 } 

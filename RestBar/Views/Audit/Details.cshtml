@@ -1,0 +1,249 @@
+@model RestBar.Models.AuditLog
+@{
+    ViewData["Title"] = "Detalles del Log de Auditoría";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-clipboard-list"></i>
+                        Detalles del Log de Auditoría
+                    </h3>
+                    <div class="card-tools">
+                        <a href="@Url.Action("Index", "Audit")" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Volver
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Información básica -->
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-info-circle"></i> Información Básica</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>ID:</strong></td>
+                                    <td><code>@Model.Id</code></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Fecha/Hora:</strong></td>
+                                    <td>@Model.Timestamp?.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Módulo:</strong></td>
+                                    <td><span class="badge bg-info">@Model.Module</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Acción:</strong></td>
+                                    <td><span class="badge bg-secondary">@Model.Action</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Nivel:</strong></td>
+                                    <td>
+                                        @{
+                                            var badgeClass = Model.LogLevel switch
+                                            {
+                                                "ERROR" => "bg-danger",
+                                                "WARNING" => "bg-warning",
+                                                "CRITICAL" => "bg-dark",
+                                                _ => "bg-success"
+                                            };
+                                        }
+                                        <span class="badge @badgeClass">@Model.LogLevel</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Es Error:</strong></td>
+                                    <td>
+                                        @if (Model.IsError)
+                                        {
+                                            <span class="badge bg-danger">Sí</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">No</span>
+                                        }
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <!-- Información del usuario y contexto -->
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-user"></i> Usuario y Contexto</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Usuario:</strong></td>
+                                    <td>
+                                        @if (Model.User != null)
+                                        {
+                                            <span>@Model.User.FullName (@Model.User.Email)</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Sistema</span>
+                                        }
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Compañía:</strong></td>
+                                    <td>
+                                        @if (Model.Company != null)
+                                        {
+                                            <span>@Model.Company.Name</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No especificada</span>
+                                        }
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Sucursal:</strong></td>
+                                    <td>
+                                        @if (Model.Branch != null)
+                                        {
+                                            <span>@Model.Branch.Name</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No especificada</span>
+                                        }
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>IP Address:</strong></td>
+                                    <td><code>@Model.IpAddress</code></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>User Agent:</strong></td>
+                                    <td><small class="text-muted">@Model.UserAgent</small></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Session ID:</strong></td>
+                                    <td><code>@Model.SessionId</code></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Descripción -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h5><i class="fas fa-comment"></i> Descripción</h5>
+                            <div class="alert alert-info">
+                                @Model.Description
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Información del registro -->
+                    @if (Model.RecordId.HasValue || !string.IsNullOrEmpty(Model.TableName))
+                    {
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h5><i class="fas fa-database"></i> Información del Registro</h5>
+                                <table class="table table-borderless">
+                                    @if (Model.RecordId.HasValue)
+                                    {
+                                        <tr>
+                                            <td><strong>ID del Registro:</strong></td>
+                                            <td><code>@Model.RecordId</code></td>
+                                        </tr>
+                                    }
+                                    @if (!string.IsNullOrEmpty(Model.TableName))
+                                    {
+                                        <tr>
+                                            <td><strong>Tabla:</strong></td>
+                                            <td><code>@Model.TableName</code></td>
+                                        </tr>
+                                    }
+                                </table>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Valores anteriores y nuevos -->
+                    @if (!string.IsNullOrEmpty(Model.OldValues) || !string.IsNullOrEmpty(Model.NewValues))
+                    {
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h5><i class="fas fa-exchange-alt"></i> Cambios de Datos</h5>
+                                <div class="row">
+                                    @if (!string.IsNullOrEmpty(Model.OldValues))
+                                    {
+                                        <div class="col-md-6">
+                                            <h6 class="text-danger">Valores Anteriores</h6>
+                                            <pre class="bg-light p-3 rounded"><code>@Model.OldValues</code></pre>
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(Model.NewValues))
+                                    {
+                                        <div class="col-md-6">
+                                            <h6 class="text-success">Valores Nuevos</h6>
+                                            <pre class="bg-light p-3 rounded"><code>@Model.NewValues</code></pre>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Detalles del error -->
+                    @if (Model.IsError && !string.IsNullOrEmpty(Model.ErrorDetails))
+                    {
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h5><i class="fas fa-exclamation-triangle text-danger"></i> Detalles del Error</h5>
+                                <div class="alert alert-danger">
+                                    <h6>Tipo de Excepción: @Model.ExceptionType</h6>
+                                    @if (Model.ErrorCode.HasValue)
+                                    {
+                                        <h6>Código de Error: @Model.ErrorCode</h6>
+                                    }
+                                    <pre class="mt-2"><code>@Model.ErrorDetails</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Stack Trace -->
+                    @if (!string.IsNullOrEmpty(Model.StackTrace))
+                    {
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h5><i class="fas fa-code"></i> Stack Trace</h5>
+                                <div class="alert alert-warning">
+                                    <pre style="max-height: 300px; overflow-y: auto;"><code>@Model.StackTrace</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Syntax highlighting para JSON
+            $('pre code').each(function() {
+                try {
+                    var json = JSON.parse($(this).text());
+                    $(this).text(JSON.stringify(json, null, 2));
+                } catch (e) {
+                    // No es JSON válido, mantener como está
+                }
+            });
+
+            // Tooltip initialization
+            $('[title]').tooltip();
+        });
+    </script>
+} 

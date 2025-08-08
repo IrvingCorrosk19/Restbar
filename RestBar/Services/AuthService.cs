@@ -9,11 +9,9 @@ using System.Text;
 
 namespace RestBar.Services
 {
-    public class AuthService : IAuthService
+    public class AuthService : BaseTrackingService, IAuthService
     {
-        private readonly RestBarContext _context;
         private readonly IUserService _userService;
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<AuthService> _logger;
 
         public AuthService(
@@ -21,10 +19,9 @@ namespace RestBar.Services
             IUserService userService, 
             IHttpContextAccessor httpContextAccessor,
             ILogger<AuthService> logger)
+            : base(context, httpContextAccessor)
         {
-            _context = context;
             _userService = userService;
-            _httpContextAccessor = httpContextAccessor;
             _logger = logger;
         }
 
@@ -217,7 +214,7 @@ namespace RestBar.Services
                     PasswordHash = HashPassword("Admin123!"),
                     Role = UserRole.admin,
                     IsActive = true,
-                    CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified),
+                    CreatedAt = DateTime.UtcNow,
                     BranchId = null
                 };
 

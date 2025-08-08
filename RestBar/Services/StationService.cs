@@ -21,6 +21,7 @@ namespace RestBar.Services
         {
             return await _context.Stations
                 .Include(s => s.Products)
+                .Include(s => s.Area)
                 .OrderBy(s => s.Name)
                 .ToListAsync();
         }
@@ -29,6 +30,7 @@ namespace RestBar.Services
         {
             return await _context.Stations
                 .Include(s => s.Products)
+                .Include(s => s.Area)
                 .FirstOrDefaultAsync(s => s.Id == id);
         }
 
@@ -80,7 +82,17 @@ namespace RestBar.Services
 
             existing.Name = station.Name;
             existing.Type = station.Type;
+            existing.Icon = station.Icon;
+            existing.AreaId = station.AreaId;
+            existing.IsActive = station.IsActive;
+            
             await _context.SaveChangesAsync();
+            
+            // Recargar con las relaciones
+            await _context.Entry(existing)
+                .Reference(s => s.Area)
+                .LoadAsync();
+                
             return existing;
         }
 

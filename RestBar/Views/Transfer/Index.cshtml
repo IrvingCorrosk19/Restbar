@@ -1,0 +1,370 @@
+@model IEnumerable<RestBar.Models.Transfer>
+@{
+    ViewData["Title"] = "Transferencias";
+    var statistics = ViewBag.Statistics as dynamic;
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">
+                        <i class="fas fa-exchange-alt me-2"></i>
+                        Gestión de Transferencias
+                    </h3>
+                    <a href="@Url.Action("Create", "Transfer")" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>
+                        Nueva Transferencia
+                    </a>
+                </div>
+                <div class="card-body">
+                    <!-- Estadísticas -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="info-box bg-info">
+                                <span class="info-box-icon"><i class="fas fa-list"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Total Transferencias</span>
+                                    <span class="info-box-number">@(statistics?.TotalTransfers ?? 0)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box bg-warning">
+                                <span class="info-box-icon"><i class="fas fa-clock"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Pendientes</span>
+                                    <span class="info-box-number">@(statistics?.PendingTransfers ?? 0)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box bg-success">
+                                <span class="info-box-icon"><i class="fas fa-check"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Aprobadas</span>
+                                    <span class="info-box-number">@(statistics?.ApprovedTransfers ?? 0)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box bg-primary">
+                                <span class="info-box-icon"><i class="fas fa-dollar-sign"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Monto Total</span>
+                                    <span class="info-box-number">$@(statistics?.TotalAmount?.ToString("N2") ?? "0.00")</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filtros -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <select id="statusFilter" class="form-select">
+                                <option value="">Todos los estados</option>
+                                <option value="Pending">Pendientes</option>
+                                <option value="Approved">Aprobadas</option>
+                                <option value="InTransit">En Tránsito</option>
+                                <option value="Delivered">Entregadas</option>
+                                <option value="Cancelled">Canceladas</option>
+                                <option value="Rejected">Rechazadas</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" id="startDate" class="form-control" placeholder="Fecha inicio">
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" id="endDate" class="form-control" placeholder="Fecha fin">
+                        </div>
+                        <div class="col-md-3">
+                            <button id="applyFilters" class="btn btn-secondary">
+                                <i class="fas fa-filter me-2"></i>
+                                Aplicar Filtros
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de transferencias -->
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="transfersTable">
+                            <thead>
+                                <tr>
+                                    <th>Número</th>
+                                    <th>Origen</th>
+                                    <th>Destino</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                    <th>Total</th>
+                                    <th>Creado por</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var transfer in Model)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@transfer.TransferNumber</strong>
+                                        </td>
+                                        <td>@transfer.SourceBranch?.Name</td>
+                                        <td>@transfer.DestinationBranch?.Name</td>
+                                        <td>@transfer.TransferDate.ToString("dd/MM/yyyy")</td>
+                                        <td>
+                                            @switch (transfer.Status)
+                                            {
+                                                case RestBar.Models.TransferStatus.Pending:
+                                                    <span class="badge bg-warning">Pendiente</span>
+                                                    break;
+                                                case RestBar.Models.TransferStatus.Approved:
+                                                    <span class="badge bg-success">Aprobada</span>
+                                                    break;
+                                                case RestBar.Models.TransferStatus.InTransit:
+                                                    <span class="badge bg-info">En Tránsito</span>
+                                                    break;
+                                                case RestBar.Models.TransferStatus.Delivered:
+                                                    <span class="badge bg-primary">Entregada</span>
+                                                    break;
+                                                case RestBar.Models.TransferStatus.Cancelled:
+                                                    <span class="badge bg-secondary">Cancelada</span>
+                                                    break;
+                                                case RestBar.Models.TransferStatus.Rejected:
+                                                    <span class="badge bg-danger">Rechazada</span>
+                                                    break;
+                                            }
+                                        </td>
+                                        <td>$@transfer.TotalAmount.ToString("N2")</td>
+                                        <td>@transfer.CreatedBy?.FullName</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="@Url.Action("Details", "Transfer", new { id = transfer.Id })" 
+                                                   class="btn btn-sm btn-info" title="Ver detalles">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                
+                                                @if (transfer.Status == RestBar.Models.TransferStatus.Pending)
+                                                {
+                                                    <a href="@Url.Action("Edit", "Transfer", new { id = transfer.Id })" 
+                                                       class="btn btn-sm btn-warning" title="Editar">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    
+                                                    <button type="button" class="btn btn-sm btn-success approve-btn" 
+                                                            data-id="@transfer.Id" title="Aprobar">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                    
+                                                    <button type="button" class="btn btn-sm btn-danger reject-btn" 
+                                                            data-id="@transfer.Id" title="Rechazar">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                    
+                                                    <button type="button" class="btn btn-sm btn-secondary delete-btn" 
+                                                            data-id="@transfer.Id" title="Eliminar">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                }
+                                                
+                                                @if (transfer.Status == RestBar.Models.TransferStatus.Approved)
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-info transit-btn" 
+                                                            data-id="@transfer.Id" title="Marcar en tránsito">
+                                                        <i class="fas fa-truck"></i>
+                                                    </button>
+                                                    
+                                                    <button type="button" class="btn btn-sm btn-secondary cancel-btn" 
+                                                            data-id="@transfer.Id" title="Cancelar">
+                                                        <i class="fas fa-ban"></i>
+                                                    </button>
+                                                }
+                                                
+                                                @if (transfer.Status == RestBar.Models.TransferStatus.InTransit)
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-primary receive-btn" 
+                                                            data-id="@transfer.Id" title="Recibir">
+                                                        <i class="fas fa-box-open"></i>
+                                                    </button>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para rechazar transferencia -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Rechazar Transferencia</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="rejectForm">
+                <div class="modal-body">
+                    <input type="hidden" id="rejectTransferId" name="id">
+                    <div class="mb-3">
+                        <label for="rejectReason" class="form-label">Motivo del rechazo</label>
+                        <textarea class="form-control" id="rejectReason" name="reason" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Rechazar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para cancelar transferencia -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cancelar Transferencia</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="cancelForm">
+                <div class="modal-body">
+                    <input type="hidden" id="cancelTransferId" name="id">
+                    <div class="mb-3">
+                        <label for="cancelReason" class="form-label">Motivo de la cancelación</label>
+                        <textarea class="form-control" id="cancelReason" name="reason" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Cancelar Transferencia</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Aprobar transferencia
+            $('.approve-btn').click(function() {
+                const id = $(this).data('id');
+                if (confirm('¿Está seguro de que desea aprobar esta transferencia?')) {
+                    $.post('@Url.Action("Approve", "Transfer")', { id: id })
+                        .done(function() {
+                            location.reload();
+                        })
+                        .fail(function(xhr) {
+                            alert('Error al aprobar la transferencia: ' + xhr.responseText);
+                        });
+                }
+            });
+
+            // Rechazar transferencia
+            $('.reject-btn').click(function() {
+                const id = $(this).data('id');
+                $('#rejectTransferId').val(id);
+                $('#rejectModal').modal('show');
+            });
+
+            $('#rejectForm').submit(function(e) {
+                e.preventDefault();
+                const id = $('#rejectTransferId').val();
+                const reason = $('#rejectReason').val();
+                
+                $.post('@Url.Action("Reject", "Transfer")', { id: id, reason: reason })
+                    .done(function() {
+                        $('#rejectModal').modal('hide');
+                        location.reload();
+                    })
+                    .fail(function(xhr) {
+                        alert('Error al rechazar la transferencia: ' + xhr.responseText);
+                    });
+            });
+
+            // Cancelar transferencia
+            $('.cancel-btn').click(function() {
+                const id = $(this).data('id');
+                $('#cancelTransferId').val(id);
+                $('#cancelModal').modal('show');
+            });
+
+            $('#cancelForm').submit(function(e) {
+                e.preventDefault();
+                const id = $('#cancelTransferId').val();
+                const reason = $('#cancelReason').val();
+                
+                $.post('@Url.Action("Cancel", "Transfer")', { id: id, reason: reason })
+                    .done(function() {
+                        $('#cancelModal').modal('hide');
+                        location.reload();
+                    })
+                    .fail(function(xhr) {
+                        alert('Error al cancelar la transferencia: ' + xhr.responseText);
+                    });
+            });
+
+            // Marcar en tránsito
+            $('.transit-btn').click(function() {
+                const id = $(this).data('id');
+                if (confirm('¿Está seguro de que desea marcar esta transferencia como en tránsito?')) {
+                    $.post('@Url.Action("MarkInTransit", "Transfer")', { id: id })
+                        .done(function() {
+                            location.reload();
+                        })
+                        .fail(function(xhr) {
+                            alert('Error al marcar en tránsito: ' + xhr.responseText);
+                        });
+                }
+            });
+
+            // Recibir transferencia
+            $('.receive-btn').click(function() {
+                const id = $(this).data('id');
+                if (confirm('¿Está seguro de que desea recibir esta transferencia?')) {
+                    $.post('@Url.Action("Receive", "Transfer")', { id: id })
+                        .done(function() {
+                            location.reload();
+                        })
+                        .fail(function(xhr) {
+                            alert('Error al recibir la transferencia: ' + xhr.responseText);
+                        });
+                }
+            });
+
+            // Eliminar transferencia
+            $('.delete-btn').click(function() {
+                const id = $(this).data('id');
+                if (confirm('¿Está seguro de que desea eliminar esta transferencia?')) {
+                    $.post('@Url.Action("Delete", "Transfer")', { id: id })
+                        .done(function() {
+                            location.reload();
+                        })
+                        .fail(function(xhr) {
+                            alert('Error al eliminar la transferencia: ' + xhr.responseText);
+                        });
+                }
+            });
+
+            // Filtros
+            $('#applyFilters').click(function() {
+                const status = $('#statusFilter').val();
+                const startDate = $('#startDate').val();
+                const endDate = $('#endDate').val();
+                
+                let url = '@Url.Action("Index", "Transfer")?';
+                if (status) url += `status=${status}&`;
+                if (startDate) url += `startDate=${startDate}&`;
+                if (endDate) url += `endDate=${endDate}&`;
+                
+                window.location.href = url;
+            });
+        });
+    </script>
+} 

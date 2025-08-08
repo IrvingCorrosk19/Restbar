@@ -47,6 +47,71 @@
                             </div>
                         </div>
 
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="AreaId" class="control-label">Área</label>
+                                    <select asp-for="AreaId" asp-items="ViewBag.AreaId" class="form-select">
+                                        <option value="">-- Seleccione un área --</option>
+                                    </select>
+                                    <span asp-validation-for="AreaId" class="text-danger"></span>
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle"></i> 
+                                        Opcional: Asigne la estación a un área específica del restaurante
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Icon" class="control-label">Ícono</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i id="icon-preview" class="fas fa-utensils"></i>
+                                        </span>
+                                        <select asp-for="Icon" class="form-select" id="icon-select">
+                                            <option value="">-- Seleccione un ícono --</option>
+                                            <option value="fa-utensils">🍴 Utensils (Cocina)</option>
+                                            <option value="fa-cocktail">🍸 Cocktail (Bar)</option>
+                                            <option value="fa-coffee">☕ Coffee (Café)</option>
+                                            <option value="fa-fire">🔥 Fire (Parrilla)</option>
+                                            <option value="fa-pizza-slice">🍕 Pizza</option>
+                                            <option value="fa-cookie-bite">🍪 Cookie (Postres)</option>
+                                            <option value="fa-fish">🐟 Fish (Sushi)</option>
+                                            <option value="fa-hamburger">🍔 Hamburger</option>
+                                            <option value="fa-ice-cream">🍦 Ice Cream</option>
+                                            <option value="fa-wine-glass">🍷 Wine Glass</option>
+                                            <option value="fa-beer">🍺 Beer</option>
+                                            <option value="fa-mortar-pestle">🧪 Mortar (Especial)</option>
+                                        </select>
+                                    </div>
+                                    <span asp-validation-for="Icon" class="text-danger"></span>
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle"></i> 
+                                        Opcional: Ícono para identificar visualmente la estación
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group mb-3">
+                                    <div class="form-check form-switch">
+                                        <input asp-for="IsActive" class="form-check-input" type="checkbox" checked />
+                                        <label asp-for="IsActive" class="form-check-label">
+                                            <i class="fas fa-toggle-on text-success"></i> 
+                                            Estación Activa
+                                        </label>
+                                        <span asp-validation-for="IsActive" class="text-danger"></span>
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle"></i> 
+                                        Las estaciones inactivas no aparecerán disponibles para asignar productos
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="form-group">
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save"></i> Crear Estación
@@ -78,6 +143,39 @@
                     }
                 }
             });
+
+            // Actualizar preview del ícono seleccionado
+            $('#icon-select').on('change', function() {
+                var selectedIcon = $(this).val();
+                var iconPreview = $('#icon-preview');
+                
+                if (selectedIcon) {
+                    iconPreview.removeClass().addClass('fas ' + selectedIcon);
+                } else {
+                    iconPreview.removeClass().addClass('fas fa-utensils');
+                }
+            });
+
+            // Toggle visual para el checkbox IsActive
+            $('input[name="IsActive"]').on('change', function() {
+                var label = $(this).next('label');
+                var icon = label.find('i');
+                
+                if ($(this).is(':checked')) {
+                    icon.removeClass('fa-toggle-off text-danger').addClass('fa-toggle-on text-success');
+                    label.contents().filter(function() {
+                        return this.nodeType === 3; // Text nodes
+                    }).first().replaceWith(' Estación Activa');
+                } else {
+                    icon.removeClass('fa-toggle-on text-success').addClass('fa-toggle-off text-danger');
+                    label.contents().filter(function() {
+                        return this.nodeType === 3; // Text nodes
+                    }).first().replaceWith(' Estación Inactiva');
+                }
+            });
+
+            // Inicializar estado del toggle
+            $('input[name="IsActive"]').trigger('change');
         });
     </script>
 } 

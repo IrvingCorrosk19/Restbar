@@ -333,10 +333,11 @@ body {
     border: 1px solid #e9ecef;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-sm);
-    background: white;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
     overflow: hidden;
     margin-bottom: 1.5rem;
     position: relative;
+    backdrop-filter: blur(10px);
 }
 
 .product-card::before {
@@ -378,6 +379,9 @@ body {
     font-weight: 700;
     color: #2c3e50;
     margin-bottom: 0.5rem;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    font-size: 1rem;
+    line-height: 1.2;
 }
 
 .product-card .card-text {
@@ -1289,6 +1293,20 @@ body {
     background-color: #e8f5e9;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.product-card.selected-product .card-title {
+    color: #000000 !important;
+    font-weight: 700 !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+    font-size: 1.1rem !important;
+    line-height: 1.3 !important;
+}
+
+.product-card.selected-product .card-text {
+    color: #0056b3 !important;
+    font-weight: 600 !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
 }
 
 .product-card.selected-product:hover {
@@ -2927,4 +2945,230 @@ body {
     background-repeat: no-repeat;
     background-position: right 0.75rem center;
     background-size: 16px 16px;
+}
+
+/* ✅ NUEVO: Estilos para desglose de impuestos en resumen del pedido */
+.tax-breakdown {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: var(--border-radius-sm);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid #dee2e6;
+    box-shadow: var(--shadow-sm);
+}
+
+.tax-breakdown .row {
+    margin: 0;
+}
+
+.tax-breakdown .col-md-4 {
+    padding: 0.5rem;
+    text-align: center;
+}
+
+.tax-breakdown small {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #6c757d;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.tax-breakdown .fw-bold {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.tax-breakdown #orderSubtotal {
+    color: #495057;
+}
+
+.tax-breakdown #orderTax {
+    color: var(--success-color);
+}
+
+.tax-breakdown #orderTotal {
+    color: var(--primary-color);
+    font-size: 1.2rem;
+}
+
+/* Responsive para desglose de impuestos */
+@media (max-width: 768px) {
+    .tax-breakdown {
+        padding: 0.75rem;
+    }
+    
+    .tax-breakdown .col-md-4 {
+        padding: 0.25rem;
+    }
+    
+    .tax-breakdown .fw-bold {
+        font-size: 1rem;
+    }
+    
+    .tax-breakdown small {
+        font-size: 0.8rem;
+    }
+}
+
+/* ✅ NUEVO: Estilos para modal de descuentos */
+#discountModal .modal-content {
+    border: none;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-lg);
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+#discountModal .modal-header {
+    background: linear-gradient(135deg, #ffc107 0%, #ffca2c 100%);
+    border-bottom: 2px solid #e0a800;
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+}
+
+#discountModal .modal-title {
+    color: #2c3e50;
+    font-weight: 700;
+    font-size: 1.25rem;
+}
+
+#discountModal .modal-title i {
+    color: #e0a800;
+}
+
+#discountModal .form-label {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+#discountModal .form-control {
+    border: 2px solid #e9ecef;
+    border-radius: var(--border-radius-sm);
+    padding: 0.75rem;
+    transition: var(--transition);
+}
+
+#discountModal .form-control:focus {
+    border-color: #ffc107;
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+}
+
+#discountModal .input-group-text {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-left: none;
+    color: #6c757d;
+    font-weight: 600;
+}
+
+#discountModal .alert-info {
+    background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+    border: 1px solid #bee5eb;
+    border-radius: var(--border-radius-sm);
+}
+
+#discountModal .alert-warning {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border: 1px solid #ffeaa7;
+    border-radius: var(--border-radius-sm);
+}
+
+#discountModal .btn-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #ffca2c 100%);
+    border: none;
+    color: #2c3e50;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--border-radius-sm);
+    transition: var(--transition);
+}
+
+#discountModal .btn-warning:hover {
+    background: linear-gradient(135deg, #e0a800 0%, #ffc107 100%);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+#discountModal .btn-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
+    border: none;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--border-radius-sm);
+    transition: var(--transition);
+}
+
+#discountModal .btn-danger:hover {
+    background: linear-gradient(135deg, #c82333 0%, #dc3545 100%);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Responsive para modal de descuentos */
+@media (max-width: 768px) {
+    #discountModal .modal-dialog {
+        margin: 1rem;
+    }
+    
+    #discountModal .modal-body {
+        padding: 1rem;
+    }
+    
+    #discountModal .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* ✅ NUEVO: Estilos para desglose financiero en SweetAlert2 */
+.swal2-html-container .order-summary .bg-light {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+    border: 1px solid #dee2e6;
+    border-radius: var(--border-radius-sm);
+}
+
+.swal2-html-container .order-summary h6 {
+    color: #2c3e50;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+}
+
+.swal2-html-container .order-summary .row {
+    margin: 0;
+}
+
+.swal2-html-container .order-summary .col-md-6,
+.swal2-html-container .order-summary .col-md-12 {
+    padding: 0.25rem 0.5rem;
+}
+
+.swal2-html-container .order-summary small {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.swal2-html-container .order-summary .text-danger {
+    color: #dc3545 !important;
+    font-weight: 700;
+}
+
+.swal2-html-container .order-summary .text-primary {
+    color: #0d6efd !important;
+}
+
+.swal2-html-container .order-summary .fw-bold {
+    font-weight: 700 !important;
+}
+
+/* Responsive para desglose financiero en SweetAlert2 */
+@media (max-width: 768px) {
+    .swal2-html-container .order-summary .col-md-6,
+    .swal2-html-container .order-summary .col-md-12 {
+        padding: 0.125rem 0.25rem;
+    }
+    
+    .swal2-html-container .order-summary small {
+        font-size: 0.8rem;
+    }
 }

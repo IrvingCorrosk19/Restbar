@@ -161,11 +161,15 @@
                             <div class="modern-form-group">
                                 <label class="form-label">
                                     <i class="fas fa-building me-2"></i>
-                                    Compañía *
+                                    Compañía (Automática) *
                                 </label>
-                                <select class="form-select modern-select" name="CompanyId" id="createCompanyId" required>
-                                    <option value="">Cargando compañías...</option>
+                                <select class="form-select modern-select" name="CompanyId" id="createCompanyId" required disabled>
+                                    <option value="">Cargando compañía...</option>
                                 </select>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    La compañía se asigna automáticamente según tu usuario logueado
+                                </small>
                             </div>
                         </div>
                         <div class="col-md-12">
@@ -250,11 +254,15 @@
                             <div class="modern-form-group">
                                 <label class="form-label">
                                     <i class="fas fa-building me-2"></i>
-                                    Compañía *
+                                    Compañía (Automática) *
                                 </label>
-                                <select class="form-select modern-select" name="CompanyId" id="editCompanyId" required>
-                                    <option value="">Cargando compañías...</option>
+                                <select class="form-select modern-select" name="CompanyId" id="editCompanyId" required disabled>
+                                    <option value="">Cargando compañía...</option>
                                 </select>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    La compañía se asigna automáticamente según tu usuario logueado
+                                </small>
                             </div>
                         </div>
                         <div class="col-md-12">
@@ -354,34 +362,73 @@
             updateEmptyState();
         }
 
-        // Función para cargar compañías en selects
+        // Función para cargar la compañía del usuario logueado
+        function loadUserCompany(selectId, selectedId) {
+            var select = $(selectId);
+            select.empty().append('<option value="">Cargando compañía...</option>').prop('disabled', true);
+            
+            $.get('/Branch/GetUserCompany', function (res) {
+                if (res.success) {
+                    select.empty();
+                    select.append('<option value="' + res.data.companyId + '">' + res.data.companyName + '</option>');
+                    select.prop('disabled', true); // Deshabilitar para que no se pueda cambiar
+                    select.val(res.data.companyId);
+                    
+                    if (selectId === '#createCompanyId') {
+                        $('#createBranchModal').find('button.btn-primary').prop('disabled', false);
+                    }
+                } else {
+                    select.empty().append('<option value="">Error al cargar la compañía</option>').prop('disabled', true);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: res.message || 'No se pudo cargar la compañía del usuario'
+                    });
+                }
+            }).fail(function() {
+                select.empty().append('<option value="">Error al cargar la compañía</option>').prop('disabled', true);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error al cargar la compañía del usuario'
+                });
+            });
+        }
+
+        // Función para cargar compañías en selects (mantenida para compatibilidad)
         function loadCompaniesSelect(selectId, selectedId) {
+            var select = $(selectId);
+            select.empty().append('<option value="">Cargando compañías...</option>').prop('disabled', true);
+            
             $.get('/Company/GetCompanies', function (res) {
-                var select = $(selectId);
                 if (res.success) {
                     select.empty();
                     select.append('<option value="">Seleccione una compañía</option>');
-                    res.data.forEach(function (c) {
-                        select.append('<option value="' + c.id + '">' + c.name + '</option>');
-                    });
+                    if (res.data && Array.isArray(res.data)) {
+                        res.data.forEach(function (c) {
+                            var option = $('<option value="' + c.id + '">' + c.name + '</option>');
+                            if (selectedId && c.id === selectedId) {
+                                option.prop('selected', true);
+                            }
+                            select.append(option);
+                        });
+                    }
                     select.prop('disabled', false);
                     
-                    // Seleccionar la compañía después de poblar el select
+                    // Forzar actualización del valor seleccionado
                     if (selectedId) {
-                        setTimeout(function() {
-                            select.val(selectedId);
-                        }, 0);
+                        select.val(selectedId);
+                        select.trigger('change');
                     }
                     
                     if (selectId === '#createCompanyId') {
                         $('#createBranchModal').find('button.btn-primary').prop('disabled', false);
                     }
                 } else {
-                    select.empty().append('<option value="">No hay compañías disponibles</option>');
+                    select.empty().append('<option value="">No hay compañías disponibles</option>').prop('disabled', true);
                 }
             }).fail(function() {
-                var select = $(selectId);
-                select.empty().append('<option value="">Error al cargar compañías</option>');
+                select.empty().append('<option value="">Error al cargar compañías</option>').prop('disabled', true);
             });
         }
 
@@ -396,16 +443,12 @@
         $('#createBranchModal').on('show.bs.modal', function () {
             var select = $('#createCompanyId');
             var btn = $(this).find('button.btn-primary');
-            select.empty().append('<option>Cargando compañías...</option>').prop('disabled', true);
+            select.empty().append('<option>Cargando compañía...</option>').prop('disabled', true);
             btn.prop('disabled', true);
-            loadCompaniesSelect('#createCompanyId');
-            select.val('');
+            loadUserCompany('#createCompanyId');
         });
 
-        $('#editBranchModal').on('show.bs.modal', function () {
-            var selectedId = $('#editBranchForm [name="CompanyId"]').val();
-            loadCompaniesSelect('#editCompanyId', selectedId);
-        });
+        // Evento eliminado - la carga de compañías se maneja en editBranch()
 
         // Función para crear sucursal
         window.createBranch = function () {
@@ -421,9 +464,6 @@
             // Validaciones
             if (!formData.Name || formData.Name.trim() === "") {
                 errors.push('El nombre es requerido');
-            }
-            if (!formData.CompanyId) {
-                errors.push('La compañía es requerida');
             }
             
             if (errors.length > 0) {
@@ -498,24 +538,27 @@
                 url: `/Branch/Get/${id}`,
                 method: 'GET',
                 success: function (response) {
-                    Swal.close();
                     if (response.success) {
                         const branch = response.data;
                         const form = $('#editBranchForm');
                         
+                        // Limpiar y llenar el formulario
                         form[0].reset();
                         form.find('[name="Id"]').val(branch.id);
                         form.find('[name="Name"]').val(branch.name);
-                        form.find('[name="Address"]').val(branch.address);
-                        form.find('[name="Phone"]').val(branch.phone);
+                        form.find('[name="Address"]').val(branch.address || '');
+                        form.find('[name="Phone"]').val(branch.phone || '');
                         form.find('[name="IsActive"]').prop('checked', branch.isActive);
-                        form.find('[name="CompanyId"]').val(branch.companyId);
                         
-                        loadCompaniesSelect('#editCompanyId', branch.companyId);
+                        // Cargar la compañía del usuario logueado
+                        loadUserCompany('#editCompanyId', branch.companyId);
                         
+                        // Cerrar el loading y mostrar el modal
+                        Swal.close();
                         const editModal = new bootstrap.Modal(document.getElementById('editBranchModal'));
                         editModal.show();
                     } else {
+                        Swal.close();
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
@@ -524,6 +567,7 @@
                     }
                 },
                 error: function (xhr, status, error) {
+                    Swal.close();
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
@@ -547,9 +591,6 @@
             // Validaciones
             if (!formData.Name || formData.Name.trim() === "") {
                 errors.push('El nombre es requerido');
-            }
-            if (!formData.CompanyId) {
-                errors.push('La compañía es requerida');
             }
             
             if (errors.length > 0) {
@@ -1179,6 +1220,18 @@
             font-weight: 500;
             color: var(--dark-color);
             margin: 0;
+        }
+
+        .form-text {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-text i {
+            color: var(--info-color);
         }
 
         .modern-modal-footer {

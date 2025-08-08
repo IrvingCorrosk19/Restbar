@@ -7,17 +7,137 @@ using System.Text.Json;
 
 namespace RestBar.Services
 {
-    public class OrderService : IOrderService
+    public class OrderService : BaseTrackingService, IOrderService
     {
-        private readonly RestBarContext _context;
         private readonly IProductService _productService;
         private readonly IOrderHubService _orderHubService;
+        private readonly IInventoryService _inventoryService;
+        private readonly IAccountingService _accountingService;
 
-        public OrderService(RestBarContext context, IProductService productService, IOrderHubService orderHubService)
+        public OrderService(
+            RestBarContext context, 
+            IProductService productService, 
+            IOrderHubService orderHubService, 
+            IInventoryService inventoryService,
+            IAccountingService accountingService,
+            IHttpContextAccessor httpContextAccessor) 
+            : base(context, httpContextAccessor)
         {
-            _context = context;
             _productService = productService;
             _orderHubService = orderHubService;
+            _inventoryService = inventoryService;
+            _accountingService = accountingService;
+        }
+
+        // ✅ NUEVO: Método para reducir el inventario de un producto
+        private async Task ReduceProductStockAsync(Guid productId, decimal quantity, Guid? branchId = null)
+        {
+            try
+            {
+                Console.WriteLine($"[OrderService] ReduceProductStockAsync iniciado - ProductId: {productId}, Quantity: {quantity}");
+                
+                // Obtener el producto
+                var product = await _productService.GetByIdAsync(productId);
+                if (product == null)
+                {
+                    Console.WriteLine($"[OrderService] ERROR: Producto no encontrado con ID {productId}");
+                    throw new KeyNotFoundException($"Producto no encontrado con ID {productId}");
+                }
+
+                // Verificar si el producto tiene stock configurado
+                if (product.Stock == null)
+                {
+                    Console.WriteLine($"[OrderService] WARNING: Producto {product.Name} no tiene stock configurado, saltando reducción");
+                    return;
+                }
+
+                // Verificar stock suficiente
+                if (product.Stock < quantity)
+                {
+                    Console.WriteLine($"[OrderService] ERROR: Stock insuficiente para {product.Name} - Disponible: {product.Stock}, Requerido: {quantity}");
+                    throw new InvalidOperationException($"Stock insuficiente para {product.Name}. Disponible: {product.Stock}, Requerido: {quantity}");
+                }
+
+                // Reducir el stock del producto
+                product.Stock -= quantity;
+                Console.WriteLine($"[OrderService] Stock reducido para {product.Name}: {product.Stock + quantity} -> {product.Stock}");
+
+                // Actualizar el producto en la base de datos
+                _context.Products.Update(product);
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"[OrderService] ✅ Stock actualizado en base de datos");
+
+                // Si se proporciona branchId, también actualizar el inventario específico de la sucursal
+                if (branchId.HasValue)
+                {
+                    try
+                    {
+                        await _inventoryService.AdjustStockAsync(productId, branchId.Value, -quantity);
+                        Console.WriteLine($"[OrderService] ✅ Inventario de sucursal actualizado");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[OrderService] WARNING: Error al actualizar inventario de sucursal: {ex.Message}");
+                        // No lanzar excepción aquí para no afectar la orden principal
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[OrderService] ERROR en ReduceProductStockAsync: {ex.Message}");
+                Console.WriteLine($"[OrderService] Stack trace: {ex.StackTrace}");
+                throw;
+            }
+        }
+
+        // ✅ NUEVO: Método para restaurar el inventario (usado en cancelaciones)
+        private async Task RestoreProductStockAsync(Guid productId, decimal quantity, Guid? branchId = null)
+        {
+            try
+            {
+                Console.WriteLine($"[OrderService] RestoreProductStockAsync iniciado - ProductId: {productId}, Quantity: {quantity}");
+                
+                // Obtener el producto
+                var product = await _productService.GetByIdAsync(productId);
+                if (product == null)
+                {
+                    Console.WriteLine($"[OrderService] ERROR: Producto no encontrado con ID {productId}");
+                    return; // No lanzar excepción en restauración
+                }
+
+                // Restaurar el stock del producto
+                if (product.Stock != null)
+                {
+                    product.Stock += quantity;
+                    Console.WriteLine($"[OrderService] Stock restaurado para {product.Name}: {product.Stock - quantity} -> {product.Stock}");
+                    
+                    // Actualizar el producto en la base de datos
+                    _context.Products.Update(product);
+                    await _context.SaveChangesAsync();
+                    Console.WriteLine($"[OrderService] ✅ Stock restaurado en base de datos");
+                }
+
+                // Si se proporciona branchId, también restaurar el inventario específico de la sucursal
+                if (branchId.HasValue)
+                {
+                    try
+                    {
+                        await _inventoryService.AdjustStockAsync(productId, branchId.Value, quantity);
+                        Console.WriteLine($"[OrderService] ✅ Inventario de sucursal restaurado");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[OrderService] WARNING: Error al restaurar inventario de sucursal: {ex.Message}");
+                        // No lanzar excepción aquí para no afectar la cancelación
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[OrderService] ERROR en RestoreProductStockAsync: {ex.Message}");
+                Console.WriteLine($"[OrderService] Stack trace: {ex.StackTrace}");
+                // No lanzar excepción en restauración para no afectar el flujo principal
+            }
         }
 
         public async Task<IEnumerable<Order>> GetAllAsync()
@@ -222,6 +342,18 @@ namespace RestBar.Services
                 order.ClosedAt = DateTime.UtcNow;
                 
                 await _context.SaveChangesAsync();
+                
+                // ✅ NUEVO: Crear asiento contable automáticamente
+                try
+                {
+                    await _accountingService.CreateAccountingEntryFromOrderAsync(id);
+                    Console.WriteLine($"[OrderService] ✅ Asiento contable creado automáticamente para orden {order.OrderNumber}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[OrderService] ❌ Error al crear asiento contable para orden {order.OrderNumber}: {ex.Message}");
+                    // No lanzar excepción para no interrumpir el flujo principal
+                }
             }
         }
 
@@ -396,7 +528,7 @@ namespace RestBar.Services
             return order;
         }
 
-        // Agregar items a una orden existente
+        // ✅ MEJORADO: Agregar items a una orden existente con reducción de inventario
         public async Task<Order> AddItemsToOrderAsync(Guid orderId, List<OrderItemDto> items)
         {
             var order = await _context.Orders
@@ -414,45 +546,87 @@ namespace RestBar.Services
             var previousStatus = order.Status;
             Console.WriteLine($"[OrderService] AddItemsToOrderAsync - Estado anterior de la orden: {previousStatus}");
 
-            foreach (var itemDto in items)
+            // ✅ NUEVO: Lista para almacenar los items que se agregaron exitosamente (para rollback en caso de error)
+            var successfullyAddedItems = new List<(Guid productId, decimal quantity)>();
+
+            try
             {
-                var product = await _productService.GetByIdAsync(itemDto.ProductId);
-                if (product == null)
-                    continue;
-
-                if (product.Price == null || product.Price <= 0)
-                    throw new InvalidOperationException($"El producto '{product.Name}' no tiene precio configurado.");
-
-                if (product.Stock != null && product.Stock <= 0)
-                    throw new InvalidOperationException($"El producto '{product.Name}' está agotado.");
-
-                if (!string.IsNullOrEmpty(itemDto.Notes) && itemDto.Notes.Length > 200)
-                    throw new InvalidOperationException("El comentario no puede superar los 200 caracteres.");
-
-                order.OrderItems.Add(new OrderItem
+                foreach (var itemDto in items)
                 {
-                    ProductId = itemDto.ProductId,
-                    Quantity = itemDto.Quantity,
-                    UnitPrice = product.Price,
-                    Discount = itemDto.Discount ?? 0,
-                    Notes = itemDto.Notes
-                });
+                    var product = await _productService.GetByIdAsync(itemDto.ProductId);
+                    if (product == null)
+                        continue;
+
+                    if (product.Price == null || product.Price <= 0)
+                        throw new InvalidOperationException($"El producto '{product.Name}' no tiene precio configurado.");
+
+                    // ✅ NUEVO: Verificar stock suficiente antes de agregar el item
+                    if (product.Stock != null)
+                    {
+                        if (product.Stock <= 0)
+                            throw new InvalidOperationException($"El producto '{product.Name}' está agotado.");
+                        
+                        if (product.Stock < itemDto.Quantity)
+                            throw new InvalidOperationException($"Stock insuficiente para {product.Name}. Disponible: {product.Stock}, Requerido: {itemDto.Quantity}");
+                    }
+
+                    if (!string.IsNullOrEmpty(itemDto.Notes) && itemDto.Notes.Length > 200)
+                        throw new InvalidOperationException("El comentario no puede superar los 200 caracteres.");
+
+                    // ✅ NUEVO: Reducir el inventario ANTES de agregar el item
+                    if (product.Stock != null)
+                    {
+                        await ReduceProductStockAsync(itemDto.ProductId, itemDto.Quantity);
+                        successfullyAddedItems.Add((itemDto.ProductId, itemDto.Quantity));
+                        Console.WriteLine($"[OrderService] ✅ Inventario reducido para {product.Name}: {itemDto.Quantity} unidades");
+                    }
+
+                    order.OrderItems.Add(new OrderItem
+                    {
+                        ProductId = itemDto.ProductId,
+                        Quantity = itemDto.Quantity,
+                        UnitPrice = product.Price,
+                        Discount = itemDto.Discount ?? 0,
+                        Notes = itemDto.Notes
+                    });
+                }
+
+                // Cambiar el estado de la orden a Pending cuando se agreguen nuevos items
+                // Esto indica que hay nuevos items pendientes de envío a cocina
+                order.Status = OrderStatus.Pending;
+                Console.WriteLine($"[OrderService] AddItemsToOrderAsync - Estado de la orden cambiado de {previousStatus} a {order.Status}");
+
+                await _context.SaveChangesAsync();
+
+                order.TotalAmount = order.OrderItems.Sum(oi => (oi.Quantity * oi.UnitPrice) - (oi.Discount ?? 0));
+
+                // Notificar a cocina y a los clientes
+                await _orderHubService.NotifyOrderStatusChanged(order.Id, order.Status);
+                await _orderHubService.NotifyKitchenUpdate();
+
+                return order;
             }
-
-            // Cambiar el estado de la orden a Pending cuando se agreguen nuevos items
-            // Esto indica que hay nuevos items pendientes de envío a cocina
-            order.Status = OrderStatus.Pending;
-            Console.WriteLine($"[OrderService] AddItemsToOrderAsync - Estado de la orden cambiado de {previousStatus} a {order.Status}");
-
-            await _context.SaveChangesAsync();
-
-            order.TotalAmount = order.OrderItems.Sum(oi => (oi.Quantity * oi.UnitPrice) - (oi.Discount ?? 0));
-
-            // Notificar a cocina y a los clientes
-            await _orderHubService.NotifyOrderStatusChanged(order.Id, order.Status);
-            await _orderHubService.NotifyKitchenUpdate();
-
-            return order;
+            catch (Exception ex)
+            {
+                // ✅ NUEVO: Rollback - restaurar inventario de los items que ya se procesaron
+                Console.WriteLine($"[OrderService] ERROR en AddItemsToOrderAsync: {ex.Message}");
+                Console.WriteLine($"[OrderService] Realizando rollback del inventario...");
+                
+                foreach (var (productId, quantity) in successfullyAddedItems)
+                {
+                    try
+                    {
+                        await RestoreProductStockAsync(productId, quantity);
+                        Console.WriteLine($"[OrderService] ✅ Inventario restaurado para producto {productId}");
+                    }
+                    catch (Exception restoreEx)
+                    {
+                        Console.WriteLine($"[OrderService] ERROR al restaurar inventario para producto {productId}: {restoreEx.Message}");
+                    }
+                }
+                
+                throw; // Re-lanzar la excepción original
+            }
         }
 
         // Eliminar item específico de una orden
@@ -930,6 +1104,30 @@ namespace RestBar.Services
                 await _context.SaveChangesAsync();
                 Console.WriteLine($"[OrderService] Orden cancelada exitosamente");
 
+                // ✅ NUEVO: Restaurar el inventario de todos los items de la orden cancelada
+                Console.WriteLine($"[OrderService] Restaurando inventario de {order.OrderItems.Count} items...");
+                foreach (var item in order.OrderItems)
+                {
+                    try
+                    {
+                        if (item.ProductId != null && item.ProductId != Guid.Empty)
+                        {
+                            await RestoreProductStockAsync(item.ProductId.Value, item.Quantity);
+                            Console.WriteLine($"[OrderService] ✅ Inventario restaurado para item {item.Product?.Name}: {item.Quantity} unidades");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[OrderService] ⚠️ Item con ProductId nulo o vacío, no se puede restaurar inventario");
+                        }
+                    }
+                    catch (Exception restoreEx)
+                    {
+                        Console.WriteLine($"[OrderService] ERROR al restaurar inventario para item {item.Product?.Name}: {restoreEx.Message}");
+                        // No lanzar excepción aquí para no afectar la cancelación principal
+                    }
+                }
+                Console.WriteLine($"[OrderService] ✅ Proceso de restauración de inventario completado");
+
                 // Notificar cambios vía SignalR
                 await _orderHubService.NotifyOrderCancelled(orderId);
                 await _orderHubService.NotifyOrderStatusChanged(orderId, order.Status);
@@ -1124,7 +1322,6 @@ namespace RestBar.Services
             }
         }
 
-        // NUEVO: Crear o actualizar orden, solo agrega nuevos ítems con KitchenStatus=Pending
         public async Task<Order> AddOrUpdateOrderWithPendingItemsAsync(SendOrderDto dto, Guid? userId)
         {
             // Buscar orden activa
@@ -1143,7 +1340,7 @@ namespace RestBar.Services
                     TableId = dto.TableId,
                     UserId = userId,
                     OrderType = (OrderType)Enum.Parse(typeof(OrderType), dto.OrderType),
-                    Status = OrderStatus.SentToKitchen,  // ✅ Estado inicial garantizado
+                    Status = OrderStatus.SentToKitchen,  // Estado inicial garantizado
                     OpenedAt = DateTime.UtcNow,
                     TotalAmount = 0
                 };
@@ -1152,9 +1349,8 @@ namespace RestBar.Services
             }
             else
             {
-                // ✅ LÓGICA MEJORADA: Asegurar que la orden esté en SentToKitchen
+                // Lógica mejorada: Asegurar que la orden esté en SentToKitchen
                 Console.WriteLine($"[OrderService] Orden existente encontrada - Status actual: {order.Status}");
-                
                 if (order.Status == OrderStatus.ReadyToPay || order.Status == OrderStatus.Ready)
                 {
                     Console.WriteLine($"[OrderService] Orden existente en estado {order.Status}, cambiando a SentToKitchen por nuevos items");
@@ -1177,119 +1373,149 @@ namespace RestBar.Services
                     Console.WriteLine($"[OrderService] Orden existente en estado {order.Status}, cambiando a SentToKitchen");
                     order.Status = OrderStatus.SentToKitchen;
                 }
-                
                 Console.WriteLine($"[OrderService] Estado final de orden: {order.Status}");
             }
 
             decimal total = 0;
-            
-            // ✅ NO AGRUPAR: Procesar cada item individualmente
+            // Procesar cada item individualmente
             Console.WriteLine($"[OrderService] Procesando {dto.Items.Count} items individualmente");
-            
-            // ✅ Verificar items duplicados en el DTO
+            // Verificar items duplicados en el DTO
             var duplicateIds = dto.Items.GroupBy(i => i.Id).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
             if (duplicateIds.Any())
             {
                 Console.WriteLine($"[OrderService] ⚠️ ADVERTENCIA: IDs duplicados en DTO: {string.Join(", ", duplicateIds)}");
             }
-            
-            foreach (var itemDto in dto.Items)
+            // Lista para rollback en caso de error
+            var successfullyAddedItems = new List<(Guid productId, decimal quantity)>();
+            try
             {
-                Console.WriteLine($"[OrderService] Procesando item: ProductId={itemDto.ProductId}, Quantity={itemDto.Quantity}, Status={itemDto.Status}, DTO_ID={itemDto.Id}");
-                
-                var product = await _productService.GetByIdAsync(itemDto.ProductId);
-                if (product == null) 
+                foreach (var itemDto in dto.Items)
                 {
-                    Console.WriteLine($"[OrderService] Producto no encontrado: {itemDto.ProductId}");
-                    continue;
+                    Console.WriteLine($"[OrderService] Procesando item: ProductId={itemDto.ProductId}, Quantity={itemDto.Quantity}, Status={itemDto.Status}, DTO_ID={itemDto.Id}");
+                    var product = await _productService.GetByIdAsync(itemDto.ProductId);
+                    if (product == null)
+                    {
+                        Console.WriteLine($"[OrderService] Producto no encontrado: {itemDto.ProductId}");
+                        continue;
+                    }
+                    // Verificar stock suficiente antes de agregar el item
+                    if (product.Stock != null)
+                    {
+                        if (product.Stock <= 0)
+                        {
+                            Console.WriteLine($"[OrderService] ERROR: Producto {product.Name} está agotado");
+                            throw new InvalidOperationException($"El producto '{product.Name}' está agotado.");
+                        }
+                        if (product.Stock < itemDto.Quantity)
+                        {
+                            Console.WriteLine($"[OrderService] ERROR: Stock insuficiente para {product.Name} - Disponible: {product.Stock}, Requerido: {itemDto.Quantity}");
+                            throw new InvalidOperationException($"Stock insuficiente para {product.Name}. Disponible: {product.Stock}, Requerido: {itemDto.Quantity}");
+                        }
+                    }
+                    // Verificar si ya existe un item con el mismo ID en la base de datos
+                    var existingItem = await _context.OrderItems.FindAsync(itemDto.Id);
+                    if (existingItem != null)
+                    {
+                        Console.WriteLine($"[OrderService] ⚠️ ADVERTENCIA: Ya existe un item con ID {itemDto.Id} en la base de datos, saltando...");
+                        continue;
+                    }
+                    // Verificar si el item ya está siendo trackeado en el contexto actual
+                    var trackedItem = _context.ChangeTracker.Entries<OrderItem>()
+                        .Where(e => e.Entity.Id == itemDto.Id)
+                        .FirstOrDefault();
+                    if (trackedItem != null)
+                    {
+                        Console.WriteLine($"[OrderService] ⚠️ ADVERTENCIA: Item con ID {itemDto.Id} ya está siendo trackeado en el contexto, saltando...");
+                        continue;
+                    }
+                    // Reducir el inventario ANTES de crear el item
+                    if (product.Stock != null)
+                    {
+                        await ReduceProductStockAsync(itemDto.ProductId, itemDto.Quantity);
+                        successfullyAddedItems.Add((itemDto.ProductId, itemDto.Quantity));
+                        Console.WriteLine($"[OrderService] ✅ Inventario reducido para {product.Name}: {itemDto.Quantity} unidades");
+                    }
+                    // Crear un OrderItem individual para cada item del DTO
+                    var newItem = new OrderItem
+                    {
+                        Id = itemDto.Id != Guid.Empty ? itemDto.Id : Guid.NewGuid(),
+                        OrderId = order.Id,
+                        ProductId = itemDto.ProductId,
+                        Quantity = itemDto.Quantity,
+                        UnitPrice = product.Price,
+                        Discount = itemDto.Discount ?? 0,
+                        Notes = itemDto.Notes,
+                        KitchenStatus = KitchenStatus.Pending,
+                        Status = !string.IsNullOrEmpty(itemDto.Status)
+                            ? Enum.Parse<OrderItemStatus>(itemDto.Status, ignoreCase: true)
+                            : OrderItemStatus.Pending
+                    };
+                    Console.WriteLine($"[OrderService] Intentando agregar item con ID: {newItem.Id}");
+                    Console.WriteLine($"[OrderService] Item individual creado: {product.Name} x {itemDto.Quantity} = ${newItem.Quantity * newItem.UnitPrice}");
+                    try
+                    {
+                        _context.OrderItems.Add(newItem);
+                        Console.WriteLine($"[OrderService] ✅ Item agregado exitosamente al contexto");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[OrderService] ❌ ERROR al agregar item: {ex.Message}");
+                        Console.WriteLine($"[OrderService] Stack trace: {ex.StackTrace}");
+                        throw;
+                    }
+                    total += (newItem.Quantity * newItem.UnitPrice) - (newItem.Discount ?? 0);
                 }
-
-                // ✅ Verificar si ya existe un item con el mismo ID en la base de datos
-                var existingItem = await _context.OrderItems.FindAsync(itemDto.Id);
-                if (existingItem != null)
-                {
-                    Console.WriteLine($"[OrderService] ⚠️ ADVERTENCIA: Ya existe un item con ID {itemDto.Id} en la base de datos, saltando...");
-                    continue;
-                }
-                
-                // ✅ Verificar si el item ya está siendo trackeado en el contexto actual
-                var trackedItem = _context.ChangeTracker.Entries<OrderItem>()
-                    .Where(e => e.Entity.Id == itemDto.Id)
-                    .FirstOrDefault();
-                    
-                if (trackedItem != null)
-                {
-                    Console.WriteLine($"[OrderService] ⚠️ ADVERTENCIA: Item con ID {itemDto.Id} ya está siendo trackeado en el contexto, saltando...");
-                    continue;
-                }
-
-                // ✅ Crear un OrderItem individual para cada item del DTO
-                var newItem = new OrderItem
-                {
-                    Id = itemDto.Id != Guid.Empty ? itemDto.Id : Guid.NewGuid(),
-                    OrderId = order.Id,
-                    ProductId = itemDto.ProductId,
-                    Quantity = itemDto.Quantity,  // ✅ Cantidad individual del item
-                    UnitPrice = product.Price,
-                    Discount = itemDto.Discount ?? 0,
-                    Notes = itemDto.Notes,
-                    KitchenStatus = KitchenStatus.Pending,
-                    Status = !string.IsNullOrEmpty(itemDto.Status)
-                        ? Enum.Parse<OrderItemStatus>(itemDto.Status, ignoreCase: true)
-                        : OrderItemStatus.Pending
-                };
-                
-                Console.WriteLine($"[OrderService] Intentando agregar item con ID: {newItem.Id}");
-                Console.WriteLine($"[OrderService] Item individual creado: {product.Name} x {itemDto.Quantity} = ${newItem.Quantity * newItem.UnitPrice}");
-                
-                try
-                {
-                    _context.OrderItems.Add(newItem);
-                    Console.WriteLine($"[OrderService] ✅ Item agregado exitosamente al contexto");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[OrderService] ❌ ERROR al agregar item: {ex.Message}");
-                    Console.WriteLine($"[OrderService] Stack trace: {ex.StackTrace}");
-                    throw;
-                }
-                
-                total += (newItem.Quantity * newItem.UnitPrice) - (newItem.Discount ?? 0);
-            }
-            order.TotalAmount += total;
-            await _context.SaveChangesAsync();
-
-            // Si la orden es nueva y order.Table es null, cargar la mesa asociada
-            if (order.Table == null && order.TableId != Guid.Empty)
-            {
-                order.Table = await _context.Tables.FindAsync(order.TableId);
-            }
-
-            // Actualizar el estado de la mesa según los ítems de la orden
-            if (order.Table != null)
-            {
-                var hasPendingOrPreparing = order.OrderItems.Any(oi =>
-                    oi.Status == OrderItemStatus.Pending || oi.Status == OrderItemStatus.Preparing);
-
-                if (hasPendingOrPreparing)
-                {
-                    order.Table.Status = TableStatus.EnPreparacion.ToString();
-                }
-                else if (order.OrderItems.All(oi => oi.Status == OrderItemStatus.Ready))
-                {
-                    order.Table.Status = TableStatus.ParaPago.ToString();
-                }
-                else
-                {
-                    order.Table.Status = TableStatus.Ocupada.ToString();
-                }
+                order.TotalAmount += total;
                 await _context.SaveChangesAsync();
-                
-                // Notificar cambio de estado de mesa vía SignalR
-                await _orderHubService.NotifyTableStatusChanged(order.Table.Id, order.Table.Status);
-                Console.WriteLine($"[OrderService] Notificación de mesa enviada: {order.Table.Status}");
+                Console.WriteLine($"[OrderService] ✅ Orden guardada exitosamente con {dto.Items.Count} items");
+                // Si la orden es nueva y order.Table es null, cargar la mesa asociada
+                if (order.Table == null && order.TableId != Guid.Empty)
+                {
+                    order.Table = await _context.Tables.FindAsync(order.TableId);
+                }
+                // Actualizar el estado de la mesa según los ítems de la orden
+                if (order.Table != null)
+                {
+                    var hasPendingOrPreparing = order.OrderItems.Any(oi =>
+                        oi.Status == OrderItemStatus.Pending || oi.Status == OrderItemStatus.Preparing);
+                    if (hasPendingOrPreparing)
+                    {
+                        order.Table.Status = TableStatus.EnPreparacion.ToString();
+                    }
+                    else if (order.OrderItems.All(oi => oi.Status == OrderItemStatus.Ready))
+                    {
+                        order.Table.Status = TableStatus.ParaPago.ToString();
+                    }
+                    else
+                    {
+                        order.Table.Status = TableStatus.Ocupada.ToString();
+                    }
+                    await _context.SaveChangesAsync();
+                    // Notificar cambio de estado de mesa vía SignalR
+                    await _orderHubService.NotifyTableStatusChanged(order.Table.Id, order.Table.Status);
+                    Console.WriteLine($"[OrderService] Notificación de mesa enviada: {order.Table.Status}");
+                }
+                return order;
             }
-            return order;
+            catch (Exception ex)
+            {
+                // Rollback - restaurar inventario de los items que ya se procesaron
+                Console.WriteLine($"[OrderService] ERROR en AddOrUpdateOrderWithPendingItemsAsync: {ex.Message}");
+                Console.WriteLine($"[OrderService] Realizando rollback del inventario...");
+                foreach (var item in successfullyAddedItems)
+                {
+                    try
+                    {
+                        await RestoreProductStockAsync(item.productId, item.quantity);
+                        Console.WriteLine($"[OrderService] ✅ Inventario restaurado para producto {item.productId}");
+                    }
+                    catch (Exception restoreEx)
+                    {
+                        Console.WriteLine($"[OrderService] ERROR al restaurar inventario para producto {item.productId}: {restoreEx.Message}");
+                    }
+                }
+                throw; // Re-lanzar la excepción original
+            }
         }
 
         // NUEVO: Enviar a cocina solo los ítems Pending, marcarlos como Sent y notificar
@@ -1425,6 +1651,44 @@ namespace RestBar.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"[OrderService] ERROR en MarkItemAsReadyAsync: {ex.Message}");
+                Console.WriteLine($"[OrderService] Stack trace: {ex.StackTrace}");
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<Order>> GetPendingPaymentOrdersAsync()
+        {
+            try
+            {
+                Console.WriteLine($"[OrderService] GetPendingPaymentOrdersAsync iniciado");
+                
+                var orders = await _context.Orders
+                    .Include(o => o.Table)
+                    .Include(o => o.OrderItems)
+                        .ThenInclude(oi => oi.Product)
+                    .Include(o => o.Payments)
+                    .Where(o => o.Status == OrderStatus.Pending || o.Status == OrderStatus.ReadyToPay)
+                    .ToListAsync();
+
+                var pendingOrders = new List<Order>();
+                
+                foreach (var order in orders)
+                {
+                    var totalAmount = order.OrderItems?.Sum(oi => oi.Quantity * oi.UnitPrice) ?? 0;
+                    var paidAmount = order.Payments?.Where(p => p.IsVoided != true).Sum(p => p.Amount) ?? 0;
+                    
+                    if (paidAmount < totalAmount)
+                    {
+                        pendingOrders.Add(order);
+                    }
+                }
+
+                Console.WriteLine($"[OrderService] ✅ Encontradas {pendingOrders.Count} órdenes con pagos pendientes");
+                return pendingOrders;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[OrderService] ERROR en GetPendingPaymentOrdersAsync: {ex.Message}");
                 Console.WriteLine($"[OrderService] Stack trace: {ex.StackTrace}");
                 throw;
             }

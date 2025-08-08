@@ -891,9 +891,11 @@
                         const select = $(selectId);
                         const current = select.val();
                         select.empty().append('<option value="">Seleccione un área</option>');
+                                            if (res.data && Array.isArray(res.data)) {
                         res.data.forEach(area => {
                             select.append(`<option value="${area.id}">${area.name}</option>`);
                         });
+                    }
                         select.val(current);
                     });
                     if (callback) callback();
@@ -907,9 +909,11 @@
                     const select = $('#areaFilter');
                     const current = select.val();
                     select.empty().append('<option value="">Todas las áreas</option>');
-                    res.data.forEach(area => {
-                        select.append(`<option value="${area.name}">${area.name}</option>`);
-                    });
+                    if (res.data && Array.isArray(res.data)) {
+                        res.data.forEach(area => {
+                            select.append(`<option value="${area.name}">${area.name}</option>`);
+                        });
+                    }
                     select.val(current);
                 }
             });

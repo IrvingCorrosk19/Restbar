@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace RestBar.Models;
 
-public partial class User
+public partial class User : ITrackableEntity
 {
     public Guid Id { get; set; }
 
@@ -20,6 +20,9 @@ public partial class User
     public bool? IsActive { get; set; }
 
     public DateTime? CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string? CreatedBy { get; set; }
+    public string? UpdatedBy { get; set; }
 
     public virtual ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
 

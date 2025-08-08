@@ -977,9 +977,11 @@
                             const select = $(selectId);
                             const current = select.val();
                             select.empty().append('<option value="">Seleccione una categoría</option>');
-                            res.data.forEach(cat => {
-                                select.append(`<option value="${cat.id || cat.Id}">${cat.name || cat.Name}</option>`);
-                            });
+                            if (res.data && Array.isArray(res.data)) {
+                                res.data.forEach(cat => {
+                                    select.append(`<option value="${cat.id || cat.Id}">${cat.name || cat.Name}</option>`);
+                                });
+                            }
                             if (callback && selectId === '#productCategorySelect') {
                                 callback(res.data[res.data.length - 1].id || res.data[res.data.length - 1].Id);
                             } else {
@@ -990,9 +992,11 @@
                         const filterSelect = $('#categoryFilter');
                         const filterCurrent = filterSelect.val();
                         filterSelect.empty().append('<option value="">Todas las categorías</option>');
-                        res.data.forEach(cat => {
-                            filterSelect.append(`<option value="${cat.id || cat.Id}">${cat.name || cat.Name}</option>`);
-                        });
+                        if (res.data && Array.isArray(res.data)) {
+                            res.data.forEach(cat => {
+                                filterSelect.append(`<option value="${cat.id || cat.Id}">${cat.name || cat.Name}</option>`);
+                            });
+                        }
                         filterSelect.val(filterCurrent);
                     }
                 });
@@ -1006,9 +1010,11 @@
                             const select = $(selectId);
                             const current = select.val();
                             select.empty().append('<option value="">Seleccione una estación</option>');
-                            res.data.forEach(st => {
-                                select.append(`<option value="${st.id}">${st.name} (${st.type})</option>`);
-                            });
+                            if (res.data && Array.isArray(res.data)) {
+                                res.data.forEach(st => {
+                                    select.append(`<option value="${st.id}">${st.name} (${st.type})</option>`);
+                                });
+                            }
                             if (callback && selectId === '#productStationSelect') {
                                 callback(res.data[res.data.length - 1].id);
                             } else {
