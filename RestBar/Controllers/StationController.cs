@@ -161,31 +161,45 @@ namespace RestBar.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateAjax([FromForm] Station station)
         {
-            if (!ModelState.IsValid)
-            {
-                var errors = ModelState.Values
-                    .SelectMany(v => v.Errors)
-                    .Select(e => e.ErrorMessage)
-                    .ToList();
-
-                return Json(new
-                {
-                    success = false,
-                    message = "Datos inválidos",
-                    errors
-                });
-            }
-
             try
             {
+                Console.WriteLine($"[StationController] CreateAjax iniciado");
+                Console.WriteLine($"[StationController] Station recibida - Name: {station?.Name}, Type: {station?.Type}, AreaId: {station?.AreaId}, IsActive: {station?.IsActive}");
+
+                if (!ModelState.IsValid)
+                {
+                    var errors = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .ToList();
+
+                    Console.WriteLine($"[StationController] ❌ ERROR: ModelState inválido - Errores: {string.Join(", ", errors)}");
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Datos inválidos",
+                        errors
+                    });
+                }
+
+                Console.WriteLine($"[StationController] ✅ ModelState válido, procediendo a crear...");
+
                 if (station.Id == Guid.Empty)
+                {
                     station.Id = Guid.NewGuid();
+                    Console.WriteLine($"[StationController] ID generado: {station.Id}");
+                }
 
                 // Convertir string vacío a null para Icon
                 if (string.IsNullOrWhiteSpace(station.Icon))
+                {
                     station.Icon = null;
+                    Console.WriteLine($"[StationController] Icon convertido a null");
+                }
 
+                Console.WriteLine($"[StationController] Llamando a CreateStationAsync...");
                 var created = await _stationService.CreateStationAsync(station);
+                Console.WriteLine($"[StationController] ✅ Estación creada exitosamente - ID: {created.Id}, Name: {created.Name}");
 
                 return Json(new
                 {
@@ -204,14 +218,18 @@ namespace RestBar.Controllers
             }
             catch (InvalidOperationException ex)
             {
+                Console.WriteLine($"[StationController] ❌ InvalidOperationException: {ex.Message}");
                 return Json(new { success = false, message = ex.Message });
             }
             catch (ArgumentException ex)
             {
+                Console.WriteLine($"[StationController] ❌ ArgumentException: {ex.Message}");
                 return Json(new { success = false, message = ex.Message });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine($"[StationController] ❌ Exception general: {ex.Message}");
+                Console.WriteLine($"[StationController] Stack trace: {ex.StackTrace}");
                 return Json(new { success = false, message = "Error interno del servidor" });
             }
         }
@@ -271,19 +289,71 @@ namespace RestBar.Controllers
         [Route("Station/EditAjax/{id}")]
         public async Task<IActionResult> EditAjax(Guid id, [FromForm] Station station)
         {
-            if (id != station.Id)
-                return Json(new { success = false, message = "ID de estación no válido" });
-
-            if (!ModelState.IsValid)
-                return Json(new { success = false, message = "Datos inválidos" });
-
             try
             {
+                Console.WriteLine($"[StationController] EditAjax iniciado - ID: {id}");
+                Console.WriteLine($"[StationController] Station recibida - Name: {station?.Name}, Type: {station?.Type}, AreaId: {station?.AreaId}, IsActive: {station?.IsActive}");
+                Console.WriteLine($"[StationController] Station.Id: {station?.Id}, Station.BranchId: {station?.BranchId}, Station.CompanyId: {station?.CompanyId}");
+                
+                // Log de todos los datos del formulario recibidos
+                Console.WriteLine($"[StationController] === DATOS DEL FORMULARIO ===");
+                foreach (var key in Request.Form.Keys)
+                {
+                    Console.WriteLine($"[StationController] {key}: {Request.Form[key]}");
+                }
+                Console.WriteLine($"[StationController] ==============================");
+                
+                if (id != station.Id)
+                {
+                    Console.WriteLine($"[StationController] ERROR: ID de estación no válido - ID recibido: {id}, Station.Id: {station.Id}");
+                    return Json(new { success = false, message = "ID de estación no válido" });
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    var errors = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .ToList();
+                    Console.WriteLine($"[StationController] ERROR: ModelState inválido - Errores: {string.Join(", ", errors)}");
+                    
+                    // Log detallado de errores de ModelState
+                    foreach (var modelState in ModelState)
+                    {
+                        if (modelState.Value.Errors.Any())
+                        {
+                            Console.WriteLine($"[StationController] Error en {modelState.Key}: {string.Join(", ", modelState.Value.Errors.Select(e => e.ErrorMessage))}");
+                        }
+                    }
+                    
+                    return Json(new { success = false, message = "Datos inválidos", errors = errors });
+                }
+
+                Console.WriteLine($"[StationController] Validaciones pasadas, procediendo a actualizar...");
+
                 // Convertir string vacío a null para Icon
                 if (string.IsNullOrWhiteSpace(station.Icon))
+                {
                     station.Icon = null;
+                    Console.WriteLine($"[StationController] Icon convertido a null");
+                }
 
+                // Log adicional para verificar los datos antes de enviar al servicio
+                Console.WriteLine($"[StationController] === DATOS FINALES A ENVIAR AL SERVICIO ===");
+                Console.WriteLine($"[StationController] Id: {station.Id}");
+                Console.WriteLine($"[StationController] Name: {station.Name}");
+                Console.WriteLine($"[StationController] Type: {station.Type}");
+                Console.WriteLine($"[StationController] Icon: {station.Icon}");
+                Console.WriteLine($"[StationController] AreaId: {station.AreaId}");
+                Console.WriteLine($"[StationController] CompanyId: {station.CompanyId}");
+                Console.WriteLine($"[StationController] BranchId: {station.BranchId}");
+                Console.WriteLine($"[StationController] IsActive: {station.IsActive}");
+                Console.WriteLine($"[StationController] ==============================================");
+
+                Console.WriteLine($"[StationController] Llamando a UpdateStationAsync...");
                 var updated = await _stationService.UpdateStationAsync(id, station);
+                Console.WriteLine($"[StationController] ✅ Estación actualizada exitosamente - ID: {updated.Id}, Name: {updated.Name}");
+
                 return Json(new { 
                     success = true, 
                     message = "Estación actualizada correctamente",
@@ -298,21 +368,33 @@ namespace RestBar.Controllers
                     }
                 });
             }
-            catch (KeyNotFoundException)
+            catch (KeyNotFoundException ex)
             {
+                Console.WriteLine($"[StationController] ❌ KeyNotFoundException: {ex.Message}");
                 return Json(new { success = false, message = "Estación no encontrada" });
             }
             catch (InvalidOperationException ex)
             {
+                Console.WriteLine($"[StationController] ❌ InvalidOperationException: {ex.Message}");
+                Console.WriteLine($"[StationController] Stack trace: {ex.StackTrace}");
                 return Json(new { success = false, message = ex.Message });
             }
             catch (ArgumentException ex)
             {
+                Console.WriteLine($"[StationController] ❌ ArgumentException: {ex.Message}");
+                Console.WriteLine($"[StationController] Stack trace: {ex.StackTrace}");
                 return Json(new { success = false, message = ex.Message });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Error interno del servidor" });
+                Console.WriteLine($"[StationController] ❌ Exception general: {ex.Message}");
+                Console.WriteLine($"[StationController] Tipo de excepción: {ex.GetType().Name}");
+                Console.WriteLine($"[StationController] Stack trace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"[StationController] Inner Exception: {ex.InnerException.Message}");
+                }
+                return Json(new { success = false, message = $"Error interno del servidor: {ex.Message}" });
             }
         }
 

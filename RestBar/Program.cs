@@ -113,7 +113,12 @@ builder.Services.AddScoped<RestBarContext>(provider =>
 
 // Registrar servicios
 builder.Services.AddScoped<ICategoryService, CategoryService>();
-builder.Services.AddScoped<IStationService, StationService>();
+builder.Services.AddScoped<IStationService>(provider =>
+{
+    var context = provider.GetRequiredService<RestBarContext>();
+    var httpContextAccessor = provider.GetRequiredService<IHttpContextAccessor>();
+    return new StationService(context, httpContextAccessor);
+});
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ITableService, TableService>();
 builder.Services.AddScoped<IAreaService, AreaService>();

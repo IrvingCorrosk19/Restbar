@@ -1144,70 +1144,112 @@
         };
 
         window.editStation = function(id) {
-            isEditMode = true;
-            currentStationId = id;
-            $('#modalTitle').html('<i class="fas fa-edit"></i> Editar Estación');
-            
-            // Cargar compañía y sucursales
-            loadUserCompanyAndBranches();
-            
-            // Cargar datos de la estación
-            $.get(`/Station/GetStationById/${id}`)
-                .done(function(response) {
-                    if (response.success) {
-                        const station = response.data;
+            try {
+                console.log('🔍 [Frontend] editStation iniciado - ID:', id);
+                
+                isEditMode = true;
+                currentStationId = id;
+                $('#modalTitle').html('<i class="fas fa-edit"></i> Editar Estación');
+                
+                console.log('🔍 [Frontend] Cargando compañía y sucursales...');
+                // Cargar compañía y sucursales
+                loadUserCompanyAndBranches();
+                
+                console.log('🔍 [Frontend] Cargando datos de la estación...');
+                // Cargar datos de la estación
+                $.get(`/Station/GetStationById/${id}`)
+                    .done(function(response) {
+                        console.log('✅ [Frontend] Respuesta de GetStationById:', response);
                         
-                        // Poblar los campos con un pequeño delay para asegurar que se actualicen
-                        setTimeout(() => {
-                            $('#stationId').val(station.id);
-                            $('#stationName').val(station.name);
-                            $('#stationType').val(station.type);
+                        if (response.success) {
+                            const station = response.data;
+                            console.log('✅ [Frontend] Datos de la estación:', station);
                             
-                            // Establecer la sucursal después de que se carguen
-                            if (station.branchId) {
-                                $('#stationBranch').val(station.branchId);
-                                // Cargar las áreas de esta sucursal
-                                loadAreasByBranch(station.branchId);
+                            // Poblar los campos con un pequeño delay para asegurar que se actualicen
+                            setTimeout(() => {
+                                console.log('🔍 [Frontend] Poblando campos del formulario...');
                                 
-                                // Establecer el área después de que se carguen las áreas
-                                setTimeout(() => {
-                                    if (station.areaId) {
-                                        const areaOption = $('#stationArea option[value="' + station.areaId + '"]');
-                                        if (areaOption.length > 0) {
-                                            $('#stationArea').val(station.areaId);
+                                $('#stationId').val(station.id);
+                                $('#stationName').val(station.name);
+                                $('#stationType').val(station.type);
+                                
+                                console.log('🔍 [Frontend] Campos básicos establecidos:');
+                                console.log('  - ID:', station.id);
+                                console.log('  - Name:', station.name);
+                                console.log('  - Type:', station.type);
+                                
+                                // Establecer la sucursal después de que se carguen
+                                if (station.branchId) {
+                                    console.log('🔍 [Frontend] Estableciendo sucursal:', station.branchId);
+                                    $('#stationBranch').val(station.branchId);
+                                    
+                                    // Cargar las áreas de esta sucursal
+                                    console.log('🔍 [Frontend] Cargando áreas para la sucursal...');
+                                    loadAreasByBranch(station.branchId);
+                                    
+                                    // Establecer el área después de que se carguen las áreas
+                                    setTimeout(() => {
+                                        console.log('🔍 [Frontend] Estableciendo área después del delay...');
+                                        if (station.areaId) {
+                                            console.log('🔍 [Frontend] Buscando opción de área:', station.areaId);
+                                            const areaOption = $('#stationArea option[value="' + station.areaId + '"]');
+                                            if (areaOption.length > 0) {
+                                                console.log('✅ [Frontend] Área encontrada, estableciendo valor');
+                                                $('#stationArea').val(station.areaId);
+                                            } else {
+                                                console.log('⚠️ [Frontend] Área no encontrada en las opciones');
+                                                $('#stationArea').val('');
+                                            }
                                         } else {
+                                            console.log('🔍 [Frontend] No hay areaId, estableciendo valor vacío');
                                             $('#stationArea').val('');
                                         }
-                                    } else {
-                                        $('#stationArea').val('');
-                                    }
-                                }, 500);
-                            } else {
-                                $('#stationArea').empty().append('<option value="">Seleccione una sucursal primero...</option>');
-                            }
-                            
-                            $('#stationIcon').val(station.icon || '').trigger('change');
-                            $('#stationIsActive').prop('checked', station.isActive).trigger('change');
-                            
-                            $('#stationModal').modal('show');
-                        }, 100);
-                    } else {
+                                    }, 500);
+                                } else {
+                                    console.log('⚠️ [Frontend] No hay branchId, limpiando dropdown de áreas');
+                                    $('#stationArea').empty().append('<option value="">Seleccione una sucursal primero...</option>');
+                                }
+                                
+                                console.log('🔍 [Frontend] Estableciendo ícono y estado activo...');
+                                $('#stationIcon').val(station.icon || '').trigger('change');
+                                $('#stationIsActive').prop('checked', station.isActive).trigger('change');
+                                
+                                console.log('✅ [Frontend] Todos los campos establecidos, mostrando modal...');
+                                $('#stationModal').modal('show');
+                            }, 100);
+                        } else {
+                            console.log('❌ [Frontend] ERROR en respuesta de GetStationById:', response.message);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: response.message || 'No se pudo cargar la estación',
+                                confirmButtonColor: '#e74c3c'
+                            });
+                        }
+                    })
+                    .fail(function(xhr, status, error) {
+                        console.log('❌ [Frontend] ERROR en petición GetStationById:');
+                        console.log('  - Status:', status);
+                        console.log('  - Error:', error);
+                        console.log('  - XHR:', xhr);
+                        
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
-                            text: response.message || 'No se pudo cargar la estación',
+                            text: 'Error al cargar la estación',
                             confirmButtonColor: '#e74c3c'
                         });
-                    }
-                })
-                .fail(function() {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Error al cargar la estación',
-                        confirmButtonColor: '#e74c3c'
                     });
+            } catch (error) {
+                console.log('❌ [Frontend] ERROR general en editStation:', error);
+                console.log('❌ [Frontend] Stack trace:', error.stack);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error inesperado al cargar la estación: ' + error.message,
+                    confirmButtonColor: '#e74c3c'
                 });
+            }
         };
 
         window.deleteStation = function(id, name) {
@@ -1277,98 +1319,144 @@
         };
 
         window.saveStation = function() {
-            const formData = new FormData();
+            try {
+                console.log('🔍 [Frontend] saveStation iniciado');
+                console.log('🔍 [Frontend] isEditMode:', isEditMode);
+                console.log('🔍 [Frontend] currentStationId:', currentStationId);
+                
+                const formData = new FormData();
 
-            // Solo enviamos el Id si estamos editando
-            if (isEditMode) {
-                formData.append('Id', $('#stationId').val());
-            }
+                // Solo enviamos el Id si estamos editando
+                if (isEditMode) {
+                    const stationId = $('#stationId').val();
+                    formData.append('Id', stationId);
+                    console.log('🔍 [Frontend] StationId para edición:', stationId);
+                }
 
-            const name = $('#stationName').val().trim();
-            const type = $('#stationType').val();
-            const icon = $('#stationIcon').val();
-            const areaId = $('#stationArea').val();
-            const isActive = $('#stationIsActive').is(':checked');
+                const name = $('#stationName').val().trim();
+                const type = $('#stationType').val();
+                const icon = $('#stationIcon').val();
+                const areaId = $('#stationArea').val();
+                const isActive = $('#stationIsActive').is(':checked');
+                const branchId = $('#stationBranch').val();
 
-            formData.append('Name', name);
-            formData.append('Type', type);
-            
-            // Solo enviar el ícono si no está vacío
-            if (icon && icon.trim() !== '') {
-                formData.append('Icon', icon.trim());
-            } else {
-                formData.append('Icon', '');
-            }
-            
-            formData.append('AreaId', areaId || '');
-            formData.append('IsActive', isActive);
+                console.log('🔍 [Frontend] Datos del formulario:');
+                console.log('  - Name:', name);
+                console.log('  - Type:', type);
+                console.log('  - Icon:', icon);
+                console.log('  - AreaId:', areaId);
+                console.log('  - BranchId:', branchId);
+                console.log('  - IsActive:', isActive);
 
-            // Validaciones frontend
-            if (!name) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'El nombre de la estación es requerido',
-                    confirmButtonColor: '#e74c3c'
-                });
-                return;
-            }
-
-            if (!type) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'El tipo de estación es requerido',
-                    confirmButtonColor: '#e74c3c'
-                });
-                return;
-            }
-
-            const url = isEditMode ? `/Station/EditAjax/${$('#stationId').val()}` : '/Station/CreateAjax';
-
-            $.ajax({
-                url: url,
-                method: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false
-            })
-            .done(function (response) {
-                if (response.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: '¡Éxito!',
-                        text: isEditMode ? 'Estación actualizada correctamente' : 'Estación creada correctamente',
-                        timer: 2000,
-                        showConfirmButton: false,
-                        confirmButtonColor: '#27ae60'
-                    }).then(() => {
-                        location.reload();
-                    });
+                formData.append('Name', name);
+                formData.append('Type', type);
+                
+                // Solo enviar el ícono si no está vacío
+                if (icon && icon.trim() !== '') {
+                    formData.append('Icon', icon.trim());
                 } else {
+                    formData.append('Icon', '');
+                }
+                
+                formData.append('AreaId', areaId || '');
+                formData.append('BranchId', branchId || '');
+                formData.append('IsActive', isActive);
+
+                // Validaciones frontend
+                if (!name) {
+                    console.log('❌ [Frontend] ERROR: Nombre de estación vacío');
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
-                        text: response.message || 'Error al guardar la estación',
+                        text: 'El nombre de la estación es requerido',
                         confirmButtonColor: '#e74c3c'
                     });
-                    if (response.errors) {
-                        console.error("Errores del modelo:", response.errors);
+                    return;
+                }
+
+                if (!type) {
+                    console.log('❌ [Frontend] ERROR: Tipo de estación vacío');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'El tipo de estación es requerido',
+                        confirmButtonColor: '#e74c3c'
+                    });
+                    return;
+                }
+
+                const url = isEditMode ? `/Station/EditAjax/${$('#stationId').val()}` : '/Station/CreateAjax';
+                console.log('🔍 [Frontend] URL de la petición:', url);
+
+                console.log('🔍 [Frontend] Enviando petición AJAX...');
+                $.ajax({
+                    url: url,
+                    method: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false
+                })
+                .done(function (response) {
+                    console.log('✅ [Frontend] Respuesta recibida:', response);
+                    if (response.success) {
+                        console.log('✅ [Frontend] Operación exitosa');
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Éxito!',
+                            text: isEditMode ? 'Estación actualizada correctamente' : 'Estación creada correctamente',
+                            timer: 2000,
+                            showConfirmButton: false,
+                            confirmButtonColor: '#27ae60'
+                        }).then(() => {
+                            console.log('🔄 [Frontend] Recargando página...');
+                            location.reload();
+                        });
+                    } else {
+                        console.log('❌ [Frontend] ERROR en respuesta:', response.message);
+                        if (response.errors) {
+                            console.error("❌ [Frontend] Errores del modelo:", response.errors);
+                        }
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: response.message || 'Error al guardar la estación',
+                            confirmButtonColor: '#e74c3c'
+                        });
                     }
-                }
-            })
-            .fail(function (xhr) {
-                let errorMessage = 'Error al guardar la estación';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMessage = xhr.responseJSON.message;
-                }
+                })
+                .fail(function (xhr, status, error) {
+                    console.log('❌ [Frontend] ERROR en petición AJAX:');
+                    console.log('  - Status:', status);
+                    console.log('  - Error:', error);
+                    console.log('  - XHR:', xhr);
+                    
+                    let errorMessage = 'Error al guardar la estación';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                        console.log('❌ [Frontend] Mensaje de error del servidor:', xhr.responseJSON.message);
+                    }
+                    
+                    if (xhr.responseText) {
+                        console.log('❌ [Frontend] Response text:', xhr.responseText);
+                    }
+                    
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: errorMessage,
+                        confirmButtonColor: '#e74c3c'
+                    });
+                });
+            } catch (error) {
+                console.log('❌ [Frontend] ERROR general en saveStation:', error);
+                console.log('❌ [Frontend] Stack trace:', error.stack);
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
-                    text: errorMessage,
+                    text: 'Error inesperado al guardar la estación: ' + error.message,
                     confirmButtonColor: '#e74c3c'
                 });
-            });
+            }
         };
 
         $(document).ready(function() {

@@ -880,6 +880,20 @@ public partial class RestBarContext : DbContext
                 .HasDefaultValue(true)
                 .HasColumnName("is_active");
 
+            // Propiedades de tracking
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("CreatedAt");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("UpdatedAt");
+            entity.Property(e => e.CreatedBy)
+                .HasMaxLength(255)
+                .HasColumnName("CreatedBy");
+            entity.Property(e => e.UpdatedBy)
+                .HasMaxLength(255)
+                .HasColumnName("UpdatedBy");
+
             // Configurar la relación con Area
             entity.HasOne(s => s.Area)
                 .WithMany(a => a.Stations)

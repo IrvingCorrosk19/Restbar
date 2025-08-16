@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace RestBar.Models
 {
-    public class Station
+    public class Station : ITrackableEntity
     {
         public Guid Id { get; set; }
         
@@ -33,6 +33,12 @@ namespace RestBar.Models
 
         [Display(Name = "Estado Activo")]
         public bool IsActive { get; set; } = true;
+
+        // Propiedades de tracking (ITrackableEntity)
+        public DateTime? CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+        public string? CreatedBy { get; set; }
+        public string? UpdatedBy { get; set; }
 
         // Propiedades de navegación
         public virtual Area? Area { get; set; }
