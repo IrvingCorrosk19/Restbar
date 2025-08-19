@@ -434,8 +434,44 @@ async function saveSupplier() {
                     updateSingleSupplierRow(currentSupplierId, formData);
                 } else {
                     console.log('[DEBUG] Creando nuevo proveedor');
-                    // Es una creación - recargar para mostrar el nuevo registro
-                    loadSuppliers();
+                    // Es una creación - agregar el nuevo proveedor a la lista
+                    if (result.supplier) {
+                        const newSupplier = {
+                            id: result.supplier.id,
+                            name: result.supplier.name,
+                            description: result.supplier.description,
+                            contactPerson: result.supplier.contactPerson,
+                            email: result.supplier.email,
+                            phone: result.supplier.phone,
+                            fax: result.supplier.fax,
+                            address: result.supplier.address,
+                            city: result.supplier.city,
+                            state: result.supplier.state,
+                            postalCode: result.supplier.postalCode,
+                            country: result.supplier.country,
+                            taxId: result.supplier.taxId,
+                            accountNumber: result.supplier.accountNumber,
+                            website: result.supplier.website,
+                            paymentTerms: result.supplier.paymentTerms,
+                            leadTimeDays: result.supplier.leadTimeDays,
+                            notes: result.supplier.notes,
+                            isActive: result.supplier.isActive,
+                            products: 0
+                        };
+                        
+                        // Agregar al array local
+                        suppliersData.push(newSupplier);
+                        
+                        // Actualizar la tabla
+                        displaySuppliers();
+                        updateSuppliersCount();
+                        
+                        console.log('[DEBUG] Nuevo proveedor agregado a la lista:', newSupplier);
+                    } else {
+                        // Fallback: recargar toda la lista si no hay datos del proveedor
+                        console.log('[DEBUG] No hay datos del proveedor, recargando lista completa');
+                        loadSuppliers();
+                    }
                 }
             } else {
                 showAlert(result.message || 'Error al guardar proveedor', 'error');
@@ -451,6 +487,8 @@ async function saveSupplier() {
 // Función para eliminar proveedor
 async function deleteSupplier(supplierId) {
     try {
+        console.log('[DEBUG] deleteSupplier iniciado para ID:', supplierId);
+        
         const result = await Swal.fire({
             title: '¿Estás seguro?',
             text: 'Esta acción no se puede deshacer',
@@ -463,6 +501,8 @@ async function deleteSupplier(supplierId) {
         });
 
         if (result.isConfirmed) {
+            console.log('[DEBUG] Confirmación aceptada, enviando solicitud de eliminación...');
+            
             const response = await fetch(`/Supplier/DeleteSupplier/${supplierId}`, {
                 method: 'POST',
                 headers: {
@@ -471,20 +511,86 @@ async function deleteSupplier(supplierId) {
                 }
             });
 
+            console.log('[DEBUG] Respuesta del servidor:', response.status);
+
             if (response.ok) {
                 const result = await response.json();
+                console.log('[DEBUG] Resultado de eliminación:', result);
+                
                 if (result.success) {
                     showAlert(result.message, 'success');
-                    loadSuppliers();
+                    
+                    // Eliminar solo la fila específica del DOM en lugar de recargar todo
+                    removeSupplierRow(supplierId);
+                    
+                    // Actualizar el array local
+                    suppliersData = suppliersData.filter(s => s.id != supplierId);
+                    
+                    // Actualizar contador
+                    updateSuppliersCount();
+                    
+                    console.log('[DEBUG] Proveedor eliminado exitosamente del DOM y array local');
                 } else {
-                    showAlert(result.message || 'Error al eliminar proveedor', 'error');
+                    // Si el error es por productos asociados, mostrar un mensaje más informativo
+                    if (result.hasProducts) {
+                        // Obtener y mostrar los productos asociados
+                        showSupplierProducts(supplierId, result.message);
+                    } else {
+                        showAlert(result.message || 'Error al eliminar proveedor', 'error');
+                    }
                 }
             } else {
-                showAlert('Error al eliminar proveedor', 'error');
+                const errorText = await response.text();
+                console.log('[DEBUG] Error en respuesta:', errorText);
+                showAlert('Error al eliminar proveedor: ' + response.statusText, 'error');
             }
         }
     } catch (error) {
-        showAlert('Error al eliminar proveedor', 'error');
+        console.log('[DEBUG] Error en deleteSupplier:', error);
+        showAlert('Error al eliminar proveedor: ' + error.message, 'error');
+    }
+}
+
+// Función para eliminar una fila específica del DOM
+function removeSupplierRow(supplierId) {
+    console.log('[DEBUG] removeSupplierRow iniciado para ID:', supplierId);
+    
+    const tbody = document.getElementById('suppliersTableBody');
+    if (!tbody) {
+        console.log('[DEBUG] No se encontró tbody');
+        return;
+    }
+
+    // Buscar la fila específica
+    const rows = tbody.querySelectorAll('tr');
+    console.log('[DEBUG] Filas encontradas:', rows.length);
+    
+    for (let row of rows) {
+        const deleteButton = row.querySelector('button[onclick*="deleteSupplier"]');
+        if (deleteButton) {
+            const rowSupplierId = deleteButton.getAttribute('onclick').match(/'([^']+)'/)?.[1];
+            console.log('[DEBUG] Comparando rowSupplierId:', rowSupplierId, 'con supplierId:', supplierId);
+            
+            if (rowSupplierId === supplierId) {
+                console.log('[DEBUG] ¡Fila encontrada! Eliminando...');
+                row.remove();
+                console.log('[DEBUG] Fila eliminada exitosamente del DOM');
+                break;
+            }
+        }
+    }
+    
+    // Si no hay más filas, mostrar mensaje de "no hay proveedores"
+    if (tbody.children.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center text-muted py-4">
+                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                    <p>No se encontraron proveedores</p>
+                </td>
+            </tr>
+        `;
+        console.log('[DEBUG] Tabla vacía, mostrando mensaje de "no hay proveedores"');
     }
 }
 
@@ -608,6 +714,73 @@ function showAlert(message, type = 'info') {
         timer: type === 'success' ? 3000 : undefined,
         timerProgressBar: type === 'success'
     });
+}
+
+// Función para mostrar productos asociados a un proveedor
+async function showSupplierProducts(supplierId, errorMessage) {
+    try {
+        console.log('[DEBUG] showSupplierProducts iniciado para supplierId:', supplierId);
+        
+        const response = await fetch(`/Supplier/GetSupplierProducts/${supplierId}`);
+        const data = await response.json();
+        
+        if (data.success && data.products) {
+            const supplier = suppliersData.find(s => s.id == supplierId);
+            const supplierName = supplier ? supplier.name : 'Proveedor';
+            
+            let productsHtml = '';
+            if (data.products.length > 0) {
+                productsHtml = `
+                    <div class="table-responsive mt-3">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Descripción</th>
+                                    <th>Precio</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.products.map(product => `
+                                    <tr>
+                                        <td><strong>${product.name || 'Sin nombre'}</strong></td>
+                                        <td>${product.description || 'Sin descripción'}</td>
+                                        <td>$${product.price?.toFixed(2) || '0.00'}</td>
+                                        <td>
+                                            <span class="badge ${product.isActive ? 'bg-success' : 'bg-danger'}">
+                                                ${product.isActive ? 'Activo' : 'Inactivo'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+            
+            Swal.fire({
+                title: 'No se puede eliminar',
+                html: `
+                    <div class="text-start">
+                        <p class="mb-3">${errorMessage}</p>
+                        <p class="text-muted small">Para eliminar este proveedor, primero debe eliminar o reasignar los productos asociados.</p>
+                        ${productsHtml}
+                    </div>
+                `,
+                icon: 'warning',
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: '#3085d6',
+                width: '600px'
+            });
+        } else {
+            showAlert('Error al obtener productos asociados: ' + (data.message || 'Error desconocido'), 'error');
+        }
+    } catch (error) {
+        console.log('[DEBUG] Error en showSupplierProducts:', error);
+        showAlert('Error al obtener productos asociados: ' + error.message, 'error');
+    }
 }
 
 // Exportar funciones al scope global

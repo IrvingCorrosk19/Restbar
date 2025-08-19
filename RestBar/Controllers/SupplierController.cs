@@ -225,7 +225,11 @@ namespace RestBar.Controllers
             catch (InvalidOperationException ex)
             {
                 Console.WriteLine($"[SupplierController] Error en DeleteSupplier: {ex.Message}");
-                return Json(new { success = false, message = ex.Message });
+                return Json(new { 
+                    success = false, 
+                    message = ex.Message,
+                    hasProducts = ex.Message.Contains("producto(s) asociado(s)")
+                });
             }
             catch (Exception ex)
             {
@@ -302,15 +306,29 @@ namespace RestBar.Controllers
         {
             try
             {
+                Console.WriteLine($"[SupplierController] GetSupplierProducts iniciado - SupplierId: {supplierId}");
+                
                 var products = await _supplierService.GetProductsBySupplierAsync(supplierId);
-                return Json(new { success = true, products = products });
+                var productsData = products.Select(p => new
+                {
+                    id = p.Id,
+                    name = p.Name,
+                    description = p.Description,
+                    price = p.Price,
+                    isActive = p.IsActive
+                }).ToList();
+                
+                Console.WriteLine($"[SupplierController] ✅ Productos obtenidos: {productsData.Count} productos");
+                return Json(new { success = true, products = productsData });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[SupplierController] Error en GetSupplierProducts: {ex.Message}");
+                Console.WriteLine($"[SupplierController] ❌ ERROR en GetSupplierProducts: {ex.Message}");
                 return Json(new { success = false, message = ex.Message });
             }
         }
+
+
 
         [HttpPost]
         public async Task<IActionResult> CreateSupplier([FromBody] CreateSupplierDto dto)
@@ -353,9 +371,23 @@ namespace RestBar.Controllers
                     {
                         id = createdSupplier.Id,
                         name = createdSupplier.Name,
+                        description = createdSupplier.Description,
                         contactPerson = createdSupplier.ContactPerson,
                         email = createdSupplier.Email,
-                        phone = createdSupplier.Phone
+                        phone = createdSupplier.Phone,
+                        fax = createdSupplier.Fax,
+                        address = createdSupplier.Address,
+                        city = createdSupplier.City,
+                        state = createdSupplier.State,
+                        postalCode = createdSupplier.PostalCode,
+                        country = createdSupplier.Country,
+                        taxId = createdSupplier.TaxId,
+                        accountNumber = createdSupplier.AccountNumber,
+                        website = createdSupplier.Website,
+                        paymentTerms = createdSupplier.PaymentTerms,
+                        leadTimeDays = createdSupplier.LeadTimeDays,
+                        notes = createdSupplier.Notes,
+                        isActive = createdSupplier.IsActive
                     }
                 });
             }

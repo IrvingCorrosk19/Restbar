@@ -319,8 +319,9 @@ namespace RestBar.Services
                 var hasProducts = await _context.Products.AnyAsync(p => p.SupplierId == id);
                 if (hasProducts)
                 {
-                    Console.WriteLine($"[SupplierService] ❌ ERROR: Proveedor tiene productos asociados");
-                    throw new InvalidOperationException("No se puede eliminar el proveedor porque tiene productos asociados");
+                    var productCount = await _context.Products.CountAsync(p => p.SupplierId == id);
+                    Console.WriteLine($"[SupplierService] ❌ ERROR: Proveedor tiene {productCount} productos asociados");
+                    throw new InvalidOperationException($"No se puede eliminar el proveedor '{supplier.Name}' porque tiene {productCount} producto(s) asociado(s). Primero debe eliminar o reasignar estos productos.");
                 }
 
                 Console.WriteLine($"[SupplierService] ✅ No hay productos asociados, procediendo a eliminar...");
