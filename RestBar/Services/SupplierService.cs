@@ -400,24 +400,47 @@ namespace RestBar.Services
         {
             try
             {
+                Console.WriteLine($"[SupplierService] GetAllActiveSuppliersAsync iniciado");
+                
                 var user = await GetCurrentUserAsync();
                 var companyId = user?.Branch?.CompanyId;
-                
+                Console.WriteLine($"[SupplierService] Usuario obtenido: {user?.Email}, CompanyId: {companyId}");
+
                 var query = _context.Suppliers.AsQueryable();
+                Console.WriteLine($"[SupplierService] Query inicial creada");
                 
+                // Aplicar filtro de compañía si existe
                 if (companyId.HasValue)
                 {
                     query = query.Where(s => s.CompanyId == companyId);
+                    Console.WriteLine($"[SupplierService] Filtro de compañía aplicado: {companyId}");
+                }
+                else
+                {
+                    Console.WriteLine($"[SupplierService] ⚠️ No se aplicó filtro de compañía (CompanyId es null)");
                 }
                 
-                query = query.Where(s => s.IsActive)
-                           .Include(s => s.Products)
-                           .OrderBy(s => s.Name);
+                // Aplicar filtro de activos
+                query = query.Where(s => s.IsActive);
+                Console.WriteLine($"[SupplierService] Filtro de activos aplicado");
+                
+                // Incluir relaciones
+                query = query.Include(s => s.Products);
+                Console.WriteLine($"[SupplierService] Relaciones incluidas");
+                
+                // Ordenar
+                query = query.OrderBy(s => s.Name);
+                Console.WriteLine($"[SupplierService] Ordenamiento aplicado");
 
-                return await query.ToListAsync();
+                var result = await query.ToListAsync();
+                Console.WriteLine($"[SupplierService] ✅ Consulta ejecutada, {result.Count} proveedores activos encontrados");
+
+                return result;
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[SupplierService] ❌ ERROR en GetAllActiveSuppliersAsync: {ex.Message}");
+                Console.WriteLine($"[SupplierService] Stack trace: {ex.StackTrace}");
                 throw new Exception($"Error al obtener proveedores: {ex.Message}", ex);
             }
         }

@@ -240,7 +240,10 @@ namespace RestBar.Controllers
         {
             try
             {
+                Console.WriteLine($"[SupplierController] GetSuppliers iniciado");
+                
                 var suppliers = await _supplierService.GetAllActiveSuppliersAsync();
+                Console.WriteLine($"[SupplierController] Proveedores obtenidos del servicio: {suppliers.Count()}");
                 
                 var suppliersData = suppliers.Select(s => new
                 {
@@ -266,10 +269,13 @@ namespace RestBar.Controllers
                     products = s.Products?.Count ?? 0
                 }).ToList();
                 
+                Console.WriteLine($"[SupplierController] ✅ Datos transformados: {suppliersData.Count} proveedores");
                 return Json(new { success = true, suppliers = suppliersData });
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[SupplierController] ❌ ERROR en GetSuppliers: {ex.Message}");
+                Console.WriteLine($"[SupplierController] Stack trace: {ex.StackTrace}");
                 return Json(new { success = false, message = ex.Message });
             }
         }

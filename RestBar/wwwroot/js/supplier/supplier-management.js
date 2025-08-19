@@ -7,37 +7,50 @@ let currentSupplierId = null;
 // Función para cargar proveedores
 async function loadSuppliers() {
     try {
+        console.log('[DEBUG] loadSuppliers iniciado');
         const response = await fetch('/Supplier/GetSuppliers');
         const data = await response.json();
         
+        console.log('[DEBUG] Respuesta del servidor:', data);
+        
         if (data.success) {
             suppliersData = data.suppliers || [];
+            console.log('[DEBUG] suppliersData actualizado:', suppliersData.length, 'proveedores');
             displaySuppliers();
             updateSuppliersCount();
         } else {
+            console.log('[DEBUG] Error en respuesta del servidor:', data.message);
             showAlert('Error al cargar proveedores: ' + data.message, 'error');
         }
     } catch (error) {
+        console.log('[DEBUG] Error en loadSuppliers:', error);
         showAlert('Error al cargar proveedores: ' + error.message, 'error');
     }
 }
 
 // Función para mostrar proveedores en la tabla
 function displaySuppliers() {
+    console.log('[DEBUG] displaySuppliers iniciado');
     const tbody = document.getElementById('suppliersTableBody');
-    if (!tbody) return;
+    if (!tbody) {
+        console.log('[DEBUG] No se encontró tbody');
+        return;
+    }
 
     // Aplicar filtros
     let filteredSuppliers = applyFilters(suppliersData);
+    console.log('[DEBUG] Filtros aplicados:', filteredSuppliers.length, 'proveedores');
     
     // Aplicar paginación
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const paginatedSuppliers = filteredSuppliers.slice(startIndex, endIndex);
+    console.log('[DEBUG] Paginación aplicada:', paginatedSuppliers.length, 'proveedores en página', currentPage);
 
     tbody.innerHTML = '';
 
     if (paginatedSuppliers.length === 0) {
+        console.log('[DEBUG] No hay proveedores para mostrar en la página actual');
         tbody.innerHTML = `
             <tr>
                 <td colspan="8" class="text-center text-muted py-4">
@@ -97,6 +110,7 @@ function displaySuppliers() {
     });
 
     updatePagination(filteredSuppliers.length);
+    console.log('[DEBUG] displaySuppliers completado');
 }
 
 // Función para aplicar filtros
@@ -168,6 +182,92 @@ function updateSuppliersCount() {
         const filteredSuppliers = applyFilters(suppliersData);
         countElement.textContent = filteredSuppliers.length;
     }
+}
+
+// Función para actualizar solo un registro específico en la tabla
+function updateSingleSupplierRow(supplierId, updatedData) {
+    console.log('[DEBUG] Actualizando fila específica para supplierId:', supplierId);
+    console.log('[DEBUG] Datos actualizados:', updatedData);
+    
+    const tbody = document.getElementById('suppliersTableBody');
+    if (!tbody) {
+        console.log('[DEBUG] No se encontró tbody');
+        return;
+    }
+
+    // Buscar la fila específica
+    const rows = tbody.querySelectorAll('tr');
+    console.log('[DEBUG] Filas encontradas:', rows.length);
+    
+    for (let row of rows) {
+        const editButton = row.querySelector('button[onclick*="editSupplier"]');
+        if (editButton) {
+            const rowSupplierId = editButton.getAttribute('onclick').match(/'([^']+)'/)?.[1];
+            console.log('[DEBUG] Comparando rowSupplierId:', rowSupplierId, 'con supplierId:', supplierId);
+            if (rowSupplierId === supplierId) {
+                console.log('[DEBUG] ¡Fila encontrada! Actualizando...');
+                // Actualizar el contenido de la fila
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 8) {
+                    // Actualizar nombre y descripción
+                    const nameCell = cells[0];
+                    nameCell.innerHTML = `
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center me-2">
+                                <i class="fas fa-truck text-white"></i>
+                            </div>
+                            <div>
+                                <strong>${updatedData.name || 'Sin nombre'}</strong>
+                                ${updatedData.description ? `<br><small class="text-muted">${updatedData.description}</small>` : ''}
+                            </div>
+                        </div>
+                    `;
+
+                    // Actualizar contacto
+                    cells[1].textContent = updatedData.contactPerson || 'No especificado';
+
+                    // Actualizar email
+                    cells[2].innerHTML = updatedData.email ? 
+                        `<a href="mailto:${updatedData.email}" class="text-decoration-none">${updatedData.email}</a>` : 
+                        'No especificado';
+
+                    // Actualizar teléfono
+                    cells[3].innerHTML = updatedData.phone ? 
+                        `<a href="tel:${updatedData.phone}" class="text-decoration-none">${updatedData.phone}</a>` : 
+                        'No especificado';
+
+                    // Actualizar ciudad
+                    cells[4].textContent = updatedData.city || 'No especificado';
+
+                    // Actualizar estado
+                    cells[5].innerHTML = `
+                        <span class="badge ${updatedData.isActive ? 'bg-success' : 'bg-danger'}">
+                            ${updatedData.isActive ? 'Activo' : 'Inactivo'}
+                        </span>
+                    `;
+
+                    // Los productos se mantienen igual (no cambian al editar)
+                    // cells[6] se mantiene igual
+
+                    // Actualizar el array local
+                    const index = suppliersData.findIndex(s => s.id == supplierId);
+                    if (index !== -1) {
+                        suppliersData[index] = { ...suppliersData[index], ...updatedData };
+                        console.log('[DEBUG] Array local actualizado en índice:', index);
+                    }
+
+                    // Actualizar contador
+                    updateSuppliersCount();
+                    console.log('[DEBUG] Actualización completada exitosamente');
+                    break;
+                }
+            }
+        }
+    }
+    
+    // Si llegamos aquí, no se encontró la fila
+    console.log('[DEBUG] No se encontró la fila para actualizar');
+    showAlert('No se pudo actualizar la fila en la tabla. Los datos se han guardado correctamente.', 'warning');
 }
 
 // Función para actualizar paginación
@@ -326,7 +426,17 @@ async function saveSupplier() {
             if (result.success) {
                 showAlert(result.message, 'success');
                 bootstrap.Modal.getInstance(document.getElementById('supplierModal')).hide();
-                loadSuppliers();
+                
+                // Actualizar solo el registro específico en lugar de recargar todo
+                if (currentSupplierId) {
+                    console.log('[DEBUG] Editando proveedor existente, ID:', currentSupplierId);
+                    // Es una edición - actualizar solo esa fila
+                    updateSingleSupplierRow(currentSupplierId, formData);
+                } else {
+                    console.log('[DEBUG] Creando nuevo proveedor');
+                    // Es una creación - recargar para mostrar el nuevo registro
+                    loadSuppliers();
+                }
             } else {
                 showAlert(result.message || 'Error al guardar proveedor', 'error');
             }
