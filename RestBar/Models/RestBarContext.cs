@@ -1194,21 +1194,15 @@ public partial class RestBarContext : DbContext
                 .IsRequired()
                 .HasMaxLength(200)
                 .HasColumnName("name");
-            entity.Property(e => e.Description)
-                .HasMaxLength(500)
-                .HasColumnName("Description");
             entity.Property(e => e.ContactPerson)
                 .HasMaxLength(200)
-                .HasColumnName("ContactPerson");
+                .HasColumnName("contact_person");
             entity.Property(e => e.Email)
                 .HasMaxLength(200)
                 .HasColumnName("email");
             entity.Property(e => e.Phone)
                 .HasMaxLength(50)
                 .HasColumnName("phone");
-            entity.Property(e => e.Fax)
-                .HasMaxLength(20)
-                .HasColumnName("Fax");
             entity.Property(e => e.Address)
                 .HasColumnName("address");
             entity.Property(e => e.City)
@@ -1226,15 +1220,6 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.TaxId)
                 .HasMaxLength(50)
                 .HasColumnName("tax_id");
-            entity.Property(e => e.AccountNumber)
-                .HasMaxLength(50)
-                .HasColumnName("AccountNumber");
-            entity.Property(e => e.Website)
-                .HasMaxLength(100)
-                .HasColumnName("Website");
-            entity.Property(e => e.Notes)
-                .HasMaxLength(500)
-                .HasColumnName("Notes");
             entity.Property(e => e.PaymentTerms)
                 .HasMaxLength(200)
                 .HasColumnName("payment_terms");
@@ -1252,6 +1237,31 @@ public partial class RestBarContext : DbContext
                 .HasColumnName("updated_at");
             entity.Property(e => e.CompanyId)
                 .HasColumnName("company_id");
+
+            // Propiedades adicionales con nombres exactos de la BD
+            entity.Property(e => e.Description)
+                .HasMaxLength(500)
+                .HasColumnName("Description");
+            entity.Property(e => e.Fax)
+                .HasMaxLength(20)
+                .HasColumnName("Fax");
+            entity.Property(e => e.AccountNumber)
+                .HasMaxLength(50)
+                .HasColumnName("AccountNumber");
+            entity.Property(e => e.Website)
+                .HasMaxLength(100)
+                .HasColumnName("Website");
+            entity.Property(e => e.Notes)
+                .HasMaxLength(500)
+                .HasColumnName("Notes");
+
+            // Propiedades de tracking
+            entity.Property(e => e.CreatedBy)
+                .HasMaxLength(255)
+                .HasColumnName("CreatedBy");
+            entity.Property(e => e.UpdatedBy)
+                .HasMaxLength(255)
+                .HasColumnName("UpdatedBy");
 
             // Relación con Company
             entity.HasOne(d => d.Company)

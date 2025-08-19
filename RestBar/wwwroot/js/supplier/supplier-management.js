@@ -7,27 +7,18 @@ let currentSupplierId = null;
 // Función para cargar proveedores
 async function loadSuppliers() {
     try {
-        console.log('[Frontend] Cargando proveedores...');
         const response = await fetch('/Supplier/GetSuppliers');
+        const data = await response.json();
         
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-                suppliersData = data.suppliers || [];
-                displaySuppliers();
-                updateSuppliersCount();
-                loadCityFilter();
-            } else {
-                console.error('[Frontend] Error al cargar proveedores:', data.message);
-                showAlert('Error al cargar proveedores', 'error');
-            }
+        if (data.success) {
+            suppliersData = data.suppliers || [];
+            displaySuppliers();
+            updateSuppliersCount();
         } else {
-            console.error('[Frontend] Error en la respuesta del servidor');
-            showAlert('Error al cargar proveedores', 'error');
+            showAlert('Error al cargar proveedores: ' + data.message, 'error');
         }
     } catch (error) {
-        console.error('[Frontend] Error cargando proveedores:', error);
-        showAlert('Error al cargar proveedores', 'error');
+        showAlert('Error al cargar proveedores: ' + error.message, 'error');
     }
 }
 
@@ -58,7 +49,7 @@ function displaySuppliers() {
         return;
     }
 
-    paginatedSuppliers.forEach(supplier => {
+    paginatedSuppliers.forEach((supplier) => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>
@@ -86,7 +77,7 @@ function displaySuppliers() {
                 </span>
             </td>
             <td>
-                <span class="badge bg-info">${supplier.products ? supplier.products.length : 0} productos</span>
+                <span class="badge bg-info">${supplier.products || 0} productos</span>
             </td>
             <td>
                 <div class="btn-group btn-group-sm" role="group">
@@ -110,17 +101,19 @@ function displaySuppliers() {
 
 // Función para aplicar filtros
 function applyFilters(suppliers) {
+    if (!Array.isArray(suppliers)) return [];
+
     let filtered = suppliers;
 
     // Filtro de búsqueda
     const searchTerm = document.getElementById('searchInput')?.value.toLowerCase();
     if (searchTerm) {
         filtered = filtered.filter(supplier => 
-            supplier.name?.toLowerCase().includes(searchTerm) ||
-            supplier.contactPerson?.toLowerCase().includes(searchTerm) ||
-            supplier.email?.toLowerCase().includes(searchTerm) ||
-            supplier.phone?.toLowerCase().includes(searchTerm) ||
-            supplier.city?.toLowerCase().includes(searchTerm)
+            (supplier.name && supplier.name.toLowerCase().includes(searchTerm)) ||
+            (supplier.contactPerson && supplier.contactPerson.toLowerCase().includes(searchTerm)) ||
+            (supplier.email && supplier.email.toLowerCase().includes(searchTerm)) ||
+            (supplier.phone && supplier.phone.toLowerCase().includes(searchTerm)) ||
+            (supplier.city && supplier.city.toLowerCase().includes(searchTerm))
         );
     }
 
@@ -168,37 +161,6 @@ function setupFilters() {
     }
 }
 
-// Función para cargar filtro de ciudades
-function loadCityFilter() {
-    const cityFilter = document.getElementById('cityFilter');
-    if (!cityFilter) return;
-
-    const cities = [...new Set(suppliersData.map(s => s.city).filter(city => city))];
-    cities.sort();
-
-    cityFilter.innerHTML = '<option value="">Todas las ciudades</option>';
-    cities.forEach(city => {
-        const option = document.createElement('option');
-        option.value = city;
-        option.textContent = city;
-        cityFilter.appendChild(option);
-    });
-}
-
-// Función para limpiar filtros
-function clearFilters() {
-    const searchInput = document.getElementById('searchInput');
-    const statusFilter = document.getElementById('statusFilter');
-    const cityFilter = document.getElementById('cityFilter');
-
-    if (searchInput) searchInput.value = '';
-    if (statusFilter) statusFilter.value = '';
-    if (cityFilter) cityFilter.value = '';
-
-    currentPage = 1;
-    displaySuppliers();
-}
-
 // Función para actualizar contador de proveedores
 function updateSuppliersCount() {
     const countElement = document.getElementById('suppliersCount');
@@ -233,9 +195,7 @@ function updatePagination(totalItems) {
         if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
             const li = document.createElement('li');
             li.className = `page-item ${i === currentPage ? 'active' : ''}`;
-            li.innerHTML = `
-                <button class="page-link" onclick="changePage(${i})">${i}</button>
-            `;
+            li.innerHTML = `<button class="page-link" onclick="changePage(${i})">${i}</button>`;
             pagination.appendChild(li);
         } else if (i === currentPage - 3 || i === currentPage + 3) {
             const li = document.createElement('li');
@@ -277,23 +237,18 @@ function openCreateSupplierModal() {
 }
 
 // Función para editar proveedor
-async function editSupplier(supplierId) {
-    try {
-        const supplier = suppliersData.find(s => s.id === supplierId);
-        if (!supplier) {
-            showAlert('Proveedor no encontrado', 'error');
-            return;
-        }
-
-        currentSupplierId = supplierId;
-        fillSupplierForm(supplier);
-        document.getElementById('supplierModalLabel').innerHTML = '<i class="fas fa-edit me-2"></i>Editar Proveedor';
-        const modal = new bootstrap.Modal(document.getElementById('supplierModal'));
-        modal.show();
-    } catch (error) {
-        console.error('[Frontend] Error al editar proveedor:', error);
-        showAlert('Error al editar proveedor', 'error');
+function editSupplier(supplierId) {
+    const supplier = suppliersData.find(s => s.id == supplierId);
+    if (!supplier) {
+        showAlert('Proveedor no encontrado', 'error');
+        return;
     }
+
+    currentSupplierId = supplierId;
+    fillSupplierForm(supplier);
+    document.getElementById('supplierModalLabel').innerHTML = '<i class="fas fa-edit me-2"></i>Editar Proveedor';
+    const modal = new bootstrap.Modal(document.getElementById('supplierModal'));
+    modal.show();
 }
 
 // Función para llenar formulario con datos del proveedor
@@ -303,13 +258,17 @@ function fillSupplierForm(supplier) {
     document.getElementById('supplierContactPerson').value = supplier.contactPerson || '';
     document.getElementById('supplierEmail').value = supplier.email || '';
     document.getElementById('supplierPhone').value = supplier.phone || '';
+    document.getElementById('supplierFax').value = supplier.fax || '';
     document.getElementById('supplierAddress').value = supplier.address || '';
     document.getElementById('supplierCity').value = supplier.city || '';
     document.getElementById('supplierState').value = supplier.state || '';
     document.getElementById('supplierPostalCode').value = supplier.postalCode || '';
     document.getElementById('supplierCountry').value = supplier.country || '';
     document.getElementById('supplierTaxId').value = supplier.taxId || '';
+    document.getElementById('supplierAccountNumber').value = supplier.accountNumber || '';
     document.getElementById('supplierWebsite').value = supplier.website || '';
+    document.getElementById('supplierPaymentTerms').value = supplier.paymentTerms || '';
+    document.getElementById('supplierLeadTimeDays').value = supplier.leadTimeDays || '';
     document.getElementById('supplierNotes').value = supplier.notes || '';
     document.getElementById('supplierIsActive').checked = supplier.isActive !== false;
 }
@@ -324,18 +283,23 @@ function resetSupplierForm() {
 async function saveSupplier() {
     try {
         const formData = {
+            ...(currentSupplierId && { id: currentSupplierId }),
             name: document.getElementById('supplierName').value,
             description: document.getElementById('supplierDescription').value,
             contactPerson: document.getElementById('supplierContactPerson').value,
             email: document.getElementById('supplierEmail').value,
             phone: document.getElementById('supplierPhone').value,
+            fax: document.getElementById('supplierFax').value,
             address: document.getElementById('supplierAddress').value,
             city: document.getElementById('supplierCity').value,
             state: document.getElementById('supplierState').value,
             postalCode: document.getElementById('supplierPostalCode').value,
             country: document.getElementById('supplierCountry').value,
             taxId: document.getElementById('supplierTaxId').value,
+            accountNumber: document.getElementById('supplierAccountNumber').value,
             website: document.getElementById('supplierWebsite').value,
+            paymentTerms: document.getElementById('supplierPaymentTerms').value,
+            leadTimeDays: document.getElementById('supplierLeadTimeDays').value ? parseInt(document.getElementById('supplierLeadTimeDays').value) : null,
             notes: document.getElementById('supplierNotes').value,
             isActive: document.getElementById('supplierIsActive').checked
         };
@@ -346,11 +310,10 @@ async function saveSupplier() {
             return;
         }
 
-        const url = currentSupplierId ? `/Supplier/Edit/${currentSupplierId}` : '/Supplier/CreateSupplier';
-        const method = currentSupplierId ? 'PUT' : 'POST';
-
+        const url = currentSupplierId ? '/Supplier/EditSupplier' : '/Supplier/CreateSupplier';
+        
         const response = await fetch(url, {
-            method: method,
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
@@ -368,11 +331,10 @@ async function saveSupplier() {
                 showAlert(result.message || 'Error al guardar proveedor', 'error');
             }
         } else {
-            showAlert('Error al guardar proveedor', 'error');
+            showAlert('Error al guardar proveedor: ' + response.statusText, 'error');
         }
     } catch (error) {
-        console.error('[Frontend] Error al guardar proveedor:', error);
-        showAlert('Error al guardar proveedor', 'error');
+        showAlert('Error al guardar proveedor: ' + error.message, 'error');
     }
 }
 
@@ -391,233 +353,88 @@ async function deleteSupplier(supplierId) {
         });
 
         if (result.isConfirmed) {
-            const response = await fetch(`/Supplier/Delete/${supplierId}`, {
+            const response = await fetch(`/Supplier/DeleteSupplier/${supplierId}`, {
                 method: 'POST',
                 headers: {
+                    'Content-Type': 'application/json',
                     'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
                 }
             });
 
             if (response.ok) {
-                showAlert('Proveedor eliminado exitosamente', 'success');
-                loadSuppliers();
+                const result = await response.json();
+                if (result.success) {
+                    showAlert(result.message, 'success');
+                    loadSuppliers();
+                } else {
+                    showAlert(result.message || 'Error al eliminar proveedor', 'error');
+                }
             } else {
                 showAlert('Error al eliminar proveedor', 'error');
             }
         }
     } catch (error) {
-        console.error('[Frontend] Error al eliminar proveedor:', error);
         showAlert('Error al eliminar proveedor', 'error');
     }
 }
 
 // Función para ver detalles del proveedor
-async function viewSupplierDetails(supplierId) {
-    try {
-        const supplier = suppliersData.find(s => s.id === supplierId);
-        if (!supplier) {
-            showAlert('Proveedor no encontrado', 'error');
-            return;
-        }
-
-        const content = document.getElementById('supplierDetailsContent');
-        content.innerHTML = `
-            <div class="row">
-                <div class="col-md-6">
-                    <h5 class="text-primary mb-3">Información General</h5>
-                    <table class="table table-borderless">
-                        <tr>
-                            <td><strong>Nombre:</strong></td>
-                            <td>${supplier.name || 'No especificado'}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Descripción:</strong></td>
-                            <td>${supplier.description || 'No especificado'}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Estado:</strong></td>
-                            <td>
-                                <span class="badge ${supplier.isActive ? 'bg-success' : 'bg-danger'}">
-                                    ${supplier.isActive ? 'Activo' : 'Inactivo'}
-                                </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><strong>Fecha de Creación:</strong></td>
-                            <td>${supplier.createdAt ? new Date(supplier.createdAt).toLocaleDateString() : 'No especificado'}</td>
-                        </tr>
-                    </table>
-                </div>
-                <div class="col-md-6">
-                    <h5 class="text-primary mb-3">Información de Contacto</h5>
-                    <table class="table table-borderless">
-                        <tr>
-                            <td><strong>Persona de Contacto:</strong></td>
-                            <td>${supplier.contactPerson || 'No especificado'}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Email:</strong></td>
-                            <td>${supplier.email ? `<a href="mailto:${supplier.email}">${supplier.email}</a>` : 'No especificado'}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Teléfono:</strong></td>
-                            <td>${supplier.phone ? `<a href="tel:${supplier.phone}">${supplier.phone}</a>` : 'No especificado'}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Fax:</strong></td>
-                            <td>${supplier.fax || 'No especificado'}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-            <div class="row mt-3">
-                <div class="col-md-6">
-                    <h5 class="text-primary mb-3">Dirección</h5>
-                    <table class="table table-borderless">
-                        <tr>
-                            <td><strong>Dirección:</strong></td>
-                            <td>${supplier.address || 'No especificado'}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Ciudad:</strong></td>
-                            <td>${supplier.city || 'No especificado'}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Estado/Provincia:</strong></td>
-                            <td>${supplier.state || 'No especificado'}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Código Postal:</strong></td>
-                            <td>${supplier.postalCode || 'No especificado'}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>País:</strong></td>
-                            <td>${supplier.country || 'No especificado'}</td>
-                        </tr>
-                    </table>
-                </div>
-                <div class="col-md-6">
-                    <h5 class="text-primary mb-3">Información Adicional</h5>
-                    <table class="table table-borderless">
-                        <tr>
-                            <td><strong>ID Fiscal:</strong></td>
-                            <td>${supplier.taxId || 'No especificado'}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Número de Cuenta:</strong></td>
-                            <td>${supplier.accountNumber || 'No especificado'}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Sitio Web:</strong></td>
-                            <td>${supplier.website ? `<a href="${supplier.website}" target="_blank">${supplier.website}</a>` : 'No especificado'}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Notas:</strong></td>
-                            <td>${supplier.notes || 'No especificado'}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-            <div class="row mt-3">
-                <div class="col-12">
-                    <h5 class="text-primary mb-3">Productos Asociados</h5>
-                    <div id="supplierProducts">
-                        <div class="text-center text-muted">
-                            <i class="fas fa-spinner fa-spin"></i> Cargando productos...
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        const modal = new bootstrap.Modal(document.getElementById('supplierDetailsModal'));
-        modal.show();
-
-        // Cargar productos del proveedor
-        await loadSupplierProducts(supplierId);
-    } catch (error) {
-        console.error('[Frontend] Error al cargar detalles del proveedor:', error);
-        showAlert('Error al cargar detalles del proveedor', 'error');
-    }
-}
-
-// Función para cargar productos del proveedor
-async function loadSupplierProducts(supplierId) {
-    try {
-        const response = await fetch(`/Supplier/GetSupplierProducts/${supplierId}`);
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-                displaySupplierProducts(data.products || []);
-            } else {
-                document.getElementById('supplierProducts').innerHTML = 
-                    '<div class="text-center text-muted">Error al cargar productos</div>';
-            }
-        } else {
-            document.getElementById('supplierProducts').innerHTML = 
-                '<div class="text-center text-muted">Error al cargar productos</div>';
-        }
-    } catch (error) {
-        console.error('[Frontend] Error al cargar productos del proveedor:', error);
-        document.getElementById('supplierProducts').innerHTML = 
-            '<div class="text-center text-muted">Error al cargar productos</div>';
-    }
-}
-
-// Función para mostrar productos del proveedor
-function displaySupplierProducts(products) {
-    const container = document.getElementById('supplierProducts');
-    if (!container) return;
-
-    if (products.length === 0) {
-        container.innerHTML = `
-            <div class="text-center text-muted">
-                <i class="fas fa-box-open fa-2x mb-2"></i>
-                <p>No hay productos asociados a este proveedor</p>
-            </div>
-        `;
+function viewSupplierDetails(supplierId) {
+    const supplier = suppliersData.find(s => s.id == supplierId);
+    if (!supplier) {
+        showAlert('Proveedor no encontrado', 'error');
         return;
     }
 
-    const table = `
-        <div class="table-responsive">
-            <table class="table table-sm table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>Producto</th>
-                        <th>Categoría</th>
-                        <th>Precio</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${products.map(product => `
-                        <tr>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <div class="avatar-sm bg-info rounded-circle d-flex align-items-center justify-content-center me-2">
-                                        <i class="fas fa-box text-white"></i>
-                                    </div>
-                                    <div>
-                                        <strong>${product.name}</strong>
-                                        ${product.description ? `<br><small class="text-muted">${product.description}</small>` : ''}
-                                    </div>
-                                </div>
-                            </td>
-                            <td>${product.category?.name || 'Sin categoría'}</td>
-                            <td>$${product.price?.toFixed(2) || '0.00'}</td>
-                            <td>
-                                <span class="badge ${product.isActive ? 'bg-success' : 'bg-danger'}">
-                                    ${product.isActive ? 'Activo' : 'Inactivo'}
-                                </span>
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
+    const content = document.getElementById('supplierDetailsContent');
+    content.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h5 class="text-primary mb-3">Información General</h5>
+                <table class="table table-borderless">
+                    <tr><td><strong>Nombre:</strong></td><td>${supplier.name || 'No especificado'}</td></tr>
+                    <tr><td><strong>Descripción:</strong></td><td>${supplier.description || 'No especificado'}</td></tr>
+                    <tr><td><strong>Estado:</strong></td><td><span class="badge ${supplier.isActive ? 'bg-success' : 'bg-danger'}">${supplier.isActive ? 'Activo' : 'Inactivo'}</span></td></tr>
+                    <tr><td><strong>ID Fiscal:</strong></td><td>${supplier.taxId || 'No especificado'}</td></tr>
+                    <tr><td><strong>Número de Cuenta:</strong></td><td>${supplier.accountNumber || 'No especificado'}</td></tr>
+                    <tr><td><strong>Términos de Pago:</strong></td><td>${supplier.paymentTerms || 'No especificado'}</td></tr>
+                    <tr><td><strong>Tiempo de Entrega:</strong></td><td>${supplier.leadTimeDays ? supplier.leadTimeDays + ' días' : 'No especificado'}</td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h5 class="text-primary mb-3">Información de Contacto</h5>
+                <table class="table table-borderless">
+                    <tr><td><strong>Persona de Contacto:</strong></td><td>${supplier.contactPerson || 'No especificado'}</td></tr>
+                    <tr><td><strong>Email:</strong></td><td>${supplier.email ? `<a href="mailto:${supplier.email}">${supplier.email}</a>` : 'No especificado'}</td></tr>
+                    <tr><td><strong>Teléfono:</strong></td><td>${supplier.phone ? `<a href="tel:${supplier.phone}">${supplier.phone}</a>` : 'No especificado'}</td></tr>
+                    <tr><td><strong>Fax:</strong></td><td>${supplier.fax || 'No especificado'}</td></tr>
+                    <tr><td><strong>Sitio Web:</strong></td><td>${supplier.website ? `<a href="${supplier.website}" target="_blank">${supplier.website}</a>` : 'No especificado'}</td></tr>
+                </table>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <h5 class="text-primary mb-3">Dirección</h5>
+                <table class="table table-borderless">
+                    <tr><td><strong>Dirección:</strong></td><td>${supplier.address || 'No especificado'}</td></tr>
+                    <tr><td><strong>Ciudad:</strong></td><td>${supplier.city || 'No especificado'}</td></tr>
+                    <tr><td><strong>Estado/Provincia:</strong></td><td>${supplier.state || 'No especificado'}</td></tr>
+                    <tr><td><strong>Código Postal:</strong></td><td>${supplier.postalCode || 'No especificado'}</td></tr>
+                    <tr><td><strong>País:</strong></td><td>${supplier.country || 'No especificado'}</td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h5 class="text-primary mb-3">Información Adicional</h5>
+                <table class="table table-borderless">
+                    <tr><td><strong>Notas:</strong></td><td>${supplier.notes || 'No especificado'}</td></tr>
+                    <tr><td><strong>Productos:</strong></td><td><span class="badge bg-info">${supplier.products || 0} productos</span></td></tr>
+                </table>
+            </div>
         </div>
     `;
-    container.innerHTML = table;
+
+    const modal = new bootstrap.Modal(document.getElementById('supplierDetailsModal'));
+    modal.show();
 }
 
 // Función para refrescar proveedores
@@ -634,8 +451,7 @@ function exportSuppliers() {
         return;
     }
 
-    // Crear CSV
-    const headers = ['Nombre', 'Contacto', 'Email', 'Teléfono', 'Ciudad', 'Estado', 'Dirección', 'País'];
+    const headers = ['Nombre', 'Contacto', 'Email', 'Teléfono', 'Ciudad', 'Estado'];
     const csvContent = [
         headers.join(','),
         ...filteredSuppliers.map(supplier => [
@@ -644,13 +460,10 @@ function exportSuppliers() {
             `"${supplier.email || ''}"`,
             `"${supplier.phone || ''}"`,
             `"${supplier.city || ''}"`,
-            `"${supplier.isActive ? 'Activo' : 'Inactivo'}"`,
-            `"${supplier.address || ''}"`,
-            `"${supplier.country || ''}"`
+            `"${supplier.isActive ? 'Activo' : 'Inactivo'}"`
         ].join(','))
     ].join('\n');
 
-    // Descargar archivo
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
@@ -660,6 +473,20 @@ function exportSuppliers() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+// Función para limpiar filtros
+function clearFilters() {
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const cityFilter = document.getElementById('cityFilter');
+
+    if (searchInput) searchInput.value = '';
+    if (statusFilter) statusFilter.value = '';
+    if (cityFilter) cityFilter.value = '';
+
+    currentPage = 1;
+    displaySuppliers();
 }
 
 // Función para mostrar alertas
@@ -682,4 +509,40 @@ window.saveSupplier = saveSupplier;
 window.refreshSuppliers = refreshSuppliers;
 window.exportSuppliers = exportSuppliers;
 window.clearFilters = clearFilters;
-window.changePage = changePage; 
+window.changePage = changePage;
+
+// Inicialización cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    setupFilters();
+    
+    // Solo cargar proveedores si la tabla está vacía o solo tiene el mensaje de "No se encontraron"
+    const tbody = document.getElementById('suppliersTableBody');
+    const hasData = tbody && tbody.children.length > 0 && 
+                   !tbody.querySelector('td[colspan="8"]')?.textContent.includes('No se encontraron');
+    
+    if (!hasData) {
+        loadSuppliers();
+    } else {
+        // Si ya hay datos, solo actualizar el contador y configurar paginación
+        const suppliersCount = tbody.children.length;
+        suppliersData = Array.from(tbody.querySelectorAll('tr')).map(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length >= 8) {
+                return {
+                    id: row.querySelector('button[onclick*="editSupplier"]')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1] || '',
+                    name: cells[0]?.querySelector('strong')?.textContent || '',
+                    contactPerson: cells[1]?.textContent || '',
+                    email: cells[2]?.querySelector('a')?.textContent || '',
+                    phone: cells[3]?.querySelector('a')?.textContent || '',
+                    city: cells[4]?.textContent || '',
+                    isActive: cells[5]?.querySelector('.badge')?.textContent?.includes('Activo') || false,
+                    products: parseInt(cells[6]?.querySelector('.badge')?.textContent?.match(/\d+/)?.[0] || '0')
+                };
+            }
+            return null;
+        }).filter(s => s && s.id);
+        
+        updateSuppliersCount();
+        displaySuppliers();
+    }
+});
