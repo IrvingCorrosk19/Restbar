@@ -41,12 +41,23 @@ namespace RestBar.Controllers
         {
             try
             {
-                ViewBag.Suppliers = await _supplierService.GetActiveSuppliersAsync();
-                ViewBag.Products = await _productService.GetAllAsync();
+                Console.WriteLine("[PurchaseOrderController] Create iniciado");
+                
+                var suppliers = await _supplierService.GetActiveSuppliersAsync();
+                Console.WriteLine($"[PurchaseOrderController] Proveedores obtenidos: {suppliers?.Count() ?? 0}");
+                
+                var products = await _productService.GetAllAsync();
+                Console.WriteLine($"[PurchaseOrderController] Productos obtenidos: {products?.Count() ?? 0}");
+                
+                ViewBag.Suppliers = suppliers;
+                ViewBag.Products = products;
+                
+                Console.WriteLine("[PurchaseOrderController] Create completado exitosamente");
                 return View(new PurchaseOrder());
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[PurchaseOrderController] Error en Create: {ex.Message}");
                 TempData["Error"] = $"Error al cargar formulario: {ex.Message}";
                 return RedirectToAction(nameof(Index));
             }
@@ -54,7 +65,7 @@ namespace RestBar.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(PurchaseOrder purchaseOrder)
+        public async Task<IActionResult> Create(PurchaseOrder purchaseOrder, [FromForm] List<Guid> ProductIds, [FromForm] List<decimal> UnitPrices, [FromForm] List<int> Quantities)
         {
             try
             {
@@ -63,6 +74,42 @@ namespace RestBar.Controllers
                     ViewBag.Suppliers = await _supplierService.GetActiveSuppliersAsync();
                     ViewBag.Products = await _productService.GetAllAsync();
                     return View(purchaseOrder);
+                }
+
+                // Crear los items de la orden de compra
+                if (ProductIds != null && ProductIds.Count > 0)
+                {
+                    purchaseOrder.Items = new List<PurchaseOrderItem>();
+                    
+                    for (int i = 0; i < ProductIds.Count; i++)
+                    {
+                        if (ProductIds[i] != Guid.Empty)
+                        {
+                            var unitPrice = UnitPrices[i];
+                            var quantity = Quantities[i];
+                            var subtotal = unitPrice * quantity;
+                            var taxRate = 0.16m; // 16% IVA
+                            var taxAmount = subtotal * taxRate;
+                            var totalAmount = subtotal + taxAmount;
+
+                            var item = new PurchaseOrderItem
+                            {
+                                Id = Guid.NewGuid(),
+                                PurchaseOrderId = purchaseOrder.Id,
+                                ProductId = ProductIds[i],
+                                UnitPrice = unitPrice,
+                                Quantity = quantity,
+                                Subtotal = subtotal,
+                                TaxRate = taxRate,
+                                TaxAmount = taxAmount,
+                                TotalAmount = totalAmount,
+                                IsActive = true,
+                                CreatedAt = DateTime.UtcNow
+                            };
+
+                            purchaseOrder.Items.Add(item);
+                        }
+                    }
                 }
 
                 var createdOrder = await _purchaseOrderService.CreateAsync(purchaseOrder);

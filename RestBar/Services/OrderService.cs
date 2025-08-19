@@ -29,6 +29,18 @@ namespace RestBar.Services
             _accountingService = accountingService;
         }
 
+        private async Task<User?> GetCurrentUserAsync()
+        {
+            var userEmail = _httpContextAccessor.HttpContext?.User?.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+            if (string.IsNullOrEmpty(userEmail))
+                return null;
+
+            return await _context.Users
+                .Include(u => u.Branch)
+                .ThenInclude(b => b.Company)
+                .FirstOrDefaultAsync(u => u.Email == userEmail);
+        }
+
         // ✅ NUEVO: Método para reducir el inventario de un producto
         private async Task ReduceProductStockAsync(Guid productId, decimal quantity, Guid? branchId = null)
         {
@@ -142,7 +154,11 @@ namespace RestBar.Services
 
         public async Task<IEnumerable<Order>> GetAllAsync()
         {
+            var user = await GetCurrentUserAsync();
+            var companyId = user?.Branch?.CompanyId;
+
             return await _context.Orders
+                .Where(o => o.CompanyId == companyId)
                 .Include(o => o.Table)
                 .Include(o => o.Customer)
                 .Include(o => o.User)
@@ -153,7 +169,11 @@ namespace RestBar.Services
 
         public async Task<Order?> GetByIdAsync(Guid id)
         {
+            var user = await GetCurrentUserAsync();
+            var companyId = user?.Branch?.CompanyId;
+
             return await _context.Orders
+                .Where(o => o.CompanyId == companyId)
                 .Include(o => o.Table)
                 .Include(o => o.Customer)
                 .Include(o => o.User)
@@ -162,8 +182,11 @@ namespace RestBar.Services
 
         public async Task<Order> CreateAsync(Order order)
         {
-            order.OpenedAt = DateTime.UtcNow;
+            var user = await GetCurrentUserAsync();
+            var companyId = user?.Branch?.CompanyId;
             
+            order.OpenedAt = DateTime.UtcNow;
+            order.CompanyId = companyId;
             order.Status = OrderStatus.Pending;
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
@@ -233,8 +256,11 @@ namespace RestBar.Services
 
         public async Task<IEnumerable<Order>> GetByTableIdAsync(Guid tableId)
         {
+            var user = await GetCurrentUserAsync();
+            var companyId = user?.Branch?.CompanyId;
+
             return await _context.Orders
-                .Where(o => o.TableId == tableId)
+                .Where(o => o.TableId == tableId && o.CompanyId == companyId)
                 .Include(o => o.Customer)
                 .Include(o => o.User)
                 .ToListAsync();
@@ -242,8 +268,11 @@ namespace RestBar.Services
 
         public async Task<IEnumerable<Order>> GetByCustomerIdAsync(Guid customerId)
         {
+            var user = await GetCurrentUserAsync();
+            var companyId = user?.Branch?.CompanyId;
+
             return await _context.Orders
-                .Where(o => o.CustomerId == customerId)
+                .Where(o => o.CustomerId == customerId && o.CompanyId == companyId)
                 .Include(o => o.Table)
                 .Include(o => o.User)
                 .ToListAsync();
@@ -251,8 +280,11 @@ namespace RestBar.Services
 
         public async Task<IEnumerable<Order>> GetByUserIdAsync(Guid userId)
         {
+            var user = await GetCurrentUserAsync();
+            var companyId = user?.Branch?.CompanyId;
+
             return await _context.Orders
-                .Where(o => o.UserId == userId)
+                .Where(o => o.UserId == userId && o.CompanyId == companyId)
                 .Include(o => o.Table)
                 .Include(o => o.Customer)
                 .ToListAsync();
@@ -260,8 +292,11 @@ namespace RestBar.Services
 
         public async Task<IEnumerable<Order>> GetByStatusAsync(OrderStatus status)
         {
+            var user = await GetCurrentUserAsync();
+            var companyId = user?.Branch?.CompanyId;
+
             return await _context.Orders
-                .Where(o => o.Status == status)
+                .Where(o => o.Status == status && o.CompanyId == companyId)
                 .Include(o => o.Table)
                 .Include(o => o.Customer)
                 .Include(o => o.User)
@@ -270,8 +305,11 @@ namespace RestBar.Services
 
         public async Task<IEnumerable<Order>> GetOpenOrdersAsync()
         {
+            var user = await GetCurrentUserAsync();
+            var companyId = user?.Branch?.CompanyId;
+
             return await _context.Orders
-                .Where(o => o.Status == OrderStatus.Pending)
+                .Where(o => o.Status == OrderStatus.Pending && o.CompanyId == companyId)
                 .Include(o => o.Table)
                 .Include(o => o.Customer)
                 .Include(o => o.User)
@@ -284,7 +322,11 @@ namespace RestBar.Services
             
             try
             {
+                var user = await GetCurrentUserAsync();
+                var companyId = user?.Branch?.CompanyId;
+
                 var order = await _context.Orders
+                    .Where(o => o.CompanyId == companyId)
                     .Include(o => o.Table)
                     .Include(o => o.Customer)
                     .Include(o => o.User)

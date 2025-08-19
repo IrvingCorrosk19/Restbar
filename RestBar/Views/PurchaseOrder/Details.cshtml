@@ -1,0 +1,210 @@
+@model RestBar.Models.PurchaseOrder
+@{
+    ViewData["Title"] = $"Orden de Compra - {Model.OrderNumber}";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-shopping-cart me-2"></i>
+                            Orden de Compra: @Model.OrderNumber
+                        </h4>
+                        <div>
+                            <a href="@Url.Action("Index", "PurchaseOrder")" class="btn btn-light me-2">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Volver
+                            </a>
+                            @if (Model.Status == PurchaseOrderStatus.Draft)
+                            {
+                                <a href="@Url.Action("Edit", "PurchaseOrder", new { id = Model.Id })" class="btn btn-warning me-2">
+                                    <i class="fas fa-edit me-2"></i>
+                                    Editar
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Información básica -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="border-bottom pb-2">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Información Básica
+                            </h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Número de Orden:</strong></td>
+                                    <td>@Model.OrderNumber</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Proveedor:</strong></td>
+                                    <td>@Model.Supplier?.Name</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Fecha de Orden:</strong></td>
+                                    <td>@Model.OrderDate.ToString("dd/MM/yyyy")</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Fecha Esperada:</strong></td>
+                                    <td>@(Model.ExpectedDeliveryDate?.ToString("dd/MM/yyyy") ?? "No especificada")</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Estado:</strong></td>
+                                    <td>
+                                        <span class="badge @GetStatusBadgeClass(Model.Status)">
+                                            @GetStatusDisplayName(Model.Status)
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="border-bottom pb-2">
+                                <i class="fas fa-calculator me-2"></i>
+                                Totales
+                            </h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Subtotal:</strong></td>
+                                    <td>@Model.Subtotal.ToString("C")</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>IVA:</strong></td>
+                                    <td>@Model.TaxAmount.ToString("C")</td>
+                                </tr>
+                                <tr class="table-active">
+                                    <td><strong>Total:</strong></td>
+                                    <td><strong>@Model.TotalAmount.ToString("C")</strong></td>
+                                </tr>
+                            </table>
+                            
+                            @if (!string.IsNullOrEmpty(Model.Notes))
+                            {
+                                <div class="mt-3">
+                                    <strong>Notas:</strong>
+                                    <p class="text-muted">@Model.Notes</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    
+                    <!-- Productos -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="border-bottom pb-2">
+                                <i class="fas fa-boxes me-2"></i>
+                                Productos (@Model.Items.Count items)
+                            </h5>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Producto</th>
+                                            <th>Precio Unitario</th>
+                                            <th>Cantidad</th>
+                                            <th>Subtotal</th>
+                                            <th>IVA</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in Model.Items)
+                                        {
+                                            <tr>
+                                                <td>@item.Product?.Name</td>
+                                                <td>@item.UnitPrice.ToString("C")</td>
+                                                <td>@item.Quantity</td>
+                                                <td>@item.Subtotal.ToString("C")</td>
+                                                <td>@item.TaxAmount.ToString("C")</td>
+                                                <td><strong>@item.TotalAmount.ToString("C")</strong></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Acciones según el estado -->
+                    <div class="row">
+                        <div class="col-12 text-center">
+                            @if (Model.Status == PurchaseOrderStatus.Draft)
+                            {
+                                <form asp-action="Approve" method="post" style="display: inline;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@Model.Id" />
+                                    <button type="submit" class="btn btn-success btn-lg me-3" 
+                                            onclick="return confirm('¿Está seguro de aprobar esta orden de compra?')">
+                                        <i class="fas fa-check me-2"></i>
+                                        Aprobar Orden
+                                    </button>
+                                </form>
+                                
+                                <form asp-action="Delete" method="post" style="display: inline;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@Model.Id" />
+                                    <button type="submit" class="btn btn-danger btn-lg" 
+                                            onclick="return confirm('¿Está seguro de eliminar esta orden de compra?')">
+                                        <i class="fas fa-trash me-2"></i>
+                                        Eliminar
+                                    </button>
+                                </form>
+                            }
+                            else if (Model.Status == PurchaseOrderStatus.Approved)
+                            {
+                                <form asp-action="Cancel" method="post" style="display: inline;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@Model.Id" />
+                                    <button type="submit" class="btn btn-warning btn-lg" 
+                                            onclick="return confirm('¿Está seguro de cancelar esta orden de compra?')">
+                                        <i class="fas fa-times me-2"></i>
+                                        Cancelar Orden
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    public string GetStatusBadgeClass(PurchaseOrderStatus status)
+    {
+        return status switch
+        {
+            PurchaseOrderStatus.Draft => "bg-secondary",
+            PurchaseOrderStatus.Pending => "bg-warning",
+            PurchaseOrderStatus.Approved => "bg-info",
+            PurchaseOrderStatus.Ordered => "bg-primary",
+            PurchaseOrderStatus.PartiallyReceived => "bg-warning",
+            PurchaseOrderStatus.Received => "bg-success",
+            PurchaseOrderStatus.Cancelled => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+    
+    public string GetStatusDisplayName(PurchaseOrderStatus status)
+    {
+        return status switch
+        {
+            PurchaseOrderStatus.Draft => "Borrador",
+            PurchaseOrderStatus.Pending => "Pendiente",
+            PurchaseOrderStatus.Approved => "Aprobada",
+            PurchaseOrderStatus.Ordered => "Ordenada",
+            PurchaseOrderStatus.PartiallyReceived => "Parcialmente Recibida",
+            PurchaseOrderStatus.Received => "Recibida",
+            PurchaseOrderStatus.Cancelled => "Cancelada",
+            _ => status.ToString()
+        };
+    }
+}

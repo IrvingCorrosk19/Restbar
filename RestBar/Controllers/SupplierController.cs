@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using RestBar.Interfaces;
 using RestBar.Models;
 using System.Security.Claims;
+using System.ComponentModel.DataAnnotations;
 
 namespace RestBar.Controllers
 {
@@ -335,9 +336,37 @@ namespace RestBar.Controllers
         {
             try
             {
+                Console.WriteLine($"[SupplierController] CreateSupplier iniciado");
+                Console.WriteLine($"[SupplierController] DTO recibido: {System.Text.Json.JsonSerializer.Serialize(dto)}");
+                Console.WriteLine($"[SupplierController] ModelState.IsValid: {ModelState.IsValid}");
+                
                 if (!ModelState.IsValid)
                 {
-                    return Json(new { success = false, message = "Datos inválidos" });
+                    var errors = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .ToList();
+                    
+                    Console.WriteLine($"[SupplierController] Errores de validación: {string.Join(", ", errors)}");
+                    
+                    // También mostrar errores por campo
+                    foreach (var state in ModelState)
+                    {
+                        if (state.Value.Errors.Count > 0)
+                        {
+                            Console.WriteLine($"[SupplierController] Campo '{state.Key}': {string.Join(", ", state.Value.Errors.Select(e => e.ErrorMessage))}");
+                        }
+                    }
+                    
+                    return Json(new { 
+                        success = false, 
+                        message = "Datos inválidos",
+                        errors = errors,
+                        fieldErrors = ModelState.ToDictionary(
+                            kvp => kvp.Key,
+                            kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                        ).Where(kvp => kvp.Value.Length > 0)
+                    });
                 }
 
                 var supplier = new Supplier
@@ -404,10 +433,36 @@ namespace RestBar.Controllers
             try
             {
                 Console.WriteLine($"[SupplierController] EditSupplier iniciado - ID: {dto.Id}");
+                Console.WriteLine($"[SupplierController] DTO recibido: {System.Text.Json.JsonSerializer.Serialize(dto)}");
+                Console.WriteLine($"[SupplierController] ModelState.IsValid: {ModelState.IsValid}");
                 
                 if (!ModelState.IsValid)
                 {
-                    return Json(new { success = false, message = "Datos inválidos" });
+                    var errors = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .ToList();
+                    
+                    Console.WriteLine($"[SupplierController] Errores de validación: {string.Join(", ", errors)}");
+                    
+                    // También mostrar errores por campo
+                    foreach (var state in ModelState)
+                    {
+                        if (state.Value.Errors.Count > 0)
+                        {
+                            Console.WriteLine($"[SupplierController] Campo '{state.Key}': {string.Join(", ", state.Value.Errors.Select(e => e.ErrorMessage))}");
+                        }
+                    }
+                    
+                    return Json(new { 
+                        success = false, 
+                        message = "Datos inválidos",
+                        errors = errors,
+                        fieldErrors = ModelState.ToDictionary(
+                            kvp => kvp.Key,
+                            kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                        ).Where(kvp => kvp.Value.Length > 0)
+                    });
                 }
 
                 var existingSupplier = await _supplierService.GetByIdAsync(dto.Id);
@@ -461,45 +516,122 @@ namespace RestBar.Controllers
 
     public class CreateSupplierDto
     {
+        [Required(ErrorMessage = "El nombre del proveedor es obligatorio")]
+        [StringLength(100, MinimumLength = 2, ErrorMessage = "El nombre debe tener entre 2 y 100 caracteres")]
         public string Name { get; set; } = string.Empty;
+        
+        [StringLength(500, ErrorMessage = "La descripción no puede exceder 500 caracteres")]
         public string? Description { get; set; }
+        
+        [StringLength(100, ErrorMessage = "La persona de contacto no puede exceder 100 caracteres")]
         public string? ContactPerson { get; set; }
+        
+        [EmailAddress(ErrorMessage = "El formato del email no es válido")]
+        [StringLength(100, ErrorMessage = "El email no puede exceder 100 caracteres")]
         public string? Email { get; set; }
+        
+        [RegularExpression(@"^[\+]?[0-9\s\-\(\)]{7,15}$", ErrorMessage = "El formato del teléfono no es válido")]
+        [StringLength(20, ErrorMessage = "El teléfono no puede exceder 20 caracteres")]
         public string? Phone { get; set; }
+        
+        [RegularExpression(@"^[\+]?[0-9\s\-\(\)]{7,15}$", ErrorMessage = "El formato del fax no es válido")]
+        [StringLength(20, ErrorMessage = "El fax no puede exceder 20 caracteres")]
         public string? Fax { get; set; }
+        
+        [StringLength(200, ErrorMessage = "La dirección no puede exceder 200 caracteres")]
         public string? Address { get; set; }
+        
+        [StringLength(50, ErrorMessage = "La ciudad no puede exceder 50 caracteres")]
         public string? City { get; set; }
+        
+        [StringLength(50, ErrorMessage = "El estado no puede exceder 50 caracteres")]
         public string? State { get; set; }
+        
+        [StringLength(20, ErrorMessage = "El código postal no puede exceder 20 caracteres")]
         public string? PostalCode { get; set; }
+        
+        [StringLength(50, ErrorMessage = "El país no puede exceder 50 caracteres")]
         public string? Country { get; set; }
+        
+        [StringLength(50, ErrorMessage = "El ID fiscal no puede exceder 50 caracteres")]
         public string? TaxId { get; set; }
+        
+        [StringLength(50, ErrorMessage = "El número de cuenta no puede exceder 50 caracteres")]
         public string? AccountNumber { get; set; }
+        
+        [StringLength(200, ErrorMessage = "El sitio web no puede exceder 200 caracteres")]
         public string? Website { get; set; }
+        
+        [StringLength(1000, ErrorMessage = "Las notas no pueden exceder 1000 caracteres")]
         public string? Notes { get; set; }
+        
+        [StringLength(100, ErrorMessage = "Los términos de pago no pueden exceder 100 caracteres")]
         public string? PaymentTerms { get; set; }
+        
+        [Range(0, 365, ErrorMessage = "El tiempo de entrega debe ser entre 0 y 365 días")]
         public int? LeadTimeDays { get; set; }
     }
 
     public class EditSupplierDto
     {
+        [Required(ErrorMessage = "El ID del proveedor es obligatorio")]
         public Guid Id { get; set; }
+        
+        [Required(ErrorMessage = "El nombre del proveedor es obligatorio")]
+        [StringLength(100, MinimumLength = 2, ErrorMessage = "El nombre debe tener entre 2 y 100 caracteres")]
         public string Name { get; set; } = string.Empty;
+        
+        [StringLength(500, ErrorMessage = "La descripción no puede exceder 500 caracteres")]
         public string? Description { get; set; }
+        
+        [StringLength(100, ErrorMessage = "La persona de contacto no puede exceder 100 caracteres")]
         public string? ContactPerson { get; set; }
+        
+        [EmailAddress(ErrorMessage = "El formato del email no es válido")]
+        [StringLength(100, ErrorMessage = "El email no puede exceder 100 caracteres")]
         public string? Email { get; set; }
+        
+        [RegularExpression(@"^[\+]?[0-9\s\-\(\)]{7,15}$", ErrorMessage = "El formato del teléfono no es válido")]
+        [StringLength(20, ErrorMessage = "El teléfono no puede exceder 20 caracteres")]
         public string? Phone { get; set; }
+        
+        [RegularExpression(@"^[\+]?[0-9\s\-\(\)]{7,15}$", ErrorMessage = "El formato del fax no es válido")]
+        [StringLength(20, ErrorMessage = "El fax no puede exceder 20 caracteres")]
         public string? Fax { get; set; }
+        
+        [StringLength(200, ErrorMessage = "La dirección no puede exceder 200 caracteres")]
         public string? Address { get; set; }
+        
+        [StringLength(50, ErrorMessage = "La ciudad no puede exceder 50 caracteres")]
         public string? City { get; set; }
+        
+        [StringLength(50, ErrorMessage = "El estado no puede exceder 50 caracteres")]
         public string? State { get; set; }
+        
+        [StringLength(20, ErrorMessage = "El código postal no puede exceder 20 caracteres")]
         public string? PostalCode { get; set; }
+        
+        [StringLength(50, ErrorMessage = "El país no puede exceder 50 caracteres")]
         public string? Country { get; set; }
+        
+        [StringLength(50, ErrorMessage = "El ID fiscal no puede exceder 50 caracteres")]
         public string? TaxId { get; set; }
+        
+        [StringLength(50, ErrorMessage = "El número de cuenta no puede exceder 50 caracteres")]
         public string? AccountNumber { get; set; }
+        
+        [StringLength(200, ErrorMessage = "El sitio web no puede exceder 200 caracteres")]
         public string? Website { get; set; }
+        
+        [StringLength(1000, ErrorMessage = "Las notas no pueden exceder 1000 caracteres")]
         public string? Notes { get; set; }
+        
+        [StringLength(100, ErrorMessage = "Los términos de pago no pueden exceder 100 caracteres")]
         public string? PaymentTerms { get; set; }
+        
+        [Range(0, 365, ErrorMessage = "El tiempo de entrega debe ser entre 0 y 365 días")]
         public int? LeadTimeDays { get; set; }
+        
         public bool IsActive { get; set; } = true;
     }
 

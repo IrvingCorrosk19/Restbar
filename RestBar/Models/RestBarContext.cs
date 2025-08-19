@@ -529,6 +529,11 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.OrderNumber)
                 .HasMaxLength(50)
                 .HasColumnName("OrderNumber");
+            entity.Property(e => e.CompanyId).HasColumnName("company_id");
+
+            entity.HasOne(d => d.Company).WithMany(p => p.Orders)
+                .HasForeignKey(d => d.CompanyId)
+                .HasConstraintName("orders_company_id_fkey");
 
             entity.HasOne(d => d.Customer).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.CustomerId)
@@ -676,6 +681,7 @@ public partial class RestBarContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            entity.Property(e => e.CompanyId).HasColumnName("company_id");
             entity.Property(e => e.Cost)
                 .HasPrecision(10, 2)
                 .HasColumnName("cost");
@@ -709,6 +715,11 @@ public partial class RestBarContext : DbContext
                 .HasForeignKey(d => d.CategoryId)
                 .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("products_category_id_fkey");
+
+            entity.HasOne(d => d.Company)
+                .WithMany(p => p.Products)
+                .HasForeignKey(d => d.CompanyId)
+                .HasConstraintName("products_company_id_fkey");
 
             entity.HasOne(d => d.Station)
                 .WithMany(p => p.Products)

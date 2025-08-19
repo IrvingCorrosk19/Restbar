@@ -404,13 +404,73 @@ async function saveSupplier() {
             isActive: document.getElementById('supplierIsActive').checked
         };
 
-        // Validación básica
+        // Validaciones completas
+        const validationErrors = [];
+        
+        // Validación de nombre (obligatorio)
         if (!formData.name.trim()) {
-            showAlert('El nombre del proveedor es obligatorio', 'warning');
+            validationErrors.push('El nombre del proveedor es obligatorio');
+        } else if (formData.name.trim().length < 2) {
+            validationErrors.push('El nombre debe tener al menos 2 caracteres');
+        } else if (formData.name.trim().length > 100) {
+            validationErrors.push('El nombre no puede exceder 100 caracteres');
+        }
+        
+        // Validación de email (si se proporciona)
+        if (formData.email && formData.email.trim()) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(formData.email.trim())) {
+                validationErrors.push('El formato del email no es válido');
+            }
+        }
+        
+        // Validación de teléfono (si se proporciona)
+        if (formData.phone && formData.phone.trim()) {
+            const phoneRegex = /^[\+]?[0-9\s\-\(\)]{7,15}$/;
+            if (!phoneRegex.test(formData.phone.trim())) {
+                validationErrors.push('El formato del teléfono no es válido');
+            }
+        }
+        
+        // Validación de fax (si se proporciona)
+        if (formData.fax && formData.fax.trim()) {
+            const faxRegex = /^[\+]?[0-9\s\-\(\)]{7,15}$/;
+            if (!faxRegex.test(formData.fax.trim())) {
+                validationErrors.push('El formato del fax no es válido');
+            }
+        }
+        
+
+        
+        // Validación de tiempo de entrega (si se proporciona)
+        if (formData.leadTimeDays !== null && formData.leadTimeDays !== '') {
+            const leadTime = parseInt(formData.leadTimeDays);
+            if (isNaN(leadTime) || leadTime < 0 || leadTime > 365) {
+                validationErrors.push('El tiempo de entrega debe ser un número entre 0 y 365 días');
+            }
+        }
+        
+        // Validación de descripción (si se proporciona)
+        if (formData.description && formData.description.trim().length > 500) {
+            validationErrors.push('La descripción no puede exceder 500 caracteres');
+        }
+        
+        // Validación de notas (si se proporciona)
+        if (formData.notes && formData.notes.trim().length > 1000) {
+            validationErrors.push('Las notas no pueden exceder 1000 caracteres');
+        }
+        
+        // Mostrar errores si los hay
+        if (validationErrors.length > 0) {
+            showAlert('Por favor corrija los siguientes errores:\n\n' + validationErrors.join('\n'), 'warning');
             return;
         }
 
         const url = currentSupplierId ? '/Supplier/EditSupplier' : '/Supplier/CreateSupplier';
+        
+        console.log('[DEBUG] URL:', url);
+        console.log('[DEBUG] Datos a enviar:', formData);
+        console.log('[DEBUG] JSON a enviar:', JSON.stringify(formData, null, 2));
         
         const response = await fetch(url, {
             method: 'POST',
@@ -420,9 +480,14 @@ async function saveSupplier() {
             },
             body: JSON.stringify(formData)
         });
+        
+        console.log('[DEBUG] Status de respuesta:', response.status);
+        console.log('[DEBUG] Headers de respuesta:', response.headers);
 
         if (response.ok) {
             const result = await response.json();
+            console.log('[DEBUG] Respuesta del servidor:', result);
+            
             if (result.success) {
                 showAlert(result.message, 'success');
                 bootstrap.Modal.getInstance(document.getElementById('supplierModal')).hide();
@@ -474,9 +539,66 @@ async function saveSupplier() {
                     }
                 }
             } else {
-                showAlert(result.message || 'Error al guardar proveedor', 'error');
+                console.log('[DEBUG] Error en la respuesta:', result);
+                console.log('[DEBUG] ¿Hay errores específicos?', result.errors);
+                console.log('[DEBUG] Tipo de errores:', typeof result.errors);
+                console.log('[DEBUG] Es array?', Array.isArray(result.errors));
+                
+                // Si hay errores de validación específicos, mostrarlos
+                if (result.errors && Array.isArray(result.errors) && result.errors.length > 0) {
+                    console.log('[DEBUG] Mostrando errores específicos:', result.errors);
+                    
+                    let errorHtml = `
+                        <div class="text-start">
+                            <p class="mb-3">Por favor corrija los siguientes errores:</p>
+                            <ul class="list-unstyled">
+                                ${result.errors.map(error => `<li class="text-danger"><i class="fas fa-times-circle me-2"></i>${error}</li>`).join('')}
+                            </ul>
+                    `;
+                    
+                    // Si hay errores por campo, mostrarlos también
+                    if (result.fieldErrors) {
+                        console.log('[DEBUG] Errores por campo:', result.fieldErrors);
+                        errorHtml += `
+                            <hr>
+                            <h6>Errores por campo:</h6>
+                            <div class="mt-2">
+                        `;
+                        for (const [field, fieldErrors] of Object.entries(result.fieldErrors)) {
+                            if (fieldErrors && fieldErrors.length > 0) {
+                                errorHtml += `
+                                    <div class="mb-2">
+                                        <strong>${field}:</strong>
+                                        <ul class="small">
+                                            ${fieldErrors.map(err => `<li class="text-danger">${err}</li>`).join('')}
+                                        </ul>
+                                    </div>
+                                `;
+                            }
+                        }
+                        errorHtml += '</div>';
+                    }
+                    
+                    errorHtml += '</div>';
+                    
+                    Swal.fire({
+                        title: 'Errores de Validación',
+                        html: errorHtml,
+                        icon: 'warning',
+                        confirmButtonText: 'Entendido',
+                        confirmButtonColor: '#f39c12',
+                        width: '600px'
+                    });
+                } else {
+                    console.log('[DEBUG] Mostrando mensaje general:', result.message);
+                    console.log('[DEBUG] Estructura completa de result:', JSON.stringify(result, null, 2));
+                    showAlert(result.message || 'Error al guardar proveedor', 'error');
+                }
             }
         } else {
+            console.log('[DEBUG] Error HTTP:', response.status, response.statusText);
+            const errorText = await response.text();
+            console.log('[DEBUG] Respuesta de error:', errorText);
             showAlert('Error al guardar proveedor: ' + response.statusText, 'error');
         }
     } catch (error) {
@@ -716,6 +838,71 @@ function showAlert(message, type = 'info') {
     });
 }
 
+// Función para validar email
+function validateEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+// Función para validar teléfono
+function validatePhone(phone) {
+    const phoneRegex = /^[\+]?[0-9\s\-\(\)]{7,15}$/;
+    return phoneRegex.test(phone);
+}
+
+
+
+// Función para validar campo en tiempo real
+function validateField(fieldId, validationType) {
+    const field = document.getElementById(fieldId);
+    const value = field.value.trim();
+    const feedbackDiv = document.getElementById(fieldId + 'Feedback');
+    
+    if (!feedbackDiv) {
+        const div = document.createElement('div');
+        div.id = fieldId + 'Feedback';
+        div.className = 'invalid-feedback';
+        field.parentNode.appendChild(div);
+    }
+    
+    let isValid = true;
+    let errorMessage = '';
+    
+    switch (validationType) {
+        case 'email':
+            if (value && !validateEmail(value)) {
+                isValid = false;
+                errorMessage = 'Formato de email inválido';
+            }
+            break;
+        case 'phone':
+            if (value && !validatePhone(value)) {
+                isValid = false;
+                errorMessage = 'Formato de teléfono inválido';
+            }
+            break;
+
+        case 'required':
+            if (!value) {
+                isValid = false;
+                errorMessage = 'Este campo es obligatorio';
+            }
+            break;
+    }
+    
+    if (isValid) {
+        field.classList.remove('is-invalid');
+        field.classList.add('is-valid');
+        feedbackDiv.textContent = '';
+    } else {
+        field.classList.remove('is-valid');
+        field.classList.add('is-invalid');
+        feedbackDiv.textContent = errorMessage;
+    }
+    
+    return isValid;
+}
+
 // Función para mostrar productos asociados a un proveedor
 async function showSupplierProducts(supplierId, errorMessage) {
     try {
@@ -797,6 +984,7 @@ window.changePage = changePage;
 // Inicialización cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
     setupFilters();
+    setupFormValidations();
     
     // Solo cargar proveedores si la tabla está vacía o solo tiene el mensaje de "No se encontraron"
     const tbody = document.getElementById('suppliersTableBody');
@@ -829,3 +1017,52 @@ document.addEventListener('DOMContentLoaded', function() {
         displaySuppliers();
     }
 });
+
+// Función para configurar validaciones del formulario
+function setupFormValidations() {
+    // Validación del nombre (obligatorio)
+    const nameField = document.getElementById('supplierName');
+    if (nameField) {
+        nameField.addEventListener('blur', () => validateField('supplierName', 'required'));
+        nameField.addEventListener('input', () => {
+            if (nameField.value.trim().length >= 2) {
+                validateField('supplierName', 'required');
+            }
+        });
+    }
+    
+    // Validación del email
+    const emailField = document.getElementById('supplierEmail');
+    if (emailField) {
+        emailField.addEventListener('blur', () => validateField('supplierEmail', 'email'));
+        emailField.addEventListener('input', () => {
+            if (emailField.value.trim()) {
+                validateField('supplierEmail', 'email');
+            }
+        });
+    }
+    
+    // Validación del teléfono
+    const phoneField = document.getElementById('supplierPhone');
+    if (phoneField) {
+        phoneField.addEventListener('blur', () => validateField('supplierPhone', 'phone'));
+        phoneField.addEventListener('input', () => {
+            if (phoneField.value.trim()) {
+                validateField('supplierPhone', 'phone');
+            }
+        });
+    }
+    
+    // Validación del fax
+    const faxField = document.getElementById('supplierFax');
+    if (faxField) {
+        faxField.addEventListener('blur', () => validateField('supplierFax', 'phone'));
+        faxField.addEventListener('input', () => {
+            if (faxField.value.trim()) {
+                validateField('supplierFax', 'phone');
+            }
+        });
+    }
+    
+
+}

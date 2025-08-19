@@ -42,6 +42,9 @@ public partial class Product : ITrackableEntity
 
     public virtual Category? Category { get; set; }
 
+    public Guid? CompanyId { get; set; }
+    public virtual Company? Company { get; set; }
+
     // Nueva relación con Supplier
     public Guid? SupplierId { get; set; }
     public virtual Supplier? Supplier { get; set; }

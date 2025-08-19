@@ -1,0 +1,341 @@
+@model RestBar.Models.PurchaseOrder
+@{
+    ViewData["Title"] = "Nueva Orden de Compra";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-plus me-2"></i>
+                            Nueva Orden de Compra
+                        </h4>
+                        <a href="@Url.Action("Index", "PurchaseOrder")" class="btn btn-light">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Volver
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" method="post" id="purchaseOrderForm">
+                        @Html.AntiForgeryToken()
+                        
+                        <!-- Campos ocultos para totales -->
+                        <input type="hidden" asp-for="Subtotal" id="Subtotal" value="0" />
+                        <input type="hidden" asp-for="TaxAmount" id="TaxAmount" value="0" />
+                        <input type="hidden" asp-for="TotalAmount" id="TotalAmount" value="0" />
+                        <input type="hidden" asp-for="Status" value="Draft" />
+                        <input type="hidden" asp-for="IsActive" value="true" />
+                        <input type="hidden" asp-for="CreatedAt" value="@DateTime.UtcNow" />
+                        
+                        <!-- Información básica -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h5 class="border-bottom pb-2">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Información Básica
+                                </h5>
+                                
+                                <div class="mb-3">
+                                    <label asp-for="SupplierId" class="form-label">Proveedor *</label>
+                                    <select asp-for="SupplierId" class="form-select" required>
+                                        <option value="">Seleccionar proveedor</option>
+                                        @foreach (var supplier in ViewBag.Suppliers)
+                                        {
+                                            <option value="@supplier.Id">@supplier.Name</option>
+                                        }
+                                    </select>
+                                    <span asp-validation-for="SupplierId" class="text-danger"></span>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label asp-for="OrderDate" class="form-label">Fecha de Orden *</label>
+                                    <input asp-for="OrderDate" type="date" class="form-control" required value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                                    <span asp-validation-for="OrderDate" class="text-danger"></span>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label asp-for="ExpectedDeliveryDate" class="form-label">Fecha Esperada de Entrega</label>
+                                    <input asp-for="ExpectedDeliveryDate" type="date" class="form-control" />
+                                    <span asp-validation-for="ExpectedDeliveryDate" class="text-danger"></span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h5 class="border-bottom pb-2">
+                                    <i class="fas fa-calculator me-2"></i>
+                                    Totales
+                                </h5>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Subtotal</label>
+                                        <div class="form-control-plaintext" id="subtotalDisplay">$0.00</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">IVA</label>
+                                        <div class="form-control-plaintext" id="taxDisplay">$0.00</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold">Total</label>
+                                        <div class="form-control-plaintext fw-bold fs-4" id="totalDisplay">$0.00</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label asp-for="Notes" class="form-label">Notas</label>
+                                    <textarea asp-for="Notes" class="form-control" rows="3" placeholder="Notas adicionales sobre la orden..."></textarea>
+                                    <span asp-validation-for="Notes" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Productos -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2">
+                                    <i class="fas fa-boxes me-2"></i>
+                                    Productos
+                                </h5>
+                                
+                                <div class="table-responsive">
+                                    <table class="table table-bordered" id="productsTable">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th>Producto</th>
+                                                <th width="120">Precio Unitario</th>
+                                                <th width="100">Cantidad</th>
+                                                <th width="120">Subtotal</th>
+                                                <th width="80">IVA</th>
+                                                <th width="120">Total</th>
+                                                <th width="80">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="productsTableBody">
+                                            <!-- Los productos se agregarán dinámicamente aquí -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="text-center mt-3">
+                                    <button type="button" class="btn btn-success" onclick="addProductRow()">
+                                        <i class="fas fa-plus me-2"></i>
+                                        Agregar Producto
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Botones de acción -->
+                        <div class="row">
+                            <div class="col-12 text-center">
+                                <button type="submit" class="btn btn-primary btn-lg me-3">
+                                    <i class="fas fa-save me-2"></i>
+                                    Guardar Orden
+                                </button>
+                                <a href="@Url.Action("Index", "PurchaseOrder")" class="btn btn-secondary btn-lg">
+                                    <i class="fas fa-times me-2"></i>
+                                    Cancelar
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let products = @Html.Raw(Json.Serialize(ViewBag.Products ?? new List<object>()));
+        let currentRowId = 0;
+        
+        // Verificar que products sea un array
+        if (!Array.isArray(products)) {
+            console.warn('Products no es un array, inicializando array vacío');
+            products = [];
+        }
+        
+        console.log('Productos cargados:', products.length);
+        
+        $(document).ready(function() {
+            // Agregar primera fila de producto
+            addProductRow();
+            
+            // Configurar validación del formulario
+            $('#purchaseOrderForm').submit(function(e) {
+                if (!validateForm()) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        });
+        
+        function addProductRow() {
+            currentRowId++;
+            
+            // Generar opciones de productos de forma segura
+            let productOptions = '<option value="">Seleccionar producto</option>';
+            if (Array.isArray(products) && products.length > 0) {
+                productOptions += products.map(p => `<option value="${p.id}" data-price="${p.price || 0}">${p.name}</option>`).join('');
+            } else {
+                productOptions += '<option value="" disabled>No hay productos disponibles</option>';
+            }
+            
+            const rowHtml = `
+                <tr id="row_${currentRowId}">
+                    <td>
+                        <select class="form-select product-select" onchange="updateProductInfo(${currentRowId})" required>
+                            ${productOptions}
+                        </select>
+                    </td>
+                    <td>
+                        <input type="number" class="form-control unit-price" step="0.01" min="0" value="0" onchange="calculateRowTotal(${currentRowId})" required>
+                    </td>
+                    <td>
+                        <input type="number" class="form-control quantity" min="1" value="1" onchange="calculateRowTotal(${currentRowId})" required>
+                    </td>
+                    <td>
+                        <div class="form-control-plaintext subtotal">$0.00</div>
+                    </td>
+                    <td>
+                        <div class="form-control-plaintext tax-amount">$0.00</div>
+                    </td>
+                    <td>
+                        <div class="form-control-plaintext total-amount">$0.00</div>
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="removeRow(${currentRowId})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+            $('#productsTableBody').append(rowHtml);
+        }
+        
+        function removeRow(rowId) {
+            $(`#row_${rowId}`).remove();
+            calculateTotals();
+        }
+        
+        function updateProductInfo(rowId) {
+            const row = $(`#row_${rowId}`);
+            const productSelect = row.find('.product-select');
+            const selectedOption = productSelect.find('option:selected');
+            const price = parseFloat(selectedOption.data('price')) || 0;
+            
+            row.find('.unit-price').val(price);
+            calculateRowTotal(rowId);
+        }
+        
+        function calculateRowTotal(rowId) {
+            const row = $(`#row_${rowId}`);
+            const unitPrice = parseFloat(row.find('.unit-price').val()) || 0;
+            const quantity = parseInt(row.find('.quantity').val()) || 0;
+            
+            const subtotal = unitPrice * quantity;
+            const taxRate = 0.16; // 16% IVA
+            const taxAmount = subtotal * taxRate;
+            const total = subtotal + taxAmount;
+            
+            row.find('.subtotal').text('$' + subtotal.toFixed(2));
+            row.find('.tax-amount').text('$' + taxAmount.toFixed(2));
+            row.find('.total-amount').text('$' + total.toFixed(2));
+            
+            calculateTotals();
+        }
+        
+        function calculateTotals() {
+            let subtotal = 0;
+            let taxTotal = 0;
+            let total = 0;
+            
+            $('.subtotal').each(function() {
+                const value = parseFloat($(this).text().replace('$', '')) || 0;
+                subtotal += value;
+            });
+            
+            $('.tax-amount').each(function() {
+                const value = parseFloat($(this).text().replace('$', '')) || 0;
+                taxTotal += value;
+            });
+            
+            total = subtotal + taxTotal;
+            
+            $('#subtotalDisplay').text('$' + subtotal.toFixed(2));
+            $('#taxDisplay').text('$' + taxTotal.toFixed(2));
+            $('#totalDisplay').text('$' + total.toFixed(2));
+            
+            // Actualizar campos ocultos
+            $('#Subtotal').val(subtotal);
+            $('#TaxAmount').val(taxTotal);
+            $('#TotalAmount').val(total);
+        }
+        
+        function validateForm() {
+            // Validar proveedor
+            if (!$('#SupplierId').val()) {
+                alert('Debe seleccionar un proveedor');
+                return false;
+            }
+            
+            // Validar que haya al menos un producto
+            if ($('#productsTableBody tr').length === 0) {
+                alert('Debe agregar al menos un producto');
+                return false;
+            }
+            
+            // Validar que todos los productos tengan datos válidos
+            let isValid = true;
+            $('#productsTableBody tr').each(function() {
+                const productSelect = $(this).find('.product-select');
+                const unitPrice = $(this).find('.unit-price');
+                const quantity = $(this).find('.quantity');
+                
+                if (!productSelect.val() || !unitPrice.val() || !quantity.val()) {
+                    isValid = false;
+                    return false;
+                }
+            });
+            
+            if (!isValid) {
+                alert('Todos los productos deben tener datos completos');
+                return false;
+            }
+            
+            // Agregar campos ocultos para los productos
+            addHiddenFields();
+            
+            return true;
+        }
+        
+        function addHiddenFields() {
+            // Remover campos ocultos existentes
+            $('.product-hidden-field').remove();
+            
+            // Agregar campos ocultos para cada producto
+            $('#productsTableBody tr').each(function() {
+                const productSelect = $(this).find('.product-select');
+                const unitPrice = $(this).find('.unit-price');
+                const quantity = $(this).find('.quantity');
+                
+                if (productSelect.val() && unitPrice.val() && quantity.val()) {
+                    $('#purchaseOrderForm').append(`
+                        <input type="hidden" name="ProductIds" value="${productSelect.val()}" class="product-hidden-field">
+                        <input type="hidden" name="UnitPrices" value="${unitPrice.val()}" class="product-hidden-field">
+                        <input type="hidden" name="Quantities" value="${quantity.val()}" class="product-hidden-field">
+                    `);
+                }
+            });
+        }
+    </script>
+}

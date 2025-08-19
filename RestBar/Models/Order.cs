@@ -30,11 +30,15 @@ public partial class Order : ITrackableEntity
 
     public string? Notes { get; set; }
 
+    public Guid? CompanyId { get; set; }
+
     // Tracking fields
     public DateTime? CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public string? CreatedBy { get; set; }
     public string? UpdatedBy { get; set; }
+
+    public virtual Company? Company { get; set; }
 
     public virtual Customer? Customer { get; set; }
 

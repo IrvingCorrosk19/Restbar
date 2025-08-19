@@ -15,9 +15,29 @@ namespace RestBar.Services
         {
         }
 
+        private async Task<User?> GetCurrentUserAsync()
+        {
+            var userEmail = _httpContextAccessor.HttpContext?.User?.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+            if (string.IsNullOrEmpty(userEmail))
+                return null;
+
+            return await _context.Users
+                .Include(u => u.Branch)
+                .ThenInclude(b => b.Company)
+                .FirstOrDefaultAsync(u => u.Email == userEmail);
+        }
+
         public async Task<IEnumerable<Product>> GetAllAsync()
         {
-            return await _context.Products.Include(p => p.Category).Include(p => p.Station).OrderBy(p => p.Name).ToListAsync();
+            var user = await GetCurrentUserAsync();
+            var companyId = user?.Branch?.CompanyId;
+
+            return await _context.Products
+                .Where(p => p.CompanyId == companyId)
+                .Include(p => p.Category)
+                .Include(p => p.Station)
+                .OrderBy(p => p.Name)
+                .ToListAsync();
         }
 
         public async Task<Product?> GetByIdAsync(Guid id)
@@ -32,7 +52,11 @@ namespace RestBar.Services
                 if (product == null)
                     throw new ArgumentNullException(nameof(product), "El producto no puede ser null.");
 
+                var user = await GetCurrentUserAsync();
+                var companyId = user?.Branch?.CompanyId;
+
                 product.Id = Guid.NewGuid();
+                product.CompanyId = companyId;
                 // El tracking automático se maneja en el contexto
                 _context.Products.Add(product);
                 await _context.SaveChangesAsync();
@@ -89,8 +113,11 @@ namespace RestBar.Services
 
         public async Task<IEnumerable<Product>> GetActiveProductsAsync()
         {
+            var user = await GetCurrentUserAsync();
+            var companyId = user?.Branch?.CompanyId;
+
             return await _context.Products
-                .Where(p => p.IsActive == true)
+                .Where(p => p.IsActive == true && p.CompanyId == companyId)
                 .Include(p => p.Category)
                 .ToListAsync();
         }
