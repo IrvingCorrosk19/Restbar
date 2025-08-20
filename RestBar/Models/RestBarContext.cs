@@ -1281,6 +1281,158 @@ public partial class RestBarContext : DbContext
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
+        // ✅ NUEVO: Configuración de PurchaseOrder
+        modelBuilder.Entity<PurchaseOrder>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("purchase_orders_pkey");
+            entity.ToTable("purchase_orders");
+
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.OrderNumber)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasColumnName("order_number");
+            entity.Property(e => e.SupplierId)
+                .IsRequired()
+                .HasColumnName("supplier_id");
+            entity.Property(e => e.CompanyId)
+                .IsRequired()
+                .HasColumnName("company_id");
+            entity.Property(e => e.BranchId)
+                .IsRequired()
+                .HasColumnName("branch_id");
+            entity.Property(e => e.CreatedById)
+                .IsRequired()
+                .HasColumnName("created_by_id");
+            entity.Property(e => e.OrderDate)
+                .IsRequired()
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("order_date");
+            entity.Property(e => e.ExpectedDeliveryDate)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("expected_delivery_date");
+            entity.Property(e => e.ActualDeliveryDate)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("actual_delivery_date");
+            entity.Property(e => e.Subtotal)
+                .IsRequired()
+                .HasColumnType("decimal(18,2)")
+                .HasColumnName("subtotal");
+            entity.Property(e => e.TaxAmount)
+                .IsRequired()
+                .HasColumnType("decimal(18,2)")
+                .HasColumnName("tax_amount");
+            entity.Property(e => e.TotalAmount)
+                .IsRequired()
+                .HasColumnType("decimal(18,2)")
+                .HasColumnName("total_amount");
+            entity.Property(e => e.Notes)
+                .HasMaxLength(500)
+                .HasColumnName("notes");
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasColumnName("status");
+            entity.Property(e => e.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.CreatedAt)
+                .IsRequired()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("updated_at");
+
+            // Relaciones
+            entity.HasOne(d => d.Supplier)
+                .WithMany()
+                .HasForeignKey(d => d.SupplierId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(d => d.Company)
+                .WithMany()
+                .HasForeignKey(d => d.CompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(d => d.Branch)
+                .WithMany()
+                .HasForeignKey(d => d.BranchId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(d => d.CreatedBy)
+                .WithMany()
+                .HasForeignKey(d => d.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ✅ NUEVO: Configuración de PurchaseOrderItem
+        modelBuilder.Entity<PurchaseOrderItem>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("purchase_order_items_pkey");
+            entity.ToTable("purchase_order_items");
+
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.PurchaseOrderId)
+                .IsRequired()
+                .HasColumnName("purchase_order_id");
+            entity.Property(e => e.ProductId)
+                .IsRequired()
+                .HasColumnName("product_id");
+            entity.Property(e => e.UnitPrice)
+                .IsRequired()
+                .HasColumnType("decimal(18,2)")
+                .HasColumnName("unit_price");
+            entity.Property(e => e.Quantity)
+                .IsRequired()
+                .HasColumnName("quantity");
+            entity.Property(e => e.Subtotal)
+                .IsRequired()
+                .HasColumnType("decimal(18,2)")
+                .HasColumnName("subtotal");
+            entity.Property(e => e.TaxRate)
+                .IsRequired()
+                .HasColumnType("decimal(18,2)")
+                .HasColumnName("tax_rate");
+            entity.Property(e => e.TaxAmount)
+                .IsRequired()
+                .HasColumnType("decimal(18,2)")
+                .HasColumnName("tax_amount");
+            entity.Property(e => e.TotalAmount)
+                .IsRequired()
+                .HasColumnType("decimal(18,2)")
+                .HasColumnName("total_amount");
+            entity.Property(e => e.ReceivedQuantity)
+                .HasColumnName("received_quantity");
+            entity.Property(e => e.Notes)
+                .HasMaxLength(200)
+                .HasColumnName("notes");
+            entity.Property(e => e.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.CreatedAt)
+                .IsRequired()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("updated_at");
+
+            // Relaciones
+            entity.HasOne(d => d.PurchaseOrder)
+                .WithMany(p => p.Items)
+                .HasForeignKey(d => d.PurchaseOrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(d => d.Product)
+                .WithMany()
+                .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
         OnModelCreatingPartial(modelBuilder);
     }
 

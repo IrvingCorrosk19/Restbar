@@ -218,6 +218,23 @@ namespace RestBar.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Order(Guid id)
+        {
+            try
+            {
+                var orderedOrder = await _purchaseOrderService.OrderAsync(id);
+                TempData["Success"] = $"Orden de compra {orderedOrder.OrderNumber} enviada al proveedor exitosamente";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error al enviar orden de compra: {ex.Message}";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Cancel(Guid id)
         {
             try
@@ -328,16 +345,50 @@ namespace RestBar.Controllers
             }
         }
 
+        public async Task<IActionResult> Receive(Guid id)
+        {
+            try
+            {
+                var purchaseOrder = await _purchaseOrderService.GetByIdAsync(id);
+                if (purchaseOrder == null)
+                {
+                    TempData["Error"] = "Orden de compra no encontrada";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                if (purchaseOrder.Status != PurchaseOrderStatus.Ordered && 
+                    purchaseOrder.Status != PurchaseOrderStatus.PartiallyReceived)
+                {
+                    TempData["Error"] = "Solo se pueden recibir órdenes ordenadas o parcialmente recibidas";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                return View(purchaseOrder);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error al cargar recepción: {ex.Message}";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+        }
+
         [HttpPost]
         public async Task<IActionResult> Receive(Guid id, [FromBody] List<PurchaseOrderItem> receivedItems)
         {
             try
             {
+                Console.WriteLine($"[PurchaseOrderController] Receive iniciado para orden {id}");
+                Console.WriteLine($"[PurchaseOrderController] Items a recibir: {receivedItems?.Count ?? 0}");
+                
                 var receivedOrder = await _purchaseOrderService.ReceiveAsync(id, receivedItems);
+                
+                Console.WriteLine($"[PurchaseOrderController] Recepción completada. Nuevo estado: {receivedOrder.Status}");
+                
                 return Json(new { success = true, data = receivedOrder });
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[PurchaseOrderController] Error en Receive: {ex.Message}");
                 return Json(new { success = false, message = ex.Message });
             }
         }

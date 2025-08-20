@@ -189,7 +189,37 @@ namespace RestBar.Services
             if (purchaseOrder.Status != PurchaseOrderStatus.Draft)
                 throw new InvalidOperationException("Solo se pueden aprobar órdenes en estado Draft");
 
+            // Cambiar a Pending primero, luego a Approved
+            purchaseOrder.Status = PurchaseOrderStatus.Pending;
+            purchaseOrder.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            // Simular proceso de aprobación (en un sistema real, aquí iría la lógica de aprobación)
+            await Task.Delay(100); // Simular procesamiento
+
             purchaseOrder.Status = PurchaseOrderStatus.Approved;
+            purchaseOrder.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return purchaseOrder;
+        }
+
+        public async Task<PurchaseOrder> OrderAsync(Guid id)
+        {
+            var user = await GetCurrentUserAsync();
+            var companyId = user?.Branch?.CompanyId;
+
+            var purchaseOrder = await _context.PurchaseOrders
+                .FirstOrDefaultAsync(po => po.Id == id && po.CompanyId == companyId);
+
+            if (purchaseOrder == null)
+                throw new InvalidOperationException("Orden de compra no encontrada");
+
+            if (purchaseOrder.Status != PurchaseOrderStatus.Approved)
+                throw new InvalidOperationException("Solo se pueden ordenar órdenes aprobadas");
+
+            purchaseOrder.Status = PurchaseOrderStatus.Ordered;
             purchaseOrder.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -221,9 +251,14 @@ namespace RestBar.Services
         {
             var user = await GetCurrentUserAsync();
             var companyId = user?.Branch?.CompanyId;
+            var branchId = user?.BranchId;
+
+            Console.WriteLine($"[PurchaseOrderService] ReceiveAsync iniciado para orden {id}");
+            Console.WriteLine($"[PurchaseOrderService] Usuario: {user?.Email}, CompanyId: {companyId}, BranchId: {branchId}");
 
             var purchaseOrder = await _context.PurchaseOrders
                 .Include(po => po.Items)
+                .ThenInclude(item => item.Product)
                 .FirstOrDefaultAsync(po => po.Id == id && po.CompanyId == companyId);
 
             if (purchaseOrder == null)
@@ -232,13 +267,29 @@ namespace RestBar.Services
             if (purchaseOrder.Status == PurchaseOrderStatus.Received)
                 throw new InvalidOperationException("La orden ya fue recibida");
 
-            // Actualizar cantidades recibidas
+            Console.WriteLine($"[PurchaseOrderService] Orden encontrada. Estado actual: {purchaseOrder.Status}");
+
+            // Actualizar cantidades recibidas y actualizar inventario
             foreach (var receivedItem in receivedItems)
             {
                 var orderItem = purchaseOrder.Items.FirstOrDefault(item => item.Id == receivedItem.Id);
                 if (orderItem != null)
                 {
-                    orderItem.ReceivedQuantity = receivedItem.ReceivedQuantity;
+                    var previousReceived = orderItem.ReceivedQuantity ?? 0;
+                    var newReceived = receivedItem.ReceivedQuantity;
+                    var quantityToAdd = newReceived - previousReceived;
+
+                    Console.WriteLine($"[PurchaseOrderService] Item {orderItem.Product?.Name}: {previousReceived} -> {newReceived} (+{quantityToAdd})");
+
+                    // Actualizar cantidad recibida
+                    orderItem.ReceivedQuantity = newReceived;
+                    orderItem.UpdatedAt = DateTime.UtcNow;
+
+                    // Actualizar inventario si hay productos para agregar
+                    if (quantityToAdd > 0 && orderItem.Product != null)
+                    {
+                        await UpdateInventoryAsync(orderItem.Product.Id, branchId.Value, quantityToAdd.Value, orderItem.UnitPrice);
+                    }
                 }
             }
 
@@ -250,8 +301,70 @@ namespace RestBar.Services
             purchaseOrder.ActualDeliveryDate = DateTime.UtcNow;
             purchaseOrder.UpdatedAt = DateTime.UtcNow;
 
+            Console.WriteLine($"[PurchaseOrderService] Nuevo estado de la orden: {purchaseOrder.Status}");
+
             await _context.SaveChangesAsync();
             return purchaseOrder;
+        }
+
+        private async Task UpdateInventoryAsync(Guid productId, Guid branchId, int quantity, decimal unitPrice)
+        {
+            Console.WriteLine($"[PurchaseOrderService] Actualizando inventario: Producto {productId}, Sucursal {branchId}, Cantidad {quantity}");
+
+            // Buscar inventario existente
+            var inventory = await _context.Inventories
+                .FirstOrDefaultAsync(i => i.ProductId == productId && i.BranchId == branchId);
+
+            if (inventory == null)
+            {
+                // Crear nuevo registro de inventario
+                inventory = new Inventory
+                {
+                    Id = Guid.NewGuid(),
+                    ProductId = productId,
+                    BranchId = branchId,
+                    Quantity = quantity,
+                    MinStock = 10, // Valor por defecto
+                    MaxStock = 100, // Valor por defecto
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System"
+                };
+
+                _context.Inventories.Add(inventory);
+                Console.WriteLine($"[PurchaseOrderService] Nuevo inventario creado para producto {productId}");
+            }
+            else
+            {
+                // Actualizar inventario existente
+                inventory.Quantity += quantity;
+                inventory.UpdatedAt = DateTime.UtcNow;
+                inventory.UpdatedBy = "System";
+                Console.WriteLine($"[PurchaseOrderService] Inventario actualizado: {inventory.Quantity} unidades");
+            }
+
+            // Crear movimiento de inventario
+            var movement = new InventoryMovement
+            {
+                Id = Guid.NewGuid(),
+                ProductId = productId,
+                BranchId = branchId,
+                Type = MovementType.Purchase,
+                Quantity = quantity,
+                Reference = "Recepción de Orden de Compra",
+                Reason = $"Recepción automática de {quantity} unidades",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.InventoryMovements.Add(movement);
+            Console.WriteLine($"[PurchaseOrderService] Movimiento de inventario registrado: {movement.Id}");
+
+            // Verificar stock bajo (usando MinStock en lugar de MinimumStock)
+            if (inventory.MinStock.HasValue && inventory.Quantity <= inventory.MinStock.Value)
+            {
+                Console.WriteLine($"[PurchaseOrderService] Stock bajo detectado para producto {productId}: {inventory.Quantity} unidades");
+                // Aquí se podría implementar una notificación o alerta en el futuro
+            }
         }
 
         public async Task<string> GenerateOrderNumberAsync()

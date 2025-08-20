@@ -124,12 +124,16 @@
                                     </table>
                                 </div>
                                 
-                                <div class="text-center mt-3">
-                                    <button type="button" class="btn btn-success" onclick="addProductRow()">
-                                        <i class="fas fa-plus me-2"></i>
-                                        Agregar Producto
-                                    </button>
-                                </div>
+                                                                 <div class="text-center mt-3">
+                                     <button type="button" class="btn btn-success me-2" onclick="addProductRow()">
+                                         <i class="fas fa-plus me-2"></i>
+                                         Agregar Producto
+                                     </button>
+                                     <button type="button" class="btn btn-info" onclick="openCreateProductModal()">
+                                         <i class="fas fa-plus-circle me-2"></i>
+                                         Crear Nuevo Producto
+                                     </button>
+                                 </div>
                             </div>
                         </div>
                         
@@ -148,6 +152,79 @@
                         </div>
                     </form>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para crear nuevo producto -->
+<div class="modal fade" id="createProductModal" tabindex="-1" aria-labelledby="createProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createProductModalLabel">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    Crear Nuevo Producto
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createProductForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="newProductName" class="form-label">Nombre del Producto *</label>
+                                <input type="text" class="form-control" id="newProductName" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="newProductDescription" class="form-label">Descripción</label>
+                                <textarea class="form-control" id="newProductDescription" rows="3"></textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="newProductPrice" class="form-label">Precio de Venta *</label>
+                                <input type="number" class="form-control" id="newProductPrice" step="0.01" min="0" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="newProductCost" class="form-label">Costo</label>
+                                <input type="number" class="form-control" id="newProductCost" step="0.01" min="0">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="newProductUnit" class="form-label">Unidad</label>
+                                <input type="text" class="form-control" id="newProductUnit" value="unidad">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="newProductTaxRate" class="form-label">Tasa de Impuesto (%)</label>
+                                <input type="number" class="form-control" id="newProductTaxRate" step="0.01" min="0" value="16">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="newProductIsActive" checked>
+                                    <label class="form-check-label" for="newProductIsActive">
+                                        Producto activo
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="createProduct()">
+                    <i class="fas fa-save me-2"></i>
+                    Crear Producto
+                </button>
             </div>
         </div>
     </div>
@@ -335,6 +412,130 @@
                         <input type="hidden" name="Quantities" value="${quantity.val()}" class="product-hidden-field">
                     `);
                 }
+            });
+        }
+        
+        // Funciones para crear productos
+        function openCreateProductModal() {
+            $('#createProductModal').modal('show');
+        }
+        
+        function createProduct() {
+            // Obtener datos del formulario
+            const productData = {
+                name: $('#newProductName').val().trim(),
+                description: $('#newProductDescription').val().trim(),
+                price: parseFloat($('#newProductPrice').val()) || 0,
+                cost: parseFloat($('#newProductCost').val()) || 0,
+                unit: $('#newProductUnit').val().trim() || 'unidad',
+                taxRate: parseFloat($('#newProductTaxRate').val()) / 100 || 0.16,
+                isActive: $('#newProductIsActive').is(':checked')
+            };
+            
+            // Validaciones básicas
+            if (!productData.name) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'El nombre del producto es obligatorio'
+                });
+                return;
+            }
+            
+            if (productData.price <= 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'El precio debe ser mayor a 0'
+                });
+                return;
+            }
+            
+            // Mostrar loading
+            Swal.fire({
+                title: 'Creando producto...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Enviar petición AJAX
+            $.ajax({
+                url: '/Product/CreateAjax',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(productData),
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Éxito!',
+                            text: 'Producto creado correctamente'
+                        }).then(() => {
+                            // Cerrar modal
+                            $('#createProductModal').modal('hide');
+                            
+                            // Limpiar formulario
+                            $('#createProductForm')[0].reset();
+                            $('#newProductUnit').val('unidad');
+                            $('#newProductTaxRate').val('16');
+                            $('#newProductIsActive').prop('checked', true);
+                            
+                            // Agregar el nuevo producto a la lista
+                            const newProduct = {
+                                id: response.data.id,
+                                name: response.data.name,
+                                price: response.data.price
+                            };
+                            products.push(newProduct);
+                            
+                            // Recargar todas las filas de productos
+                            reloadProductRows();
+                            
+                            // Agregar nueva fila y seleccionar el producto
+                            addProductRow();
+                            setTimeout(() => {
+                                const lastRow = $('#productsTableBody tr:last');
+                                const productSelect = lastRow.find('.product-select');
+                                productSelect.val(newProduct.id);
+                                updateProductInfo(currentRowId);
+                            }, 100);
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: response.message || 'Error al crear el producto'
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Error al crear el producto. Intente nuevamente.'
+                    });
+                }
+            });
+        }
+        
+        function reloadProductRows() {
+            // Recargar todas las filas existentes con la nueva lista de productos
+            $('#productsTableBody tr').each(function() {
+                const row = $(this);
+                const productSelect = row.find('.product-select');
+                const currentValue = productSelect.val();
+                
+                // Generar nuevas opciones
+                let productOptions = '<option value="">Seleccionar producto</option>';
+                if (Array.isArray(products) && products.length > 0) {
+                    productOptions += products.map(p => `<option value="${p.id}" data-price="${p.price || 0}">${p.name}</option>`).join('');
+                }
+                
+                productSelect.html(productOptions);
+                productSelect.val(currentValue);
             });
         }
     </script>

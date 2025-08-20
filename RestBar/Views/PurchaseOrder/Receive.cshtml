@@ -1,0 +1,367 @@
+@model RestBar.Models.PurchaseOrder
+@{
+    ViewData["Title"] = $"Recibir Productos - {Model.OrderNumber}";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-truck me-2"></i>
+                            Recibir Productos - Orden @Model.OrderNumber
+                        </h4>
+                        <div>
+                            <a href="@Url.Action("Details", "PurchaseOrder", new { id = Model.Id })" class="btn btn-light me-2">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Volver a Detalles
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Información de la orden -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="border-bottom pb-2">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Información de la Orden
+                            </h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Número de Orden:</strong></td>
+                                    <td>@Model.OrderNumber</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Proveedor:</strong></td>
+                                    <td>@Model.Supplier?.Name</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Fecha de Orden:</strong></td>
+                                    <td>@Model.OrderDate.ToString("dd/MM/yyyy")</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Fecha Esperada:</strong></td>
+                                    <td>@(Model.ExpectedDeliveryDate?.ToString("dd/MM/yyyy") ?? "No especificada")</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Total Ordenado:</strong></td>
+                                    <td><strong>@Model.TotalAmount.ToString("C")</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="border-bottom pb-2">
+                                <i class="fas fa-clipboard-check me-2"></i>
+                                Instrucciones
+                            </h5>
+                            <div class="alert alert-info">
+                                <ul class="mb-0">
+                                    <li>Ingrese las cantidades recibidas para cada producto</li>
+                                    <li>No puede recibir más de lo ordenado</li>
+                                    <li>Si recibe parcialmente, la orden quedará como "Parcialmente Recibida"</li>
+                                    <li>Si recibe todo, la orden quedará como "Recibida"</li>
+                                    <li>El inventario se actualizará automáticamente</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formulario de recepción -->
+                    <form id="receiveForm">
+                        <div class="row">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2">
+                                    <i class="fas fa-boxes me-2"></i>
+                                    Productos a Recibir
+                                </h5>
+                                
+                                <div class="table-responsive">
+                                    <table class="table table-bordered" id="receiveTable">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th>Producto</th>
+                                                <th width="120">Precio Unitario</th>
+                                                <th width="100">Cantidad Ordenada</th>
+                                                <th width="100">Ya Recibida</th>
+                                                <th width="120">Cantidad a Recibir</th>
+                                                <th width="120">Subtotal</th>
+                                                <th width="80">IVA</th>
+                                                <th width="120">Total</th>
+                                                <th width="100">Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @if (Model.Items != null && Model.Items.Any())
+                                            {
+                                                @foreach (var item in Model.Items)
+                                                {
+                                                    var remainingQuantity = item.Quantity - (item.ReceivedQuantity ?? 0);
+                                                    var isFullyReceived = (item.ReceivedQuantity ?? 0) >= item.Quantity;
+                                                    var isPartiallyReceived = (item.ReceivedQuantity ?? 0) > 0 && !isFullyReceived;
+                                                
+                                                <tr data-item-id="@item.Id" data-product-id="@item.ProductId">
+                                                    <td>
+                                                        <strong>@item.Product?.Name</strong>
+                                                        @if (!string.IsNullOrEmpty(item.Product?.Description))
+                                                        {
+                                                            <br><small class="text-muted">@item.Product.Description</small>
+                                                        }
+                                                    </td>
+                                                    <td class="text-end">@item.UnitPrice.ToString("C")</td>
+                                                    <td class="text-center">@item.Quantity</td>
+                                                    <td class="text-center">
+                                                        <span class="badge @(isFullyReceived ? "bg-success" : isPartiallyReceived ? "bg-warning" : "bg-secondary")">
+                                                            @(item.ReceivedQuantity ?? 0)
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        @if (isFullyReceived)
+                                                        {
+                                                            <input type="number" class="form-control" value="0" min="0" max="0" disabled>
+                                                            <small class="text-success">Completamente recibido</small>
+                                                        }
+                                                        else
+                                                        {
+                                                            <input type="number" class="form-control receive-quantity" 
+                                                                   value="0" min="0" max="@remainingQuantity" 
+                                                                   data-ordered="@item.Quantity" 
+                                                                   data-received="@(item.ReceivedQuantity ?? 0)"
+                                                                   data-unit-price="@item.UnitPrice"
+                                                                   data-tax-rate="@item.TaxRate"
+                                                                   onchange="calculateReceiveTotals()">
+                                                        }
+                                                    </td>
+                                                    <td class="text-end receive-subtotal">$0.00</td>
+                                                    <td class="text-end receive-tax">$0.00</td>
+                                                    <td class="text-end receive-total"><strong>$0.00</strong></td>
+                                                    <td class="text-center">
+                                                        @if (isFullyReceived)
+                                                        {
+                                                            <span class="badge bg-success">Recibido</span>
+                                                        }
+                                                        else if (isPartiallyReceived)
+                                                        {
+                                                            <span class="badge bg-warning">Parcial</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge bg-secondary">Pendiente</span>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <tr>
+                                                    <td colspan="9" class="text-center text-muted">
+                                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                                        No hay productos en esta orden de compra
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- Totales de recepción -->
+                                <div class="row mt-4">
+                                    <div class="col-md-6 offset-md-6">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-calculator me-2"></i>
+                                                    Totales de Recepción
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <table class="table table-borderless">
+                                                    <tr>
+                                                        <td><strong>Subtotal:</strong></td>
+                                                        <td class="text-end" id="receiveSubtotal">$0.00</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>IVA:</strong></td>
+                                                        <td class="text-end" id="receiveTax">$0.00</td>
+                                                    </tr>
+                                                    <tr class="table-active">
+                                                        <td><strong>Total:</strong></td>
+                                                        <td class="text-end"><strong id="receiveTotal">$0.00</strong></td>
+                                                    </tr>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Notas -->
+                                <div class="row mt-4">
+                                    <div class="col-12">
+                                        <div class="mb-3">
+                                            <label for="receiveNotes" class="form-label">
+                                                <i class="fas fa-sticky-note me-2"></i>
+                                                Notas de Recepción
+                                            </label>
+                                            <textarea class="form-control" id="receiveNotes" rows="3" 
+                                                      placeholder="Observaciones sobre la recepción, condiciones de los productos, etc."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Botones de acción -->
+                                <div class="row">
+                                    <div class="col-12 text-center">
+                                        <button type="button" class="btn btn-success btn-lg me-3" onclick="confirmReceive()">
+                                            <i class="fas fa-check me-2"></i>
+                                            Confirmar Recepción
+                                        </button>
+                                        <a href="@Url.Action("Details", "PurchaseOrder", new { id = Model.Id })" class="btn btn-secondary btn-lg">
+                                            <i class="fas fa-times me-2"></i>
+                                            Cancelar
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            calculateReceiveTotals();
+        });
+        
+        function calculateReceiveTotals() {
+            let subtotal = 0;
+            let taxTotal = 0;
+            let total = 0;
+            
+            $('.receive-quantity').each(function() {
+                const quantity = parseInt($(this).val()) || 0;
+                const unitPrice = parseFloat($(this).data('unit-price')) || 0;
+                const taxRate = parseFloat($(this).data('tax-rate')) || 0;
+                
+                // Validar que los datos estén presentes
+                if (isNaN(quantity) || isNaN(unitPrice) || isNaN(taxRate)) {
+                    console.warn('Datos inválidos en fila:', $(this).closest('tr').data('item-id'));
+                    return;
+                }
+                
+                const itemSubtotal = quantity * unitPrice;
+                const itemTax = itemSubtotal * (taxRate / 100);
+                const itemTotal = itemSubtotal + itemTax;
+                
+                const row = $(this).closest('tr');
+                row.find('.receive-subtotal').text('$' + itemSubtotal.toFixed(2));
+                row.find('.receive-tax').text('$' + itemTax.toFixed(2));
+                row.find('.receive-total').html('<strong>$' + itemTotal.toFixed(2) + '</strong>');
+                
+                subtotal += itemSubtotal;
+                taxTotal += itemTax;
+            });
+            
+            total = subtotal + taxTotal;
+            
+            $('#receiveSubtotal').text('$' + subtotal.toFixed(2));
+            $('#receiveTax').text('$' + taxTotal.toFixed(2));
+            $('#receiveTotal').text('$' + total.toFixed(2));
+        }
+        
+        function confirmReceive() {
+            // Validar que al menos un producto tenga cantidad a recibir
+            let hasItemsToReceive = false;
+            let receivedItems = [];
+            
+            $('.receive-quantity').each(function() {
+                const quantity = parseInt($(this).val()) || 0;
+                if (quantity > 0) {
+                    hasItemsToReceive = true;
+                    receivedItems.push({
+                        id: $(this).closest('tr').data('item-id'),
+                        receivedQuantity: quantity
+                    });
+                }
+            });
+            
+            if (!hasItemsToReceive) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Sin productos para recibir',
+                    text: 'Debe ingresar al menos una cantidad para recibir productos.'
+                });
+                return;
+            }
+            
+            // Mostrar confirmación
+            Swal.fire({
+                title: '¿Confirmar recepción?',
+                text: `Se recibirán ${receivedItems.length} productos. ¿Desea continuar?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, confirmar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    receiveProducts(receivedItems);
+                }
+            });
+        }
+        
+        function receiveProducts(receivedItems) {
+            // Mostrar loading
+            Swal.fire({
+                title: 'Procesando recepción...',
+                text: 'Actualizando inventario y registrando recepción',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Enviar petición AJAX
+            $.ajax({
+                url: '@Url.Action("Receive", "PurchaseOrder", new { id = Model.Id })',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(receivedItems),
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Recepción exitosa!',
+                            text: 'Los productos han sido recibidos y el inventario actualizado.',
+                            confirmButtonText: 'Ver detalles'
+                        }).then(() => {
+                            window.location.href = '@Url.Action("Details", "PurchaseOrder", new { id = Model.Id })';
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: response.message || 'Error al procesar la recepción'
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Error al procesar la recepción. Intente nuevamente.'
+                    });
+                }
+            });
+        }
+    </script>
+}

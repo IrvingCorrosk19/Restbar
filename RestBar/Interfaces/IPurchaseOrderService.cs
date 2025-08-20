@@ -13,6 +13,7 @@ namespace RestBar.Interfaces
         Task<IEnumerable<PurchaseOrder>> GetBySupplierAsync(Guid supplierId);
         Task<IEnumerable<PurchaseOrder>> GetByDateRangeAsync(DateTime startDate, DateTime endDate);
         Task<PurchaseOrder> ApproveAsync(Guid id);
+        Task<PurchaseOrder> OrderAsync(Guid id);
         Task<PurchaseOrder> CancelAsync(Guid id);
         Task<PurchaseOrder> ReceiveAsync(Guid id, List<PurchaseOrderItem> receivedItems);
         Task<string> GenerateOrderNumberAsync();

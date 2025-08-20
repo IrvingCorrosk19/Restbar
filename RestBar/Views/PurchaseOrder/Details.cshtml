@@ -159,6 +159,50 @@
                             }
                             else if (Model.Status == PurchaseOrderStatus.Approved)
                             {
+                                <form asp-action="Order" method="post" style="display: inline;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@Model.Id" />
+                                    <button type="submit" class="btn btn-primary btn-lg me-3" 
+                                            onclick="return confirm('¿Está seguro de enviar esta orden al proveedor?')">
+                                        <i class="fas fa-paper-plane me-2"></i>
+                                        Enviar al Proveedor
+                                    </button>
+                                </form>
+                                
+                                <form asp-action="Cancel" method="post" style="display: inline;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@Model.Id" />
+                                    <button type="submit" class="btn btn-warning btn-lg" 
+                                            onclick="return confirm('¿Está seguro de cancelar esta orden de compra?')">
+                                        <i class="fas fa-times me-2"></i>
+                                        Cancelar Orden
+                                    </button>
+                                </form>
+                            }
+                            else if (Model.Status == PurchaseOrderStatus.Ordered)
+                            {
+                                <a href="@Url.Action("Receive", "PurchaseOrder", new { id = Model.Id })" class="btn btn-success btn-lg me-3">
+                                    <i class="fas fa-truck me-2"></i>
+                                    Recibir Productos
+                                </a>
+                                
+                                <form asp-action="Cancel" method="post" style="display: inline;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@Model.Id" />
+                                    <button type="submit" class="btn btn-warning btn-lg" 
+                                            onclick="return confirm('¿Está seguro de cancelar esta orden de compra?')">
+                                        <i class="fas fa-times me-2"></i>
+                                        Cancelar Orden
+                                    </button>
+                                </form>
+                            }
+                            else if (Model.Status == PurchaseOrderStatus.PartiallyReceived)
+                            {
+                                <a href="@Url.Action("Receive", "PurchaseOrder", new { id = Model.Id })" class="btn btn-success btn-lg me-3">
+                                    <i class="fas fa-truck me-2"></i>
+                                    Recibir Resto
+                                </a>
+                                
                                 <form asp-action="Cancel" method="post" style="display: inline;">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="id" value="@Model.Id" />

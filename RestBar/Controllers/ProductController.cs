@@ -228,6 +228,59 @@ namespace RestBar.Controllers
             return Json(new { success = true, data = new { id = created.Id, name = created.Name, type = created.Type } });
         }
 
+        [HttpPost]
+        public async Task<IActionResult> CreateAjax([FromBody] ProductCreateViewModel model)
+        {
+            try
+            {
+                Console.WriteLine("[ProductController] CreateAjax iniciado");
+                
+                if (!ModelState.IsValid)
+                {
+                    var errors = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .ToList();
+                    
+                    Console.WriteLine($"[ProductController] Errores de validación: {string.Join(", ", errors)}");
+                    return Json(new { success = false, message = "Datos inválidos", errors });
+                }
+
+                var product = new Product
+                {
+                    Id = Guid.NewGuid(),
+                    Name = model.Name,
+                    Description = model.Description,
+                    Price = model.Price,
+                    Cost = model.Cost,
+                    TaxRate = model.TaxRate,
+                    Unit = model.Unit,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.Products.Add(product);
+                await _context.SaveChangesAsync();
+
+                Console.WriteLine($"[ProductController] Producto creado exitosamente: {product.Id}");
+
+                return Json(new { 
+                    success = true, 
+                    data = new { 
+                        id = product.Id, 
+                        name = product.Name, 
+                        price = product.Price 
+                    } 
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ProductController] Error en CreateAjax: {ex.Message}");
+                _logger.LogError(ex, "Error al crear producto via AJAX");
+                return Json(new { success = false, message = "Error al crear el producto" });
+            }
+        }
+
         [HttpGet]
         public async Task<IActionResult> Get(Guid id)
         {
