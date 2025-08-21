@@ -44,7 +44,7 @@ public partial class Product : ITrackableEntity
 
 
 
-    public virtual ICollection<Inventory> Inventories { get; set; } = new List<Inventory>();
+
 
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 

@@ -26,7 +26,7 @@ public partial class Branch : ITrackableEntity
 
     public virtual Company? Company { get; set; }
 
-    public virtual ICollection<Inventory> Inventories { get; set; } = new List<Inventory>();
+
 
     public virtual ICollection<User> Users { get; set; } = new List<User>();
 }

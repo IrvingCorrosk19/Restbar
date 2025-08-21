@@ -170,26 +170,7 @@
                 </div>
             }
 
-            <!-- Inventario -->
-            @if (Model.VisibleCards.Inventory)
-            {
-                <div class="col-lg-3 col-md-6">
-                    <a href="@Url.Action("Index", "Inventory")" class="dashboard-card card-inventory">
-                        <div class="card-icon">
-                            <i class="fas fa-boxes"></i>
-                        </div>
-                        <div class="card-content">
-                            <h3>Inventario</h3>
-                            <p>Control de stock</p>
-                            <div class="card-btn">
-                                <span>Acceder</span>
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </div>
-                        <div class="card-overlay"></div>
-                    </a>
-                </div>
-            }
+
 
 
 
@@ -1366,7 +1347,7 @@
             kitchen: @Model.VisibleCards.Kitchen.ToString().ToLower(),
             payments: @Model.VisibleCards.Payments.ToString().ToLower(),
             reports: @Model.VisibleCards.Reports.ToString().ToLower(),
-            inventory: @Model.VisibleCards.Inventory.ToString().ToLower(),
+
 
             securityAdmin: @Model.VisibleCards.SecurityAdmin.ToString().ToLower()
         };

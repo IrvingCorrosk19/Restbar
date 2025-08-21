@@ -26,7 +26,7 @@ public partial class RestBarContext : DbContext
 
     public virtual DbSet<Customer> Customers { get; set; }
 
-    public virtual DbSet<Inventory> Inventories { get; set; }
+
 
     public virtual DbSet<Invoice> Invoices { get; set; }
 
@@ -62,7 +62,7 @@ public partial class RestBarContext : DbContext
 
     
     // ✅ NUEVO: Movimientos de inventario
-    public virtual DbSet<InventoryMovement> InventoryMovements { get; set; }
+
     
 
     
@@ -120,7 +120,7 @@ public partial class RestBarContext : DbContext
         });
 
         modelBuilder.HasPostgresEnum<UserRole>("user_role_enum");
-        modelBuilder.HasPostgresEnum<MovementType>("movement_type_enum");
+
         modelBuilder.HasPostgresEnum<OrderStatus>("order_status_enum");
         modelBuilder.HasPostgresEnum<OrderType>("order_type_enum");
         modelBuilder.HasPostgresEnum<OrderItemStatus>("order_item_status_enum");
@@ -356,48 +356,7 @@ public partial class RestBarContext : DbContext
                 .HasColumnName("phone");
         });
 
-        modelBuilder.Entity<Inventory>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("inventory_pkey");
 
-            entity.ToTable("inventory");
-
-            entity.Property(e => e.Id)
-                .HasDefaultValueSql("gen_random_uuid()")
-                .HasColumnName("id");
-            entity.Property(e => e.BranchId).HasColumnName("branch_id");
-            entity.Property(e => e.LastUpdated)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp with time zone")
-                .HasColumnName("last_updated");
-            entity.Property(e => e.MinThreshold)
-                .HasPrecision(10, 2)
-                .HasDefaultValueSql("0")
-                .HasColumnName("min_threshold");
-            entity.Property(e => e.ProductId).HasColumnName("product_id");
-            entity.Property(e => e.Quantity)
-                .HasPrecision(10, 2)
-                .HasColumnName("quantity");
-            entity.Property(e => e.Unit)
-                .HasMaxLength(20)
-                .HasColumnName("unit");
-            
-            // ✅ NUEVAS PROPIEDADES para las columnas adicionales en la BD
-            entity.Property(e => e.Stock)
-                .HasColumnName("stock");
-            entity.Property(e => e.MinStock)
-                .HasColumnName("min_stock");
-            entity.Property(e => e.MaxStock)
-                .HasColumnName("max_stock");
-
-            entity.HasOne(d => d.Branch).WithMany(p => p.Inventories)
-                .HasForeignKey(d => d.BranchId)
-                .HasConstraintName("inventory_branch_id_fkey");
-
-            entity.HasOne(d => d.Product).WithMany(p => p.Inventories)
-                .HasForeignKey(d => d.ProductId)
-                .HasConstraintName("inventory_product_id_fkey");
-        });
 
         modelBuilder.Entity<Invoice>(entity =>
         {
@@ -886,67 +845,7 @@ public partial class RestBarContext : DbContext
 
 
 
-        // ✅ NUEVO: Configuración de InventoryMovement
-        modelBuilder.Entity<InventoryMovement>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.ToTable("inventory_movements");
-            
-            entity.Property(e => e.Id)
-                .HasDefaultValueSql("gen_random_uuid()")
-                .HasColumnName("id");
-            entity.Property(e => e.InventoryId)
-                .IsRequired()
-                .HasColumnName("inventory_id");
-            entity.Property(e => e.ProductId)
-                .IsRequired()
-                .HasColumnName("product_id");
-            entity.Property(e => e.BranchId)
-                .IsRequired()
-                .HasColumnName("branch_id");
-            entity.Property(e => e.UserId)
-                .HasColumnName("user_id");
-            entity.Property(e => e.Type)
-                .HasColumnType("movement_type_enum.movement_type")
-                .HasColumnName("type");
-            entity.Property(e => e.Quantity)
-                .HasPrecision(18, 2)
-                .HasColumnName("quantity");
-            entity.Property(e => e.PreviousStock)
-                .HasPrecision(18, 2)
-                .HasColumnName("previous_stock");
-            entity.Property(e => e.NewStock)
-                .HasPrecision(18, 2)
-                .HasColumnName("new_stock");
-            entity.Property(e => e.Reason)
-                .HasMaxLength(500)
-                .HasColumnName("reason");
-            entity.Property(e => e.Reference)
-                .HasMaxLength(100)
-                .HasColumnName("reference");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp with time zone")
-                .HasColumnName("created_at");
 
-            // Relaciones
-            entity.HasOne(d => d.Inventory)
-                .WithMany(p => p.Movements)
-                .HasForeignKey(d => d.InventoryId)
-                .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(d => d.Product)
-                .WithMany()
-                .HasForeignKey(d => d.ProductId)
-                .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(d => d.Branch)
-                .WithMany()
-                .HasForeignKey(d => d.BranchId)
-                .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(d => d.User)
-                .WithMany()
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.SetNull);
-        });
 
 
 

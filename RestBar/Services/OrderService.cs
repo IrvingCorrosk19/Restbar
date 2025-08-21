@@ -11,134 +11,27 @@ namespace RestBar.Services
     {
         private readonly IProductService _productService;
         private readonly IOrderHubService _orderHubService;
-        private readonly IInventoryService _inventoryService;
+
 
 
         public OrderService(
             RestBarContext context, 
             IProductService productService, 
             IOrderHubService orderHubService, 
-            IInventoryService inventoryService,
+
 
             IHttpContextAccessor httpContextAccessor) 
             : base(context, httpContextAccessor)
         {
             _productService = productService;
             _orderHubService = orderHubService;
-            _inventoryService = inventoryService;
+
 
         }
 
-        // ✅ NUEVO: Método para reducir el inventario de un producto
-        private async Task ReduceProductStockAsync(Guid productId, decimal quantity, Guid? branchId = null)
-        {
-            try
-            {
-                Console.WriteLine($"[OrderService] ReduceProductStockAsync iniciado - ProductId: {productId}, Quantity: {quantity}");
-                
-                // Obtener el producto
-                var product = await _productService.GetByIdAsync(productId);
-                if (product == null)
-                {
-                    Console.WriteLine($"[OrderService] ERROR: Producto no encontrado con ID {productId}");
-                    throw new KeyNotFoundException($"Producto no encontrado con ID {productId}");
-                }
 
-                // Verificar si el producto tiene stock configurado
-                if (product.Stock == null)
-                {
-                    Console.WriteLine($"[OrderService] WARNING: Producto {product.Name} no tiene stock configurado, saltando reducción");
-                    return;
-                }
 
-                // Verificar stock suficiente
-                if (product.Stock < quantity)
-                {
-                    Console.WriteLine($"[OrderService] ERROR: Stock insuficiente para {product.Name} - Disponible: {product.Stock}, Requerido: {quantity}");
-                    throw new InvalidOperationException($"Stock insuficiente para {product.Name}. Disponible: {product.Stock}, Requerido: {quantity}");
-                }
 
-                // Reducir el stock del producto
-                product.Stock -= quantity;
-                Console.WriteLine($"[OrderService] Stock reducido para {product.Name}: {product.Stock + quantity} -> {product.Stock}");
-
-                // Actualizar el producto en la base de datos
-                _context.Products.Update(product);
-                await _context.SaveChangesAsync();
-                Console.WriteLine($"[OrderService] ✅ Stock actualizado en base de datos");
-
-                // Si se proporciona branchId, también actualizar el inventario específico de la sucursal
-                if (branchId.HasValue)
-                {
-                    try
-                    {
-                        await _inventoryService.AdjustStockAsync(productId, branchId.Value, -quantity);
-                        Console.WriteLine($"[OrderService] ✅ Inventario de sucursal actualizado");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[OrderService] WARNING: Error al actualizar inventario de sucursal: {ex.Message}");
-                        // No lanzar excepción aquí para no afectar la orden principal
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[OrderService] ERROR en ReduceProductStockAsync: {ex.Message}");
-                Console.WriteLine($"[OrderService] Stack trace: {ex.StackTrace}");
-                throw;
-            }
-        }
-
-        // ✅ NUEVO: Método para restaurar el inventario (usado en cancelaciones)
-        private async Task RestoreProductStockAsync(Guid productId, decimal quantity, Guid? branchId = null)
-        {
-            try
-            {
-                Console.WriteLine($"[OrderService] RestoreProductStockAsync iniciado - ProductId: {productId}, Quantity: {quantity}");
-                
-                // Obtener el producto
-                var product = await _productService.GetByIdAsync(productId);
-                if (product == null)
-                {
-                    Console.WriteLine($"[OrderService] ERROR: Producto no encontrado con ID {productId}");
-                    return; // No lanzar excepción en restauración
-                }
-
-                // Restaurar el stock del producto
-                if (product.Stock != null)
-                {
-                    product.Stock += quantity;
-                    Console.WriteLine($"[OrderService] Stock restaurado para {product.Name}: {product.Stock - quantity} -> {product.Stock}");
-                    
-                    // Actualizar el producto en la base de datos
-                    _context.Products.Update(product);
-                    await _context.SaveChangesAsync();
-                    Console.WriteLine($"[OrderService] ✅ Stock restaurado en base de datos");
-                }
-
-                // Si se proporciona branchId, también restaurar el inventario específico de la sucursal
-                if (branchId.HasValue)
-                {
-                    try
-                    {
-                        await _inventoryService.AdjustStockAsync(productId, branchId.Value, quantity);
-                        Console.WriteLine($"[OrderService] ✅ Inventario de sucursal restaurado");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[OrderService] WARNING: Error al restaurar inventario de sucursal: {ex.Message}");
-                        // No lanzar excepción aquí para no afectar la cancelación
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[OrderService] ERROR en RestoreProductStockAsync: {ex.Message}");
-                Console.WriteLine($"[OrderService] Stack trace: {ex.StackTrace}");
-                // No lanzar excepción en restauración para no afectar el flujo principal
-            }
-        }
 
         public async Task<IEnumerable<Order>> GetAllAsync()
         {
@@ -576,7 +469,7 @@ namespace RestBar.Services
                     // ✅ NUEVO: Reducir el inventario ANTES de agregar el item
                     if (product.Stock != null)
                     {
-                        await ReduceProductStockAsync(itemDto.ProductId, itemDto.Quantity);
+
                         successfullyAddedItems.Add((itemDto.ProductId, itemDto.Quantity));
                         Console.WriteLine($"[OrderService] ✅ Inventario reducido para {product.Name}: {itemDto.Quantity} unidades");
                     }
@@ -616,7 +509,7 @@ namespace RestBar.Services
                 {
                     try
                     {
-                        await RestoreProductStockAsync(productId, quantity);
+
                         Console.WriteLine($"[OrderService] ✅ Inventario restaurado para producto {productId}");
                     }
                     catch (Exception restoreEx)
@@ -1112,7 +1005,7 @@ namespace RestBar.Services
                     {
                         if (item.ProductId != null && item.ProductId != Guid.Empty)
                         {
-                            await RestoreProductStockAsync(item.ProductId.Value, item.Quantity);
+
                             Console.WriteLine($"[OrderService] ✅ Inventario restaurado para item {item.Product?.Name}: {item.Quantity} unidades");
                         }
                         else
@@ -1431,7 +1324,7 @@ namespace RestBar.Services
                     // Reducir el inventario ANTES de crear el item
                     if (product.Stock != null)
                     {
-                        await ReduceProductStockAsync(itemDto.ProductId, itemDto.Quantity);
+
                         successfullyAddedItems.Add((itemDto.ProductId, itemDto.Quantity));
                         Console.WriteLine($"[OrderService] ✅ Inventario reducido para {product.Name}: {itemDto.Quantity} unidades");
                     }
@@ -1506,7 +1399,7 @@ namespace RestBar.Services
                 {
                     try
                     {
-                        await RestoreProductStockAsync(item.productId, item.quantity);
+
                         Console.WriteLine($"[OrderService] ✅ Inventario restaurado para producto {item.productId}");
                     }
                     catch (Exception restoreEx)

@@ -65,8 +65,7 @@ builder.Services.AddAuthorization(options =>
     // Políticas para área de pagos
     options.AddPolicy("PaymentAccess", policy => policy.RequireRole("admin", "manager", "supervisor", "cashier", "accountant"));
     
-    // Políticas para área de inventario
-    options.AddPolicy("InventoryAccess", policy => policy.RequireRole("admin", "manager", "inventory"));
+
     
     // Políticas para área de productos
     options.AddPolicy("ProductAccess", policy => policy.RequireRole("admin", "manager", "inventory"));
@@ -143,7 +142,15 @@ builder.Services.AddScoped<ICustomerService>(provider =>
     var httpContextAccessor = provider.GetRequiredService<IHttpContextAccessor>();
     return new CustomerService(context, httpContextAccessor);
 });
-builder.Services.AddScoped<IOrderService, OrderService>();
+// Registrar OrderService con sus dependencias
+builder.Services.AddScoped<IOrderService>(provider =>
+{
+    var context = provider.GetRequiredService<RestBarContext>();
+    var productService = provider.GetRequiredService<IProductService>();
+    var orderHubService = provider.GetRequiredService<IOrderHubService>();
+    var httpContextAccessor = provider.GetRequiredService<IHttpContextAccessor>();
+    return new OrderService(context, productService, orderHubService, httpContextAccessor);
+});
 builder.Services.AddScoped<IOrderItemService, OrderItemService>();
 builder.Services.AddScoped<IKitchenService, KitchenService>();
 // Registrar PaymentService con IHttpContextAccessor
@@ -160,7 +167,7 @@ builder.Services.AddScoped<IInvoiceService>(provider =>
     var httpContextAccessor = provider.GetRequiredService<IHttpContextAccessor>();
     return new InvoiceService(context, httpContextAccessor);
 });
-builder.Services.AddScoped<IInventoryService, InventoryService>();
+
 builder.Services.AddScoped<IModifierService, ModifierService>();
 // Registrar NotificationService con IHttpContextAccessor
 builder.Services.AddScoped<INotificationService>(provider =>
@@ -188,8 +195,7 @@ builder.Services.AddScoped<IAuthService>(provider =>
     return new AuthService(context, userService, httpContextAccessor, logger);
 });
 
-// ✅ NUEVO: Agregar servicio de movimientos de inventario
-builder.Services.AddScoped<IInventoryMovementService, InventoryMovementService>();
+
 
 
 

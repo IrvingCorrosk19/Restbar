@@ -19,7 +19,7 @@ namespace RestBar.Controllers
         private readonly RestBarContext _context;
         private readonly IOrderHubService _orderHubService;
         private readonly IProductService _productService;
-        private readonly IInventoryService _inventoryService;
+
 
 
         public PaymentController(
@@ -28,8 +28,7 @@ namespace RestBar.Controllers
             IOrderService orderService,
             RestBarContext context,
             IOrderHubService orderHubService,
-            IProductService productService,
-            IInventoryService inventoryService)
+            IProductService productService)
         {
             Console.WriteLine($"[PaymentController] 🔥🔥🔥 CONSTRUCTOR PaymentController LLAMADO 🔥🔥🔥");
             _paymentService = paymentService;
@@ -38,9 +37,9 @@ namespace RestBar.Controllers
             _context = context;
             _orderHubService = orderHubService;
             _productService = productService;
-            _inventoryService = inventoryService;
 
-            Console.WriteLine($"[PaymentController] ✅ Constructor completado - ProductService: {_productService != null}, InventoryService: {_inventoryService != null}");
+
+            Console.WriteLine($"[PaymentController] ✅ Constructor completado - ProductService: {_productService != null}");
         }
 
         [HttpPost("partial")]
@@ -262,7 +261,7 @@ namespace RestBar.Controllers
                     
                     // ✅ NUEVO: Descontar stock cuando la orden se completa
                     Console.WriteLine($"[PaymentController] 🔥🔥🔥 DESCONTANDO STOCK AL COMPLETAR ORDEN 🔥🔥🔥");
-                    var completedOrderReducedItems = new List<(Guid productId, decimal quantity)>();
+
                     
                     try
                     {
@@ -271,18 +270,9 @@ namespace RestBar.Controllers
                             if (item.ProductId.HasValue)
                             {
                                 // ✅ NUEVO: Usar el método DecrementStockAsync del InventoryService
-                                var success = await _inventoryService.DecrementStockAsync(item.ProductId.Value, item.Quantity, _orderHubService);
+                                // Stock management removed
                                 
-                                if (success)
-                                {
-                                    completedOrderReducedItems.Add((item.ProductId.Value, item.Quantity));
-                                    Console.WriteLine($"[PaymentController] ✅ Stock descontado exitosamente para item: {item.Product?.Name}");
-                                }
-                                else
-                                {
-                                    Console.WriteLine($"[PaymentController] ❌ ERROR: No se pudo descontar stock para {item.Product?.Name}");
-                                    throw new InvalidOperationException($"No se pudo descontar stock para {item.Product?.Name}");
-                                }
+                                Console.WriteLine($"[PaymentController] Stock management removed for item: {item.Product?.Name}");
                             }
                         }
                         
@@ -292,28 +282,7 @@ namespace RestBar.Controllers
                     {
                         Console.WriteLine($"[PaymentController] ❌ ERROR al descontar stock al completar orden: {ex.Message}");
                         
-                        // Rollback: restaurar stock de los items que ya se procesaron
-                        Console.WriteLine($"[PaymentController] Realizando rollback del stock...");
-                        foreach (var (productId, quantity) in completedOrderReducedItems)
-                        {
-                            try
-                            {
-                                var product = await _productService.GetByIdAsync(productId);
-                                if (product != null && product.Stock.HasValue)
-                                {
-                                    product.Stock += quantity;
-                                    _context.Products.Update(product);
-                                    Console.WriteLine($"[PaymentController] ✅ Stock restaurado para producto {product.Name}");
-                                }
-                            }
-                            catch (Exception restoreEx)
-                            {
-                                Console.WriteLine($"[PaymentController] ERROR al restaurar stock para producto {productId}: {restoreEx.Message}");
-                            }
-                        }
-                        
-                        await _context.SaveChangesAsync();
-                        Console.WriteLine($"[PaymentController] ✅ Rollback completado");
+
                         
                         return BadRequest($"Error al procesar stock: {ex.Message}");
                     }
