@@ -12,10 +12,12 @@ namespace RestBar.Controllers
     public class CompanyController : Controller
     {
         private readonly ICompanyService _companyService;
+        private readonly IAuthService _authService;
 
-        public CompanyController(ICompanyService companyService)
+        public CompanyController(ICompanyService companyService, IAuthService authService)
         {
             _companyService = companyService;
+            _authService = authService;
         }
 
         // Vista principal
@@ -34,7 +36,15 @@ namespace RestBar.Controllers
                 id = c.Id,
                 name = c.Name,
                 legalId = c.LegalId,
-                createdAt = c.CreatedAt
+                taxId = c.TaxId,
+                address = c.Address,
+                phone = c.Phone,
+                email = c.Email,
+                isActive = c.IsActive,
+                createdAt = c.CreatedAt,
+                updatedAt = c.UpdatedAt,
+                createdBy = c.CreatedBy,
+                updatedBy = c.UpdatedBy
             }).ToList();
             return Json(new { success = true, data });
         }
@@ -50,7 +60,15 @@ namespace RestBar.Controllers
                 id = company.Id,
                 name = company.Name,
                 legalId = company.LegalId,
-                createdAt = company.CreatedAt
+                taxId = company.TaxId,
+                address = company.Address,
+                phone = company.Phone,
+                email = company.Email,
+                isActive = company.IsActive,
+                createdAt = company.CreatedAt,
+                updatedAt = company.UpdatedAt,
+                createdBy = company.CreatedBy,
+                updatedBy = company.UpdatedBy
             }});
         }
 
@@ -69,9 +87,11 @@ namespace RestBar.Controllers
             if (existingCompany != null)
                 return Json(new { success = false, message = "Ya existe una compañía con este ID legal" });
             
-            if (model.CreatedAt == null)
-                model.CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
+            // ✅ NUEVO: Obtener usuario actual para tracking
+            var currentUser = await _authService.GetCurrentUserAsync(User);
+            model.CreatedBy = currentUser?.Email ?? "Sistema";
             
+            // Remover asignación manual de fecha - se maneja en el servicio o BD
             var created = await _companyService.CreateAsync(model);
             return Json(new { success = true, data = created });
         }
@@ -84,6 +104,11 @@ namespace RestBar.Controllers
                 return Json(new { success = false, message = "ID no coincide" });
             if (string.IsNullOrWhiteSpace(model.Name))
                 return Json(new { success = false, message = "El nombre es requerido" });
+            
+            // ✅ NUEVO: Obtener usuario actual para tracking
+            var currentUser = await _authService.GetCurrentUserAsync(User);
+            model.UpdatedBy = currentUser?.Email ?? "Sistema";
+            
             await _companyService.UpdateAsync(model);
             return Json(new { success = true });
         }
@@ -92,8 +117,19 @@ namespace RestBar.Controllers
         [HttpDelete]
         public async Task<IActionResult> Delete(Guid id)
         {
-            await _companyService.DeleteAsync(id);
-            return Json(new { success = true });
+            try
+            {
+                await _companyService.DeleteAsync(id);
+                return Json(new { success = true });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error interno del servidor. Por favor intenta nuevamente." });
+            }
         }
 
         // Obtener compañía con sucursales

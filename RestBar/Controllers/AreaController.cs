@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using RestBar.Interfaces;
 using RestBar.Models;
 using System;
@@ -7,6 +8,7 @@ using System.Linq;
 
 namespace RestBar.Controllers
 {
+    [Authorize(Roles = "admin,manager")]
     public class AreaController : Controller
     {
         private readonly IAreaService _areaService;

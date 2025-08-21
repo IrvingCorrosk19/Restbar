@@ -3,6 +3,39 @@ let paymentSummary = null;
 let splitPayments = [];
 let isSharedPayment = false;
 
+// ✅ NUEVA: Función para calcular desglose de impuestos
+function calculateTaxBreakdown() {
+    if (!currentOrder || !currentOrder.items) {
+        return { subtotal: 0, totalTax: 0, totalWithTax: 0 };
+    }
+
+    let subtotal = 0;
+    let totalTax = 0;
+
+    console.log('[Frontend] Calculando desglose de impuestos para items:', currentOrder.items.length);
+    
+    currentOrder.items.forEach((item, index) => {
+        const itemSubtotal = item.price * item.quantity;
+        const taxRate = item.taxRate || 0;
+        const itemTax = itemSubtotal * (taxRate / 100);
+        
+        console.log(`[Frontend] Item ${index + 1}: ${item.productName} - Precio: $${item.price}, Cantidad: ${item.quantity}, TaxRate: ${taxRate}%, Subtotal: $${itemSubtotal.toFixed(2)}, Tax: $${itemTax.toFixed(2)}`);
+        
+        subtotal += itemSubtotal;
+        totalTax += itemTax;
+    });
+
+    const totalWithTax = subtotal + totalTax;
+    
+    console.log('[Frontend] Desglose final - Subtotal: $' + subtotal.toFixed(2) + ', Tax: $' + totalTax.toFixed(2) + ', Total: $' + totalWithTax.toFixed(2));
+
+    return {
+        subtotal: subtotal,
+        totalTax: totalTax,
+        totalWithTax: totalWithTax
+    };
+}
+
 // Función para mostrar el modal de pagos
 function showPaymentModal() {
     if (!currentOrder || !currentOrder.orderId) {
@@ -14,16 +47,33 @@ function showPaymentModal() {
         return;
     }
 
+    // ✅ NUEVO: Asegurar que el modal esté limpio antes de mostrar
+    const paymentModalElement = document.getElementById('paymentModal');
+    if (paymentModalElement) {
+        // Remover cualquier modal existente
+        const existingModal = bootstrap.Modal.getInstance(paymentModalElement);
+        if (existingModal) {
+            existingModal.dispose();
+        }
+        
+        // Resetear el estado del modal
+        paymentModalElement.setAttribute('aria-hidden', 'false');
+        paymentModalElement.style.display = 'none';
+    }
+
     // Cargar información de pagos
     loadPaymentSummary();
     
     // Resetear el tipo de pago a individual
-    document.getElementById('paymentTypeIndividual').checked = true;
+    const individualRadio = document.getElementById('paymentTypeIndividual');
+    if (individualRadio) {
+        individualRadio.checked = true;
+    }
     isSharedPayment = false;
     togglePaymentType();
     
     // Mostrar el modal
-    const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
+    const paymentModal = new bootstrap.Modal(paymentModalElement);
     paymentModal.show();
 }
 
@@ -118,15 +168,65 @@ async function loadPaymentSummary() {
 function updatePaymentModal() {
     if (!paymentSummary) return;
 
-    // Actualizar totales
-    document.getElementById('paymentOrderTotal').textContent = `$${paymentSummary.totalOrderAmount.toFixed(2)}`;
-    document.getElementById('paymentTotalPaid').textContent = `$${paymentSummary.totalPaidAmount.toFixed(2)}`;
-    document.getElementById('paymentRemaining').textContent = `$${paymentSummary.remainingAmount.toFixed(2)}`;
+    // ✅ NUEVO: Calcular desglose de impuestos
+    const taxBreakdown = calculateTaxBreakdown();
+    
+    // ✅ NUEVO: Verificar que los elementos existan antes de actualizarlos
+    const elements = {
+        subtotal: document.getElementById('paymentOrderSubtotal'),
+        tax: document.getElementById('paymentOrderTax'),
+        total: document.getElementById('paymentOrderTotal'),
+        remaining: document.getElementById('paymentRemaining'),
+        subtotalBreakdown: document.getElementById('paymentSubtotalBreakdown'),
+        taxBreakdown: document.getElementById('paymentTaxBreakdown'),
+        totalBreakdown: document.getElementById('paymentTotalBreakdown'),
+        paidBreakdown: document.getElementById('paymentPaidBreakdown'),
+        taxBreakdownDiv: document.getElementById('paymentTaxBreakdown'),
+        paymentAmount: document.getElementById('paymentAmount')
+    };
+    
+    // Actualizar totales con desglose de impuestos (solo si los elementos existen)
+    if (elements.subtotal) {
+        elements.subtotal.textContent = `$${taxBreakdown.subtotal.toFixed(2)}`;
+    }
+    if (elements.tax) {
+        elements.tax.textContent = `$${taxBreakdown.totalTax.toFixed(2)}`;
+    }
+    if (elements.total) {
+        elements.total.textContent = `$${paymentSummary.totalOrderAmount.toFixed(2)}`;
+    }
+    if (elements.remaining) {
+        elements.remaining.textContent = `$${paymentSummary.remainingAmount.toFixed(2)}`;
+    }
+
+    // ✅ NUEVO: Actualizar desglose detallado (solo si los elementos existen)
+    if (elements.subtotalBreakdown) {
+        elements.subtotalBreakdown.textContent = `$${taxBreakdown.subtotal.toFixed(2)}`;
+    }
+    if (elements.taxBreakdown) {
+        elements.taxBreakdown.textContent = `$${taxBreakdown.totalTax.toFixed(2)}`;
+    }
+    if (elements.totalBreakdown) {
+        elements.totalBreakdown.textContent = `$${paymentSummary.totalOrderAmount.toFixed(2)}`;
+    }
+    if (elements.paidBreakdown) {
+        elements.paidBreakdown.textContent = `$${paymentSummary.totalPaidAmount.toFixed(2)}`;
+    }
+
+    // ✅ NUEVO: Mostrar/ocultar desglose de impuestos
+    if (elements.taxBreakdownDiv) {
+        if (taxBreakdown.totalTax > 0) {
+            elements.taxBreakdownDiv.style.display = 'block';
+        } else {
+            elements.taxBreakdownDiv.style.display = 'none';
+        }
+    }
 
     // Actualizar monto máximo a pagar
-    const paymentAmountInput = document.getElementById('paymentAmount');
-    paymentAmountInput.max = paymentSummary.remainingAmount;
-    paymentAmountInput.value = paymentSummary.remainingAmount.toFixed(2);
+    if (elements.paymentAmount) {
+        elements.paymentAmount.max = paymentSummary.remainingAmount;
+        elements.paymentAmount.value = paymentSummary.remainingAmount.toFixed(2);
+    }
 
     // Cargar items de la orden
     loadOrderItemsForPayment();
@@ -145,14 +245,24 @@ function loadOrderItemsForPayment() {
     if (!currentOrder || !currentOrder.items) return;
 
     currentOrder.items.forEach(item => {
-        const totalPrice = (item.quantity * item.price).toFixed(2);
+        const subtotal = item.price * item.quantity;
+        const taxRate = item.taxRate || 0;
+        const taxAmount = subtotal * (taxRate / 100);
+        const totalWithTax = subtotal + taxAmount;
+        
         const itemDiv = document.createElement('div');
         itemDiv.className = 'order-item-summary';
         itemDiv.innerHTML = `
             <div class="d-flex justify-content-between align-items-center">
                 <span>${item.quantity}x ${item.productName}</span>
-                <span class="badge bg-secondary">$${totalPrice}</span>
+                <span class="badge bg-secondary">$${subtotal.toFixed(2)}</span>
             </div>
+            ${taxRate > 0 ? `
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">+ ${taxRate}% IVA</small>
+                    <small class="text-success">$${totalWithTax.toFixed(2)}</small>
+                </div>
+            ` : ''}
             ${item.notes ? `<div class="text-muted small">${item.notes}</div>` : ''}
         `;
         container.appendChild(itemDiv);

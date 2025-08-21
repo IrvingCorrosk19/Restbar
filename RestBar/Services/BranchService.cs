@@ -4,13 +4,11 @@ using RestBar.Models;
 
 namespace RestBar.Services
 {
-    public class BranchService : IBranchService
+    public class BranchService : BaseTrackingService, IBranchService
     {
-        private readonly RestBarContext _context;
-
-        public BranchService(RestBarContext context)
+        public BranchService(RestBarContext context, IHttpContextAccessor httpContextAccessor)
+            : base(context, httpContextAccessor)
         {
-            _context = context;
         }
 
         public async Task<IEnumerable<Branch>> GetAllAsync()
@@ -34,7 +32,7 @@ namespace RestBar.Services
 
         public async Task<Branch> CreateAsync(Branch branch)
         {
-            branch.CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
+            // El tracking automático se maneja en el contexto
             _context.Branches.Add(branch);
             await _context.SaveChangesAsync();
             return branch;
@@ -54,7 +52,7 @@ namespace RestBar.Services
                     existingEntity.State = EntityState.Detached;
                 }
 
-                // Usar Update para manejar automáticamente el tracking
+                // El tracking automático se maneja en el contexto
                 _context.Branches.Update(branch);
                 await _context.SaveChangesAsync();
             }
@@ -66,9 +64,25 @@ namespace RestBar.Services
 
         public async Task DeleteAsync(Guid id)
         {
-            var branch = await _context.Branches.FindAsync(id);
+            var branch = await _context.Branches
+                .Include(b => b.Areas)
+                .Include(b => b.Users)
+                .FirstOrDefaultAsync(b => b.Id == id);
+
             if (branch != null)
             {
+                // Verificar si la sucursal tiene áreas asociadas
+                if (branch.Areas.Any())
+                {
+                    throw new InvalidOperationException($"No se puede eliminar la sucursal '{branch.Name}' porque tiene {branch.Areas.Count} área(s) asociada(s). Debe eliminar o reasignar todas las áreas antes de continuar.");
+                }
+
+                // Verificar si la sucursal tiene usuarios asociados
+                if (branch.Users.Any())
+                {
+                    throw new InvalidOperationException($"No se puede eliminar la sucursal '{branch.Name}' porque tiene {branch.Users.Count} usuario(s) asociado(s). Debe eliminar o reasignar todos los usuarios antes de continuar.");
+                }
+
                 _context.Branches.Remove(branch);
                 await _context.SaveChangesAsync();
             }

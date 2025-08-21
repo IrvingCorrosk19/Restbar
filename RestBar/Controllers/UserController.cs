@@ -5,7 +5,7 @@ using RestBar.Models;
 
 namespace RestBar.Controllers
 {
-    [Authorize]
+    [Authorize(Policy = "UserManagement")] // Roles: admin, manager, support
     public class UserController : Controller
     {
         private readonly IUserService _userService;
@@ -68,56 +68,72 @@ namespace RestBar.Controllers
 
             try
             {
+                Console.WriteLine($"[UserController] GetUsers - Iniciando método");
+                
                 var users = await _userService.GetAllAsync();
+
+                // Debug: Log para verificar el tipo de datos
+                Console.WriteLine($"[UserController] GetUsers - Tipo de users: {users?.GetType()}");
+                Console.WriteLine($"[UserController] GetUsers - Count: {users?.Count()}");
+                Console.WriteLine($"[UserController] GetUsers - Users es null: {users == null}");
+                Console.WriteLine($"[UserController] GetUsers - Obteniendo sucursales");
+
+                // Obtener sucursales para el mapeo
+                var branches = await _branchService.GetAllAsync();
+                Console.WriteLine($"[UserController] GetUsers - Tipo de branches: {branches?.GetType()}");
+                Console.WriteLine($"[UserController] GetUsers - Branches count: {branches?.Count()}");
+                Console.WriteLine($"[UserController] GetUsers - Branches es null: {branches == null}");
+                Console.WriteLine($"[UserController] GetUsers - Mapeando datos");
 
                 // Aplicar filtros
                 if (!string.IsNullOrEmpty(searchTerm))
                 {
                     users = users.Where(u =>
-                        (u.FullName?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true) ||
-                        (u.Email?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true));
+                        u.FullName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                        u.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
+                    );
                 }
 
-                if (!string.IsNullOrEmpty(role) && Enum.TryParse<UserRole>(role, true, out var userRole))
+                if (!string.IsNullOrEmpty(role))
                 {
-                    users = users.Where(u => u.Role == userRole);
+                    users = users.Where(u => u.Role.ToString() == role);
                 }
 
                 if (branchId.HasValue)
                 {
-                    users = users.Where(u => u.BranchId == branchId);
+                    users = users.Where(u => u.BranchId == branchId.Value);
                 }
 
                 if (isActive.HasValue)
                 {
-                    users = users.Where(u => u.IsActive == isActive);
+                    users = users.Where(u => u.IsActive == isActive.Value);
                 }
 
-                // Obtener todas las sucursales para el mapeo
-                var branches = await _branchService.GetAllAsync();
+                // Convertir a array simple para evitar referencias circulares
+                var userData = users?.Select(u => new {
+                    id = u.Id,
+                    fullName = u.FullName,
+                    email = u.Email,
+                    role = u.Role.ToString(),
+                    branchId = u.BranchId,
+                    branchName = u.Branch?.Name,
+                    companyId = u.Branch?.CompanyId,
+                    companyName = u.Branch?.Company?.Name,
+                    isActive = u.IsActive,
+                    createdAt = u.CreatedAt
+                }).ToArray() ?? new object[0];
 
-                // Mapear los datos para evitar problemas de serialización
-                var userData = users.Select(u => {
-                    var branch = branches.FirstOrDefault(b => b.Id == u.BranchId);
-                    return new {
-                        id = u.Id,
-                        fullName = u.FullName,
-                        email = u.Email,
-                        role = u.Role.ToString().ToLower(),
-                        branchId = u.BranchId,
-                        branchName = branch?.Name ?? "Sin sucursal",
-                        companyId = branch?.CompanyId,
-                        companyName = branch?.Company?.Name ?? "Sin compañía",
-                        isActive = u.IsActive,
-                        createdAt = u.CreatedAt
-                    };
-                }).ToList();
+                Console.WriteLine($"[UserController] GetUsers - Tipo de userData: {userData?.GetType()}");
+                Console.WriteLine($"[UserController] GetUsers - UserData count: {userData?.Length}");
+                Console.WriteLine($"[UserController] GetUsers - UserData es null: {userData == null}");
+                Console.WriteLine($"[UserController] GetUsers - Devolviendo respuesta exitosa con {userData?.Length} usuarios");
 
                 return Json(new { success = true, data = userData });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = ex.Message });
+                Console.WriteLine($"[UserController] GetUsers - Error: {ex.Message}");
+                return Json(new { success = false, message = "Error al cargar usuarios" });
             }
         }
 
@@ -173,6 +189,9 @@ namespace RestBar.Controllers
                     return Json(new { success = false, message = "Los datos del usuario no pueden estar vacíos" });
                 }
 
+                // Debug: Log para verificar IsActive
+                System.Diagnostics.Debug.WriteLine($"Create - IsActive recibido: {user.IsActive}");
+
                 // Validar que el password no esté vacío
                 if (string.IsNullOrEmpty(password))
                 {
@@ -219,8 +238,8 @@ namespace RestBar.Controllers
 
                 // Limpiar campos que no deben ser establecidos por el cliente
                 user.Id = Guid.NewGuid();
-                user.CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
-                user.IsActive = true;
+                user.CreatedAt = DateTime.UtcNow;
+                // IsActive viene del formulario, no se fuerza
 
                 var createdUser = await _userService.CreateAsync(user);
                 
@@ -256,6 +275,9 @@ namespace RestBar.Controllers
                 {
                     return Json(new { success = false, message = "Los datos del usuario no pueden estar vacíos" });
                 }
+
+                // Debug: Log para verificar IsActive
+                System.Diagnostics.Debug.WriteLine($"Update - IsActive recibido: {user.IsActive}");
 
                 // Validar que el usuario exista
                 var existingUser = await _userService.GetByIdAsync(user.Id);
@@ -348,54 +370,108 @@ namespace RestBar.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> GetCompanies()
         {
-            var permissionCheck = await CheckUserManagementPermissionAsync();
-            if (permissionCheck != null) return permissionCheck;
-
             try
             {
+                Console.WriteLine($"[UserController] GetCompanies - Iniciando método");
+                
                 var companies = await _companyService.GetAllAsync();
-                var data = companies.Select(c => new {
+                
+                Console.WriteLine($"[UserController] GetCompanies - Tipo de companies: {companies?.GetType()}");
+                Console.WriteLine($"[UserController] GetCompanies - Count: {companies?.Count()}");
+                Console.WriteLine($"[UserController] GetCompanies - Companies es null: {companies == null}");
+                Console.WriteLine($"[UserController] GetCompanies - Mapeando datos");
+                
+                // Convertir a array simple para evitar referencias circulares
+                var data = companies?.Select(c => new {
                     id = c.Id,
-                    name = c.Name
-                }).ToList();
-                return Json(new { success = true, data });
+                    name = c.Name,
+                    email = c.Email,
+                    phone = c.Phone,
+                    address = c.Address,
+                    isActive = c.IsActive
+                }).ToArray() ?? new object[0];
+                
+                Console.WriteLine($"[UserController] GetCompanies - Tipo de data: {data?.GetType()}");
+                Console.WriteLine($"[UserController] GetCompanies - Data count: {data?.Length}");
+                Console.WriteLine($"[UserController] GetCompanies - Data es null: {data == null}");
+                Console.WriteLine($"[UserController] GetCompanies - Devolviendo respuesta exitosa con {data?.Length} compañías");
+                
+                return Json(new { success = true, data = data });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = ex.Message });
+                Console.WriteLine($"[UserController] GetCompanies - Error: {ex.Message}");
+                return Json(new { success = false, message = "Error al cargar compañías" });
             }
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetBranches()
+        [Authorize] // Menos restrictivo - cualquier usuario autenticado
+        public async Task<IActionResult> GetBranches(Guid? companyId = null, Guid? branchId = null)
         {
-            var permissionCheck = await CheckUserManagementPermissionAsync();
-            if (permissionCheck != null) return permissionCheck;
+            // Removemos la validación restrictiva para datos de referencia
+            // var permissionCheck = await CheckUserManagementPermissionAsync();
+            // if (permissionCheck != null) return permissionCheck;
 
             try
             {
+                Console.WriteLine($"[UserController] GetBranches - Iniciando método");
+                Console.WriteLine($"[UserController] GetBranches - CompanyId filtro: {companyId}");
+                Console.WriteLine($"[UserController] GetBranches - BranchId filtro: {branchId}");
+                
                 var branches = await _branchService.GetAllAsync();
-                var data = branches.Select(b => new {
+                
+                // Si se especifica un branchId específico, buscar solo esa sucursal
+                if (branchId.HasValue)
+                {
+                    branches = branches.Where(b => b.Id == branchId.Value);
+                    Console.WriteLine($"[UserController] GetBranches - Filtrando por sucursal específica: {branchId}");
+                }
+                // Filtrar por compañía si se especifica (solo si no se está buscando una sucursal específica)
+                else if (companyId.HasValue)
+                {
+                    branches = branches.Where(b => b.CompanyId == companyId.Value);
+                    Console.WriteLine($"[UserController] GetBranches - Filtrando por compañía: {companyId}");
+                }
+                
+                // Debug: Log para verificar el tipo de datos
+                Console.WriteLine($"[UserController] GetBranches - Tipo de branches: {branches?.GetType()}");
+                Console.WriteLine($"[UserController] GetBranches - Count: {branches?.Count()}");
+                Console.WriteLine($"[UserController] GetBranches - Branches es null: {branches == null}");
+                Console.WriteLine($"[UserController] GetBranches - Mapeando datos");
+                
+                // Convertir a array simple para evitar referencias circulares
+                var data = branches?.Select(b => new {
                     id = b.Id,
                     name = b.Name,
                     companyId = b.CompanyId,
-                    companyName = b.Company?.Name ?? "Sin compañía"
-                }).ToList();
-                return Json(new { success = true, data });
+                    companyName = b.Company?.Name
+                }).ToArray() ?? new object[0];
+                
+                Console.WriteLine($"[UserController] GetBranches - Tipo de data: {data?.GetType()}");
+                Console.WriteLine($"[UserController] GetBranches - Data count: {data?.Length}");
+                Console.WriteLine($"[UserController] GetBranches - Data es null: {data == null}");
+                Console.WriteLine($"[UserController] GetBranches - Devolviendo respuesta exitosa con {data?.Length} sucursales");
+                
+                return Json(new { success = true, data = data });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = ex.Message });
+                Console.WriteLine($"[UserController] GetBranches - Error: {ex.Message}");
+                return Json(new { success = false, message = "Error al cargar sucursales" });
             }
         }
 
         [HttpGet]
+        [Authorize] // Menos restrictivo - cualquier usuario autenticado
         public async Task<IActionResult> GetSupervisors()
         {
-            var permissionCheck = await CheckUserManagementPermissionAsync();
-            if (permissionCheck != null) return permissionCheck;
+            // Removemos la validación restrictiva para datos de referencia
+            // var permissionCheck = await CheckUserManagementPermissionAsync();
+            // if (permissionCheck != null) return permissionCheck;
 
             try
             {

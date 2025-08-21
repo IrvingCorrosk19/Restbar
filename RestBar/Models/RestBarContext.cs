@@ -55,16 +55,41 @@ public partial class RestBarContext : DbContext
     public virtual DbSet<Category> Categories { get; set; }
 
     public virtual DbSet<Station> Stations { get; set; }
-    //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-    // => optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=RestBar;Username=postgres;Password=Panama2020$");
+    
+    public virtual DbSet<UserAssignment> UserAssignments { get; set; }
+    
+    // Contabilidad
 
+    
+    // ✅ NUEVO: Movimientos de inventario
+    public virtual DbSet<InventoryMovement> InventoryMovements { get; set; }
+    
 
+    
+    // ✅ NUEVO: Transferencias
+    public virtual DbSet<Transfer> Transfers { get; set; }
+    public virtual DbSet<TransferItem> TransferItems { get; set; }
+    
+    // ✅ NUEVO: Ajustes Avanzados
+    public virtual DbSet<SystemSettings> SystemSettings { get; set; }
+    public virtual DbSet<Printer> Printers { get; set; }
+    public virtual DbSet<Currency> Currencies { get; set; }
+    public virtual DbSet<TaxRate> TaxRates { get; set; }
+    public virtual DbSet<DiscountPolicy> DiscountPolicies { get; set; }
+    public virtual DbSet<OperatingHours> OperatingHours { get; set; }
+    public virtual DbSet<NotificationSettings> NotificationSettings { get; set; }
+    public virtual DbSet<BackupSettings> BackupSettings { get; set; }
+    
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        optionsBuilder.UseNpgsql("Host=dpg-d1pffq3uibrs73dna8cg-a;Port=5432;Database=restbar_omzm;Username=admin;Password=05i7r62GYkoupNL6Gmc8oFQVV8OotGjc;Ssl Mode=Require;Trust Server Certificate=true");
-    }
+ => optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=RestBar;Username=postgres;Password=Panama2020$");
+
+
+    //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    //    {
+    //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+    //        optionsBuilder.UseNpgsql("Host=dpg-d1pffq3uibrs73dna8cg-a;Port=5432;Database=restbar_omzm;Username=admin;Password=05i7r62GYkoupNL6Gmc8oFQVV8OotGjc;Ssl Mode=Require;Trust Server Certificate=true");
+    //    }
 
 
     // optionsBuilder.UseNpgsql("Host=dpg-d1otd649c44c7380il7g-a;Port=5432;Database=restbar_92si;Username=admin;Password=KMTp5bPR7rlkSDizV1t5RlDJTEFIjAdr;Ssl Mode=Require;Trust Server Certificate=true");
@@ -95,6 +120,20 @@ public partial class RestBarContext : DbContext
         });
 
         modelBuilder.HasPostgresEnum<UserRole>("user_role_enum");
+        modelBuilder.HasPostgresEnum<MovementType>("movement_type_enum");
+        modelBuilder.HasPostgresEnum<OrderStatus>("order_status_enum");
+        modelBuilder.HasPostgresEnum<OrderType>("order_type_enum");
+        modelBuilder.HasPostgresEnum<OrderItemStatus>("order_item_status_enum");
+        modelBuilder.HasPostgresEnum<TableStatus>("table_status_enum");
+        modelBuilder.HasPostgresEnum<JournalEntryStatus>("journal_entry_status_enum");
+        modelBuilder.HasPostgresEnum<JournalEntryType>("journal_entry_type_enum");
+
+
+        modelBuilder.HasPostgresEnum<TransferStatus>("transfer_status_enum");
+        modelBuilder.HasPostgresEnum<AssignmentType>("assignment_type_enum");
+        modelBuilder.HasPostgresEnum<AuditLogLevel>("audit_log_level_enum");
+        modelBuilder.HasPostgresEnum<AuditAction>("audit_action_enum");
+        modelBuilder.HasPostgresEnum<AuditModule>("audit_module_enum");
 
         modelBuilder.Entity<User>(entity =>
         {
@@ -108,7 +147,7 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.BranchId).HasColumnName("branch_id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .HasColumnName("created_at");
             entity.Property(e => e.Email)
                 .HasMaxLength(100)
@@ -145,13 +184,64 @@ public partial class RestBarContext : DbContext
                 .HasColumnName("table_name");
             entity.Property(e => e.Timestamp)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .HasColumnName("timestamp");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
+            // ✅ NUEVAS COLUMNAS AGREGADAS
+            entity.Property(e => e.CompanyId).HasColumnName("CompanyId");
+            entity.Property(e => e.BranchId).HasColumnName("BranchId");
+            entity.Property(e => e.LogLevel)
+                .HasMaxLength(50)
+                .HasColumnName("LogLevel");
+            entity.Property(e => e.Module)
+                .HasMaxLength(100)
+                .HasColumnName("Module");
+            entity.Property(e => e.Description)
+                .HasMaxLength(500)
+                .HasColumnName("Description");
+            entity.Property(e => e.OldValues)
+                .HasColumnType("text")
+                .HasColumnName("OldValues");
+            entity.Property(e => e.NewValues)
+                .HasColumnType("text")
+                .HasColumnName("NewValues");
+            entity.Property(e => e.ErrorDetails)
+                .HasColumnType("text")
+                .HasColumnName("ErrorDetails");
+            entity.Property(e => e.IpAddress)
+                .HasMaxLength(200)
+                .HasColumnName("IpAddress");
+            entity.Property(e => e.UserAgent)
+                .HasMaxLength(500)
+                .HasColumnName("UserAgent");
+            entity.Property(e => e.SessionId)
+                .HasMaxLength(100)
+                .HasColumnName("SessionId");
+            entity.Property(e => e.IsError)
+                .HasDefaultValue(false)
+                .HasColumnName("IsError");
+            entity.Property(e => e.ErrorCode).HasColumnName("ErrorCode");
+            entity.Property(e => e.ExceptionType)
+                .HasMaxLength(200)
+                .HasColumnName("ExceptionType");
+            entity.Property(e => e.StackTrace)
+                .HasColumnType("text")
+                .HasColumnName("StackTrace");
+
+            // ✅ RELACIONES EXISTENTES
             entity.HasOne(d => d.User).WithMany(p => p.AuditLogs)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("audit_logs_user_id_fkey");
+
+            // ✅ NUEVAS RELACIONES
+            entity.HasOne(d => d.Company).WithMany()
+                .HasForeignKey(d => d.CompanyId)
+                .HasConstraintName("FK_audit_logs_companies_CompanyId");
+
+            entity.HasOne(d => d.Branch).WithMany()
+                .HasForeignKey(d => d.BranchId)
+                .HasConstraintName("FK_audit_logs_branches_BranchId");
         });
 
         modelBuilder.Entity<Branch>(entity =>
@@ -167,7 +257,7 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.CompanyId).HasColumnName("company_id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .HasColumnName("created_at");
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
@@ -197,7 +287,7 @@ public partial class RestBarContext : DbContext
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .HasColumnName("created_at");
             entity.Property(e => e.LegalId)
                 .HasMaxLength(50)
@@ -205,6 +295,38 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.Name)
                 .HasMaxLength(100)
                 .HasColumnName("name");
+            
+            // ✅ NUEVOS CAMPOS AGREGADOS
+            entity.Property(e => e.TaxId)
+                .HasColumnType("text")
+                .HasColumnName("tax_id");
+            entity.Property(e => e.Address)
+                .HasColumnType("text")
+                .HasColumnName("address");
+            entity.Property(e => e.Phone)
+                .HasColumnType("text")
+                .HasColumnName("phone");
+            entity.Property(e => e.Email)
+                .HasColumnType("text")
+                .HasColumnName("email");
+            entity.Property(e => e.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            
+            // ✅ NUEVO: Campo UpdatedAt
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("updated_at");
+            
+            // ✅ NUEVOS CAMPOS: Tracking de usuarios
+            entity.Property(e => e.CreatedBy)
+                .HasMaxLength(100)
+                .HasColumnName("created_by");
+            entity.Property(e => e.UpdatedBy)
+                .HasMaxLength(100)
+                .HasColumnName("updated_by");
         });
 
         modelBuilder.Entity<Customer>(entity =>
@@ -218,7 +340,7 @@ public partial class RestBarContext : DbContext
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .HasColumnName("created_at");
             entity.Property(e => e.Email)
                 .HasMaxLength(100)
@@ -247,7 +369,7 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.BranchId).HasColumnName("branch_id");
             entity.Property(e => e.LastUpdated)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .HasColumnName("last_updated");
             entity.Property(e => e.MinThreshold)
                 .HasPrecision(10, 2)
@@ -260,6 +382,14 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.Unit)
                 .HasMaxLength(20)
                 .HasColumnName("unit");
+            
+            // ✅ NUEVAS PROPIEDADES para las columnas adicionales en la BD
+            entity.Property(e => e.Stock)
+                .HasColumnName("stock");
+            entity.Property(e => e.MinStock)
+                .HasColumnName("min_stock");
+            entity.Property(e => e.MaxStock)
+                .HasColumnName("max_stock");
 
             entity.HasOne(d => d.Branch).WithMany(p => p.Inventories)
                 .HasForeignKey(d => d.BranchId)
@@ -281,7 +411,7 @@ public partial class RestBarContext : DbContext
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .HasColumnName("created_at");
             entity.Property(e => e.CustomerId).HasColumnName("customer_id");
             entity.Property(e => e.OrderId).HasColumnName("order_id");
@@ -330,7 +460,7 @@ public partial class RestBarContext : DbContext
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .HasColumnName("created_at");
             entity.Property(e => e.IsRead)
                 .HasDefaultValue(false)
@@ -387,6 +517,9 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.Notes)
                 .HasMaxLength(500)
                 .HasColumnName("notes");
+            entity.Property(e => e.OrderNumber)
+                .HasMaxLength(50)
+                .HasColumnName("OrderNumber");
 
             entity.HasOne(d => d.Customer).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.CustomerId)
@@ -510,6 +643,14 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.PayerName)
                 .HasMaxLength(100)
                 .HasColumnName("payer_name");
+            entity.Property(e => e.Status)
+                .HasMaxLength(20)
+                .HasDefaultValue("COMPLETED")
+                .HasColumnName("status");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("created_at");
 
             entity.HasOne(d => d.Order).WithMany(p => p.Payments)
                 .HasForeignKey(d => d.OrderId)
@@ -531,7 +672,7 @@ public partial class RestBarContext : DbContext
                 .HasColumnName("cost");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .HasColumnName("created_at");
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.ImageUrl).HasColumnName("image_url");
@@ -687,10 +828,382 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.Type)
                 .HasMaxLength(50)
                 .HasColumnName("type");
+            entity.Property(e => e.Icon)
+                .HasMaxLength(50)
+                .HasColumnName("icon");
+            entity.Property(e => e.AreaId)
+                .HasColumnName("area_id");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+
+            // Configurar la relación con Area
+            entity.HasOne(s => s.Area)
+                .WithMany(a => a.Stations)
+                .HasForeignKey(s => s.AreaId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
+
+        modelBuilder.Entity<UserAssignment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.ToTable("user_assignments");
+            
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.StationId).HasColumnName("station_id");
+            entity.Property(e => e.AreaId).HasColumnName("area_id");
+            entity.Property(e => e.AssignedTableIds)
+                .HasColumnType("jsonb")
+                .HasColumnName("assigned_table_ids");
+            entity.Property(e => e.AssignedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("assigned_at");
+            entity.Property(e => e.UnassignedAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("unassigned_at");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.Notes)
+                .HasMaxLength(500)
+                .HasColumnName("notes");
+
+            entity.HasOne(d => d.User).WithMany()
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("user_assignments_user_id_fkey");
+            entity.HasOne(d => d.Station).WithMany()
+                .HasForeignKey(d => d.StationId)
+                .HasConstraintName("user_assignments_station_id_fkey");
+            entity.HasOne(d => d.Area).WithMany()
+                .HasForeignKey(d => d.AreaId)
+                .HasConstraintName("user_assignments_area_id_fkey");
+        });
+
+        // Configuración para entidades de contabilidad
+        modelBuilder.Entity<Account>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.ToTable("accounts");
+            
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.Code)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasColumnName("code");
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(200)
+                .HasColumnName("name");
+            entity.Property(e => e.Description)
+                .HasMaxLength(500)
+                .HasColumnName("description");
+            entity.Property(e => e.Type)
+                .IsRequired()
+                .HasColumnName("type");
+            entity.Property(e => e.Category)
+                .IsRequired()
+                .HasColumnName("category");
+            entity.Property(e => e.Nature)
+                .IsRequired()
+                .HasColumnName("nature");
+            entity.Property(e => e.ParentAccountId)
+                .HasColumnName("parent_account_id");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.IsSystem)
+                .HasDefaultValue(false)
+                .HasColumnName("is_system");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.CreatedBy)
+                .HasMaxLength(100)
+                .HasColumnName("created_by");
+            entity.Property(e => e.UpdatedBy)
+                .HasMaxLength(100)
+                .HasColumnName("updated_by");
+
+            // Relación con cuenta padre
+            entity.HasOne(d => d.ParentAccount)
+                .WithMany(p => p.SubAccounts)
+                .HasForeignKey(d => d.ParentAccountId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<JournalEntry>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.ToTable("journal_entries");
+            
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.EntryNumber)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasColumnName("entry_number");
+            entity.Property(e => e.EntryDate)
+                .IsRequired()
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("entry_date");
+            entity.Property(e => e.Type)
+                .IsRequired()
+                .HasColumnName("type");
+            entity.Property(e => e.Description)
+                .IsRequired()
+                .HasMaxLength(200)
+                .HasColumnName("description");
+            entity.Property(e => e.Reference)
+                .HasMaxLength(500)
+                .HasColumnName("reference");
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasDefaultValue(JournalEntryStatus.Draft)
+                .HasColumnName("status");
+            entity.Property(e => e.PostedAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("posted_at");
+            entity.Property(e => e.PostedBy)
+                .HasMaxLength(100)
+                .HasColumnName("posted_by");
+            entity.Property(e => e.TotalDebit)
+                .HasPrecision(18, 2)
+                .HasColumnName("total_debit");
+            entity.Property(e => e.TotalCredit)
+                .HasPrecision(18, 2)
+                .HasColumnName("total_credit");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.CreatedBy)
+                .HasMaxLength(100)
+                .HasColumnName("created_by");
+            entity.Property(e => e.UpdatedBy)
+                .HasMaxLength(100)
+                .HasColumnName("updated_by");
+            entity.Property(e => e.OrderId)
+                .HasColumnName("order_id");
+            entity.Property(e => e.PaymentId)
+                .HasColumnName("payment_id");
+
+            // Relaciones opcionales
+            entity.HasOne(d => d.Order)
+                .WithMany()
+                .HasForeignKey(d => d.OrderId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(d => d.Payment)
+                .WithMany()
+                .HasForeignKey(d => d.PaymentId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<JournalEntryDetail>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.ToTable("journal_entry_details");
+            
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.JournalEntryId)
+                .IsRequired()
+                .HasColumnName("journal_entry_id");
+            entity.Property(e => e.AccountId)
+                .IsRequired()
+                .HasColumnName("account_id");
+            entity.Property(e => e.DebitAmount)
+                .HasPrecision(18, 2)
+                .HasColumnName("debit_amount");
+            entity.Property(e => e.CreditAmount)
+                .HasPrecision(18, 2)
+                .HasColumnName("credit_amount");
+            entity.Property(e => e.Description)
+                .HasMaxLength(500)
+                .HasColumnName("description");
+            entity.Property(e => e.Reference)
+                .HasMaxLength(100)
+                .HasColumnName("reference");
+
+            // Relaciones
+            entity.HasOne(d => d.JournalEntry)
+                .WithMany(p => p.Details)
+                .HasForeignKey(d => d.JournalEntryId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(d => d.Account)
+                .WithMany()
+                .HasForeignKey(d => d.AccountId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ✅ NUEVO: Configuración de InventoryMovement
+        modelBuilder.Entity<InventoryMovement>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.ToTable("inventory_movements");
+            
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.InventoryId)
+                .IsRequired()
+                .HasColumnName("inventory_id");
+            entity.Property(e => e.ProductId)
+                .IsRequired()
+                .HasColumnName("product_id");
+            entity.Property(e => e.BranchId)
+                .IsRequired()
+                .HasColumnName("branch_id");
+            entity.Property(e => e.UserId)
+                .HasColumnName("user_id");
+            entity.Property(e => e.Type)
+                .HasColumnType("movement_type_enum.movement_type")
+                .HasColumnName("type");
+            entity.Property(e => e.Quantity)
+                .HasPrecision(18, 2)
+                .HasColumnName("quantity");
+            entity.Property(e => e.PreviousStock)
+                .HasPrecision(18, 2)
+                .HasColumnName("previous_stock");
+            entity.Property(e => e.NewStock)
+                .HasPrecision(18, 2)
+                .HasColumnName("new_stock");
+            entity.Property(e => e.Reason)
+                .HasMaxLength(500)
+                .HasColumnName("reason");
+            entity.Property(e => e.Reference)
+                .HasMaxLength(100)
+                .HasColumnName("reference");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("created_at");
+
+            // Relaciones
+            entity.HasOne(d => d.Inventory)
+                .WithMany(p => p.Movements)
+                .HasForeignKey(d => d.InventoryId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(d => d.Product)
+                .WithMany()
+                .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(d => d.Branch)
+                .WithMany()
+                .HasForeignKey(d => d.BranchId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(d => d.User)
+                .WithMany()
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+
 
         OnModelCreatingPartial(modelBuilder);
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+
+    /// <summary>
+    /// Override de SaveChanges para aplicar tracking automático
+    /// </summary>
+    public override int SaveChanges()
+    {
+        ApplyTrackingChanges();
+        return base.SaveChanges();
+    }
+
+    /// <summary>
+    /// Override de SaveChangesAsync para aplicar tracking automático
+    /// </summary>
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        ApplyTrackingChanges();
+        return await base.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Aplica cambios de tracking automático a las entidades
+    /// </summary>
+    private void ApplyTrackingChanges()
+    {
+        var currentTime = DateTime.UtcNow;
+        var currentUser = GetCurrentUser();
+
+        // Procesar entidades agregadas
+        var addedEntries = ChangeTracker.Entries<ITrackableEntity>()
+            .Where(e => e.State == EntityState.Added);
+
+        foreach (var entry in addedEntries)
+        {
+            var entity = entry.Entity;
+            entity.CreatedAt = currentTime;
+            entity.UpdatedAt = currentTime;
+            entity.CreatedBy = currentUser;
+            entity.UpdatedBy = currentUser;
+        }
+
+        // Procesar entidades modificadas
+        var modifiedEntries = ChangeTracker.Entries<ITrackableEntity>()
+            .Where(e => e.State == EntityState.Modified);
+
+        foreach (var entry in modifiedEntries)
+        {
+            var entity = entry.Entity;
+            entity.UpdatedAt = currentTime;
+            entity.UpdatedBy = currentUser;
+        }
+    }
+
+    /// <summary>
+    /// Obtiene el usuario actual del contexto HTTP
+    /// </summary>
+    private string GetCurrentUser()
+    {
+        try
+        {
+            // Intentar obtener el usuario del contexto HTTP
+            var httpContext = HttpContextAccessor?.HttpContext;
+            if (httpContext?.User?.Identity?.IsAuthenticated == true)
+            {
+                var email = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+                if (!string.IsNullOrEmpty(email))
+                    return email;
+
+                var username = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+                if (!string.IsNullOrEmpty(username))
+                    return username;
+
+                var userId = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrEmpty(userId))
+                    return userId;
+            }
+
+            return "system";
+        }
+        catch
+        {
+            return "system";
+        }
+    }
+
+    /// <summary>
+    /// Accesor para el contexto HTTP (se debe configurar en Program.cs)
+    /// </summary>
+    public IHttpContextAccessor? HttpContextAccessor { get; set; }
 }

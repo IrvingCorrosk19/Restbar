@@ -46,5 +46,8 @@ namespace RestBar.Interfaces
         Task CheckAndUpdateTableStatusAsync(Guid orderId);
         Task<Order> UpdateOrderCompleteAsync(Guid orderId, List<UpdateOrderItemDto> items);
         Task<List<OrderItem>> GetOrderItemsByOrderIdAsync(Guid orderId);
+        
+        // Método para obtener órdenes con pagos pendientes
+        Task<IEnumerable<Order>> GetPendingPaymentOrdersAsync();
     }
 } 

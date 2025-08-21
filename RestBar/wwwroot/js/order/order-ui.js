@@ -1,3 +1,30 @@
+// ✅ NUEVA: Función para calcular desglose de impuestos del pedido
+function calculateOrderTaxBreakdown() {
+    if (!currentOrder || !currentOrder.items) {
+        return { subtotal: 0, totalTax: 0, totalWithTax: 0 };
+    }
+
+    let subtotal = 0;
+    let totalTax = 0;
+
+    currentOrder.items.forEach(item => {
+        const itemSubtotal = item.price * item.quantity;
+        const taxRate = item.taxRate || 0;
+        const itemTax = itemSubtotal * (taxRate / 100);
+        
+        subtotal += itemSubtotal;
+        totalTax += itemTax;
+    });
+
+    const totalWithTax = subtotal + totalTax;
+
+    return {
+        subtotal: subtotal,
+        totalTax: totalTax,
+        totalWithTax: totalWithTax
+    };
+}
+
 // ✅ Función para asegurar que todos los items tengan parámetros correctos
 function ensureItemParameters() {
     if (!currentOrder?.items) return;
@@ -127,18 +154,80 @@ function updateOrderUI() {
         
         // ✅ Renderizar el item con su grupo visual
         renderItemRow(item, itemGroup, orderItemsTbody);
-        total += item.price * item.quantity;
+        
+        // ✅ NUEVO: Calcular total con impuestos
+        const taxRate = item.taxRate || 0;
+        const subtotal = item.price * item.quantity;
+        const taxAmount = subtotal * (taxRate / 100);
+        const totalWithTax = subtotal + taxAmount;
+        
+        total += totalWithTax; // Usar total con impuestos
         itemCount += item.quantity;
     });
     
-    document.getElementById('orderTotal').textContent = `$${total.toFixed(2)}`;
-    document.getElementById('itemCount').textContent = `${itemCount} items`;
-    console.log('[Frontend] updateOrderUI completado - Total:', total, 'Items:', itemCount);
+    // ✅ NUEVO: Calcular desglose de impuestos
+    const taxBreakdown = calculateOrderTaxBreakdown();
+    
+    // ✅ NUEVO: Calcular total con descuento
+    const totalWithDiscount = calculateTotalWithDiscount();
+    
+    // ✅ NUEVO: Actualizar desglose de impuestos en el resumen
+    const orderSubtotalElement = document.getElementById('orderSubtotal');
+    const orderTaxElement = document.getElementById('orderTax');
+    const orderDiscountElement = document.getElementById('orderDiscount');
+    const orderTotalElement = document.getElementById('orderTotal');
+    const itemCountElement = document.getElementById('itemCount');
+    
+    if (orderSubtotalElement) {
+        orderSubtotalElement.textContent = `$${taxBreakdown.subtotal.toFixed(2)}`;
+    }
+    if (orderTaxElement) {
+        orderTaxElement.textContent = `$${taxBreakdown.totalTax.toFixed(2)}`;
+    }
+    if (orderDiscountElement) {
+        orderDiscountElement.textContent = `$${currentDiscount.amount.toFixed(2)}`;
+    }
+    if (orderTotalElement) {
+        orderTotalElement.textContent = `$${totalWithDiscount.toFixed(2)}`;
+    }
+    if (itemCountElement) {
+        itemCountElement.textContent = `${itemCount} items`;
+    }
+    
+    console.log('[Frontend] updateOrderUI completado - Total:', totalWithDiscount, 'Items:', itemCount, 'Tax Breakdown:', taxBreakdown, 'Discount:', currentDiscount);
 }
 
 // Actualizar total de la orden
 function updateOrderTotal() {
-    currentOrder.total = currentOrder.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    currentOrder.total = currentOrder.items.reduce((sum, item) => {
+        const taxRate = item.taxRate || 0;
+        const subtotal = item.price * item.quantity;
+        const taxAmount = subtotal * (taxRate / 100);
+        const totalWithTax = subtotal + taxAmount;
+        return sum + totalWithTax;
+    }, 0);
+    
+    // ✅ NUEVO: Actualizar desglose de impuestos en el resumen
+    const taxBreakdown = calculateOrderTaxBreakdown();
+    const totalWithDiscount = calculateTotalWithDiscount();
+    
+    const orderSubtotalElement = document.getElementById('orderSubtotal');
+    const orderTaxElement = document.getElementById('orderTax');
+    const orderDiscountElement = document.getElementById('orderDiscount');
+    const orderTotalElement = document.getElementById('orderTotal');
+    
+    if (orderSubtotalElement) {
+        orderSubtotalElement.textContent = `$${taxBreakdown.subtotal.toFixed(2)}`;
+    }
+    if (orderTaxElement) {
+        orderTaxElement.textContent = `$${taxBreakdown.totalTax.toFixed(2)}`;
+    }
+    if (orderDiscountElement) {
+        orderDiscountElement.textContent = `$${currentDiscount.amount.toFixed(2)}`;
+    }
+    if (orderTotalElement) {
+        orderTotalElement.textContent = `$${totalWithDiscount.toFixed(2)}`;
+    }
 }
 
 // Habilitar/deshabilitar botón de confirmar
@@ -212,6 +301,45 @@ function showOrderSummary(order) {
     if (preparingItems > 0) statusSummary += `<span class="badge bg-warning me-1">${preparingItems} preparando</span>`;
     if (pendingItems > 0) statusSummary += `<span class="badge bg-secondary me-1">${pendingItems} pendientes</span>`;
     
+    // ✅ NUEVO: Calcular desglose de impuestos y descuentos
+    const taxBreakdown = calculateOrderTaxBreakdown();
+    const totalWithDiscount = typeof calculateTotalWithDiscount === 'function' ? calculateTotalWithDiscount() : taxBreakdown.totalWithTax;
+    
+    // ✅ NUEVO: Generar HTML del desglose financiero
+    let financialBreakdown = '';
+    const discountAmount = typeof currentDiscount !== 'undefined' ? currentDiscount.amount : 0;
+    if (taxBreakdown.totalTax > 0 || discountAmount > 0) {
+        financialBreakdown = `
+            <div class="mb-3 p-3 bg-light rounded">
+                <h6 class="mb-2"><i class="fas fa-calculator me-2"></i>Desglose Financiero</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <small><strong>Subtotal:</strong> $${taxBreakdown.subtotal.toFixed(2)}</small>
+                    </div>
+                    <div class="col-md-6">
+                        <small><strong>IVA:</strong> $${taxBreakdown.totalTax.toFixed(2)}</small>
+                    </div>
+                </div>
+                ${discountAmount > 0 ? `
+                    <div class="row mt-1">
+                        <div class="col-md-6">
+                            <small><strong>Descuento:</strong> <span class="text-danger">-$${discountAmount.toFixed(2)}</span></small>
+                        </div>
+                        <div class="col-md-6">
+                            <small><strong>Total Final:</strong> <span class="text-primary fw-bold">$${totalWithDiscount.toFixed(2)}</span></small>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="row mt-1">
+                        <div class="col-md-12">
+                            <small><strong>Total:</strong> <span class="text-primary fw-bold">$${totalWithDiscount.toFixed(2)}</span></small>
+                        </div>
+                    </div>
+                `}
+            </div>
+        `;
+    }
+    
     return `
         <div class="order-summary">
             <div class="mb-3">
@@ -228,9 +356,7 @@ function showOrderSummary(order) {
                     ${itemsHtml}
                 </div>
             </div>
-            <div class="text-end">
-                <strong>Total: $${order.total.toFixed(2)}</strong>
-            </div>
+            ${financialBreakdown}
             <div class="mt-3 p-2 bg-light rounded">
                 <small class="text-muted">
                     <i class="fas fa-info-circle"></i> 
@@ -436,11 +562,23 @@ function renderItemRow(item, group, tbody) {
         row.className = rowClass;
     }
     
+    // ✅ NUEVO: Calcular total con impuesto
+    const taxRate = item.taxRate || 0;
+    const subtotal = item.price * item.quantity;
+    const taxAmount = subtotal * (taxRate / 100);
+    const totalWithTax = subtotal + taxAmount;
+    
     row.innerHTML = `
         <td>${item.productName}</td>
         <td class="quantity-cell">${quantityControls}</td>
-        <td>$${item.price?.toFixed(2) ?? '0.00'}</td>
-        <td class="item-total">$${(item.price * item.quantity).toFixed(2)}</td>
+        <td>
+            $${item.price?.toFixed(2) ?? '0.00'}
+            ${taxRate > 0 ? `<br><small class="text-muted">+ ${taxRate}% IVA</small>` : ''}
+        </td>
+        <td class="item-total">
+            $${subtotal.toFixed(2)}
+            ${taxRate > 0 ? `<br><small class="text-success">Total: $${totalWithTax.toFixed(2)}</small>` : ''}
+        </td>
         <td class="estado-cell">${statusDisplay}</td>
         <td>
             ${item.notes ? `<span class="text-info" title="${item.notes}">📝 ${item.notes}</span>` : '<span class="text-muted">Sin notas</span>'}

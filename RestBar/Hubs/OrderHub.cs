@@ -44,5 +44,16 @@ namespace RestBar.Hubs
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, "kitchen");
         }
+
+        // ✅ NUEVO: Métodos para notificar cambios de stock
+        public async Task JoinStockUpdatesGroup()
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, "stock_updates");
+        }
+
+        public async Task LeaveStockUpdatesGroup()
+        {
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, "stock_updates");
+        }
     }
 } 

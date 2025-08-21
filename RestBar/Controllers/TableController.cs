@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using RestBar.Interfaces;
 using System;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ using RestBar.Models;
 
 namespace RestBar.Controllers
 {
+    [Authorize(Roles = "admin,manager,supervisor")]
     public class TableController : Controller
     {
         private readonly ITableService _tableService;

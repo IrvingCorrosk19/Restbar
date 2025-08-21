@@ -15,9 +15,10 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="dark-theme">
+    <!-- Header optimizado para aprovechar laterales -->
     <header class="main-header">
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark">
-            <div class="container-fluid">
+            <div class="navbar-container">
                 <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
                     <div class="brand-container">
                         <img src="~/images/logo.png" alt="RestBar Logo" class="brand-logo"/>
@@ -103,14 +104,18 @@
         </nav>
     </header>
     
+    <!-- Contenedor principal optimizado para aprovechar laterales -->
     <div class="main-container">
         <main role="main" class="main-content">
-            @RenderBody()
+            <div class="content-wrapper">
+                @RenderBody()
+            </div>
         </main>
     </div>
 
+    <!-- Footer optimizado -->
     <footer class="main-footer">
-        <div class="container-fluid">
+        <div class="footer-container">
             <div class="footer-content">
                 <span>&copy; 2024 - RestBar - Sistema de Gestión de Restaurantes</span>
                 <div class="footer-links">

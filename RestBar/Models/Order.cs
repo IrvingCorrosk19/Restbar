@@ -4,9 +4,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace RestBar.Models;
 
-public partial class Order
+public partial class Order : ITrackableEntity
 {
     public Guid Id { get; set; }
+
+    public string OrderNumber { get; set; } = string.Empty;
 
     public Guid? TableId { get; set; }
 
@@ -27,6 +29,12 @@ public partial class Order
     public DateTime? ClosedAt { get; set; }
 
     public string? Notes { get; set; }
+
+    // Tracking fields
+    public DateTime? CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string? CreatedBy { get; set; }
+    public string? UpdatedBy { get; set; }
 
     public virtual Customer? Customer { get; set; }
 

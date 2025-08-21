@@ -1,0 +1,107 @@
+@{
+    ViewData["Title"] = "Insertar Datos de Inventario";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-database me-2"></i>
+                        Insertar Datos de Inventario
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>Información</h6>
+                        <p class="mb-0">
+                            Este script insertará datos de prueba para el sistema de inventario:
+                        </p>
+                        <ul class="mt-2 mb-0">
+                            <li><strong>4 Categorías:</strong> Bebidas, Comidas, Postres, Entradas</li>
+                            <li><strong>2 Sucursales:</strong> Sucursal Centro, Sucursal Norte</li>
+                            <li><strong>4 Productos:</strong> Coca Cola, Hamburguesa Clásica, Pizza Margherita, Tiramisú</li>
+                            <li><strong>4 Registros de Inventario</strong> con stock y umbrales mínimos</li>
+                        </ul>
+                    </div>
+
+                    @if (TempData["SeedResult"] != null)
+                    {
+                        <div class="alert @(TempData["SeedSuccess"] as bool? == true ? "alert-success" : "alert-danger")">
+                            <h6>
+                                <i class="fas @(TempData["SeedSuccess"] as bool? == true ? "fa-check-circle" : "fa-exclamation-triangle") me-2"></i>
+                                Resultado de la Inserción
+                            </h6>
+                            <pre class="mb-0" style="white-space: pre-wrap; font-size: 0.9em;">@TempData["SeedResult"]</pre>
+                        </div>
+                    }
+
+                    <form method="post" asp-action="SeedInventory">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-play me-2"></i>
+                                Ejecutar Script de Inserción
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-list me-2"></i>
+                                        Datos que se Insertarán
+                                    </h6>
+                                    <ul class="list-unstyled mb-0">
+                                        <li><i class="fas fa-tags me-2"></i>4 Categorías</li>
+                                        <li><i class="fas fa-building me-2"></i>2 Sucursales</li>
+                                        <li><i class="fas fa-box me-2"></i>4 Productos</li>
+                                        <li><i class="fas fa-warehouse me-2"></i>4 Inventarios</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-shield-alt me-2"></i>
+                                        Seguridad
+                                    </h6>
+                                    <ul class="list-unstyled mb-0">
+                                        <li><i class="fas fa-check me-2 text-success"></i>No duplica datos existentes</li>
+                                        <li><i class="fas fa-check me-2 text-success"></i>Transacciones seguras</li>
+                                        <li><i class="fas fa-check me-2 text-success"></i>Logs detallados</li>
+                                        <li><i class="fas fa-check me-2 text-success"></i>Manejo de errores</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <a href="@Url.Action("Index", "Inventory")" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Volver al Inventario
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    pre {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+</style> 

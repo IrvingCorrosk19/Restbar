@@ -123,6 +123,7 @@ async function loadExistingOrder(tableId) {
                         preparedAt: item.preparedAt,
                         preparedByStation: item.preparedByStation,
                         notes: item.notes,
+                        taxRate: item.taxRate || 0,
                         isFromBackend: true // ✅ PARÁMETRO PARA IDENTIFICAR ITEMS DEL BACKEND
                     })),
                     total: result.totalAmount || 0,
@@ -170,6 +171,21 @@ async function loadExistingOrder(tableId) {
                 // Actualizar información de pagos
                 if (typeof updatePaymentInfo === 'function') {
                     await updatePaymentInfo();
+                }
+                
+                // ✅ NUEVO: Cargar descuento si existe en la orden
+                if (result.discount && result.discount.amount > 0) {
+                    console.log('[Frontend] Cargando descuento existente:', result.discount);
+                    if (typeof currentDiscount !== 'undefined') {
+                        currentDiscount = {
+                            type: result.discount.type || 'amount',
+                            value: result.discount.value || result.discount.amount,
+                            amount: result.discount.amount,
+                            reason: result.discount.reason || '',
+                            applied: true
+                        };
+                        console.log('[Frontend] Descuento cargado:', currentDiscount);
+                    }
                 }
                 
                 return result;
@@ -539,6 +555,12 @@ function limpiarUIYEstadoLocal() {
         console.log('[Frontend] Actualizando UI de la orden...');
         // Actualizar UI de la orden
         updateOrderUI();
+        
+        // ✅ NUEVO: Limpiar descuento
+        console.log('[Frontend] Limpiando descuento...');
+        if (typeof initializeDiscount === 'function') {
+            initializeDiscount();
+        }
         
         console.log('[Frontend] Deshabilitando botón de confirmar...');
         disableConfirmButton();

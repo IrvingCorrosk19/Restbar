@@ -14,7 +14,7 @@ using System.IO;
 
 namespace RestBar.Controllers
 {
-    [Authorize] // Requiere autenticación para todos los métodos
+    [Authorize(Policy = "OrderAccess")] // Roles: admin, manager, supervisor, waiter, cashier
     public class OrderController : Controller
     {
         private readonly IOrderService _orderService;
@@ -547,7 +547,8 @@ namespace RestBar.Controllers
                     kitchenStatus = oi.KitchenStatus.ToString(),
                     preparedAt = oi.PreparedAt,
                     preparedByStation = oi.PreparedByStation?.Name,
-                    notes = oi.Notes
+                    notes = oi.Notes,
+                    taxRate = oi.Product?.TaxRate ?? 0
                 }).ToList();
 
                 // 🔍 LOG DETALLADO DE ITEMS DESPUÉS DEL MAPEO

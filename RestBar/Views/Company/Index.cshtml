@@ -84,10 +84,59 @@
                                         </div>
                                     </div>
                                     <div class="detail-item">
+                                        <i class="fas fa-receipt detail-icon"></i>
+                                        <div class="detail-content">
+                                            <span class="detail-label">Tax ID</span>
+                                            <span class="detail-value">@(company.TaxId ?? "Sin Tax ID")</span>
+                                        </div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <i class="fas fa-map-marker-alt detail-icon"></i>
+                                        <div class="detail-content">
+                                            <span class="detail-label">Dirección</span>
+                                            <span class="detail-value">@(company.Address ?? "Sin dirección")</span>
+                                        </div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <i class="fas fa-phone detail-icon"></i>
+                                        <div class="detail-content">
+                                            <span class="detail-label">Teléfono</span>
+                                            <span class="detail-value">@(company.Phone ?? "Sin teléfono")</span>
+                                        </div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <i class="fas fa-envelope detail-icon"></i>
+                                        <div class="detail-content">
+                                            <span class="detail-label">Email</span>
+                                            <span class="detail-value">@(company.Email ?? "Sin email")</span>
+                                        </div>
+                                    </div>
+                                    <div class="detail-item">
                                         <i class="fas fa-calendar-alt detail-icon"></i>
                                         <div class="detail-content">
                                             <span class="detail-label">Fecha de Creación</span>
                                             <span class="detail-value">@(company.CreatedAt?.ToString("dd/MM/yyyy") ?? "Sin fecha")</span>
+                                        </div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <i class="fas fa-edit detail-icon"></i>
+                                        <div class="detail-content">
+                                            <span class="detail-label">Fecha de Actualización</span>
+                                            <span class="detail-value">@(company.UpdatedAt?.ToString("dd/MM/yyyy") ?? "Sin fecha")</span>
+                                        </div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <i class="fas fa-user-plus detail-icon"></i>
+                                        <div class="detail-content">
+                                            <span class="detail-label">Creado por</span>
+                                            <span class="detail-value">@(company.CreatedBy ?? "Sistema")</span>
+                                        </div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <i class="fas fa-user-edit detail-icon"></i>
+                                        <div class="detail-content">
+                                            <span class="detail-label">Actualizado por</span>
+                                            <span class="detail-value">@(company.UpdatedBy ?? "Sistema")</span>
                                         </div>
                                     </div>
                                 </div>
@@ -150,14 +199,54 @@
                                        placeholder="Ingresa el nombre de la compañía">
                             </div>
                         </div>
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <div class="modern-form-group">
                                 <label for="createLegalId" class="form-label">
                                     <i class="fas fa-id-card me-2"></i>
                                     Legal ID
                                 </label>
                                 <input type="text" class="form-control modern-input" id="createLegalId" name="LegalId" 
-                                       placeholder="Número de identificación legal (opcional)">
+                                       placeholder="Número de identificación legal">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="modern-form-group">
+                                <label for="createTaxId" class="form-label">
+                                    <i class="fas fa-receipt me-2"></i>
+                                    Tax ID
+                                </label>
+                                <input type="text" class="form-control modern-input" id="createTaxId" name="TaxId" 
+                                       placeholder="Número de identificación fiscal">
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="modern-form-group">
+                                <label for="createAddress" class="form-label">
+                                    <i class="fas fa-map-marker-alt me-2"></i>
+                                    Dirección
+                                </label>
+                                <input type="text" class="form-control modern-input" id="createAddress" name="Address" 
+                                       placeholder="Dirección completa de la compañía">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="modern-form-group">
+                                <label for="createPhone" class="form-label">
+                                    <i class="fas fa-phone me-2"></i>
+                                    Teléfono
+                                </label>
+                                <input type="text" class="form-control modern-input" id="createPhone" name="Phone" 
+                                       placeholder="Número de teléfono">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="modern-form-group">
+                                <label for="createEmail" class="form-label">
+                                    <i class="fas fa-envelope me-2"></i>
+                                    Email
+                                </label>
+                                <input type="email" class="form-control modern-input" id="createEmail" name="Email" 
+                                       placeholder="Correo electrónico">
                             </div>
                         </div>
                     </div>
@@ -207,14 +296,54 @@
                                        placeholder="Ingresa el nombre de la compañía">
                             </div>
                         </div>
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <div class="modern-form-group">
                                 <label for="editLegalId" class="form-label">
                                     <i class="fas fa-id-card me-2"></i>
                                     Legal ID
                                 </label>
                                 <input type="text" class="form-control modern-input" id="editLegalId" name="LegalId" 
-                                       placeholder="Número de identificación legal (opcional)">
+                                       placeholder="Número de identificación legal">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="modern-form-group">
+                                <label for="editTaxId" class="form-label">
+                                    <i class="fas fa-receipt me-2"></i>
+                                    Tax ID
+                                </label>
+                                <input type="text" class="form-control modern-input" id="editTaxId" name="TaxId" 
+                                       placeholder="Número de identificación fiscal">
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="modern-form-group">
+                                <label for="editAddress" class="form-label">
+                                    <i class="fas fa-map-marker-alt me-2"></i>
+                                    Dirección
+                                </label>
+                                <input type="text" class="form-control modern-input" id="editAddress" name="Address" 
+                                       placeholder="Dirección completa de la compañía">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="modern-form-group">
+                                <label for="editPhone" class="form-label">
+                                    <i class="fas fa-phone me-2"></i>
+                                    Teléfono
+                                </label>
+                                <input type="text" class="form-control modern-input" id="editPhone" name="Phone" 
+                                       placeholder="Número de teléfono">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="modern-form-group">
+                                <label for="editEmail" class="form-label">
+                                    <i class="fas fa-envelope me-2"></i>
+                                    Email
+                                </label>
+                                <input type="email" class="form-control modern-input" id="editEmail" name="Email" 
+                                       placeholder="Correo electrónico">
                             </div>
                         </div>
                     </div>
@@ -279,7 +408,12 @@
             
             var data = {
                 Name: $("#createName").val(),
-                LegalId: $("#createLegalId").val()
+                LegalId: $("#createLegalId").val(),
+                TaxId: $("#createTaxId").val(),
+                Address: $("#createAddress").val(),
+                Phone: $("#createPhone").val(),
+                Email: $("#createEmail").val(),
+                IsActive: true
             };
             
             Swal.fire({
@@ -335,6 +469,10 @@
                     $("#editId").val(c.id);
                     $("#editName").val(c.name);
                     $("#editLegalId").val(c.legalId);
+                    $("#editTaxId").val(c.taxId);
+                    $("#editAddress").val(c.address);
+                    $("#editPhone").val(c.phone);
+                    $("#editEmail").val(c.email);
                     $("#modalEditCompany").modal('show');
                 } else {
                     Swal.fire({
@@ -359,7 +497,12 @@
             var data = {
                 Id: $("#editId").val(),
                 Name: $("#editName").val(),
-                LegalId: $("#editLegalId").val()
+                LegalId: $("#editLegalId").val(),
+                TaxId: $("#editTaxId").val(),
+                Address: $("#editAddress").val(),
+                Phone: $("#editPhone").val(),
+                Email: $("#editEmail").val(),
+                IsActive: true
             };
             
             Swal.fire({

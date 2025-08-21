@@ -22,6 +22,14 @@ namespace RestBar.Models
         [Display(Name = "Ícono")]
         public string? Icon { get; set; }
 
+        [Display(Name = "Área")]
+        public Guid? AreaId { get; set; }
+
+        [Display(Name = "Estado Activo")]
+        public bool IsActive { get; set; } = true;
+
+        // Propiedades de navegación
+        public virtual Area? Area { get; set; }
         public virtual ICollection<Product> Products { get; set; } = new List<Product>();
         
         // Items preparados por esta estación

@@ -356,32 +356,38 @@
 
         // Función para cargar compañías en selects
         function loadCompaniesSelect(selectId, selectedId) {
+            var select = $(selectId);
+            select.empty().append('<option value="">Cargando compañías...</option>').prop('disabled', true);
+            
             $.get('/Company/GetCompanies', function (res) {
-                var select = $(selectId);
                 if (res.success) {
                     select.empty();
                     select.append('<option value="">Seleccione una compañía</option>');
-                    res.data.forEach(function (c) {
-                        select.append('<option value="' + c.id + '">' + c.name + '</option>');
-                    });
+                    if (res.data && Array.isArray(res.data)) {
+                        res.data.forEach(function (c) {
+                            var option = $('<option value="' + c.id + '">' + c.name + '</option>');
+                            if (selectedId && c.id === selectedId) {
+                                option.prop('selected', true);
+                            }
+                            select.append(option);
+                        });
+                    }
                     select.prop('disabled', false);
                     
-                    // Seleccionar la compañía después de poblar el select
+                    // Forzar actualización del valor seleccionado
                     if (selectedId) {
-                        setTimeout(function() {
-                            select.val(selectedId);
-                        }, 0);
+                        select.val(selectedId);
+                        select.trigger('change');
                     }
                     
                     if (selectId === '#createCompanyId') {
                         $('#createBranchModal').find('button.btn-primary').prop('disabled', false);
                     }
                 } else {
-                    select.empty().append('<option value="">No hay compañías disponibles</option>');
+                    select.empty().append('<option value="">No hay compañías disponibles</option>').prop('disabled', true);
                 }
             }).fail(function() {
-                var select = $(selectId);
-                select.empty().append('<option value="">Error al cargar compañías</option>');
+                select.empty().append('<option value="">Error al cargar compañías</option>').prop('disabled', true);
             });
         }
 
@@ -402,10 +408,7 @@
             select.val('');
         });
 
-        $('#editBranchModal').on('show.bs.modal', function () {
-            var selectedId = $('#editBranchForm [name="CompanyId"]').val();
-            loadCompaniesSelect('#editCompanyId', selectedId);
-        });
+        // Evento eliminado - la carga de compañías se maneja en editBranch()
 
         // Función para crear sucursal
         window.createBranch = function () {
@@ -498,24 +501,27 @@
                 url: `/Branch/Get/${id}`,
                 method: 'GET',
                 success: function (response) {
-                    Swal.close();
                     if (response.success) {
                         const branch = response.data;
                         const form = $('#editBranchForm');
                         
+                        // Limpiar y llenar el formulario
                         form[0].reset();
                         form.find('[name="Id"]').val(branch.id);
                         form.find('[name="Name"]').val(branch.name);
-                        form.find('[name="Address"]').val(branch.address);
-                        form.find('[name="Phone"]').val(branch.phone);
+                        form.find('[name="Address"]').val(branch.address || '');
+                        form.find('[name="Phone"]').val(branch.phone || '');
                         form.find('[name="IsActive"]').prop('checked', branch.isActive);
-                        form.find('[name="CompanyId"]').val(branch.companyId);
                         
+                        // Cargar compañías y establecer la seleccionada
                         loadCompaniesSelect('#editCompanyId', branch.companyId);
                         
+                        // Cerrar el loading y mostrar el modal
+                        Swal.close();
                         const editModal = new bootstrap.Modal(document.getElementById('editBranchModal'));
                         editModal.show();
                     } else {
+                        Swal.close();
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
@@ -524,6 +530,7 @@
                     }
                 },
                 error: function (xhr, status, error) {
+                    Swal.close();
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace RestBar.Models;
 
-public partial class Branch
+public partial class Branch : ITrackableEntity
 {
     public Guid Id { get; set; }
 
@@ -18,6 +18,9 @@ public partial class Branch
     public bool? IsActive { get; set; }
 
     public DateTime? CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string? CreatedBy { get; set; }
+    public string? UpdatedBy { get; set; }
 
     public virtual ICollection<Area> Areas { get; set; } = new List<Area>();
 

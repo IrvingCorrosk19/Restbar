@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using RestBar.Interfaces;
 using RestBar.Models;
 using System;
@@ -7,6 +8,7 @@ using System.Linq;
 
 namespace RestBar.Controllers
 {
+    [Authorize(Roles = "admin")]
     public class BranchController : Controller
     {
         private readonly IBranchService _branchService;
@@ -38,6 +40,7 @@ namespace RestBar.Controllers
         }
 
         [HttpGet]
+        [Route("Branch/Get/{id}")]
         public async Task<IActionResult> Get(Guid id)
         {
             var branch = await _branchService.GetByIdAsync(id);
@@ -61,12 +64,13 @@ namespace RestBar.Controllers
                 return Json(new { success = false, message = "El nombre es requerido" });
             if (model.CompanyId == null)
                 return Json(new { success = false, message = "La compañía es requerida" });
-            model.CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
+                            model.CreatedAt = DateTime.UtcNow;
             var created = await _branchService.CreateAsync(model);
             return Json(new { success = true, data = created });
         }
 
         [HttpPut]
+        [Route("Branch/Edit/{id}")]
         public async Task<IActionResult> Edit(Guid id, [FromBody] Branch model)
         {
             if (id != model.Id)
@@ -80,10 +84,22 @@ namespace RestBar.Controllers
         }
 
         [HttpDelete]
+        [Route("Branch/Delete/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            await _branchService.DeleteAsync(id);
-            return Json(new { success = true });
+            try
+            {
+                await _branchService.DeleteAsync(id);
+                return Json(new { success = true });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error interno del servidor. Por favor intenta nuevamente." });
+            }
         }
     }
 } 

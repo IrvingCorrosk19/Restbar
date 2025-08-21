@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace RestBar.Models;
 
-public partial class Product
+public partial class Product : ITrackableEntity
 {
     public Guid Id { get; set; }
 
@@ -34,10 +34,15 @@ public partial class Product
     public bool? IsActive { get; set; } = true;
 
     public DateTime? CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string? CreatedBy { get; set; }
+    public string? UpdatedBy { get; set; }
 
     public Guid? CategoryId { get; set; }
 
     public virtual Category? Category { get; set; }
+
+
 
     public virtual ICollection<Inventory> Inventories { get; set; } = new List<Inventory>();
 

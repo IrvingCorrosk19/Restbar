@@ -4,13 +4,11 @@ using RestBar.Models;
 
 namespace RestBar.Services
 {
-    public class InvoiceService : IInvoiceService
+    public class InvoiceService : BaseTrackingService, IInvoiceService
     {
-        private readonly RestBarContext _context;
-
-        public InvoiceService(RestBarContext context)
+        public InvoiceService(RestBarContext context, IHttpContextAccessor httpContextAccessor) 
+            : base(context, httpContextAccessor)
         {
-            _context = context;
         }
 
         public async Task<IEnumerable<Invoice>> GetAllAsync()
@@ -31,7 +29,7 @@ namespace RestBar.Services
 
         public async Task<Invoice> CreateAsync(Invoice invoice)
         {
-            invoice.CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
+            invoice.CreatedAt = DateTime.UtcNow;
             
             // Validación de desarrollo para asegurar que las fechas sean UTC
             if (invoice.CreatedAt.HasValue && invoice.CreatedAt.Value.Kind == DateTimeKind.Unspecified)

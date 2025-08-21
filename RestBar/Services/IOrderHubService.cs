@@ -13,5 +13,9 @@ namespace RestBar.Services
         Task NotifyTableStatusChanged(Guid tableId, string newStatus);
         Task NotifyKitchenUpdate();
         Task NotifyPaymentProcessed(Guid orderId, decimal amount, string method, bool isFullyPaid);
+        
+        // ✅ NUEVO: Métodos para notificar cambios de stock
+        Task NotifyStockUpdated(Guid productId, string productName, decimal newStock);
+        Task NotifyStockReduced(Guid productId, string productName, decimal oldStock, decimal newStock, decimal quantityReduced);
     }
 } 
