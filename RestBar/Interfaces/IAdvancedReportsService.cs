@@ -4,11 +4,7 @@ namespace RestBar.Interfaces
 {
     public interface IAdvancedReportsService
     {
-        // Análisis de Inventario
-        Task<InventoryAnalysisReport> GetInventoryAnalysisAsync(ReportFilters filters);
-        Task<List<LowStockAlert>> GetLowStockAlertsAsync();
-        Task<List<InventoryTurnoverData>> GetInventoryTurnoverAsync(ReportFilters filters);
-        Task<List<InventoryValueReport>> GetInventoryValueReportAsync();
+
         
 
         

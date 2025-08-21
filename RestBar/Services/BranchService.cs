@@ -26,7 +26,7 @@ namespace RestBar.Services
                 .Include(b => b.Company)
                 .Include(b => b.Areas)
                 .Include(b => b.Users)
-                .Include(b => b.Inventories)
+
                 .FirstOrDefaultAsync(b => b.Id == id);
         }
 

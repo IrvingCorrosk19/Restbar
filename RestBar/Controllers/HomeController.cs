@@ -138,7 +138,6 @@ namespace RestBar.Controllers
                     cards.Companies = false;
                     cards.Branches = false;
                     cards.Reports = false;
-                    cards.Inventory = false;
                     cards.SecurityAdmin = false;
                     break;
                     
@@ -156,7 +155,6 @@ namespace RestBar.Controllers
                     cards.Companies = false;
                     cards.Branches = false;
                     cards.Reports = false;
-                    cards.Inventory = false;
                     cards.SecurityAdmin = false;
                     break;
                     
@@ -174,7 +172,6 @@ namespace RestBar.Controllers
                     cards.Companies = false;
                     cards.Branches = false;
                     cards.Reports = false;
-                    cards.Inventory = false;
                     cards.SecurityAdmin = false;
                     break;
                     
@@ -192,7 +189,6 @@ namespace RestBar.Controllers
                     cards.Companies = false;
                     cards.Branches = false;
                     cards.Reports = false;
-                    cards.Inventory = false;
                     cards.SecurityAdmin = false;
                     break;
                     
@@ -229,7 +225,6 @@ namespace RestBar.Controllers
                     cards.Areas = false;
                     cards.Companies = false;
                     cards.Branches = false;
-                    cards.Inventory = false;
                     cards.SecurityAdmin = false;
                     break;
                     
@@ -247,7 +242,6 @@ namespace RestBar.Controllers
                     cards.Companies = false;
                     cards.Branches = false;
                     cards.Reports = false;
-                    cards.Inventory = false;
                     cards.SecurityAdmin = false;
                     break;
                     

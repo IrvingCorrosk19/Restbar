@@ -302,35 +302,9 @@ namespace RestBar.Services
             transfer.ActualDeliveryDate = DateTime.UtcNow;
             transfer.UpdatedAt = DateTime.UtcNow;
 
-            // Actualizar inventario en la sucursal destino
+            // Inventory management removed
             foreach (var item in transfer.Items)
             {
-                var inventory = await _context.Inventories
-                    .FirstOrDefaultAsync(i => i.ProductId == item.ProductId && 
-                                            i.BranchId == transfer.DestinationBranchId);
-
-                if (inventory != null)
-                {
-                    inventory.Stock = (inventory.Stock ?? 0) + item.Quantity;
-                    inventory.LastUpdated = DateTime.UtcNow;
-                }
-                else
-                {
-                    // Crear nuevo registro de inventario si no existe
-                    inventory = new Inventory
-                    {
-                        Id = Guid.NewGuid(),
-                        ProductId = item.ProductId,
-                        BranchId = transfer.DestinationBranchId,
-                        Stock = (int)item.Quantity,
-                        MinStock = 0,
-                        MaxStock = 1000,
-                        IsActive = true,
-                        LastUpdated = DateTime.UtcNow
-                    };
-                    _context.Inventories.Add(inventory);
-                }
-
                 item.ReceivedQuantity = item.Quantity;
             }
 

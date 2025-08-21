@@ -20,134 +20,14 @@ namespace RestBar.Services
         }
 
         // ===== ANÁLISIS DE INVENTARIO =====
-        public async Task<InventoryAnalysisReport> GetInventoryAnalysisAsync(ReportFilters filters)
-        {
-            try
-            {
-                _logger.LogInformation("[AdvancedReportsService] Generando análisis de inventario");
 
-                var inventoryData = await _context.Inventories
-                    .Include(i => i.Product)
-                    .Include(i => i.Product.Category)
-                    .Include(i => i.Branch)
-                    .Where(i => i.IsActive)
-                    .ToListAsync();
 
-                var report = new InventoryAnalysisReport
-                {
-                    TotalProducts = inventoryData.Count,
-                    LowStockProducts = inventoryData.Count(i => i.Stock < i.MinStock),
-                    OutOfStockProducts = inventoryData.Count(i => i.Stock <= 0),
-                    TotalInventoryValue = inventoryData.Sum(i => (i.Stock ?? 0) * (i.UnitCost ?? 0)),
-                    AverageStockLevel = (decimal)inventoryData.Average(i => i.Stock ?? 0),
-                    StockTurnoverRate = 2.5m, // Valor simulado
-                    LowStockAlerts = await GetLowStockAlertsAsync(),
-                    TurnoverData = await GetInventoryTurnoverAsync(filters),
-                    ValueReport = await GetInventoryValueReportAsync()
-                };
 
-                return report;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[AdvancedReportsService] Error generando análisis de inventario");
-                return new InventoryAnalysisReport();
-            }
-        }
 
-        public async Task<List<LowStockAlert>> GetLowStockAlertsAsync()
-        {
-            try
-            {
-                var alerts = await _context.Inventories
-                    .Include(i => i.Product)
-                    .Include(i => i.Product.Category)
-                    .Include(i => i.Branch)
-                    .Where(i => i.Stock <= i.MinStock && i.IsActive)
-                    .Select(i => new LowStockAlert
-                    {
-                        ProductId = i.ProductId.Value,
-                        ProductName = i.Product.Name,
-                        CategoryName = i.Product.Category.Name,
-                        CurrentStock = i.Stock ?? 0,
-                        MinStock = i.MinStock ?? 0,
-                        ReorderPoint = i.ReorderPoint ?? 0,
-                        BranchName = i.Branch.Name,
-                        LastUpdated = i.LastUpdated ?? DateTime.UtcNow,
-                        AlertLevel = i.Stock <= 0 ? "Critical" : "Warning"
-                    })
-                    .ToListAsync();
 
-                return alerts;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[AdvancedReportsService] Error obteniendo alertas de bajo stock");
-                return new List<LowStockAlert>();
-            }
-        }
 
-        public async Task<List<InventoryTurnoverData>> GetInventoryTurnoverAsync(ReportFilters filters)
-        {
-            try
-            {
-                var turnoverData = await _context.Inventories
-                    .Include(i => i.Product)
-                    .Include(i => i.Product.Category)
-                    .Where(i => i.IsActive)
-                    .Select(i => new InventoryTurnoverData
-                    {
-                        ProductId = i.ProductId.Value,
-                        ProductName = i.Product.Name,
-                        CategoryName = i.Product.Category.Name,
-                        AverageStock = i.Stock ?? 0,
-                        TotalSold = 0, // Se calcularía con datos históricos
-                        TurnoverRate = 1.5m, // Valor simulado
-                        DaysToSell = 20, // Valor simulado
-                        Efficiency = "Medium"
-                    })
-                    .ToListAsync();
 
-                return turnoverData;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[AdvancedReportsService] Error obteniendo datos de rotación de inventario");
-                return new List<InventoryTurnoverData>();
-            }
-        }
 
-        public async Task<List<InventoryValueReport>> GetInventoryValueReportAsync()
-        {
-            try
-            {
-                var valueReport = await _context.Inventories
-                    .Include(i => i.Product)
-                    .Include(i => i.Product.Category)
-                    .Include(i => i.Branch)
-                    .Where(i => i.IsActive)
-                    .Select(i => new InventoryValueReport
-                    {
-                        ProductId = i.ProductId.Value,
-                        ProductName = i.Product.Name,
-                        CategoryName = i.Product.Category.Name,
-                        CurrentStock = i.Stock ?? 0,
-                        UnitCost = i.UnitCost ?? 0,
-                        TotalValue = (i.Stock ?? 0) * (i.UnitCost ?? 0),
-                        LastMonthValue = 0,
-                        ValueChange = 0,
-                        BranchName = i.Branch.Name
-                    })
-                    .ToListAsync();
-
-                return valueReport.OrderByDescending(x => x.TotalValue).ToList();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[AdvancedReportsService] Error obteniendo reporte de valor de inventario");
-                return new List<InventoryValueReport>();
-            }
-        }
 
         
 

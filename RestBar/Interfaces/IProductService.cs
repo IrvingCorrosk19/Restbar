@@ -17,7 +17,7 @@ namespace RestBar.Interfaces
         // Métodos adicionales específicos para Product
         Task<IEnumerable<Product>> GetByCategoryIdAsync(Guid categoryId);
         Task<IEnumerable<Product>> GetActiveProductsAsync();
-        Task<Product?> GetProductWithInventoryAsync(Guid id);
+
         Task<Product?> GetProductWithModifiersAsync(Guid id);
         Task<IEnumerable<Product>> GetProductsByPriceRangeAsync(decimal minPrice, decimal maxPrice);
         Task<IEnumerable<Product>> SearchProductsAsync(string searchTerm);

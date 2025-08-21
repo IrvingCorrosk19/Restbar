@@ -95,14 +95,7 @@ namespace RestBar.Services
                 .ToListAsync();
         }
 
-        public async Task<Product?> GetProductWithInventoryAsync(Guid id)
-        {
-            return await _context.Products
-                .Include(p => p.Category)
-                .Include(p => p.Inventories)
-                    .ThenInclude(i => i.Branch)
-                .FirstOrDefaultAsync(p => p.Id == id);
-        }
+
 
         public async Task<Product?> GetProductWithModifiersAsync(Guid id)
         {
