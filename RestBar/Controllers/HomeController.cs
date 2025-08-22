@@ -77,7 +77,6 @@ namespace RestBar.Controllers
                     cards.Payments = true;
                     cards.Reports = true;
 
-                    cards.AdvancedSettings = true;
                     cards.AdvancedReports = true;
                     cards.SecurityAdmin = true;
                     break;
@@ -97,7 +96,6 @@ namespace RestBar.Controllers
                     cards.Payments = true;
                     cards.Reports = true;
 
-                    cards.AdvancedSettings = true;
                     cards.AdvancedReports = true;
                     cards.Companies = false; // Solo admin
                     cards.SecurityAdmin = false; // Solo admin
@@ -296,7 +294,7 @@ namespace RestBar.Controllers
         public bool Reports { get; set; } = false;
 
 
-        public bool AdvancedSettings { get; set; } = false;
+
         public bool AdvancedReports { get; set; } = false;
         public bool SecurityAdmin { get; set; } = false;
     }

@@ -201,15 +201,7 @@ builder.Services.AddScoped<IAuthService>(provider =>
 
 
 
-// ✅ NUEVO: Servicios de Ajustes Avanzados
-builder.Services.AddScoped<ISystemSettingsService, SystemSettingsService>();
-builder.Services.AddScoped<IPrinterService, PrinterService>();
-builder.Services.AddScoped<ICurrencyService, CurrencyService>();
-builder.Services.AddScoped<ITaxRateService, TaxRateService>();
-builder.Services.AddScoped<IDiscountPolicyService, DiscountPolicyService>();
-builder.Services.AddScoped<IOperatingHoursService, OperatingHoursService>();
-builder.Services.AddScoped<INotificationSettingsService, NotificationSettingsService>();
-builder.Services.AddScoped<IBackupSettingsService, BackupSettingsService>();
+
 
 // ✅ NUEVO: Servicio de Reportes Avanzados
 builder.Services.AddScoped<IAdvancedReportsService, AdvancedReportsService>();
