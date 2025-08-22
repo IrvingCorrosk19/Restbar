@@ -77,7 +77,6 @@ namespace RestBar.Controllers
                     cards.Payments = true;
                     cards.Reports = true;
 
-                    cards.Transfers = true;
                     cards.AdvancedSettings = true;
                     cards.AdvancedReports = true;
                     cards.SecurityAdmin = true;
@@ -98,7 +97,6 @@ namespace RestBar.Controllers
                     cards.Payments = true;
                     cards.Reports = true;
 
-                    cards.Transfers = true;
                     cards.AdvancedSettings = true;
                     cards.AdvancedReports = true;
                     cards.Companies = false; // Solo admin
@@ -196,7 +194,6 @@ namespace RestBar.Controllers
                     // Inventarista acceso a productos e inventario
                     cards.Products = true;
 
-                    cards.Transfers = true;
                     cards.Categories = true;
                     cards.Orders = false;
                     cards.Tables = false;
@@ -298,7 +295,7 @@ namespace RestBar.Controllers
         public bool Payments { get; set; } = false;
         public bool Reports { get; set; } = false;
 
-        public bool Transfers { get; set; } = false;
+
         public bool AdvancedSettings { get; set; } = false;
         public bool AdvancedReports { get; set; } = false;
         public bool SecurityAdmin { get; set; } = false;

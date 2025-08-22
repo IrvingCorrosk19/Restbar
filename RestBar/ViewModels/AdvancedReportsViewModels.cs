@@ -163,33 +163,7 @@ namespace RestBar.ViewModels
         public string Details { get; set; } = "";
     }
 
-    // ===== REPORTES DE TRANSFERENCIAS =====
-    public class TransferAnalysisReport
-    {
-        public int TotalTransfers { get; set; }
-        public int CompletedTransfers { get; set; }
-        public int PendingTransfers { get; set; }
-        public decimal TotalTransferValue { get; set; }
-        public decimal AverageTransferValue { get; set; }
-        public int AverageTransferTime { get; set; } // en días
-        public List<TransferEfficiencyData> EfficiencyData { get; set; } = new();
-    }
 
-    public class TransferEfficiencyData
-    {
-        public Guid TransferId { get; set; }
-        public string TransferNumber { get; set; } = "";
-        public string SourceBranch { get; set; } = "";
-        public string DestinationBranch { get; set; } = "";
-        public DateTime TransferDate { get; set; }
-        public DateTime? ExpectedDeliveryDate { get; set; }
-        public DateTime? ActualDeliveryDate { get; set; }
-        public int DaysToDeliver { get; set; }
-        public decimal TotalValue { get; set; }
-        public string Status { get; set; } = "";
-        public bool IsOnTime { get; set; }
-        public string Efficiency { get; set; } = ""; // "High", "Medium", "Low"
-    }
 
     // ===== REPORTES DE CONFIGURACIÓN AVANZADA =====
     public class SystemHealthReport

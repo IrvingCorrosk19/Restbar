@@ -199,8 +199,7 @@ builder.Services.AddScoped<IAuthService>(provider =>
 
 
 
-// ✅ NUEVO: Agregar servicio de transferencias
-builder.Services.AddScoped<ITransferService, TransferService>();
+
 
 // ✅ NUEVO: Servicios de Ajustes Avanzados
 builder.Services.AddScoped<ISystemSettingsService, SystemSettingsService>();

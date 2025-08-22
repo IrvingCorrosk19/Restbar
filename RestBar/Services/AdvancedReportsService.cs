@@ -355,71 +355,7 @@ namespace RestBar.Services
             }
         }
 
-        // ===== REPORTES DE TRANSFERENCIAS =====
-        public async Task<TransferAnalysisReport> GetTransferAnalysisAsync(ReportFilters filters)
-        {
-            try
-            {
-                var transfers = await _context.Transfers
-                    .Include(t => t.SourceBranch)
-                    .Include(t => t.DestinationBranch)
-                    .Where(t => t.TransferDate >= filters.StartDate && t.TransferDate <= filters.EndDate)
-                    .ToListAsync();
 
-                var report = new TransferAnalysisReport
-                {
-                    TotalTransfers = transfers.Count,
-                    CompletedTransfers = transfers.Count(t => t.Status == TransferStatus.Delivered),
-                    PendingTransfers = transfers.Count(t => t.Status == TransferStatus.Pending),
-                    TotalTransferValue = transfers.Sum(t => t.TotalAmount),
-                    AverageTransferValue = transfers.Any() ? transfers.Average(t => t.TotalAmount) : 0,
-                    AverageTransferTime = 3, // Valor simulado
-                    EfficiencyData = await GetTransferEfficiencyAsync(filters)
-                };
-
-                return report;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[AdvancedReportsService] Error generando análisis de transferencias");
-                return new TransferAnalysisReport();
-            }
-        }
-
-        public async Task<List<TransferEfficiencyData>> GetTransferEfficiencyAsync(ReportFilters filters)
-        {
-            try
-            {
-                var efficiencyData = await _context.Transfers
-                    .Include(t => t.SourceBranch)
-                    .Include(t => t.DestinationBranch)
-                    .Where(t => t.TransferDate >= filters.StartDate && t.TransferDate <= filters.EndDate)
-                    .Select(t => new TransferEfficiencyData
-                    {
-                        TransferId = t.Id,
-                        TransferNumber = t.TransferNumber,
-                        SourceBranch = t.SourceBranch.Name,
-                        DestinationBranch = t.DestinationBranch.Name,
-                        TransferDate = t.TransferDate,
-                        ExpectedDeliveryDate = t.ExpectedDeliveryDate,
-                        ActualDeliveryDate = t.ActualDeliveryDate,
-                        TotalValue = t.TotalAmount,
-                        Status = t.Status.ToString(),
-                        DaysToDeliver = t.ActualDeliveryDate.HasValue ? (t.ActualDeliveryDate.Value - t.TransferDate).Days : 0,
-                        IsOnTime = t.ActualDeliveryDate.HasValue && t.ExpectedDeliveryDate.HasValue && 
-                                  t.ActualDeliveryDate.Value <= t.ExpectedDeliveryDate.Value,
-                        Efficiency = "Medium"
-                    })
-                    .ToListAsync();
-
-                return efficiencyData.OrderByDescending(x => x.TransferDate).ToList();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[AdvancedReportsService] Error obteniendo eficiencia de transferencias");
-                return new List<TransferEfficiencyData>();
-            }
-        }
 
         // ===== REPORTES DE CONFIGURACIÓN AVANZADA =====
         public async Task<SystemHealthReport> GetSystemHealthReportAsync()

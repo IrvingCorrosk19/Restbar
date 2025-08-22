@@ -66,9 +66,7 @@ public partial class RestBarContext : DbContext
     
 
     
-    // ✅ NUEVO: Transferencias
-    public virtual DbSet<Transfer> Transfers { get; set; }
-    public virtual DbSet<TransferItem> TransferItems { get; set; }
+
     
     // ✅ NUEVO: Ajustes Avanzados
     public virtual DbSet<SystemSettings> SystemSettings { get; set; }
@@ -128,7 +126,7 @@ public partial class RestBarContext : DbContext
 
 
 
-        modelBuilder.HasPostgresEnum<TransferStatus>("transfer_status_enum");
+
         modelBuilder.HasPostgresEnum<AssignmentType>("assignment_type_enum");
         modelBuilder.HasPostgresEnum<AuditLogLevel>("audit_log_level_enum");
         modelBuilder.HasPostgresEnum<AuditAction>("audit_action_enum");

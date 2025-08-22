@@ -23,9 +23,7 @@ namespace RestBar.Interfaces
         Task<List<UserActivityData>> GetUserActivityReportAsync(ReportFilters filters);
         Task<List<SystemLogData>> GetSystemLogReportAsync(ReportFilters filters);
         
-        // Reportes de Transferencias
-        Task<TransferAnalysisReport> GetTransferAnalysisAsync(ReportFilters filters);
-        Task<List<TransferEfficiencyData>> GetTransferEfficiencyAsync(ReportFilters filters);
+
         
         // Reportes de Configuración Avanzada
         Task<SystemHealthReport> GetSystemHealthReportAsync();
