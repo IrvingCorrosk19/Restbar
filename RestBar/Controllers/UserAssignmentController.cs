@@ -67,22 +67,36 @@ namespace RestBar.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAssignments(string role = "", string assignmentType = "")
         {
-            var permissionCheck = await CheckAssignmentPermissionAsync();
-            if (permissionCheck != null) return permissionCheck;
-
             try
             {
+                Console.WriteLine("🔍 [UserAssignmentController] GetAssignments() - Iniciando carga de asignaciones...");
+                Console.WriteLine($"📋 [UserAssignmentController] GetAssignments() - Parámetros: role='{role}', assignmentType='{assignmentType}'");
+                
+                var permissionCheck = await CheckAssignmentPermissionAsync();
+                if (permissionCheck != null) 
+                {
+                    Console.WriteLine("⚠️ [UserAssignmentController] GetAssignments() - Falló verificación de permisos");
+                    return permissionCheck;
+                }
+
+                Console.WriteLine("✅ [UserAssignmentController] GetAssignments() - Permisos verificados correctamente");
                 var assignments = await _userAssignmentService.GetAllAsync();
+                Console.WriteLine($"📊 [UserAssignmentController] GetAssignments() - Total asignaciones encontradas: {assignments?.Count() ?? 0}");
 
                 // Filtrar por rol si se especifica
                 if (!string.IsNullOrEmpty(role) && Enum.TryParse<UserRole>(role, true, out var userRole))
                 {
+                    Console.WriteLine($"🎯 [UserAssignmentController] GetAssignments() - Filtrando por rol: {userRole}");
+                    var assignmentsBeforeFilter = assignments.Count();
                     assignments = assignments.Where(a => a.User.Role == userRole);
+                    Console.WriteLine($"📊 [UserAssignmentController] GetAssignments() - Asignaciones después de filtro por rol: {assignments.Count()}/{assignmentsBeforeFilter}");
                 }
 
                 // Filtrar por tipo de asignación
                 if (!string.IsNullOrEmpty(assignmentType))
                 {
+                    Console.WriteLine($"🎯 [UserAssignmentController] GetAssignments() - Filtrando por tipo: {assignmentType}");
+                    var assignmentsBeforeTypeFilter = assignments.Count();
                     assignments = assignmentType.ToLower() switch
                     {
                         "station" => assignments.Where(a => a.StationId.HasValue),
@@ -90,8 +104,10 @@ namespace RestBar.Controllers
                         "tables" => assignments.Where(a => a.AssignedTableIds?.Count > 0),
                         _ => assignments
                     };
+                    Console.WriteLine($"📊 [UserAssignmentController] GetAssignments() - Asignaciones después de filtro por tipo: {assignments.Count()}/{assignmentsBeforeTypeFilter}");
                 }
 
+                Console.WriteLine("🔄 [UserAssignmentController] GetAssignments() - Procesando datos para la respuesta...");
                 var assignmentData = assignments.Select(a => new {
                     id = a.Id,
                     userId = a.UserId,
@@ -108,11 +124,15 @@ namespace RestBar.Controllers
                     notes = a.Notes
                 }).ToList();
 
+                Console.WriteLine($"✅ [UserAssignmentController] GetAssignments() - Enviando {assignmentData.Count} asignaciones");
+                Console.WriteLine($"📤 [UserAssignmentController] GetAssignments() - Datos procesados exitosamente");
                 return Json(new { success = true, data = assignmentData });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = ex.Message });
+                Console.WriteLine($"❌ [UserAssignmentController] GetAssignments() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [UserAssignmentController] GetAssignments() - StackTrace: {ex.StackTrace}");
+                return Json(new { success = false, message = $"Error al cargar asignaciones: {ex.Message}" });
             }
         }
 

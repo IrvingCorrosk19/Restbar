@@ -906,13 +906,18 @@ let panelState = {
 };
 
 function panelRoleChanged() {
-    const role = document.querySelector('input[name="role"]:checked')?.value;
-    panelState.role = role;
-    
-    // Mostrar/ocultar secciones según el rol
-    document.getElementById('panelStationGroup').style.display = (role === 'chef' || role === 'bartender') ? 'block' : 'none';
-    document.getElementById('panelAreaGroup').style.display = (role === 'waiter') ? 'block' : 'none';
-    document.getElementById('panelTablesGroup').style.display = 'none';
+    try {
+        console.log('🎯 [UserAssignment] panelRoleChanged() - Iniciando cambio de rol...');
+        
+        const role = document.querySelector('input[name="role"]:checked')?.value;
+        console.log('🎯 [UserAssignment] panelRoleChanged() - Rol seleccionado:', role);
+        
+        panelState.role = role;
+        
+        // Mostrar/ocultar secciones según el rol
+        document.getElementById('panelStationGroup').style.display = (role === 'chef' || role === 'bartender') ? 'block' : 'none';
+        document.getElementById('panelAreaGroup').style.display = (role === 'waiter') ? 'block' : 'none';
+        document.getElementById('panelTablesGroup').style.display = 'none';
     
     // Cargar usuarios como cards
     const userPanel = document.getElementById('userSelectionPanel');
@@ -920,11 +925,17 @@ function panelRoleChanged() {
     fetch(`/UserAssignment/GetUnassignedUsers?role=${role}`)
         .then(r => r.json())
         .then(result => {
+            console.log('👤 [UserAssignment] panelRoleChanged() - Respuesta usuarios:', result);
             if (result.success) {
                 renderUserSelection(result.data);
             } else {
+                console.error('❌ [UserAssignment] panelRoleChanged() - Error cargando usuarios:', result.message);
                 userPanel.innerHTML = '<div class="text-danger">Error al cargar usuarios</div>';
             }
+        })
+        .catch(error => {
+            console.error('❌ [UserAssignment] panelRoleChanged() - Error AJAX usuarios:', error);
+            userPanel.innerHTML = '<div class="text-danger">Error al cargar usuarios</div>';
         });
     
     // Cargar estaciones para cocineros y bartenders
@@ -932,10 +943,21 @@ function panelRoleChanged() {
         fetch('/UserAssignment/GetStations')
             .then(r => r.json())
             .then(result => {
+                console.log('🏗️ [UserAssignment] panelRoleChanged() - Respuesta estaciones:', result);
                 if (result.success) {
-                    document.getElementById('panelStationSelect').innerHTML = '<option value="">Selecciona una estación</option>' +
-                        result.data.map(s => `<option value="${s.id}">${s.name} (${s.type})</option>`).join('');
+                    // Fix: Handle Entity Framework $values serialization
+                    const dataArray = result.data.$values || result.data;
+                    console.log('🏗️ [UserAssignment] panelRoleChanged() - Estaciones array:', dataArray);
+                    if (dataArray && Array.isArray(dataArray)) {
+                        document.getElementById('panelStationSelect').innerHTML = '<option value="">Selecciona una estación</option>' +
+                            dataArray.map(s => `<option value="${s.id}">${s.name} (${s.type})</option>`).join('');
+                        console.log(`✅ [UserAssignment] panelRoleChanged() - ${dataArray.length} estaciones cargadas`);
+                    } else {
+                        console.warn('⚠️ [UserAssignment] panelRoleChanged() - No hay estaciones en la respuesta');
+                        document.getElementById('panelStationSelect').innerHTML = '<option value="">No hay estaciones disponibles</option>';
+                    }
                 } else {
+                    console.error('❌ [UserAssignment] panelRoleChanged() - Error en respuesta:', result.message);
                     document.getElementById('panelStationSelect').innerHTML = '<option value="">Error al cargar estaciones</option>';
                 }
             });
@@ -946,13 +968,34 @@ function panelRoleChanged() {
         fetch('/UserAssignment/GetAreas')
             .then(r => r.json())
             .then(result => {
+                console.log('🏗️ [UserAssignment] panelRoleChanged() - Respuesta áreas:', result);
                 if (result.success) {
-                    document.getElementById('panelAreaSelect').innerHTML = '<option value="">Selecciona un área</option>' +
-                        result.data.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+                    // Fix: Handle Entity Framework $values serialization
+                    const dataArray = result.data.$values || result.data;
+                    console.log('🏗️ [UserAssignment] panelRoleChanged() - Áreas array:', dataArray);
+                    if (dataArray && Array.isArray(dataArray)) {
+                        document.getElementById('panelAreaSelect').innerHTML = '<option value="">Selecciona un área</option>' +
+                            dataArray.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+                        console.log(`✅ [UserAssignment] panelRoleChanged() - ${dataArray.length} áreas cargadas`);
+                    } else {
+                        console.warn('⚠️ [UserAssignment] panelRoleChanged() - No hay áreas en la respuesta');
+                        document.getElementById('panelAreaSelect').innerHTML = '<option value="">No hay áreas disponibles</option>';
+                    }
                 } else {
+                    console.error('❌ [UserAssignment] panelRoleChanged() - Error en respuesta:', result.message);
                     document.getElementById('panelAreaSelect').innerHTML = '<option value="">Error al cargar áreas</option>';
                 }
             });
+    }
+    
+    console.log('✅ [UserAssignment] panelRoleChanged() - Función completada exitosamente');
+    
+    } catch (error) {
+        console.error('❌ [UserAssignment] panelRoleChanged() - Error general:', error);
+        const userPanel = document.getElementById('userSelectionPanel');
+        if (userPanel) {
+            userPanel.innerHTML = '<div class="text-danger">Error al cambiar rol</div>';
+        }
     }
 }
 
@@ -967,12 +1010,19 @@ function panelAreaChanged() {
     fetch(`/UserAssignment/GetTables?areaId=${areaId}`)
         .then(r => r.json())
         .then(result => {
-            if (result.success && result.data.length > 0) {
+            console.log('🏗️ [UserAssignment] panelAreaChanged() - Respuesta mesas:', result);
+            // Fix: Handle Entity Framework $values serialization
+            const dataArray = result.data ? (result.data.$values || result.data) : [];
+            console.log('🏗️ [UserAssignment] panelAreaChanged() - Mesas array:', dataArray);
+            
+            if (result.success && dataArray && Array.isArray(dataArray) && dataArray.length > 0) {
                 document.getElementById('panelTablesGroup').style.display = 'block';
-                document.getElementById('panelTablesCheckboxes').innerHTML = result.data.map(t =>
+                document.getElementById('panelTablesCheckboxes').innerHTML = dataArray.map(t =>
                     `<label><input type="checkbox" value="${t.id}"><span>Mesa ${t.tableNumber} (${t.capacity} personas)</span></label>`
                 ).join('');
+                console.log(`✅ [UserAssignment] panelAreaChanged() - ${dataArray.length} mesas cargadas`);
             } else {
+                console.warn('⚠️ [UserAssignment] panelAreaChanged() - No hay mesas disponibles');
                 document.getElementById('panelTablesGroup').style.display = 'none';
                 document.getElementById('panelTablesCheckboxes').innerHTML = '';
             }
@@ -980,21 +1030,66 @@ function panelAreaChanged() {
 }
 
 function submitPanelAssignment() {
-    const role = document.querySelector('input[name="role"]:checked')?.value;
-    const userId = document.querySelector('input[name="userId"]:checked')?.value;
-    const stationId = document.getElementById('panelStationSelect').value;
-    const areaId = document.getElementById('panelAreaSelect').value;
-    const mesas = Array.from(document.querySelectorAll('#panelTablesCheckboxes input[type="checkbox"]:checked')).map(cb => cb.value);
-    
-    if (!role || !userId || ((role === 'chef' || role === 'bartender') && !stationId) || (role === 'waiter' && !areaId)) {
-        Swal.fire({
-            title: 'Campos Requeridos',
-            text: 'Completa todos los campos requeridos',
-            icon: 'warning',
-            confirmButtonColor: '#667eea'
-        });
-        return;
-    }
+    try {
+        console.log('🚀 [UserAssignment] submitPanelAssignment() - Iniciando validación...');
+        
+        const role = document.querySelector('input[name="role"]:checked')?.value;
+        const userId = document.querySelector('input[name="userId"]:checked')?.value;
+        const stationId = document.getElementById('panelStationSelect').value;
+        const areaId = document.getElementById('panelAreaSelect').value;
+        const mesas = Array.from(document.querySelectorAll('#panelTablesCheckboxes input[type="checkbox"]:checked')).map(cb => cb.value);
+        
+        // Debug adicional para la selección de usuario
+        console.log('🔍 [UserAssignment] submitPanelAssignment() - Debug selección usuario:');
+        console.log('  - Total radio buttons userId:', document.querySelectorAll('input[name="userId"]').length);
+        console.log('  - Radio buttons userId checked:', document.querySelectorAll('input[name="userId"]:checked').length);
+        console.log('  - Elemento seleccionado:', document.querySelector('input[name="userId"]:checked'));
+        console.log('  - Valor del elemento seleccionado:', document.querySelector('input[name="userId"]:checked')?.value);
+        
+        console.log('📋 [UserAssignment] submitPanelAssignment() - Valores capturados:');
+        console.log('  - Rol:', role);
+        console.log('  - Usuario ID:', userId);
+        console.log('  - Estación ID:', stationId);
+        console.log('  - Área ID:', areaId);
+        console.log('  - Mesas seleccionadas:', mesas);
+        
+        // Validación detallada
+        let camposFaltantes = [];
+        
+        if (!role) {
+            camposFaltantes.push('Rol (chef/bartender/waiter)');
+            console.warn('⚠️ [UserAssignment] submitPanelAssignment() - Falta seleccionar rol');
+        }
+        
+        if (!userId) {
+            camposFaltantes.push('Usuario');
+            console.warn('⚠️ [UserAssignment] submitPanelAssignment() - Falta seleccionar usuario');
+        }
+        
+        if (role === 'chef' || role === 'bartender') {
+            if (!stationId) {
+                camposFaltantes.push('Estación');
+                console.warn('⚠️ [UserAssignment] submitPanelAssignment() - Falta seleccionar estación para chef/bartender');
+            }
+        } else if (role === 'waiter') {
+            if (!areaId) {
+                camposFaltantes.push('Área');
+                console.warn('⚠️ [UserAssignment] submitPanelAssignment() - Falta seleccionar área para waiter');
+            }
+        }
+        
+        if (camposFaltantes.length > 0) {
+            console.error('❌ [UserAssignment] submitPanelAssignment() - Campos faltantes:', camposFaltantes);
+            Swal.fire({
+                title: 'Campos Requeridos',
+                text: `Faltan los siguientes campos: ${camposFaltantes.join(', ')}`,
+                icon: 'warning',
+                confirmButtonColor: '#667eea'
+            });
+            return;
+        }
+        
+        console.log('✅ [UserAssignment] submitPanelAssignment() - Validación exitosa, procediendo...');
     
     const formData = new FormData();
     formData.append('UserId', userId);
@@ -1065,23 +1160,59 @@ function submitPanelAssignment() {
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
     });
+    
+    } catch (error) {
+        console.error('❌ [UserAssignment] submitPanelAssignment() - Error general:', error);
+        Swal.fire({
+            title: 'Error',
+            text: 'Error inesperado al crear asignación',
+            icon: 'error',
+            confirmButtonColor: '#667eea'
+        });
+    }
 }
 
 function loadAssignments() {
-    const container = document.getElementById('assignmentsTableContainer');
-    container.innerHTML = `
-        <div class="text-center py-4">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Cargando...</span>
+    try {
+        console.log('🔍 [UserAssignment] loadAssignments() - Iniciando carga de asignaciones...');
+        const container = document.getElementById('assignmentsTableContainer');
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="text-muted mt-2">Cargando asignaciones...</p>
             </div>
-            <p class="text-muted mt-2">Cargando asignaciones...</p>
-        </div>
-    `;
-    
-    fetch('/UserAssignment/GetAssignments')
-        .then(r => r.json())
-        .then(result => {
-            if (!result.success || !result.data || result.data.length === 0) {
+        `;
+        
+        console.log('📡 [UserAssignment] loadAssignments() - Enviando petición a /UserAssignment/GetAssignments');
+        fetch('/UserAssignment/GetAssignments')
+            .then(r => {
+                console.log('📡 [UserAssignment] loadAssignments() - Respuesta recibida:', r);
+                console.log('📡 [UserAssignment] loadAssignments() - Status:', r.status);
+                console.log('📡 [UserAssignment] loadAssignments() - Status text:', r.statusText);
+                return r.json();
+            })
+                    .then(result => {
+            console.log('📡 [UserAssignment] loadAssignments() - Resultado JSON:', result);
+            console.log('📡 [UserAssignment] loadAssignments() - Success:', result.success);
+            console.log('📡 [UserAssignment] loadAssignments() - Data:', result.data);
+            console.log('📡 [UserAssignment] loadAssignments() - Data length:', result.data?.length);
+            console.log('📡 [UserAssignment] loadAssignments() - Message:', result.message);
+            
+            // FIX: Handle Entity Framework $values serialization
+            const dataArray = result.data.$values || result.data;
+            console.log('📡 [UserAssignment] loadAssignments() - Data array:', dataArray);
+            console.log('📡 [UserAssignment] loadAssignments() - Data array length:', dataArray?.length);
+            
+            if (!result.success || !dataArray || dataArray.length === 0) {
+                    console.warn('⚠️ [UserAssignment] loadAssignments() - No hay asignaciones o hay error');
+                    console.warn('⚠️ [UserAssignment] loadAssignments() - Success:', result.success);
+                    console.warn('⚠️ [UserAssignment] loadAssignments() - Data existe:', !!result.data);
+                    console.warn('⚠️ [UserAssignment] loadAssignments() - Data length:', result.data?.length);
+                    if (!result.success) {
+                        console.error('❌ [UserAssignment] loadAssignments() - Error del servidor:', result.message);
+                    }
                 container.innerHTML = `
                     <div class="text-center py-5">
                         <i class="fas fa-users-slash text-muted" style="font-size: 3rem; opacity: 0.5;"></i>
@@ -1108,7 +1239,7 @@ function loadAssignments() {
                         <tbody>
             `;
             
-            for (const a of result.data) {
+            for (const a of dataArray) {
                 let asignacion = '';
                 if (a.stationId) {
                     asignacion = `<span class="badge bg-primary"><i class="fas fa-store"></i> ${a.stationName || 'Estación'}</span>`;
@@ -1157,8 +1288,11 @@ function loadAssignments() {
             
             html += '</tbody></table></div>';
             container.innerHTML = html;
+            console.log('✅ [UserAssignment] loadAssignments() - Asignaciones renderizadas correctamente');
         })
-        .catch(() => {
+        .catch((error) => {
+            console.error('❌ [UserAssignment] loadAssignments() - Error en fetch:', error);
+            console.error('📡 [UserAssignment] loadAssignments() - Stack trace:', error.stack);
             container.innerHTML = `
                 <div class="text-center py-4">
                     <i class="fas fa-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
@@ -1167,6 +1301,19 @@ function loadAssignments() {
                 </div>
             `;
         });
+    } catch (error) {
+        console.error('❌ [UserAssignment] loadAssignments() - Error general:', error);
+        const container = document.getElementById('assignmentsTableContainer');
+        if (container) {
+            container.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
+                    <h5 class="text-danger mt-3">Error crítico al cargar asignaciones</h5>
+                    <p class="text-muted">Recarga la página e intenta nuevamente</p>
+                </div>
+            `;
+        }
+    }
 }
 
 function unassignUser(userId) {
@@ -1225,25 +1372,59 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // JS para renderizar usuarios como cards visuales
 function renderUserSelection(users) {
-    const panel = document.getElementById('userSelectionPanel');
-    if (!users || users.length === 0) {
-        panel.innerHTML = '<div class="text-muted">No hay usuarios disponibles</div>';
-        return;
+    try {
+        console.log('👤 [UserAssignment] renderUserSelection() - Iniciando render de usuarios...');
+        console.log('👤 [UserAssignment] renderUserSelection() - Users recibidos:', users);
+        
+        const panel = document.getElementById('userSelectionPanel');
+        
+        // Fix: Handle Entity Framework $values serialization
+        const dataArray = users ? (users.$values || users) : [];
+        console.log('👤 [UserAssignment] renderUserSelection() - Users array:', dataArray);
+        
+        if (!dataArray || !Array.isArray(dataArray) || dataArray.length === 0) {
+            console.warn('⚠️ [UserAssignment] renderUserSelection() - No hay usuarios disponibles');
+            panel.innerHTML = '<div class="text-muted">No hay usuarios disponibles</div>';
+            return;
+        }
+        
+        panel.innerHTML = dataArray.map(u => `
+            <label class="user-option">
+                <input type="radio" name="userId" value="${u.id}" onchange="panelUserChanged()">
+                <div class="user-card">
+                    <div class="user-avatar"><i class="fas fa-user"></i></div>
+                    <div class="user-name">${u.fullName || u.email}</div>
+                    <div class="user-email">${u.email}</div>
+                </div>
+            </label>
+        `).join('');
+        
+        // Agregar logs para debug
+        console.log('👤 [UserAssignment] renderUserSelection() - HTML generado:', panel.innerHTML);
+        console.log('👤 [UserAssignment] renderUserSelection() - Radio buttons encontrados:', panel.querySelectorAll('input[type="radio"]').length);
+        
+        console.log(`✅ [UserAssignment] renderUserSelection() - ${dataArray.length} usuarios renderizados`);
+    } catch (error) {
+        console.error('❌ [UserAssignment] renderUserSelection() - Error:', error);
+        const panel = document.getElementById('userSelectionPanel');
+        panel.innerHTML = '<div class="text-danger">Error al cargar usuarios</div>';
     }
-    panel.innerHTML = users.map(u => `
-        <label class="user-option">
-            <input type="radio" name="userId" value="${u.id}" onchange="panelUserChanged()">
-            <div class="user-card">
-                <div class="user-avatar"><i class="fas fa-user"></i></div>
-                <div class="user-name">${u.fullName}</div>
-                <div class="user-email">${u.email}</div>
-            </div>
-        </label>
-    `).join('');
 }
 
 function panelUserChanged() {
-    // Si necesitas lógica extra al seleccionar usuario, agrégala aquí
+    try {
+        console.log('👤 [UserAssignment] panelUserChanged() - Usuario seleccionado');
+        const selectedUserId = document.querySelector('input[name="userId"]:checked')?.value;
+        console.log('👤 [UserAssignment] panelUserChanged() - UserId seleccionado:', selectedUserId);
+        
+        if (selectedUserId) {
+            console.log('✅ [UserAssignment] panelUserChanged() - Usuario seleccionado correctamente');
+        } else {
+            console.warn('⚠️ [UserAssignment] panelUserChanged() - No se pudo obtener el userId');
+        }
+    } catch (error) {
+        console.error('❌ [UserAssignment] panelUserChanged() - Error:', error);
+    }
 }
 
 // Funciones para acciones
