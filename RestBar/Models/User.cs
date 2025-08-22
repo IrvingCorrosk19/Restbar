@@ -40,7 +40,7 @@ public enum UserRole
     cashier,        // Cajero
     chef,           // Cocinero
     bartender,      // Bartender
-    inventory,      // Inventarista
+    
     accountant,     // Contador
     support         // Soporte Técnico
 }

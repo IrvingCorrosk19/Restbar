@@ -43,19 +43,7 @@ namespace RestBar.Services
             );
         }
 
-        // ✅ NUEVO: Logging para módulo de inventario
-        public async Task LogInventoryActivityAsync(string action, string description, Guid inventoryId, object? oldValues = null, object? newValues = null)
-        {
-            await _auditLogService.LogActivityAsync(
-                action: action,
-                module: AuditModule.INVENTORY.ToString(),
-                description: description,
-                recordId: inventoryId,
-                tableName: "inventories",
-                oldValues: oldValues,
-                newValues: newValues
-            );
-        }
+
 
 
 

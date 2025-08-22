@@ -397,7 +397,7 @@ namespace RestBar.Services
                         Date = g.Key,
                         OrdersProcessed = g.Count(),
                         AverageResponseTime = 2.5m,
-                        ErrorCount = _context.AuditLogs.Count(al => al.Timestamp.HasValue && al.Timestamp.Value.Date == g.Key && al.Action.Contains("Error")),
+                        ErrorCount = _context.AuditLogs.Count(al => al.Timestamp != null && al.Timestamp.Value.Date == g.Key && al.Action.Contains("Error")),
                         ActiveUsers = _context.Users.Count(u => u.IsActive == true),
                         SystemLoad = 75.0m,
                         PerformanceRating = "Good"

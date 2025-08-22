@@ -269,7 +269,7 @@ namespace RestBar.Controllers
                         {
                             if (item.ProductId.HasValue)
                             {
-                                // ✅ NUEVO: Usar el método DecrementStockAsync del InventoryService
+                        
                                 // Stock management removed
                                 
                                 Console.WriteLine($"[PaymentController] Stock management removed for item: {item.Product?.Name}");

@@ -5,7 +5,7 @@ namespace RestBar.Interfaces
         // ✅ Logging específico por módulo
         Task LogUserActivityAsync(string action, string description, Guid? userId = null, object? oldValues = null, object? newValues = null);
         Task LogOrderActivityAsync(string action, string description, Guid orderId, object? oldValues = null, object? newValues = null);
-        Task LogInventoryActivityAsync(string action, string description, Guid inventoryId, object? oldValues = null, object? newValues = null);
+
 
         Task LogProductActivityAsync(string action, string description, Guid productId, object? oldValues = null, object? newValues = null);
         Task LogPaymentActivityAsync(string action, string description, Guid paymentId, object? oldValues = null, object? newValues = null);

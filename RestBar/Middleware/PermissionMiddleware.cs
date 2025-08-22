@@ -103,7 +103,7 @@ namespace RestBar.Middleware
                 _ when pathValue.StartsWith("/product") => "products",
                 
                 // Rutas de inventario
-                _ when pathValue.StartsWith("/inventory") => "inventory",
+    
                 
                 // Rutas de usuarios
                 _ when pathValue.StartsWith("/user") => "users",

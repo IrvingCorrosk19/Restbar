@@ -136,7 +136,7 @@ namespace RestBar.Services
                     UserRole.cashier => action is "orders" or "payments" or "customers",
                     UserRole.chef => action is "kitchen" or "orders",
                     UserRole.bartender => action is "orders" or "kitchen",
-                    UserRole.inventory => action is "inventory" or "products",
+
                     UserRole.accountant => action is "payments" or "reports",
                     UserRole.support => action is "orders" or "users",
                     _ => false

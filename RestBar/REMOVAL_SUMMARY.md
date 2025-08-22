@@ -25,37 +25,34 @@
 ### Referencias Eliminadas
 
 #### Program.cs
-- Registro del servicio `ITransferService` en el contenedor de dependencias
+- Registro del servicio `ITransferService`
 
 #### RestBarContext.cs
-- DbSet `Transfers` y `TransferItems`
-- Configuración del enum `TransferStatus` en PostgreSQL
+- DbSets de `Transfers` y `TransferItems`
+- Configuración del enum `TransferStatus`
 
 #### AdvancedReportsService.cs
-- Método `GetTransferAnalysisAsync()`
-- Método `GetTransferEfficiencyAsync()`
+- Métodos de análisis de transferencias
+- Reportes de eficiencia de transferencias
 
 #### IAdvancedReportsService.cs
-- Métodos de interfaz para reportes de transferencias
+- Métodos de interfaz para transferencias
+
+#### AdvancedReportsViewModels.cs
+- Clases `TransferAnalysisReport` y `TransferEfficiencyData`
 
 #### AdvancedReportsController.cs
-- Método `TransferAnalysis()`
-- Método `GetTransferEfficiency()`
-- Método `GetTransferAnalysis()`
+- Acciones de análisis de transferencias
 
-#### ViewModels/AdvancedReportsViewModels.cs
-- Clase `TransferAnalysisReport`
-- Clase `TransferEfficiencyData`
-
-#### Views/AdvancedReports/Index.cshtml
-- Tarjeta de navegación para análisis de transferencias
+#### HomeController.cs
+- Propiedad `Transfers` en `CardVisibility`
+- Referencias en configuración de roles
 
 #### Views/Home/Index.cshtml
-- Tarjeta de navegación para transferencias en el dashboard
+- Card de transferencias en el dashboard
 
-#### Controllers/HomeController.cs
-- Propiedad `Transfers` en `CardVisibility`
-- Referencias a transferencias en la configuración de roles
+#### Views/AdvancedReports/Index.cshtml
+- Sección de análisis de transferencias
 
 ## Módulo de Configuración Avanzada Eliminado
 
@@ -65,87 +62,112 @@
 - `Controllers/AdvancedSettingsController.cs` - Controlador de configuración avanzada
 
 #### Interfaces
-- `Interfaces/ISystemSettingsService.cs` - Interfaz de configuración del sistema
-- `Interfaces/IPrinterService.cs` - Interfaz de impresoras
-- `Interfaces/ICurrencyService.cs` - Interfaz de monedas
-- `Interfaces/ITaxRateService.cs` - Interfaz de tasas de impuesto
-- `Interfaces/IDiscountPolicyService.cs` - Interfaz de políticas de descuento
-- `Interfaces/IOperatingHoursService.cs` - Interfaz de horarios de operación
-- `Interfaces/INotificationSettingsService.cs` - Interfaz de configuración de notificaciones
-- `Interfaces/IBackupSettingsService.cs` - Interfaz de configuración de respaldos
+- `Interfaces/ISystemSettingsService.cs`
+- `Interfaces/IPrinterService.cs`
+- `Interfaces/ICurrencyService.cs`
+- `Interfaces/ITaxRateService.cs`
+- `Interfaces/IDiscountPolicyService.cs`
+- `Interfaces/IOperatingHoursService.cs`
+- `Interfaces/INotificationSettingsService.cs`
+- `Interfaces/IBackupSettingsService.cs`
 
 #### Servicios
-- `Services/SystemSettingsService.cs` - Servicio de configuración del sistema
-- `Services/PrinterService.cs` - Servicio de impresoras
-- `Services/CurrencyService.cs` - Servicio de monedas
-- `Services/TaxRateService.cs` - Servicio de tasas de impuesto
-- `Services/DiscountPolicyService.cs` - Servicio de políticas de descuento
-- `Services/OperatingHoursService.cs` - Servicio de horarios de operación
-- `Services/NotificationSettingsService.cs` - Servicio de configuración de notificaciones
-- `Services/BackupSettingsService.cs` - Servicio de configuración de respaldos
+- `Services/SystemSettingsService.cs`
+- `Services/PrinterService.cs`
+- `Services/CurrencyService.cs`
+- `Services/TaxRateService.cs`
+- `Services/DiscountPolicyService.cs`
+- `Services/OperatingHoursService.cs`
+- `Services/NotificationSettingsService.cs`
+- `Services/BackupSettingsService.cs`
 
 #### Modelos
-- `Models/SystemSettings.cs` - Modelo de configuración del sistema
-- `Models/Printer.cs` - Modelo de impresoras
-- `Models/Currency.cs` - Modelo de monedas
-- `Models/TaxRate.cs` - Modelo de tasas de impuesto
-- `Models/DiscountPolicy.cs` - Modelo de políticas de descuento
-- `Models/OperatingHours.cs` - Modelo de horarios de operación
-- `Models/NotificationSettings.cs` - Modelo de configuración de notificaciones
-- `Models/BackupSettings.cs` - Modelo de configuración de respaldos
+- `Models/SystemSettings.cs`
+- `Models/Printer.cs`
+- `Models/Currency.cs`
+- `Models/TaxRate.cs`
+- `Models/DiscountPolicy.cs`
+- `Models/OperatingHours.cs`
+- `Models/NotificationSettings.cs`
+- `Models/BackupSettings.cs`
 
 #### Vistas
-- `Views/AdvancedSettings/Index.cshtml` - Vista principal de configuración avanzada
-- `Views/AdvancedSettings/SystemSettings.cshtml` - Vista de configuración del sistema
+- `Views/AdvancedSettings/Index.cshtml`
+- `Views/AdvancedSettings/SystemSettings.cshtml`
 - `Views/AdvancedSettings/` - Directorio completo eliminado
 
 ### Referencias Eliminadas
 
 #### Program.cs
-- Registro de todos los servicios de configuración avanzada en el contenedor de dependencias
+- Registro de todos los servicios de configuración avanzada
 
 #### RestBarContext.cs
 - DbSets de todas las entidades de configuración avanzada
 
-#### Controllers/HomeController.cs
+#### HomeController.cs
 - Propiedad `AdvancedSettings` en `CardVisibility`
-- Referencias a configuración avanzada en la configuración de roles
+- Referencias en configuración de roles
 
 #### Views/Home/Index.cshtml
-- Tarjeta de navegación para configuración avanzada en el dashboard
+- Card de ajustes avanzados en el dashboard
+
+## Módulo de Inventario Eliminado
+
+### Referencias Eliminadas
+
+#### ViewModels/AdvancedReportsViewModels.cs
+- Clases `InventoryAnalysisReport`, `LowStockAlert`, `InventoryTurnoverData`, `InventoryValueReport`
+
+#### Interfaces/IGlobalLoggingService.cs
+- Método `LogInventoryActivityAsync`
+
+#### Models/AuditLog.cs
+- Valor `INVENTORY` del enum `AuditModule`
+
+#### Models/User.cs
+- Valor `inventory` del enum `UserRole`
+
+#### Controllers/HomeController.cs
+- Caso `inventory` en configuración de roles
+
+#### Program.cs
+- Rol `inventory` en política `ProductAccess`
+
+#### Helpers/AuthorizationHelper.cs
+- Referencias a rol `inventory` en mapeo de roles
+- Menú para rol `inventory`
+
+#### Middleware/PermissionMiddleware.cs
+- Ruta `/inventory` en mapeo de permisos
+
+#### Controllers/AuthController.cs
+- Redirección para rol `inventory`
+
+#### Controllers/PaymentController.cs
+- Comentario sobre `InventoryService`
 
 ## Scripts SQL Creados
 
 ### Scripts/remove_transfers.sql
-- Script para eliminar las tablas `Transfers` y `TransferItems` de la base de datos
-- Eliminación del enum `transfer_status_enum`
+- Elimina tablas `Transfers` y `TransferItems`
+- Elimina enum `transfer_status_enum`
 
 ### Scripts/remove_advanced_settings.sql
-- Script para eliminar todas las tablas de configuración avanzada de la base de datos
+- Elimina todas las tablas de configuración avanzada
+- Elimina enums relacionados
 
-## Notas Importantes
-
-1. **Métodos de Pago**: Se mantuvieron las referencias a "Transferencia" como método de pago en las vistas de órdenes y pagos, ya que no están relacionadas con el módulo de transferencias entre sucursales.
-
-2. **Migraciones**: Las migraciones existentes no se modificaron ya que representan el estado histórico de la base de datos.
-
-3. **Base de Datos**: Se deben ejecutar los scripts SQL en la base de datos para completar la eliminación.
-
-## Pasos para Completar la Eliminación
-
-1. Ejecutar los scripts SQL en la base de datos:
-   ```sql
-   \i Scripts/remove_transfers.sql
-   \i Scripts/remove_advanced_settings.sql
-   ```
-
-2. Verificar que no hay errores de compilación:
-   ```bash
-   dotnet build
-   ```
-
-3. Probar que la aplicación funciona correctamente sin los módulos eliminados.
+### Scripts/remove_unused_tables.sql
+- Elimina tablas no utilizadas: `accounts`, `journal_entries`, `journal_entry_details`
+- Elimina tablas de inventario: `inventory`, `inventory_movements`
+- Elimina tablas de compras: `purchase_orders`, `purchase_order_items`, etc.
+- Elimina tablas de proveedores: `suppliers`
+- Elimina tablas de configuración: `company_settings`, `company_subscriptions`
+- Elimina enums no utilizados: `purchase_order_status_enum`, `movement_type_enum`
 
 ## Estado Final
 
-Los módulos de transferencias y configuración avanzada han sido completamente eliminados del sistema RestBar. Todas las referencias en el código han sido removidas y el sistema debería funcionar normalmente sin estos módulos.
+Los módulos de transferencias, configuración avanzada e inventario han sido completamente eliminados del sistema RestBar. Todas las referencias en el código han sido removidas y el sistema debería funcionar normalmente sin estos módulos.
+
+Las tablas no utilizadas en la base de datos también han sido identificadas y se ha creado un script para eliminarlas.
+
+**Nota:** Los scripts SQL deben ejecutarse manualmente en la base de datos PostgreSQL para completar la limpieza.

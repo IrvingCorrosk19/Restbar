@@ -97,7 +97,7 @@ public enum AuditModule
 {
     USER,
     ORDER,
-    INVENTORY,
+    
 
     PRODUCT,
     PAYMENT,

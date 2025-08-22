@@ -68,7 +68,7 @@ builder.Services.AddAuthorization(options =>
 
     
     // Políticas para área de productos
-    options.AddPolicy("ProductAccess", policy => policy.RequireRole("admin", "manager", "inventory"));
+    options.AddPolicy("ProductAccess", policy => policy.RequireRole("admin", "manager"));
     
     // Políticas para área de usuarios
     options.AddPolicy("UserManagement", policy => policy.RequireRole("admin", "manager", "support"));

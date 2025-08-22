@@ -2,57 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace RestBar.ViewModels
 {
-    // ===== ANÁLISIS DE INVENTARIO =====
-    public class InventoryAnalysisReport
-    {
-        public int TotalProducts { get; set; }
-        public int LowStockProducts { get; set; }
-        public int OutOfStockProducts { get; set; }
-        public decimal TotalInventoryValue { get; set; }
-        public decimal AverageStockLevel { get; set; }
-        public decimal StockTurnoverRate { get; set; }
-        public List<LowStockAlert> LowStockAlerts { get; set; } = new();
-        public List<InventoryTurnoverData> TurnoverData { get; set; } = new();
-        public List<InventoryValueReport> ValueReport { get; set; } = new();
-    }
 
-    public class LowStockAlert
-    {
-        public Guid ProductId { get; set; }
-        public string ProductName { get; set; } = "";
-        public string CategoryName { get; set; } = "";
-        public decimal CurrentStock { get; set; }
-        public decimal MinStock { get; set; }
-        public decimal ReorderPoint { get; set; }
-        public string BranchName { get; set; } = "";
-        public DateTime LastUpdated { get; set; }
-        public string AlertLevel { get; set; } = ""; // "Critical", "Warning", "Info"
-    }
-
-    public class InventoryTurnoverData
-    {
-        public Guid ProductId { get; set; }
-        public string ProductName { get; set; } = "";
-        public string CategoryName { get; set; } = "";
-        public decimal AverageStock { get; set; }
-        public decimal TotalSold { get; set; }
-        public decimal TurnoverRate { get; set; }
-        public int DaysToSell { get; set; }
-        public string Efficiency { get; set; } = ""; // "High", "Medium", "Low"
-    }
-
-    public class InventoryValueReport
-    {
-        public Guid ProductId { get; set; }
-        public string ProductName { get; set; } = "";
-        public string CategoryName { get; set; } = "";
-        public decimal CurrentStock { get; set; }
-        public decimal UnitCost { get; set; }
-        public decimal TotalValue { get; set; }
-        public decimal LastMonthValue { get; set; }
-        public decimal ValueChange { get; set; }
-        public string BranchName { get; set; } = "";
-    }
 
     // ===== ANÁLISIS DE PROVEEDORES =====
 

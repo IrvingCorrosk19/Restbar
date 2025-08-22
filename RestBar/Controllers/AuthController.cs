@@ -219,7 +219,7 @@ namespace RestBar.Controllers
                 UserRole.cashier => "Order",
                 UserRole.chef => "StationOrders",
                 UserRole.bartender => "StationOrders",
-                UserRole.inventory => "Product",
+
                 UserRole.accountant => "Home",
                 UserRole.support => "Home",
                 _ => "Home"

@@ -188,23 +188,7 @@ namespace RestBar.Controllers
                     cards.SecurityAdmin = false;
                     break;
                     
-                case "inventory":
-                    // Inventarista acceso a productos e inventario
-                    cards.Products = true;
 
-                    cards.Categories = true;
-                    cards.Orders = false;
-                    cards.Tables = false;
-                    cards.Kitchen = false;
-                    cards.Payments = false;
-                    cards.UserManagement = false;
-                    cards.Stations = false;
-                    cards.Areas = false;
-                    cards.Companies = false;
-                    cards.Branches = false;
-                    cards.Reports = false;
-                    cards.SecurityAdmin = false;
-                    break;
                     
                 case "accountant":
                     // Contador acceso a pagos y reportes

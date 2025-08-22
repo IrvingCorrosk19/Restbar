@@ -94,7 +94,7 @@ namespace RestBar.Helpers
                 "cashier" => "role-cashier",
                 "chef" => "role-chef",
                 "bartender" => "role-bartender",
-                "inventory" => "role-inventory",
+    
                 "accountant" => "role-accountant",
                 "support" => "role-support",
                 _ => "role-default"
@@ -115,7 +115,7 @@ namespace RestBar.Helpers
                 "cashier" => "Cajero",
                 "chef" => "Cocinero",
                 "bartender" => "Bartender",
-                "inventory" => "Inventarista",
+    
                 "accountant" => "Contador",
                 "support" => "Soporte Técnico",
                 _ => role
@@ -142,7 +142,7 @@ namespace RestBar.Helpers
                 "cashier" => action is "orders" or "payments" or "customers",
                 "chef" => action is "kitchen" or "orders",
                 "bartender" => action is "orders" or "kitchen",
-                "inventory" => action is "inventory" or "products",
+    
                 "accountant" => action is "payments" or "reports",
                 "support" => action is "orders" or "users",
                 _ => false
@@ -194,7 +194,7 @@ namespace RestBar.Helpers
                             case 'cashier': return ['orders', 'payments', 'customers'].includes(action);
                             case 'chef': return ['kitchen', 'orders'].includes(action);
                             case 'bartender': return ['orders', 'kitchen'].includes(action);
-                            case 'inventory': return ['inventory', 'products'].includes(action);
+                    
                             case 'accountant': return ['payments', 'reports'].includes(action);
                             case 'support': return ['orders', 'users'].includes(action);
                             default: return false;
@@ -339,15 +339,7 @@ namespace RestBar.Helpers
                     new MenuItem { Name = "Órdenes", Icon = "fas fa-shopping-cart", Url = "/Order/Index" }
                 });
             }
-            // Menú para Inventory
-            else if (role.ToLower() == "inventory")
-            {
-                menuItems.AddRange(new[]
-                {
-                    new MenuItem { Name = "Productos", Icon = "fas fa-box", Url = "/Product/Index" },
-                    new MenuItem { Name = "Inventario", Icon = "fas fa-warehouse", Url = "/Inventory/Index" }
-                });
-            }
+
             // Menú para Accountant
             else if (role.ToLower() == "accountant")
             {
