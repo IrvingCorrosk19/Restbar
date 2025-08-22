@@ -21,6 +21,18 @@ namespace RestBar.Services
         {
             return await _context.Categories
                 .Include(c => c.Products)
+                .Include(c => c.Company)
+                .Include(c => c.Branch)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Category>> GetCategoriesByCompanyAndBranchAsync(Guid companyId, Guid branchId)
+        {
+            return await _context.Categories
+                .Include(c => c.Products)
+                .Include(c => c.Company)
+                .Include(c => c.Branch)
+                .Where(c => c.CompanyId == companyId && c.BranchId == branchId)
                 .ToListAsync();
         }
 
@@ -28,6 +40,8 @@ namespace RestBar.Services
         {
             return await _context.Categories
                 .Include(c => c.Products)
+                .Include(c => c.Company)
+                .Include(c => c.Branch)
                 .FirstOrDefaultAsync(c => c.Id == id);
         }
 
@@ -51,6 +65,8 @@ namespace RestBar.Services
             existingCategory.Name = category.Name;
             existingCategory.Description = category.Description;
             existingCategory.IsActive = category.IsActive;
+            existingCategory.CompanyId = category.CompanyId;
+            existingCategory.BranchId = category.BranchId;
 
             await _context.SaveChangesAsync();
             return existingCategory;
@@ -71,6 +87,17 @@ namespace RestBar.Services
         {
             return await _context.Categories
                 .Where(c => c.IsActive)
+                .Include(c => c.Company)
+                .Include(c => c.Branch)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Category>> GetActiveCategoriesByCompanyAndBranchAsync(Guid companyId, Guid branchId)
+        {
+            return await _context.Categories
+                .Where(c => c.IsActive && c.CompanyId == companyId && c.BranchId == branchId)
+                .Include(c => c.Company)
+                .Include(c => c.Branch)
                 .ToListAsync();
         }
     }

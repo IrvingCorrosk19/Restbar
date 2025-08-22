@@ -9,11 +9,15 @@ public partial class Area
 
     public Guid? BranchId { get; set; }
 
+    public Guid? CompanyId { get; set; }
+
     public string Name { get; set; } = null!;
 
     public string? Description { get; set; }
 
     public virtual Branch? Branch { get; set; }
+
+    public virtual Company? Company { get; set; }
 
     public virtual ICollection<Table> Tables { get; set; } = new List<Table>();
     

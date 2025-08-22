@@ -18,6 +18,7 @@ namespace RestBar.Services
         {
             return await _context.Areas
                 .Include(a => a.Branch)
+                .Include(a => a.Company)
                 .Include(a => a.Tables)
                 .ToListAsync();
         }
@@ -26,6 +27,7 @@ namespace RestBar.Services
         {
             return await _context.Areas
                 .Include(a => a.Branch)
+                .Include(a => a.Company)
                 .Include(a => a.Tables)
                 .FirstOrDefaultAsync(a => a.Id == id);
         }
@@ -75,8 +77,54 @@ namespace RestBar.Services
         {
             return await _context.Areas
                 .Where(a => a.BranchId == branchId)
+                .Include(a => a.Branch)
+                .Include(a => a.Company)
                 .Include(a => a.Tables)
                 .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Area>> GetByCompanyIdAsync(Guid companyId)
+        {
+            return await _context.Areas
+                .Where(a => a.CompanyId == companyId)
+                .Include(a => a.Branch)
+                .Include(a => a.Company)
+                .Include(a => a.Tables)
+                .ToListAsync();
+        }
+
+        public async Task<User?> GetCurrentUserWithAssignmentsAsync(Guid userId)
+        {
+            try
+            {
+                Console.WriteLine($"🔍 [AreaService] GetCurrentUserWithAssignmentsAsync() - Buscando usuario con ID: {userId}");
+                
+                var user = await _context.Users
+                    .Include(u => u.Branch)
+                    .Include(u => u.Company) // ✅ Agregado
+                    .FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (user == null)
+                {
+                    Console.WriteLine($"⚠️ [AreaService] GetCurrentUserWithAssignmentsAsync() - Usuario no encontrado: {userId}");
+                    return null;
+                }
+
+                Console.WriteLine($"✅ [AreaService] GetCurrentUserWithAssignmentsAsync() - Usuario encontrado: {user.FullName ?? user.Email}");
+                Console.WriteLine($"🏢 [AreaService] GetCurrentUserWithAssignmentsAsync() - CompanyId: {user.CompanyId}");
+                Console.WriteLine($"🏪 [AreaService] GetCurrentUserWithAssignmentsAsync() - BranchId: {user.BranchId}");
+
+                // Ahora tenemos acceso completo a CompanyId y BranchId del usuario
+                Console.WriteLine($"🎯 [AreaService] GetCurrentUserWithAssignmentsAsync() - Datos completos disponibles");
+
+                return user;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [AreaService] GetCurrentUserWithAssignmentsAsync() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [AreaService] GetCurrentUserWithAssignmentsAsync() - StackTrace: {ex.StackTrace}");
+                return null;
+            }
         }
     }
 }

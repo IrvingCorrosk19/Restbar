@@ -441,6 +441,24 @@
         box-shadow: 0 0 0 3px rgba(231, 126, 34, 0.1);
     }
 
+    .form-control[readonly] {
+        background-color: #f8f9fa;
+        color: var(--primary-color);
+        cursor: not-allowed;
+        border-color: #dee2e6;
+    }
+
+    .form-control[readonly]:focus {
+        border-color: #dee2e6;
+        box-shadow: none;
+    }
+
+    .form-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+
     .modal-footer {
         padding: 1.5rem;
         background: #f8f9fa;
@@ -656,9 +674,17 @@
                         <label class="form-label">
                             <i class="fas fa-building"></i> Sucursal
                         </label>
-                        <select class="form-control" name="BranchId" id="areaBranchSelect">
-                            <option value="">Seleccione una sucursal</option>
-                        </select>
+                        <input type="text" class="form-control" id="userBranchDisplay" readonly placeholder="Cargando sucursal del usuario...">
+                        <input type="hidden" name="BranchId" id="userBranchId">
+                        <small class="form-text text-muted">Sucursal del usuario actual</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-industry"></i> Compañía
+                        </label>
+                        <input type="text" class="form-control" id="userCompanyDisplay" readonly placeholder="Cargando compañía del usuario...">
+                        <input type="hidden" name="CompanyId" id="userCompanyId">
+                        <small class="form-text text-muted">Compañía del usuario actual</small>
                     </div>
                     <div class="form-group">
                         <label class="form-label">
@@ -703,9 +729,17 @@
                         <label class="form-label">
                             <i class="fas fa-building"></i> Sucursal
                         </label>
-                        <select class="form-control" name="BranchId">
-                            <option value="">Seleccione una sucursal</option>
-                        </select>
+                        <input type="text" class="form-control" id="editUserBranchDisplay" readonly placeholder="Cargando sucursal del usuario...">
+                        <input type="hidden" name="BranchId" id="editUserBranchId">
+                        <small class="form-text text-muted">Sucursal del usuario actual</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-industry"></i> Compañía
+                        </label>
+                        <input type="text" class="form-control" id="editUserCompanyDisplay" readonly placeholder="Cargando compañía del usuario...">
+                        <input type="hidden" name="CompanyId" id="editUserCompanyId">
+                        <small class="form-text text-muted">Compañía del usuario actual</small>
                     </div>
                     <div class="form-group">
                         <label class="form-label">
@@ -731,30 +765,341 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(document).ready(function () {
-            loadBranches();
-            populateBranchFilter();
-            $('#searchAreaInput').on('keyup', filterAreas);
-            $('#branchFilter').on('change', filterAreas);
+            console.log('🚀 [Area/Index] Inicializando página de áreas...');
+            console.log('📅 [Area/Index] Timestamp:', new Date().toISOString());
+            console.log('🌐 [Area/Index] URL actual:', window.location.href);
+            console.log('🔧 [Area/Index] jQuery disponible:', typeof $ !== 'undefined');
+            console.log('🔧 [Area/Index] jQuery versión:', $.fn.jquery);
+            
+            try {
+                console.log('🔄 [Area/Index] Iniciando carga inicial de datos...');
+                populateBranchFilter();
+                loadCurrentUserData();
+                console.log('✅ [Area/Index] Carga inicial de datos completada');
+                
+                $('#searchAreaInput').on('keyup', filterAreas);
+                $('#branchFilter').on('change', filterAreas);
+                
+                // Cargar datos cuando se abre el modal de creación
+                $('#createAreaModal').on('shown.bs.modal', function () {
+                    console.log('📋 [Area/Index] Modal de creación abierto, cargando datos...');
+                    console.log('📋 [Area/Index] Verificando elementos del modal...');
+                    
+                    // Verificar que los elementos existan
+                    console.log('🎯 [Area/Index] Modal elements check:');
+                    console.log('  - #createAreaModal:', $('#createAreaModal').length);
+                    console.log('  - #areaCompanySelect:', $('#areaCompanySelect').length);
+                    console.log('  - #areaBranchSelect:', $('#areaBranchSelect').length);
+                    console.log('  - #editAreaForm:', $('#editAreaForm').length);
+                    
+                    try {
+                        console.log('🔄 [Area/Index] Iniciando carga de datos...');
+                        loadCurrentUserData();
+                        console.log('✅ [Area/Index] Carga de datos iniciada correctamente');
+                    } catch (error) {
+                        console.error('❌ [Area/Index] Error al cargar datos en modal:', error);
+                        console.error('❌ [Area/Index] Stack trace:', error.stack);
+                    }
+                });
+            } catch (error) {
+                console.error('❌ [Area/Index] Error en inicialización:', error);
+            }
         });
 
         function loadBranches(callback) {
-            $.get('/Area/GetBranches', function (res) {
-                if (res.success) {
-                    const selects = ['#areaBranchSelect', '#editAreaForm select[name="BranchId"]'];
-                    selects.forEach(selectId => {
-                        const select = $(selectId);
-                        const current = select.val();
-                        select.empty().append('<option value="">Seleccione una sucursal</option>');
-                        if (res.data && Array.isArray(res.data)) {
-                            res.data.forEach(branch => {
-                                select.append(`<option value="${branch.id}">${branch.name}</option>`);
-                            });
+            try {
+                console.log('🏪 [Area/Index] loadBranches() - Iniciando carga de sucursales...');
+                console.log('🌐 [Area/Index] loadBranches() - URL de la petición: /Area/GetBranches');
+                
+                $.get('/Area/GetBranches')
+                    .done(function (res) {
+                        try {
+                            console.log('📡 [Area/Index] loadBranches() - Respuesta recibida:', res);
+                            console.log('📡 [Area/Index] loadBranches() - Tipo de respuesta:', typeof res);
+                            console.log('📡 [Area/Index] loadBranches() - Es objeto:', typeof res === 'object');
+                            console.log('📡 [Area/Index] loadBranches() - Tiene success:', res.hasOwnProperty('success'));
+                            console.log('📡 [Area/Index] loadBranches() - Success value:', res.success);
+                            console.log('📡 [Area/Index] loadBranches() - Tiene data:', res.hasOwnProperty('data'));
+                            console.log('📡 [Area/Index] loadBranches() - Data type:', typeof res.data);
+                            console.log('📡 [Area/Index] loadBranches() - Data es array:', Array.isArray(res.data));
+                            
+                            if (res.success) {
+                                const selects = ['#areaBranchSelect', '#editAreaForm select[name="BranchId"]'];
+                                console.log(`📊 [Area/Index] loadBranches() - Procesando ${res.data?.length || 0} sucursales`);
+                                console.log(`📊 [Area/Index] loadBranches() - Selects a actualizar:`, selects);
+                                
+                                selects.forEach(selectId => {
+                                    const select = $(selectId);
+                                    console.log(`🎯 [Area/Index] loadBranches() - Procesando select: ${selectId}`);
+                                    console.log(`🎯 [Area/Index] loadBranches() - Select encontrado:`, select.length > 0);
+                                    
+                                    if (select.length > 0) {
+                                        const current = select.val();
+                                        console.log(`🎯 [Area/Index] loadBranches() - Valor actual: ${current}`);
+                                        
+                                        select.empty().append('<option value="">Seleccione una sucursal</option>');
+                                        
+                                        if (res.data && Array.isArray(res.data)) {
+                                            res.data.forEach(branch => {
+                                                console.log(`🏪 [Area/Index] loadBranches() - Agregando sucursal: ${branch.name} (ID: ${branch.id})`);
+                                                select.append(`<option value="${branch.id}">${branch.name}</option>`);
+                                            });
+                                            console.log(`✅ [Area/Index] loadBranches() - ${res.data.length} sucursales cargadas en ${selectId}`);
+                                        } else {
+                                            console.warn('⚠️ [Area/Index] loadBranches() - No hay datos de sucursales o no es un array');
+                                            console.warn('⚠️ [Area/Index] loadBranches() - Data:', res.data);
+                                        }
+                                        
+                                        select.val(current);
+                                        console.log(`🎯 [Area/Index] loadBranches() - Valor final: ${select.val()}`);
+                                    } else {
+                                        console.warn(`⚠️ [Area/Index] loadBranches() - Select no encontrado: ${selectId}`);
+                                    }
+                                });
+                                
+                                if (callback) {
+                                    console.log('🔄 [Area/Index] loadBranches() - Ejecutando callback...');
+                                    callback();
+                                }
+                            } else {
+                                console.error('❌ [Area/Index] loadBranches() - Error en respuesta:', res.message);
+                                console.error('❌ [Area/Index] loadBranches() - Respuesta completa:', res);
+                            }
+                        } catch (error) {
+                            console.error('❌ [Area/Index] loadBranches() - Error procesando respuesta:', error);
+                            console.error('❌ [Area/Index] loadBranches() - Stack trace:', error.stack);
                         }
-                        select.val(current);
+                    })
+                    .fail(function (xhr, status, error) {
+                        console.error('❌ [Area/Index] loadBranches() - Error en AJAX:', error);
+                        console.error('📡 [Area/Index] loadBranches() - Status:', status);
+                        console.error('📡 [Area/Index] loadBranches() - Status code:', xhr.status);
+                        console.error('📡 [Area/Index] loadBranches() - Status text:', xhr.statusText);
+                        console.error('📡 [Area/Index] loadBranches() - Response text:', xhr.responseText);
+                        console.error('📡 [Area/Index] loadBranches() - Ready state:', xhr.readyState);
+                        
+                        // Intentar parsear la respuesta si es JSON
+                        try {
+                            const responseJson = JSON.parse(xhr.responseText);
+                            console.error('📡 [Area/Index] loadBranches() - Response JSON:', responseJson);
+                        } catch (parseError) {
+                            console.error('📡 [Area/Index] loadBranches() - No se pudo parsear como JSON');
+                        }
                     });
-                    if (callback) callback();
-                }
-            });
+            } catch (error) {
+                console.error('❌ [Area/Index] loadBranches() - Error general:', error);
+                console.error('❌ [Area/Index] loadBranches() - Stack trace:', error.stack);
+            }
+        }
+
+        function loadCompanies(callback) {
+            try {
+                console.log('🏢 [Area/Index] loadCompanies() - Iniciando carga de compañías...');
+                console.log('🌐 [Area/Index] loadCompanies() - URL de la petición: /Area/GetCompanies');
+                
+                $.get('/Area/GetCompanies')
+                    .done(function (res) {
+                        try {
+                            console.log('📡 [Area/Index] loadCompanies() - Respuesta recibida:', res);
+                            console.log('📡 [Area/Index] loadCompanies() - Tipo de respuesta:', typeof res);
+                            console.log('📡 [Area/Index] loadCompanies() - Es objeto:', typeof res === 'object');
+                            console.log('📡 [Area/Index] loadCompanies() - Tiene success:', res.hasOwnProperty('success'));
+                            console.log('📡 [Area/Index] loadCompanies() - Success value:', res.success);
+                            console.log('📡 [Area/Index] loadCompanies() - Tiene data:', res.hasOwnProperty('data'));
+                            console.log('📡 [Area/Index] loadCompanies() - Data type:', typeof res.data);
+                            console.log('📡 [Area/Index] loadCompanies() - Data es array:', Array.isArray(res.data));
+                            
+                            if (res.success) {
+                                const selects = ['#areaCompanySelect', '#editAreaForm select[name="CompanyId"]'];
+                                console.log(`📊 [Area/Index] loadCompanies() - Procesando ${res.data?.length || 0} compañías`);
+                                console.log(`📊 [Area/Index] loadCompanies() - Selects a actualizar:`, selects);
+                                
+                                selects.forEach(selectId => {
+                                    const select = $(selectId);
+                                    console.log(`🎯 [Area/Index] loadCompanies() - Procesando select: ${selectId}`);
+                                    console.log(`🎯 [Area/Index] loadCompanies() - Select encontrado:`, select.length > 0);
+                                    
+                                    if (select.length > 0) {
+                                        const current = select.val();
+                                        console.log(`🎯 [Area/Index] loadCompanies() - Valor actual: ${current}`);
+                                        
+                                        select.empty().append('<option value="">Seleccione una compañía</option>');
+                                        
+                                        if (res.data && Array.isArray(res.data)) {
+                                            res.data.forEach(company => {
+                                                console.log(`🏢 [Area/Index] loadCompanies() - Agregando compañía: ${company.name} (ID: ${company.id})`);
+                                                select.append(`<option value="${company.id}">${company.name}</option>`);
+                                            });
+                                            console.log(`✅ [Area/Index] loadCompanies() - ${res.data.length} compañías cargadas en ${selectId}`);
+                                        } else {
+                                            console.warn('⚠️ [Area/Index] loadCompanies() - No hay datos de compañías o no es un array');
+                                            console.warn('⚠️ [Area/Index] loadCompanies() - Data:', res.data);
+                                        }
+                                        
+                                        select.val(current);
+                                        console.log(`🎯 [Area/Index] loadCompanies() - Valor final: ${select.val()}`);
+                                    } else {
+                                        console.warn(`⚠️ [Area/Index] loadCompanies() - Select no encontrado: ${selectId}`);
+                                    }
+                                });
+                                
+                                if (callback) {
+                                    console.log('🔄 [Area/Index] loadCompanies() - Ejecutando callback...');
+                                    callback();
+                                }
+                            } else {
+                                console.error('❌ [Area/Index] loadCompanies() - Error en respuesta:', res.message);
+                                console.error('❌ [Area/Index] loadCompanies() - Respuesta completa:', res);
+                            }
+                        } catch (error) {
+                            console.error('❌ [Area/Index] loadCompanies() - Error procesando respuesta:', error);
+                            console.error('❌ [Area/Index] loadCompanies() - Stack trace:', error.stack);
+                        }
+                    })
+                    .fail(function (xhr, status, error) {
+                        console.error('❌ [Area/Index] loadCompanies() - Error en AJAX:', error);
+                        console.error('📡 [Area/Index] loadCompanies() - Status:', status);
+                        console.error('📡 [Area/Index] loadCompanies() - Status code:', xhr.status);
+                        console.error('📡 [Area/Index] loadCompanies() - Status text:', xhr.statusText);
+                        console.error('📡 [Area/Index] loadCompanies() - Response text:', xhr.responseText);
+                        console.error('📡 [Area/Index] loadCompanies() - Ready state:', xhr.readyState);
+                        
+                        // Intentar parsear la respuesta si es JSON
+                        try {
+                            const responseJson = JSON.parse(xhr.responseText);
+                            console.error('📡 [Area/Index] loadCompanies() - Response JSON:', responseJson);
+                        } catch (parseError) {
+                            console.error('📡 [Area/Index] loadCompanies() - No se pudo parsear como JSON');
+                        }
+                    });
+            } catch (error) {
+                console.error('❌ [Area/Index] loadCompanies() - Error general:', error);
+                console.error('❌ [Area/Index] loadCompanies() - Stack trace:', error.stack);
+            }
+        }
+
+        function loadCurrentUserData() {
+            try {
+                console.log('👤 [Area/Index] loadCurrentUserData() - Obteniendo datos del usuario actual...');
+                
+                // Cargar compañía y sucursal del usuario actual directamente
+                loadCompanyName();
+                loadBranchName();
+                
+                console.log('✅ [Area/Index] loadCurrentUserData() - Datos del usuario cargados');
+            } catch (error) {
+                console.error('❌ [Area/Index] loadCurrentUserData() - Error general:', error);
+            }
+        }
+
+        function loadCompanyName() {
+            try {
+                console.log('🏢 [Area/Index] loadCompanyName() - Cargando compañía del usuario actual...');
+                
+                $.get('/Area/GetCompanies')
+                    .done(function (res) {
+                        try {
+                            console.log('📡 [Area/Index] loadCompanyName() - Respuesta completa:', res);
+                            console.log('📡 [Area/Index] loadCompanyName() - Success:', res.success);
+                            console.log('📡 [Area/Index] loadCompanyName() - Data:', res.data);
+                            console.log('📡 [Area/Index] loadCompanyName() - Data length:', res.data?.length);
+                            console.log('📡 [Area/Index] loadCompanyName() - Message:', res.message);
+                            
+                            // Verificar si los datos están en $values (Entity Framework)
+                            const dataArray = res.data.$values || res.data;
+                            console.log('📡 [Area/Index] loadCompanyName() - Data array:', dataArray);
+                            console.log('📡 [Area/Index] loadCompanyName() - Data array length:', dataArray?.length);
+                            
+                            if (res.success && dataArray && dataArray.length > 0) {
+                                const company = dataArray[0]; // Solo hay una compañía (la del usuario)
+                                console.log(`✅ [Area/Index] loadCompanyName() - Compañía encontrada: ${company.name} (ID: ${company.id})`);
+                                
+                                // Actualizar campos en modal de creación
+                                $('#userCompanyDisplay').val(company.name);
+                                $('#userCompanyId').val(company.id);
+                                
+                                // Actualizar campos en modal de edición
+                                $('#editUserCompanyDisplay').val(company.name);
+                                $('#editUserCompanyId').val(company.id);
+                                
+                                console.log('✅ [Area/Index] loadCompanyName() - Campos actualizados correctamente');
+                            } else {
+                                console.warn('⚠️ [Area/Index] loadCompanyName() - No se encontró compañía para el usuario');
+                                console.warn('⚠️ [Area/Index] loadCompanyName() - Success:', res.success);
+                                console.warn('⚠️ [Area/Index] loadCompanyName() - Message:', res.message);
+                                console.warn('⚠️ [Area/Index] loadCompanyName() - Data:', res.data);
+                                $('#userCompanyDisplay').val('Compañía no encontrada');
+                                $('#editUserCompanyDisplay').val('Compañía no encontrada');
+                            }
+                        } catch (error) {
+                            console.error('❌ [Area/Index] loadCompanyName() - Error procesando respuesta:', error);
+                        }
+                    })
+                    .fail(function (xhr, status, error) {
+                        console.error('❌ [Area/Index] loadCompanyName() - Error en AJAX:', error);
+                        console.error('📡 [Area/Index] loadCompanyName() - Status:', status);
+                        console.error('📡 [Area/Index] loadCompanyName() - Response:', xhr.responseText);
+                        $('#userCompanyDisplay').val('Error al cargar compañía');
+                        $('#editUserCompanyDisplay').val('Error al cargar compañía');
+                    });
+            } catch (error) {
+                console.error('❌ [Area/Index] loadCompanyName() - Error general:', error);
+            }
+        }
+
+        function loadBranchName() {
+            try {
+                console.log('🏪 [Area/Index] loadBranchName() - Cargando sucursal del usuario actual...');
+                
+                $.get('/Area/GetBranches')
+                    .done(function (res) {
+                        try {
+                            console.log('📡 [Area/Index] loadBranchName() - Respuesta completa:', res);
+                            console.log('📡 [Area/Index] loadBranchName() - Success:', res.success);
+                            console.log('📡 [Area/Index] loadBranchName() - Data:', res.data);
+                            console.log('📡 [Area/Index] loadBranchName() - Data length:', res.data?.length);
+                            console.log('📡 [Area/Index] loadBranchName() - Message:', res.message);
+                            
+                            // Verificar si los datos están en $values (Entity Framework)
+                            const dataArray = res.data.$values || res.data;
+                            console.log('📡 [Area/Index] loadBranchName() - Data array:', dataArray);
+                            console.log('📡 [Area/Index] loadBranchName() - Data array length:', dataArray?.length);
+                            
+                            if (res.success && dataArray && dataArray.length > 0) {
+                                const branch = dataArray[0]; // Solo hay una sucursal (la del usuario)
+                                console.log(`✅ [Area/Index] loadBranchName() - Sucursal encontrada: ${branch.name} (ID: ${branch.id})`);
+                                
+                                // Actualizar campos en modal de creación
+                                $('#userBranchDisplay').val(branch.name);
+                                $('#userBranchId').val(branch.id);
+                                
+                                // Actualizar campos en modal de edición
+                                $('#editUserBranchDisplay').val(branch.name);
+                                $('#editUserBranchId').val(branch.id);
+                                
+                                console.log('✅ [Area/Index] loadBranchName() - Campos actualizados correctamente');
+                            } else {
+                                console.warn('⚠️ [Area/Index] loadBranchName() - No se encontró sucursal para el usuario');
+                                console.warn('⚠️ [Area/Index] loadBranchName() - Success:', res.success);
+                                console.warn('⚠️ [Area/Index] loadBranchName() - Message:', res.message);
+                                console.warn('⚠️ [Area/Index] loadBranchName() - Data:', res.data);
+                                $('#userBranchDisplay').val('Sucursal no encontrada');
+                                $('#editUserBranchDisplay').val('Sucursal no encontrada');
+                            }
+                        } catch (error) {
+                            console.error('❌ [Area/Index] loadBranchName() - Error procesando respuesta:', error);
+                        }
+                    })
+                    .fail(function (xhr, status, error) {
+                        console.error('❌ [Area/Index] loadBranchName() - Error en AJAX:', error);
+                        console.error('📡 [Area/Index] loadBranchName() - Status:', status);
+                        console.error('📡 [Area/Index] loadBranchName() - Response:', xhr.responseText);
+                        $('#userBranchDisplay').val('Error al cargar sucursal');
+                        $('#editUserBranchDisplay').val('Error al cargar sucursal');
+                    });
+            } catch (error) {
+                console.error('❌ [Area/Index] loadBranchName() - Error general:', error);
+            }
         }
 
         function populateBranchFilter() {
@@ -787,54 +1132,92 @@
         }
 
         window.createArea = function () {
-            const form = $('#createAreaForm');
-            const formData = {};
-            let errors = [];
-            form.serializeArray().forEach(item => {
-                formData[item.name] = item.value;
-            });
-            formData.BranchId = formData.BranchId || null;
-            // Validaciones
-            if (!formData.Name || formData.Name.trim() === "") {
-                errors.push('El nombre es requerido');
-            }
-            if (!formData.BranchId) {
-                errors.push('La sucursal es requerida');
-            }
-            if (errors.length > 0) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error de validación',
-                    html: errors.join('<br>'),
-                    confirmButtonColor: '#e74c3c'
+            try {
+                console.log('➕ [Area/Index] createArea() - Iniciando creación de área...');
+                
+                const form = $('#createAreaForm');
+                const formData = {};
+                let errors = [];
+                
+                console.log('📋 [Area/Index] createArea() - Serializando formulario...');
+                form.serializeArray().forEach(item => {
+                    formData[item.name] = item.value;
+                    console.log(`📝 [Area/Index] createArea() - Campo: ${item.name} = ${item.value}`);
                 });
-                return;
-            }
-            Swal.fire({
-                title: 'Creando área...',
-                allowOutsideClick: false,
-                didOpen: () => { Swal.showLoading(); }
-            });
-            $.ajax({
-                url: '/Area/Create',
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(formData),
-                success: function (response) {
-                    Swal.close();
-                    if (response.success) {
-                        $('#createAreaModal').modal('hide');
-                        location.reload();
-                        showSuccess('Área creada exitosamente');
-                    } else {
-                        showError(response.message);
-                    }
-                },
-                error: function () {
-                    Swal.close();
-                    showError('Error al crear el área');
+                
+                formData.BranchId = formData.BranchId || null;
+                formData.CompanyId = formData.CompanyId || null;
+                
+                console.log('🔍 [Area/Index] createArea() - Datos del formulario:', formData);
+                
+                // Validaciones
+                if (!formData.Name || formData.Name.trim() === "") {
+                    errors.push('El nombre es requerido');
                 }
-            });
+                if (!formData.BranchId) {
+                    errors.push('La sucursal es requerida');
+                }
+                if (!formData.CompanyId) {
+                    errors.push('La compañía es requerida');
+                }
+                
+                if (errors.length > 0) {
+                    console.error('❌ [Area/Index] createArea() - Errores de validación:', errors);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error de validación',
+                        html: errors.join('<br>'),
+                        confirmButtonColor: '#e74c3c'
+                    });
+                    return;
+                }
+                
+                console.log('✅ [Area/Index] createArea() - Validaciones pasadas, enviando datos...');
+                
+                Swal.fire({
+                    title: 'Creando área...',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+                
+                $.ajax({
+                    url: '/Area/Create',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),
+                    success: function (response) {
+                        try {
+                            Swal.close();
+                            console.log('📡 [Area/Index] createArea() - Respuesta recibida:', response);
+                            
+                            if (response.success) {
+                                console.log('✅ [Area/Index] createArea() - Área creada exitosamente');
+                                $('#createAreaModal').modal('hide');
+                                location.reload();
+                                showSuccess('Área creada exitosamente');
+                            } else {
+                                console.error('❌ [Area/Index] createArea() - Error en respuesta:', response.message);
+                                showError(response.message);
+                            }
+                        } catch (error) {
+                            console.error('❌ [Area/Index] createArea() - Error procesando respuesta:', error);
+                            Swal.close();
+                            showError('Error al procesar la respuesta del servidor');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('❌ [Area/Index] createArea() - Error en AJAX:', error);
+                        console.error('📡 [Area/Index] createArea() - Status:', status);
+                        console.error('📡 [Area/Index] createArea() - Response:', xhr.responseText);
+                        Swal.close();
+                        showError('Error al crear el área');
+                    }
+                });
+            } catch (error) {
+                console.error('❌ [Area/Index] createArea() - Error general:', error);
+                Swal.close();
+                showError('Error inesperado al crear el área');
+            }
         }
 
         window.editArea = function (id) {
@@ -843,33 +1226,33 @@
                 allowOutsideClick: false,
                 didOpen: () => { Swal.showLoading(); }
             });
-            loadBranches(function () {
-                $.ajax({
-                    url: `/Area/Get/${id}`,
-                    method: 'GET',
-                    success: function (response) {
-                        Swal.close();
-                        if (response.success) {
-                            const area = response.data;
-                            const form = $('#editAreaForm');
-                            form[0].reset();
-                            form.find('[name="Id"]').val(area.id);
-                            form.find('[name="Name"]').val(area.name);
-                            form.find('[name="Description"]').val(area.description);
-                            if (area.branchId) {
-                                form.find('[name="BranchId"]').val(area.branchId);
-                            }
-                            const editModal = new bootstrap.Modal(document.getElementById('editAreaModal'));
-                            editModal.show();
-                        } else {
-                            showError(response.message || 'Error al cargar el área');
-                        }
-                    },
-                    error: function () {
-                        Swal.close();
-                        showError('Error al cargar el área.');
+            
+            $.ajax({
+                url: `/Area/Get/${id}`,
+                method: 'GET',
+                success: function (response) {
+                    Swal.close();
+                    if (response.success) {
+                        const area = response.data;
+                        const form = $('#editAreaForm');
+                        form[0].reset();
+                        form.find('[name="Id"]').val(area.id);
+                        form.find('[name="Name"]').val(area.name);
+                        form.find('[name="Description"]').val(area.description);
+                        
+                        // Cargar datos del usuario actual para el modal de edición
+                        loadCurrentUserData();
+                        
+                        const editModal = new bootstrap.Modal(document.getElementById('editAreaModal'));
+                        editModal.show();
+                    } else {
+                        showError(response.message || 'Error al cargar el área');
                     }
-                });
+                },
+                error: function () {
+                    Swal.close();
+                    showError('Error al cargar el área.');
+                }
             });
         }
 
@@ -881,12 +1264,16 @@
                 formData[item.name] = item.value;
             });
             formData.BranchId = formData.BranchId || null;
+            formData.CompanyId = formData.CompanyId || null;
             // Validaciones
             if (!formData.Name || formData.Name.trim() === "") {
                 errors.push('El nombre es requerido');
             }
             if (!formData.BranchId) {
                 errors.push('La sucursal es requerida');
+            }
+            if (!formData.CompanyId) {
+                errors.push('La compañía es requerida');
             }
             if (errors.length > 0) {
                 Swal.fire({

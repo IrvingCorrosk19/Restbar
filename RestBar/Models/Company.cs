@@ -28,4 +28,8 @@ public partial class Company : ITrackableEntity
     public string? UpdatedBy { get; set; }
 
     public virtual ICollection<Branch> Branches { get; set; } = new List<Branch>();
+    
+    public virtual ICollection<Area> Areas { get; set; } = new List<Area>();
+    
+    public virtual ICollection<User> Users { get; set; } = new List<User>(); // ✅ Agregado
 }

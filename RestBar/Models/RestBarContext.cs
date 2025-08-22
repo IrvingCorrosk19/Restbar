@@ -100,6 +100,7 @@ public partial class RestBarContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.CompanyId).HasColumnName("company_id");
             entity.Property(e => e.Name)
                 .HasMaxLength(50)
                 .HasColumnName("name");
@@ -107,6 +108,10 @@ public partial class RestBarContext : DbContext
             entity.HasOne(d => d.Branch).WithMany(p => p.Areas)
                 .HasForeignKey(d => d.BranchId)
                 .HasConstraintName("areas_branch_id_fkey");
+
+            entity.HasOne(d => d.Company).WithMany(p => p.Areas)
+                .HasForeignKey(d => d.CompanyId)
+                .HasConstraintName("areas_company_id_fkey");
         });
 
         modelBuilder.HasPostgresEnum<UserRole>("user_role_enum");
@@ -134,6 +139,10 @@ public partial class RestBarContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.CompanyId).HasColumnName("company_id"); // ✅ Agregado
+            entity.Property(e => e.Username).HasColumnName("Username"); // ✅ Agregado - coincide con "Username"
+            entity.Property(e => e.FirstName).HasColumnName("FirstName"); // ✅ Agregado - coincide con "FirstName"
+            entity.Property(e => e.LastName).HasColumnName("LastName"); // ✅ Agregado - coincide con "LastName"
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("timestamp with time zone")
@@ -152,9 +161,24 @@ public partial class RestBarContext : DbContext
                 .HasColumnType("user_role_enum")
                 .HasColumnName("role");
 
+            // ✅ Configurar campos de auditoría existentes
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("UpdatedAt");
+            entity.Property(e => e.CreatedBy)
+                .HasMaxLength(255)
+                .HasColumnName("CreatedBy");
+            entity.Property(e => e.UpdatedBy)
+                .HasMaxLength(255)
+                .HasColumnName("UpdatedBy");
+
             entity.HasOne(d => d.Branch).WithMany(p => p.Users)
                 .HasForeignKey(d => d.BranchId)
                 .HasConstraintName("users_branch_id_fkey");
+
+            entity.HasOne(d => d.Company).WithMany(p => p.Users) // ✅ Agregado
+                .HasForeignKey(d => d.CompanyId)
+                .HasConstraintName("users_company_id_fkey");
         });
 
         modelBuilder.Entity<AuditLog>(entity =>
@@ -761,6 +785,39 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
                 .HasColumnName("is_active");
+
+            // ✅ Configurar CompanyId y BranchId
+            entity.Property(e => e.CompanyId)
+                .HasColumnName("CompanyId");
+            entity.Property(e => e.BranchId)
+                .HasColumnName("BranchId");
+
+            // ✅ Configurar campos de auditoría
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("CreatedAt");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("UpdatedAt");
+            entity.Property(e => e.CreatedBy)
+                .HasMaxLength(255)
+                .HasColumnName("CreatedBy");
+            entity.Property(e => e.UpdatedBy)
+                .HasMaxLength(255)
+                .HasColumnName("UpdatedBy");
+
+            // ✅ Configurar relaciones con Company y Branch
+            entity.HasOne(c => c.Company)
+                .WithMany()
+                .HasForeignKey(c => c.CompanyId)
+                .HasConstraintName("FK_categories_companies_CompanyId")
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(c => c.Branch)
+                .WithMany()
+                .HasForeignKey(c => c.BranchId)
+                .HasConstraintName("FK_categories_branches_BranchId")
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Station>(entity =>
@@ -781,14 +838,45 @@ public partial class RestBarContext : DbContext
                 .HasColumnName("icon");
             entity.Property(e => e.AreaId)
                 .HasColumnName("area_id");
+            entity.Property(e => e.CompanyId)
+                .HasColumnName("company_id"); // ✅ Agregado
+            entity.Property(e => e.BranchId)
+                .HasColumnName("branch_id"); // ✅ Agregado
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
                 .HasColumnName("is_active");
+
+            // ✅ Configurar campos de auditoría
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("CreatedAt");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("UpdatedAt");
+            entity.Property(e => e.CreatedBy)
+                .HasMaxLength(255)
+                .HasColumnName("CreatedBy");
+            entity.Property(e => e.UpdatedBy)
+                .HasMaxLength(255)
+                .HasColumnName("UpdatedBy");
 
             // Configurar la relación con Area
             entity.HasOne(s => s.Area)
                 .WithMany(a => a.Stations)
                 .HasForeignKey(s => s.AreaId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // ✅ Configurar relaciones con Company y Branch
+            entity.HasOne(s => s.Company)
+                .WithMany()
+                .HasForeignKey(s => s.CompanyId)
+                .HasConstraintName("FK_stations_companies_company_id")
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(s => s.Branch)
+                .WithMany()
+                .HasForeignKey(s => s.BranchId)
+                .HasConstraintName("FK_stations_branches_branch_id")
                 .OnDelete(DeleteBehavior.SetNull);
         });
 

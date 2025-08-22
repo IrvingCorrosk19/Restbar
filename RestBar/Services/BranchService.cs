@@ -13,11 +13,41 @@ namespace RestBar.Services
 
         public async Task<IEnumerable<Branch>> GetAllAsync()
         {
-            return await _context.Branches
-                .Include(b => b.Company)
-                .Include(b => b.Areas)
-                .Include(b => b.Users)
-                .ToListAsync();
+            try
+            {
+                Console.WriteLine("🔍 [BranchService] GetAllAsync() - Iniciando consulta de sucursales...");
+                
+                var branches = await _context.Branches
+                    .Include(b => b.Company)
+                    .Include(b => b.Areas)
+                    .Include(b => b.Users)
+                    .ToListAsync();
+                
+                Console.WriteLine($"✅ [BranchService] GetAllAsync() - Sucursales encontradas: {branches?.Count() ?? 0}");
+                
+                if (branches != null && branches.Any())
+                {
+                    foreach (var branch in branches)
+                    {
+                        Console.WriteLine($"🏪 [BranchService] GetAllAsync() - Sucursal: {branch.Name} (ID: {branch.Id}, Activa: {branch.IsActive})");
+                        Console.WriteLine($"🏢 [BranchService] GetAllAsync() - Compañía de {branch.Name}: {branch.Company?.Name ?? "Sin compañía"}");
+                        Console.WriteLine($"📋 [BranchService] GetAllAsync() - Áreas de {branch.Name}: {branch.Areas?.Count() ?? 0}");
+                        Console.WriteLine($"👥 [BranchService] GetAllAsync() - Usuarios de {branch.Name}: {branch.Users?.Count() ?? 0}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("⚠️ [BranchService] GetAllAsync() - No se encontraron sucursales en la base de datos");
+                }
+                
+                return branches ?? new List<Branch>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [BranchService] GetAllAsync() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [BranchService] GetAllAsync() - StackTrace: {ex.StackTrace}");
+                throw;
+            }
         }
 
         public async Task<Branch?> GetByIdAsync(Guid id)

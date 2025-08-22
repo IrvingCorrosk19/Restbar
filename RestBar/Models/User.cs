@@ -9,7 +9,15 @@ public partial class User : ITrackableEntity
 
     public Guid? BranchId { get; set; }
 
-    public string? FullName { get; set; }
+    public Guid? CompanyId { get; set; } // ✅ Agregado - coincide con company_id en la BD
+
+    public string? Username { get; set; } // ✅ Agregado - coincide con "Username" en la BD
+
+    public string? FirstName { get; set; } // ✅ Agregado - coincide con "FirstName" en la BD
+
+    public string? LastName { get; set; } // ✅ Agregado - coincide con "LastName" en la BD
+
+    public string? FullName { get; set; } // ✅ Ya existe - coincide con full_name en la BD
 
     public string Email { get; set; } = null!;
 
@@ -27,6 +35,8 @@ public partial class User : ITrackableEntity
     public virtual ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
 
     public virtual Branch? Branch { get; set; }
+
+    public virtual Company? Company { get; set; } // ✅ Agregado - navegación hacia Company
 
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
 }

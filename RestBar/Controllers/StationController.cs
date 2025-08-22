@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Security.Claims;
 
 namespace RestBar.Controllers
 {
@@ -15,11 +16,15 @@ namespace RestBar.Controllers
     {
         private readonly IStationService _stationService;
         private readonly IAreaService _areaService;
+        private readonly ICompanyService _companyService;
+        private readonly IBranchService _branchService;
 
-        public StationController(IStationService stationService, IAreaService areaService)
+        public StationController(IStationService stationService, IAreaService areaService, ICompanyService companyService, IBranchService branchService)
         {
             _stationService = stationService;
             _areaService = areaService;
+            _companyService = companyService;
+            _branchService = branchService;
         }
 
         // GET: Station
@@ -434,13 +439,54 @@ namespace RestBar.Controllers
         [Route("Station/GetAreas")]
         public async Task<IActionResult> GetAreas()
         {
-            var areas = await _areaService.GetAllAsync();
-            var data = areas.Select(a => new {
-                id = a.Id,
-                name = a.Name,
-                description = a.Description
-            }).ToList();
-            return Json(new { success = true, data });
+            try
+            {
+                Console.WriteLine("🔍 [StationController] GetAreas() - Iniciando carga de áreas del usuario actual...");
+
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out Guid userId))
+                {
+                    Console.WriteLine("⚠️ [StationController] GetAreas() - Usuario no autenticado");
+                    return Json(new { success = false, message = "Usuario no autenticado", data = new List<object>() });
+                }
+
+                // Obtener el usuario actual
+                var currentUser = await _areaService.GetCurrentUserWithAssignmentsAsync(userId);
+                if (currentUser == null)
+                {
+                    Console.WriteLine("⚠️ [StationController] GetAreas() - Usuario no encontrado");
+                    return Json(new { success = false, message = "Usuario no encontrado", data = new List<object>() });
+                }
+
+                Console.WriteLine($"👤 [StationController] GetAreas() - Usuario: {currentUser.FullName ?? currentUser.Email}");
+                Console.WriteLine($"🏢 [StationController] GetAreas() - CompanyId: {currentUser.CompanyId}");
+                Console.WriteLine($"🏪 [StationController] GetAreas() - BranchId: {currentUser.BranchId}");
+
+                // Filtrar áreas por compañía y sucursal del usuario
+                var areas = await _areaService.GetAllAsync();
+                var filteredAreas = areas.Where(a => 
+                    a.CompanyId == currentUser.CompanyId && 
+                    a.BranchId == currentUser.BranchId
+                ).ToList();
+
+                Console.WriteLine($"📊 [StationController] GetAreas() - Total áreas: {areas.Count()}");
+                Console.WriteLine($"📊 [StationController] GetAreas() - Áreas filtradas: {filteredAreas.Count}");
+
+                var data = filteredAreas.Select(a => new {
+                    id = a.Id,
+                    name = a.Name,
+                    description = a.Description
+                }).ToList();
+
+                Console.WriteLine($"✅ [StationController] GetAreas() - Enviando {data.Count} áreas");
+                return Json(new { success = true, data });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [StationController] GetAreas() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [StationController] GetAreas() - StackTrace: {ex.StackTrace}");
+                return Json(new { success = false, message = $"Error al cargar áreas: {ex.Message}", data = new List<object>() });
+            }
         }
 
         // Métodos auxiliares
@@ -448,6 +494,163 @@ namespace RestBar.Controllers
         {
             var areas = await _areaService.GetAllAsync();
             ViewBag.AreaId = new SelectList(areas, "Id", "Name", selectedAreaId);
+        }
+
+        // GET: Station/GetCurrentUserData
+        [HttpGet]
+        public async Task<IActionResult> GetCurrentUserData()
+        {
+            try
+            {
+                Console.WriteLine("🔍 [StationController] GetCurrentUserData() - Obteniendo datos del usuario actual...");
+
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                var userRoleClaim = User.FindFirst(ClaimTypes.Role);
+
+                Console.WriteLine($"👤 [StationController] GetCurrentUserData() - UserId: {userIdClaim?.Value ?? "NULL"}");
+                Console.WriteLine($"👤 [StationController] GetCurrentUserData() - UserRole: {userRoleClaim?.Value ?? "NULL"}");
+
+                if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out Guid userId))
+                {
+                    Console.WriteLine("⚠️ [StationController] GetCurrentUserData() - Usuario no autenticado o ID inválido");
+                    return Json(new { success = false, message = "Usuario no autenticado", data = new { companyId = (Guid?)null, branchId = (Guid?)null } });
+                }
+
+                // Obtener el usuario actual con sus asignaciones
+                var currentUser = await _areaService.GetCurrentUserWithAssignmentsAsync(userId);
+
+                if (currentUser == null)
+                {
+                    Console.WriteLine("⚠️ [StationController] GetCurrentUserData() - Usuario no encontrado en la base de datos");
+                    return Json(new { success = false, message = "Usuario no encontrado", data = new { companyId = (Guid?)null, branchId = (Guid?)null } });
+                }
+
+                Console.WriteLine($"✅ [StationController] GetCurrentUserData() - Usuario encontrado: {currentUser.FullName ?? currentUser.Email}");
+                Console.WriteLine($"🏢 [StationController] GetCurrentUserData() - CompanyId: {currentUser.CompanyId}");
+                Console.WriteLine($"🏪 [StationController] GetCurrentUserData() - BranchId: {currentUser.BranchId}");
+
+                return Json(new {
+                    success = true,
+                    data = new {
+                        companyId = currentUser.CompanyId,
+                        branchId = currentUser.BranchId,
+                        userName = currentUser.FullName ?? currentUser.Email,
+                        userRole = userRoleClaim?.Value
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [StationController] GetCurrentUserData() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [StationController] GetCurrentUserData() - StackTrace: {ex.StackTrace}");
+                return Json(new { success = false, message = $"Error al obtener datos del usuario: {ex.Message}", data = new { companyId = (Guid?)null, branchId = (Guid?)null } });
+            }
+        }
+
+        // GET: Station/GetCompanies
+        [HttpGet]
+        public async Task<IActionResult> GetCompanies()
+        {
+            try
+            {
+                Console.WriteLine("🔍 [StationController] GetCompanies() - Iniciando carga de compañía del usuario actual...");
+
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out Guid userId))
+                {
+                    Console.WriteLine("⚠️ [StationController] GetCompanies() - Usuario no autenticado");
+                    return Json(new { success = false, message = "Usuario no autenticado", data = new List<object>() });
+                }
+
+                // Obtener el usuario actual
+                var currentUser = await _areaService.GetCurrentUserWithAssignmentsAsync(userId);
+                if (currentUser == null)
+                {
+                    Console.WriteLine("⚠️ [StationController] GetCompanies() - Usuario no encontrado");
+                    return Json(new { success = false, message = "Usuario no encontrado", data = new List<object>() });
+                }
+
+                if (!currentUser.CompanyId.HasValue)
+                {
+                    Console.WriteLine("⚠️ [StationController] GetCompanies() - Usuario no tiene compañía asignada");
+                    return Json(new { success = false, message = "Usuario no tiene compañía asignada", data = new List<object>() });
+                }
+
+                // Obtener la compañía del usuario
+                var company = await _companyService.GetByIdAsync(currentUser.CompanyId.Value);
+                if (company == null)
+                {
+                    Console.WriteLine("⚠️ [StationController] GetCompanies() - Compañía no encontrada");
+                    return Json(new { success = false, message = "Compañía no encontrada", data = new List<object>() });
+                }
+
+                Console.WriteLine($"✅ [StationController] GetCompanies() - Compañía encontrada: {company.Name} (ID: {company.Id})");
+
+                var data = new List<object> { new { id = company.Id, name = company.Name } };
+                var response = new { success = true, data };
+                Console.WriteLine($"📤 [StationController] GetCompanies() - Enviando respuesta: {System.Text.Json.JsonSerializer.Serialize(response)}");
+
+                return Json(response);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [StationController] GetCompanies() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [StationController] GetCompanies() - StackTrace: {ex.StackTrace}");
+                return Json(new { success = false, message = $"Error al cargar compañía: {ex.Message}", data = new List<object>() });
+            }
+        }
+
+        // GET: Station/GetBranches
+        [HttpGet]
+        public async Task<IActionResult> GetBranches()
+        {
+            try
+            {
+                Console.WriteLine("🔍 [StationController] GetBranches() - Iniciando carga de sucursal del usuario actual...");
+
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out Guid userId))
+                {
+                    Console.WriteLine("⚠️ [StationController] GetBranches() - Usuario no autenticado");
+                    return Json(new { success = false, message = "Usuario no autenticado", data = new List<object>() });
+                }
+
+                // Obtener el usuario actual
+                var currentUser = await _areaService.GetCurrentUserWithAssignmentsAsync(userId);
+                if (currentUser == null)
+                {
+                    Console.WriteLine("⚠️ [StationController] GetBranches() - Usuario no encontrado");
+                    return Json(new { success = false, message = "Usuario no encontrado", data = new List<object>() });
+                }
+
+                if (!currentUser.BranchId.HasValue)
+                {
+                    Console.WriteLine("⚠️ [StationController] GetBranches() - Usuario no tiene sucursal asignada");
+                    return Json(new { success = false, message = "Usuario no tiene sucursal asignada", data = new List<object>() });
+                }
+
+                // Obtener la sucursal del usuario
+                var branch = await _branchService.GetByIdAsync(currentUser.BranchId.Value);
+                if (branch == null)
+                {
+                    Console.WriteLine("⚠️ [StationController] GetBranches() - Sucursal no encontrada");
+                    return Json(new { success = false, message = "Sucursal no encontrada", data = new List<object>() });
+                }
+
+                Console.WriteLine($"✅ [StationController] GetBranches() - Sucursal encontrada: {branch.Name} (ID: {branch.Id})");
+
+                var data = new List<object> { new { id = branch.Id, name = branch.Name } };
+                var response = new { success = true, data };
+                Console.WriteLine($"📤 [StationController] GetBranches() - Enviando respuesta: {System.Text.Json.JsonSerializer.Serialize(response)}");
+
+                return Json(response);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [StationController] GetBranches() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [StationController] GetBranches() - StackTrace: {ex.StackTrace}");
+                return Json(new { success = false, message = $"Error al cargar sucursal: {ex.Message}", data = new List<object>() });
+            }
         }
     }
 } 

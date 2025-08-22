@@ -964,6 +964,22 @@
                         </select>
                     </div>
                     <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-building"></i> Sucursal
+                        </label>
+                        <input type="text" class="form-control" id="userBranchDisplay" readonly placeholder="Cargando sucursal del usuario...">
+                        <input type="hidden" name="BranchId" id="userBranchId">
+                        <small class="form-text text-muted">Sucursal del usuario actual</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-industry"></i> Compañía
+                        </label>
+                        <input type="text" class="form-control" id="userCompanyDisplay" readonly placeholder="Cargando compañía del usuario...">
+                        <input type="hidden" name="CompanyId" id="userCompanyId">
+                        <small class="form-text text-muted">Compañía del usuario actual</small>
+                    </div>
+                    <div class="form-group">
                         <label for="stationIcon" class="form-label">
                             <i class="fas fa-icons"></i> Ícono
                         </label>
@@ -1207,6 +1223,10 @@
                 $('#stationId').val('');
                 $('#stationIsActive').prop('checked', true).trigger('change');
                 $('#modalIconPreview').removeClass().addClass('fas fa-fire');
+                
+                // Cargar datos del usuario actual
+                loadCurrentUserData();
+                
                 $('#stationModal').modal('show');
             }).catch(error => {
                 // Aún así mostramos el modal, pero sin áreas cargadas
@@ -1214,35 +1234,189 @@
                 $('#stationId').val('');
                 $('#stationIsActive').prop('checked', true).trigger('change');
                 $('#modalIconPreview').removeClass().addClass('fas fa-fire');
+                
+                // Cargar datos del usuario actual
+                loadCurrentUserData();
+                
                 $('#stationModal').modal('show');
             });
         }
 
-        // Función para cargar áreas
-        function loadAreas() {
-            return new Promise((resolve, reject) => {
-                $.get('/Station/GetAreas')
-                    .done(function(response) {
-                        if (response.success) {
-                            const areaSelect = $('#stationArea');
-                            areaSelect.empty();
-                            areaSelect.append('<option value="">Seleccione un área...</option>');
+        function loadCurrentUserData() {
+            try {
+                console.log('👤 [Station/Index] loadCurrentUserData() - Obteniendo datos del usuario actual...');
+                
+                // Cargar compañía y sucursal del usuario actual directamente
+                loadCompanyName();
+                loadBranchName();
+                
+                console.log('✅ [Station/Index] loadCurrentUserData() - Datos del usuario cargados');
+            } catch (error) {
+                console.error('❌ [Station/Index] loadCurrentUserData() - Error general:', error);
+            }
+        }
+
+        function loadCompanyName() {
+            try {
+                console.log('🏢 [Station/Index] loadCompanyName() - Cargando compañía del usuario actual...');
+                
+                $.get('/Station/GetCompanies')
+                    .done(function (res) {
+                        try {
+                            console.log('📡 [Station/Index] loadCompanyName() - Respuesta completa:', res);
+                            console.log('📡 [Station/Index] loadCompanyName() - Success:', res.success);
+                            console.log('📡 [Station/Index] loadCompanyName() - Data:', res.data);
+                            console.log('📡 [Station/Index] loadCompanyName() - Data length:', res.data?.length);
+                            console.log('📡 [Station/Index] loadCompanyName() - Message:', res.message);
                             
-                            if (response.data && response.data.length > 0) {
-                                response.data.forEach(function(area) {
-                                    areaSelect.append(`<option value="${area.id}">${area.name}</option>`);
-                                });
+                            // Verificar si los datos están en $values (Entity Framework)
+                            const dataArray = res.data.$values || res.data;
+                            console.log('📡 [Station/Index] loadCompanyName() - Data array:', dataArray);
+                            console.log('📡 [Station/Index] loadCompanyName() - Data array length:', dataArray?.length);
+                            
+                            if (res.success && dataArray && dataArray.length > 0) {
+                                const company = dataArray[0]; // Solo hay una compañía (la del usuario)
+                                console.log(`✅ [Station/Index] loadCompanyName() - Compañía encontrada: ${company.name} (ID: ${company.id})`);
+                                
+                                // Actualizar campos en modal
+                                $('#userCompanyDisplay').val(company.name);
+                                $('#userCompanyId').val(company.id);
+                                
+                                console.log('✅ [Station/Index] loadCompanyName() - Campos actualizados correctamente');
+                            } else {
+                                console.warn('⚠️ [Station/Index] loadCompanyName() - No se encontró compañía para el usuario');
+                                console.warn('⚠️ [Station/Index] loadCompanyName() - Success:', res.success);
+                                console.warn('⚠️ [Station/Index] loadCompanyName() - Message:', res.message);
+                                console.warn('⚠️ [Station/Index] loadCompanyName() - Data:', res.data);
+                                $('#userCompanyDisplay').val('Compañía no encontrada');
                             }
-                            
-                            resolve();
-                        } else {
-                            reject(response.message || 'Error al cargar las áreas');
+                        } catch (error) {
+                            console.error('❌ [Station/Index] loadCompanyName() - Error procesando respuesta:', error);
                         }
                     })
-                    .fail(function(xhr, status, error) {
-                        reject('Error al cargar las áreas');
+                    .fail(function (xhr, status, error) {
+                        console.error('❌ [Station/Index] loadCompanyName() - Error en AJAX:', error);
+                        console.error('📡 [Station/Index] loadCompanyName() - Status:', status);
+                        console.error('📡 [Station/Index] loadCompanyName() - Response:', xhr.responseText);
+                        $('#userCompanyDisplay').val('Error al cargar compañía');
                     });
-            });
+            } catch (error) {
+                console.error('❌ [Station/Index] loadCompanyName() - Error general:', error);
+            }
+        }
+
+        function loadBranchName() {
+            try {
+                console.log('🏪 [Station/Index] loadBranchName() - Cargando sucursal del usuario actual...');
+                
+                $.get('/Station/GetBranches')
+                    .done(function (res) {
+                        try {
+                            console.log('📡 [Station/Index] loadBranchName() - Respuesta completa:', res);
+                            console.log('📡 [Station/Index] loadBranchName() - Success:', res.success);
+                            console.log('📡 [Station/Index] loadBranchName() - Data:', res.data);
+                            console.log('📡 [Station/Index] loadBranchName() - Data length:', res.data?.length);
+                            console.log('📡 [Station/Index] loadBranchName() - Message:', res.message);
+                            
+                            // Verificar si los datos están en $values (Entity Framework)
+                            const dataArray = res.data.$values || res.data;
+                            console.log('📡 [Station/Index] loadBranchName() - Data array:', dataArray);
+                            console.log('📡 [Station/Index] loadBranchName() - Data array length:', dataArray?.length);
+                            
+                            if (res.success && dataArray && dataArray.length > 0) {
+                                const branch = dataArray[0]; // Solo hay una sucursal (la del usuario)
+                                console.log(`✅ [Station/Index] loadBranchName() - Sucursal encontrada: ${branch.name} (ID: ${branch.id})`);
+                                
+                                // Actualizar campos en modal
+                                $('#userBranchDisplay').val(branch.name);
+                                $('#userBranchId').val(branch.id);
+                                
+                                console.log('✅ [Station/Index] loadBranchName() - Campos actualizados correctamente');
+                            } else {
+                                console.warn('⚠️ [Station/Index] loadBranchName() - No se encontró sucursal para el usuario');
+                                console.warn('⚠️ [Station/Index] loadBranchName() - Success:', res.success);
+                                console.warn('⚠️ [Station/Index] loadBranchName() - Message:', res.message);
+                                console.warn('⚠️ [Station/Index] loadBranchName() - Data:', res.data);
+                                $('#userBranchDisplay').val('Sucursal no encontrada');
+                            }
+                        } catch (error) {
+                            console.error('❌ [Station/Index] loadBranchName() - Error procesando respuesta:', error);
+                        }
+                    })
+                    .fail(function (xhr, status, error) {
+                        console.error('❌ [Station/Index] loadBranchName() - Error en AJAX:', error);
+                        console.error('📡 [Station/Index] loadBranchName() - Status:', status);
+                        console.error('📡 [Station/Index] loadBranchName() - Response:', xhr.responseText);
+                        $('#userBranchDisplay').val('Error al cargar sucursal');
+                    });
+            } catch (error) {
+                console.error('❌ [Station/Index] loadBranchName() - Error general:', error);
+            }
+        }
+
+        // Función para cargar áreas
+        function loadAreas() {
+            try {
+                console.log('🏗️ [Station/Index] loadAreas() - Iniciando carga de áreas...');
+                console.log('🌐 [Station/Index] loadAreas() - URL de la petición: /Station/GetAreas');
+                
+                return new Promise((resolve, reject) => {
+                    $.get('/Station/GetAreas')
+                        .done(function(response) {
+                            try {
+                                console.log('📡 [Station/Index] loadAreas() - Respuesta recibida:', response);
+                                console.log('📡 [Station/Index] loadAreas() - Success:', response.success);
+                                console.log('📡 [Station/Index] loadAreas() - Data:', response.data);
+                                console.log('📡 [Station/Index] loadAreas() - Data length:', response.data?.length);
+                                
+                                if (response.success) {
+                                    const areaSelect = $('#stationArea');
+                                    console.log('🎯 [Station/Index] loadAreas() - Select encontrado:', areaSelect.length > 0);
+                                    
+                                    areaSelect.empty();
+                                    areaSelect.append('<option value="">Seleccione un área...</option>');
+                                    
+                                                                    // FIX: Handle Entity Framework $values serialization
+                                const dataArray = response.data.$values || response.data;
+                                console.log('📡 [Station/Index] loadAreas() - Data array:', dataArray);
+                                console.log('📡 [Station/Index] loadAreas() - Data array length:', dataArray?.length);
+                                
+                                if (dataArray && dataArray.length > 0) {
+                                    console.log(`📊 [Station/Index] loadAreas() - Procesando ${dataArray.length} áreas`);
+                                    
+                                    dataArray.forEach(function(area, index) {
+                                        console.log(`🏗️ [Station/Index] loadAreas() - Agregando área ${index + 1}: ${area.name} (ID: ${area.id})`);
+                                        areaSelect.append(`<option value="${area.id}">${area.name}</option>`);
+                                    });
+                                    
+                                    console.log(`✅ [Station/Index] loadAreas() - ${dataArray.length} áreas cargadas correctamente`);
+                                } else {
+                                    console.warn('⚠️ [Station/Index] loadAreas() - No hay áreas disponibles');
+                                    console.warn('⚠️ [Station/Index] loadAreas() - Data array:', dataArray);
+                                }
+                                    
+                                    resolve();
+                                } else {
+                                    console.error('❌ [Station/Index] loadAreas() - Error en respuesta:', response.message);
+                                    reject(response.message || 'Error al cargar las áreas');
+                                }
+                            } catch (error) {
+                                console.error('❌ [Station/Index] loadAreas() - Error procesando respuesta:', error);
+                                reject('Error al procesar la respuesta');
+                            }
+                        })
+                        .fail(function(xhr, status, error) {
+                            console.error('❌ [Station/Index] loadAreas() - Error en AJAX:', error);
+                            console.error('📡 [Station/Index] loadAreas() - Status:', status);
+                            console.error('📡 [Station/Index] loadAreas() - Status code:', xhr.status);
+                            console.error('📡 [Station/Index] loadAreas() - Response text:', xhr.responseText);
+                            reject('Error al cargar las áreas');
+                        });
+                });
+            } catch (error) {
+                console.error('❌ [Station/Index] loadAreas() - Error general:', error);
+                return Promise.reject('Error general al cargar áreas');
+            }
         }
 
         function editStation(id) {
@@ -1277,6 +1451,9 @@
                                 
                                 $('#stationIcon').val(station.icon || '').trigger('change');
                                 $('#stationIsActive').prop('checked', station.isActive).trigger('change');
+                                
+                                // Cargar datos del usuario actual
+                                loadCurrentUserData();
                                 
                                 $('#stationModal').modal('show');
                             }, 100);

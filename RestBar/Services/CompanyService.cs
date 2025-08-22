@@ -13,9 +13,37 @@ namespace RestBar.Services
 
         public async Task<IEnumerable<Company>> GetAllAsync()
         {
-            return await _context.Companies
-                .Include(c => c.Branches)
-                .ToListAsync();
+            try
+            {
+                Console.WriteLine("🔍 [CompanyService] GetAllAsync() - Iniciando consulta de compañías...");
+                
+                var companies = await _context.Companies
+                    .Include(c => c.Branches)
+                    .ToListAsync();
+                
+                Console.WriteLine($"✅ [CompanyService] GetAllAsync() - Compañías encontradas: {companies?.Count() ?? 0}");
+                
+                if (companies != null && companies.Any())
+                {
+                    foreach (var company in companies)
+                    {
+                        Console.WriteLine($"🏢 [CompanyService] GetAllAsync() - Compañía: {company.Name} (ID: {company.Id}, Activa: {company.IsActive})");
+                        Console.WriteLine($"🏪 [CompanyService] GetAllAsync() - Sucursales de {company.Name}: {company.Branches?.Count() ?? 0}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("⚠️ [CompanyService] GetAllAsync() - No se encontraron compañías en la base de datos");
+                }
+                
+                return companies ?? new List<Company>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [CompanyService] GetAllAsync() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [CompanyService] GetAllAsync() - StackTrace: {ex.StackTrace}");
+                throw;
+            }
         }
 
         public async Task<Company?> GetByIdAsync(Guid id)

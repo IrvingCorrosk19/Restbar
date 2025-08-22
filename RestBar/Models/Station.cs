@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace RestBar.Models
 {
-    public class Station
+    public class Station : ITrackableEntity
     {
         public Guid Id { get; set; }
         
@@ -25,11 +25,25 @@ namespace RestBar.Models
         [Display(Name = "Área")]
         public Guid? AreaId { get; set; }
 
+        [Display(Name = "Compañía")]
+        public Guid? CompanyId { get; set; } // ✅ Agregado
+
+        [Display(Name = "Sucursal")]
+        public Guid? BranchId { get; set; } // ✅ Agregado
+
         [Display(Name = "Estado Activo")]
         public bool IsActive { get; set; } = true;
 
+        // ✅ Campos de auditoría
+        public DateTime? CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+        public string? CreatedBy { get; set; }
+        public string? UpdatedBy { get; set; }
+
         // Propiedades de navegación
         public virtual Area? Area { get; set; }
+        public virtual Company? Company { get; set; } // ✅ Agregado
+        public virtual Branch? Branch { get; set; } // ✅ Agregado
         public virtual ICollection<Product> Products { get; set; } = new List<Product>();
         
         // Items preparados por esta estación
