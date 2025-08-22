@@ -217,8 +217,8 @@ namespace RestBar.Controllers
                 UserRole.supervisor => "Order",
                 UserRole.waiter => "Order",
                 UserRole.cashier => "Order",
-                UserRole.chef => "StationOrders",
-                UserRole.bartender => "StationOrders",
+                UserRole.chef => "Home",
+                UserRole.bartender => "Home",
 
                 UserRole.accountant => "Home",
                 UserRole.support => "Home",

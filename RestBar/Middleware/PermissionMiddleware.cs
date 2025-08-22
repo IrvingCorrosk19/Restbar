@@ -90,8 +90,7 @@ namespace RestBar.Middleware
                 // Rutas de órdenes
                 _ when pathValue.StartsWith("/order") => "orders",
                 
-                // Rutas de cocina
-                _ when pathValue.StartsWith("/stationorders") => "kitchen",
+
                 
                 // Rutas de pagos
                 _ when pathValue.StartsWith("/payment") => "payments",

@@ -307,7 +307,6 @@ namespace RestBar.Helpers
                 menuItems.AddRange(new[]
                 {
                     new MenuItem { Name = "Órdenes", Icon = "fas fa-shopping-cart", Url = "/Order/Index" },
-                    new MenuItem { Name = "Cocina", Icon = "fas fa-utensils", Url = "/StationOrders/Index" },
                     new MenuItem { Name = "Pagos", Icon = "fas fa-credit-card", Url = "/Payment/Index" },
                     new MenuItem { Name = "Mesas", Icon = "fas fa-table", Url = "/Table/Index" }
                 });
@@ -335,7 +334,6 @@ namespace RestBar.Helpers
             {
                 menuItems.AddRange(new[]
                 {
-                    new MenuItem { Name = "Cocina", Icon = "fas fa-utensils", Url = "/StationOrders/Index" },
                     new MenuItem { Name = "Órdenes", Icon = "fas fa-shopping-cart", Url = "/Order/Index" }
                 });
             }

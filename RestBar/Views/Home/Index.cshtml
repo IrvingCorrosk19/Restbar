@@ -149,26 +149,7 @@
 
 
 
-            <!-- Cocina -->
-            @if (Model.VisibleCards.Kitchen)
-            {
-                <div class="col-lg-3 col-md-6">
-                    <a href="@Url.Action("Index", "StationOrders")" class="dashboard-card card-kitchen">
-                        <div class="card-icon">
-                            <i class="fas fa-utensils"></i>
-                        </div>
-                        <div class="card-content">
-                            <h3>Cocina</h3>
-                            <p>Gestión de preparación</p>
-                            <div class="card-btn">
-                                <span>Acceder</span>
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </div>
-                        <div class="card-overlay"></div>
-                    </a>
-                </div>
-            }
+
 
 
 
@@ -369,28 +350,7 @@
                     </a>
                 </div>
 
-                <!-- Configuración de Políticas -->
-                <div class="col-lg-4 col-md-6">
-                    <a href="@Url.Action("Index", "Auth")" class="dashboard-card card-security-secondary">
-                        <div class="card-icon-security">
-                            <i class="fas fa-key"></i>
-                        </div>
-                        <div class="card-content">
-                            <h3>Políticas de Acceso</h3>
-                            <p>Configuración de seguridad</p>
-                            <div class="security-features">
-                                <span class="feature-badge">Middleware</span>
-                                <span class="feature-badge">Autenticación</span>
-                                <span class="feature-badge">Autorización</span>
-                            </div>
-                            <div class="card-btn">
-                                <span>Configurar</span>
-                                <i class="fas fa-tools"></i>
-                            </div>
-                        </div>
-                        <div class="card-overlay-security"></div>
-                    </a>
-                </div>
+
 
                 <!-- Monitoreo de Sesiones -->
                 <div class="col-lg-4 col-md-6">
@@ -417,36 +377,7 @@
             </div>
         }
 
-        <!-- Stations Section -->
-        @if (Model.VisibleCards.Kitchen && Model.Stations != null && Model.Stations.Any())
-        {
-            <div class="section-header">
-                <h2>Estaciones de Trabajo</h2>
-                <p>Acceso directo a las estaciones de preparación</p>
-            </div>
 
-            <div class="row g-4">
-                @foreach (var station in Model.Stations)
-                {
-                    <div class="col-lg-4 col-md-6">
-                        <a asp-controller="StationOrders" asp-action="Index" asp-route-stationName="@station.Name" asp-route-stationType="@station.Type" asp-route-stationIcon="@station.Icon" class="dashboard-card card-station-work">
-                            <div class="card-icon">
-                                <i class="fas fa-utensils"></i>
-                            </div>
-                            <div class="card-content">
-                                <h3>@station.Name</h3>
-                                <p>Pedidos pendientes</p>
-                                <div class="card-btn">
-                                    <span>Acceder</span>
-                                    <i class="fas fa-arrow-right"></i>
-                                </div>
-                            </div>
-                            <div class="card-overlay"></div>
-                        </a>
-                    </div>
-                }
-            </div>
-        }
     </div>
 </div>
 
