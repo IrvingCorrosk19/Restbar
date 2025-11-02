@@ -763,6 +763,7 @@ namespace RestBar.Services
                 
                 var order = await _context.Orders
                     .Include(o => o.OrderItems)
+                        .ThenInclude(oi => oi.Product)
                     .Include(o => o.Table)
                     .FirstOrDefaultAsync(o => o.Id == orderId);
 
@@ -834,11 +835,22 @@ namespace RestBar.Services
                 else
                 {
                     Console.WriteLine($"[OrderService] Actualizando cantidad de {itemToUpdate.Quantity} a {newQuantity}");
+                    
+                    // ✅ NUEVO: Actualizar campos de auditoría del item
+                    SetUpdatedTracking(itemToUpdate);
+                    Console.WriteLine($"[OrderService] Campos de auditoría actualizados: UpdatedBy={itemToUpdate.UpdatedBy}, UpdatedAt={itemToUpdate.UpdatedAt}");
+                    
                     // Actualizar la cantidad
                     itemToUpdate.Quantity = newQuantity;
                     await _context.SaveChangesAsync();
                     
                     Console.WriteLine($"[OrderService] ✅ Cantidad actualizada exitosamente");
+                    
+                    // ✅ NUEVO: Recalcular TotalAmount de la orden después de actualizar cantidad
+                    order.TotalAmount = order.OrderItems.Sum(oi => (oi.Quantity * oi.UnitPrice) - oi.Discount);
+                    SetUpdatedTracking(order);
+                    await _context.SaveChangesAsync();
+                    Console.WriteLine($"[OrderService] TotalAmount recalculado: ${order.TotalAmount:F2}");
                 }
 
                 // Notificar a cocina y a los clientes
