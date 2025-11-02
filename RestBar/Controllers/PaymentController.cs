@@ -453,9 +453,46 @@ namespace RestBar.Controllers
                 Console.WriteLine($"[PaymentController] VoidPayment endpoint llamado");
                 Console.WriteLine($"[PaymentController] paymentId: {paymentId}");
                 
+                // ✅ NUEVO: Obtener pago antes de anular para notificaciones
+                var payment = await _paymentService.GetPaymentWithSplitsAsync(paymentId);
+                if (payment == null)
+                {
+                    return NotFound(new { error = "Pago no encontrado" });
+                }
+                
+                var orderId = payment.OrderId;
+                
                 await _paymentService.VoidPaymentAsync(paymentId);
                 
                 Console.WriteLine($"[PaymentController] Pago anulado exitosamente");
+                
+                // ✅ NUEVO: Obtener orden actualizada para notificaciones
+                if (orderId.HasValue)
+                {
+                    var order = await _orderService.GetByIdAsync(orderId.Value);
+                    if (order != null)
+                    {
+                        // Notificar cambios de estado de orden
+                        await _orderHubService.NotifyOrderStatusChanged(order.Id, order.Status);
+                        Console.WriteLine($"[PaymentController] Notificación enviada: Estado de orden actualizado a {order.Status}");
+                        
+                        // Notificar cambio de mesa si existe
+                        if (order.TableId.HasValue)
+                        {
+                            var table = await _context.Tables.FindAsync(order.TableId.Value);
+                            if (table != null)
+                            {
+                                await _orderHubService.NotifyTableStatusChanged(table.Id, table.Status.ToString());
+                                Console.WriteLine($"[PaymentController] Notificación enviada: Mesa {table.TableNumber} actualizada");
+                            }
+                        }
+                        
+                        // Notificar actualización general
+                        await _orderHubService.NotifyKitchenUpdate();
+                        await _orderHubService.NotifyPaymentProcessed(order.Id, -payment.Amount, payment.Method ?? "Anulado", false);
+                        Console.WriteLine($"[PaymentController] Notificaciones SignalR enviadas");
+                    }
+                }
                 
                 return Ok(new
                 {

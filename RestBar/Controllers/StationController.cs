@@ -280,11 +280,25 @@ namespace RestBar.Controllers
             {
                 try
                 {
-                    // Convertir string vacío a null para Icon
-                    if (string.IsNullOrWhiteSpace(station.Icon))
-                        station.Icon = null;
+                // Convertir string vacío a null para Icon
+                if (string.IsNullOrWhiteSpace(station.Icon))
+                    station.Icon = null;
+                
+                // ✅ NUEVO: Obtener usuario actual para tracking
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                var userNameClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Name) ?? 
+                                   User.FindFirst(System.Security.Claims.ClaimTypes.Email);
+                
+                if (userIdClaim != null)
+                {
+                    var currentUser = await _areaService.GetCurrentUserWithAssignmentsAsync(Guid.Parse(userIdClaim.Value));
+                    if (currentUser != null)
+                    {
+                        station.UpdatedBy = userNameClaim?.Value ?? currentUser.Email;
+                    }
+                }
                     
-                    await _stationService.UpdateStationAsync(id, station);
+                await _stationService.UpdateStationAsync(id, station);
                     return RedirectToAction(nameof(Index));
                 }
                 catch (KeyNotFoundException)

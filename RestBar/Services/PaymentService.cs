@@ -155,6 +155,10 @@ namespace RestBar.Services
                 
                 var payment = await _context.Payments
                     .Include(p => p.Order)
+                        .ThenInclude(o => o.Table)
+                    .Include(p => p.Order)
+                        .ThenInclude(o => o.OrderItems)
+                    .Include(p => p.SplitPayments)
                     .FirstOrDefaultAsync(p => p.Id == id);
 
                 if (payment == null)
@@ -169,12 +173,65 @@ namespace RestBar.Services
                     throw new InvalidOperationException("El pago ya está anulado");
                 }
 
-                Console.WriteLine($"[PaymentService] Anulando pago - Amount: {payment.Amount}, Method: {payment.Method}");
+                if (payment.OrderId == null)
+                {
+                    Console.WriteLine($"[PaymentService] ERROR: Pago no tiene orden asociada");
+                    throw new InvalidOperationException("El pago no tiene orden asociada");
+                }
+
+                var order = payment.Order;
+                Console.WriteLine($"[PaymentService] Anulando pago - Amount: ${payment.Amount:F2}, Method: {payment.Method}, OrderId: {order.Id}, OrderStatus: {order.Status}");
+
+                // ✅ NUEVO: Anular también los split payments asociados
+                if (payment.SplitPayments != null && payment.SplitPayments.Any())
+                {
+                    Console.WriteLine($"[PaymentService] Anulando {payment.SplitPayments.Count} pagos divididos asociados...");
+                    foreach (var splitPayment in payment.SplitPayments)
+                    {
+                        Console.WriteLine($"[PaymentService] Split payment anulado: {splitPayment.PersonName} - ${splitPayment.Amount:F2}");
+                    }
+                }
                 
                 payment.IsVoided = true;
                 await _context.SaveChangesAsync();
                 
                 Console.WriteLine($"[PaymentService] Pago anulado exitosamente");
+                
+                // ✅ NUEVO: Recalcular total pagado y actualizar estado de orden
+                var totalPaid = await GetTotalPaymentsByOrderAsync(order.Id);
+                var orderTotal = order.OrderItems?.Sum(oi => oi.Quantity * oi.UnitPrice) ?? order.TotalAmount ?? 0;
+                
+                Console.WriteLine($"[PaymentService] Total orden: ${orderTotal:F2}, Total pagado (después de anulación): ${totalPaid:F2}");
+                
+                // ✅ NUEVO: Actualizar estado de orden según pagos restantes
+                if (order.Status == OrderStatus.Completed || order.Status == OrderStatus.Served)
+                {
+                    // Si la orden estaba completada y se anuló un pago, cambiar a ReadyToPay si aún hay saldo
+                    if (totalPaid < orderTotal)
+                    {
+                        Console.WriteLine($"[PaymentService] Orden estaba completada, cambiando a ReadyToPay porque hay saldo pendiente");
+                        order.Status = OrderStatus.ReadyToPay;
+                        
+                        // Actualizar estado de mesa
+                        if (order.Table != null)
+                        {
+                            order.Table.Status = TableStatus.ParaPago;
+                            Console.WriteLine($"[PaymentService] Mesa {order.Table.TableNumber} cambiada a ParaPago");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[PaymentService] Orden sigue completada (sin saldo pendiente)");
+                    }
+                }
+                else if (order.Status == OrderStatus.ReadyToPay)
+                {
+                    // Si estaba lista para pago y se anuló un pago, mantener ReadyToPay si hay saldo
+                    Console.WriteLine($"[PaymentService] Orden en ReadyToPay, manteniendo estado");
+                }
+                
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"[PaymentService] ✅ Estado de orden actualizado después de anular pago");
             }
             catch (Exception ex)
             {

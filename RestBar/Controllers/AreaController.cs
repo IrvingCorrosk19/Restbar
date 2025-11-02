@@ -245,10 +245,16 @@ namespace RestBar.Controllers
                 model.CompanyId = currentUser.Branch.CompanyId;
                 model.BranchId = currentUser.BranchId;
                 
+                // ✅ NUEVO: Obtener usuario actual para tracking
+                var userNameClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Name) ?? 
+                                   User.FindFirst(System.Security.Claims.ClaimTypes.Email);
+                model.UpdatedBy = userNameClaim?.Value ?? currentUser.Email;
+                
                 Console.WriteLine($"✅ [AreaController] Edit() - Usuario: {currentUser.Email}");
                 Console.WriteLine($"🏢 [AreaController] Edit() - Compañía asignada: {currentUser.Branch.CompanyId}");
                 Console.WriteLine($"🏪 [AreaController] Edit() - Sucursal asignada: {currentUser.BranchId}");
                 Console.WriteLine($"📝 [AreaController] Edit() - Área a editar: {model.Name}");
+                Console.WriteLine($"👤 [AreaController] Edit() - Actualizado por: {model.UpdatedBy}");
                 
                 await _areaService.UpdateAsync(model);
                 

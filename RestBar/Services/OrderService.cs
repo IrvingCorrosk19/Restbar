@@ -106,6 +106,8 @@ namespace RestBar.Services
         {
             try
             {
+                Console.WriteLine($"🔍 [OrderService] UpdateAsync() - Actualizando orden: {order.OrderNumber} (ID: {order.Id})");
+                
                 // Buscar si hay una entidad con el mismo ID siendo rastreada
                 var existingEntity = _context.ChangeTracker.Entries<Order>()
                     .FirstOrDefault(e => e.Entity.Id == order.Id);
@@ -116,12 +118,20 @@ namespace RestBar.Services
                     existingEntity.State = EntityState.Detached;
                 }
 
-                // Usar Update para manejar automáticamente el tracking
+                // ✅ Usar SetUpdatedTracking para establecer campos de auditoría de actualización
+                SetUpdatedTracking(order);
+                
+                Console.WriteLine($"✅ [OrderService] UpdateAsync() - Campos actualizados: UpdatedBy={order.UpdatedBy}, UpdatedAt={order.UpdatedAt}");
+
                 _context.Orders.Update(order);
                 await _context.SaveChangesAsync();
+                
+                Console.WriteLine($"✅ [OrderService] UpdateAsync() - Orden actualizada exitosamente");
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"❌ [OrderService] UpdateAsync() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [OrderService] UpdateAsync() - StackTrace: {ex.StackTrace}");
                 throw new ApplicationException("Error al actualizar la orden en la base de datos.", ex);
             }
         }
@@ -543,14 +553,23 @@ namespace RestBar.Services
 
 
 
-                    order.OrderItems.Add(new OrderItem
+                    var newItem = new OrderItem
                     {
+                        Id = Guid.NewGuid(),
                         ProductId = itemDto.ProductId,
                         Quantity = itemDto.Quantity,
                         UnitPrice = product.Price,
                         Discount = itemDto.Discount ?? 0,
-                        Notes = itemDto.Notes
-                    });
+                        Notes = itemDto.Notes,
+                        // ✅ NUEVO: Establecer campos multi-tenant desde la orden
+                        CompanyId = order.CompanyId,
+                        BranchId = order.BranchId
+                    };
+                    
+                    // ✅ NUEVO: Establecer campos de auditoría usando BaseTrackingService
+                    SetCreatedTracking(newItem);
+                    
+                    order.OrderItems.Add(newItem);
                 }
 
                 // Cambiar el estado de la orden a Pending cuando se agreguen nuevos items
@@ -1073,6 +1092,26 @@ namespace RestBar.Services
                 Console.WriteLine($"[OrderService] Orden encontrada - Status actual: {order.Status}");
                 Console.WriteLine($"[OrderService] Mesa asociada: {(order.Table != null ? $"ID={order.Table.Id}, Estado={order.Table.Status}" : "NO")}");
 
+                // ✅ NUEVO: Verificar si la orden tiene pagos antes de cancelarla
+                var orderPayments = await _context.Payments
+                    .Where(p => p.OrderId == orderId && !p.IsVoided)
+                    .ToListAsync();
+                
+                var totalPaid = orderPayments.Sum(p => p.Amount);
+                Console.WriteLine($"[OrderService] Total pagado en orden cancelada: ${totalPaid:F2}");
+                
+                // ✅ NUEVO: Anular todos los pagos de la orden cancelada
+                if (orderPayments.Any())
+                {
+                    Console.WriteLine($"[OrderService] Anulando {orderPayments.Count} pagos de la orden cancelada...");
+                    foreach (var payment in orderPayments)
+                    {
+                        payment.IsVoided = true;
+                        Console.WriteLine($"[OrderService] Pago ${payment.Amount:F2} ({payment.Method}) anulado");
+                    }
+                    Console.WriteLine($"[OrderService] ✅ Todos los pagos anulados");
+                }
+
                 // Marcar la orden como cancelada
                 order.Status = OrderStatus.Cancelled;
                 order.ClosedAt = DateTime.UtcNow; // ✅ Fecha específica de cierre de orden
@@ -1095,14 +1134,16 @@ namespace RestBar.Services
                 {
                     Console.WriteLine($"[OrderService] Verificando si hay otras órdenes activas para la mesa {order.Table.Id}");
                     
-                    // Verificar si hay otras órdenes activas para esta mesa
+                    // ✅ MEJORADO: Verificar si hay otras órdenes activas para esta mesa (incluye ReadyToPay y Served)
                     var activeOrdersForTable = await _context.Orders
                         .Where(o => o.TableId == order.TableId && 
                                    o.Id != orderId && 
                                    (o.Status == OrderStatus.Pending || 
                                     o.Status == OrderStatus.SentToKitchen || 
                                     o.Status == OrderStatus.Preparing ||
-                                    o.Status == OrderStatus.Ready))
+                                    o.Status == OrderStatus.Ready ||
+                                    o.Status == OrderStatus.ReadyToPay ||
+                                    o.Status == OrderStatus.Served))
                         .CountAsync();
                     
                     Console.WriteLine($"[OrderService] Órdenes activas para la mesa: {activeOrdersForTable}");
@@ -1356,6 +1397,17 @@ namespace RestBar.Services
                         PreparedAt = null,
                         PreparedByStationId = null
                     };
+                    
+                    // ✅ NUEVO: Obtener CompanyId y BranchId de la orden
+                    var orderForItem = await _context.Orders.FindAsync(orderId);
+                    if (orderForItem != null)
+                    {
+                        newItem.CompanyId = orderForItem.CompanyId;
+                        newItem.BranchId = orderForItem.BranchId;
+                    }
+                    
+                    // ✅ NUEVO: Establecer campos de auditoría usando BaseTrackingService
+                    SetCreatedTracking(newItem);
 
                     _context.OrderItems.Add(newItem);
                     totalAmount += newItem.Quantity * newItem.UnitPrice;
@@ -1418,33 +1470,103 @@ namespace RestBar.Services
 
             if (order == null)
             {
+                // ✅ Obtener CompanyId y BranchId del usuario actual
+                Guid? companyId = null;
+                Guid? branchId = null;
+                
+                if (userId.HasValue)
+                {
+                    var user = await _context.Users
+                        .Include(u => u.Branch)
+                        .FirstOrDefaultAsync(u => u.Id == userId.Value);
+                    
+                    if (user != null)
+                    {
+                        branchId = user.BranchId;
+                        companyId = user.Branch?.CompanyId;
+                        Console.WriteLine($"🔍 [OrderService] Usuario encontrado - CompanyId: {companyId}, BranchId: {branchId}");
+                    }
+                }
+                
+                // ✅ Si no se obtuvo del usuario, intentar desde claims
+                if (!companyId.HasValue || !branchId.HasValue)
+                {
+                    var httpContext = _httpContextAccessor?.HttpContext;
+                    if (httpContext?.User?.Identity?.IsAuthenticated == true)
+                    {
+                        var companyIdClaim = httpContext.User.FindFirst("CompanyId")?.Value;
+                        var branchIdClaim = httpContext.User.FindFirst("BranchId")?.Value;
+                        
+                        if (!string.IsNullOrEmpty(companyIdClaim) && Guid.TryParse(companyIdClaim, out var parsedCompanyId))
+                            companyId = parsedCompanyId;
+                        
+                        if (!string.IsNullOrEmpty(branchIdClaim) && Guid.TryParse(branchIdClaim, out var parsedBranchId))
+                            branchId = parsedBranchId;
+                        
+                        Console.WriteLine($"🔍 [OrderService] Claims obtenidos - CompanyId: {companyId}, BranchId: {branchId}");
+                    }
+                }
+                
+                // ✅ Generar OrderNumber único
+                var orderNumber = await GenerateOrderNumberAsync(companyId);
+                Console.WriteLine($"🔍 [OrderService] OrderNumber generado: {orderNumber}");
+                
                 // Crear nueva orden
-                Console.WriteLine($"[OrderService] Creando nueva orden en estado SentToKitchen");
+                Console.WriteLine($"🔍 [OrderService] Creando nueva orden en estado SentToKitchen");
                 order = new Order
                 {
                     Id = Guid.NewGuid(),
+                    OrderNumber = orderNumber, // ✅ OrderNumber generado
                     TableId = dto.TableId,
                     UserId = userId,
                     OrderType = (OrderType)Enum.Parse(typeof(OrderType), dto.OrderType),
                     Status = OrderStatus.SentToKitchen,  // Estado inicial garantizado
                     OpenedAt = DateTime.UtcNow, // ✅ Fecha específica de apertura de orden
-                    TotalAmount = 0
+                    TotalAmount = 0,
+                    CompanyId = companyId, // ✅ CompanyId establecido
+                    BranchId = branchId // ✅ BranchId establecido
                 };
+                
+                // ✅ Establecer campos de auditoría
+                SetCreatedTracking(order);
+                
                 _context.Orders.Add(order);
-                Console.WriteLine($"[OrderService] Nueva orden creada con ID: {order.Id}");
+                Console.WriteLine($"✅ [OrderService] Nueva orden creada con ID: {order.Id}, OrderNumber: {order.OrderNumber}, CompanyId: {order.CompanyId}, BranchId: {order.BranchId}");
             }
             else
             {
-                // Lógica mejorada: Asegurar que la orden esté en SentToKitchen
+                // ✅ MEJORADO: Validar estado de orden y pagos antes de agregar items
                 Console.WriteLine($"[OrderService] Orden existente encontrada - Status actual: {order.Status}");
-                if (order.Status == OrderStatus.ReadyToPay || order.Status == OrderStatus.Ready)
+                
+                // ✅ NUEVO: Verificar si la orden tiene pagos
+                var totalPaid = await _context.Payments
+                    .Where(p => p.OrderId == order.Id && !p.IsVoided)
+                    .SumAsync(p => p.Amount);
+                
+                Console.WriteLine($"[OrderService] Total pagado en orden: ${totalPaid:F2}");
+                
+                // ✅ NUEVO: Validar si la orden está completada o pagada
+                if (order.Status == OrderStatus.Completed || order.Status == OrderStatus.Served)
                 {
+                    Console.WriteLine($"⚠️ [OrderService] ADVERTENCIA: Orden en estado {order.Status}, cambiando a SentToKitchen para agregar nuevos items");
+                    // Permitir agregar items a órdenes completadas (puede ser para reordenar)
+                    order.Status = OrderStatus.SentToKitchen;
+                }
+                else if (order.Status == OrderStatus.ReadyToPay || order.Status == OrderStatus.Ready)
+                {
+                    // ✅ MEJORADO: Si está lista para pago, cambiar a SentToKitchen porque hay nuevos items
                     Console.WriteLine($"[OrderService] Orden existente en estado {order.Status}, cambiando a SentToKitchen por nuevos items");
                     order.Status = OrderStatus.SentToKitchen;
+                    
+                    // ✅ NUEVO: Si hay pagos parciales, mantenerlos (no se cancelan)
+                    if (totalPaid > 0)
+                    {
+                        Console.WriteLine($"⚠️ [OrderService] ADVERTENCIA: Orden tiene pagos parciales (${totalPaid:F2}), pero se agregan nuevos items");
+                    }
                 }
                 else if (order.Status == OrderStatus.Preparing)
                 {
-                    // Si ya está en preparación, mantener el estado
+                    // Si ya está en preparación, mantener el estado (nuevos items se agregan a la preparación)
                     Console.WriteLine($"[OrderService] Orden existente en estado {order.Status}, manteniendo estado actual");
                 }
                 else if (order.Status == OrderStatus.Pending)
@@ -1453,6 +1575,10 @@ namespace RestBar.Services
                     Console.WriteLine($"[OrderService] Orden existente en estado {order.Status}, cambiando a SentToKitchen");
                     order.Status = OrderStatus.SentToKitchen;
                 }
+                else if (order.Status == OrderStatus.Cancelled)
+                {
+                    throw new InvalidOperationException("No se pueden agregar items a una orden cancelada");
+                }
                 else
                 {
                     // Para cualquier otro estado, asegurar que esté en SentToKitchen
@@ -1460,6 +1586,10 @@ namespace RestBar.Services
                     order.Status = OrderStatus.SentToKitchen;
                 }
                 Console.WriteLine($"[OrderService] Estado final de orden: {order.Status}");
+                
+                // ✅ NUEVO: Establecer campos de auditoría de actualización cuando se actualiza una orden existente
+                SetUpdatedTracking(order);
+                Console.WriteLine($"✅ [OrderService] AddOrUpdateOrderWithPendingItemsAsync() - Orden existente actualizada: UpdatedBy={order.UpdatedBy}, UpdatedAt={order.UpdatedAt}");
             }
 
             decimal total = 0;
@@ -1514,8 +1644,14 @@ namespace RestBar.Services
                         KitchenStatus = KitchenStatus.Pending,
                         Status = !string.IsNullOrEmpty(itemDto.Status)
                             ? Enum.Parse<OrderItemStatus>(itemDto.Status, ignoreCase: true)
-                            : OrderItemStatus.Pending
+                            : OrderItemStatus.Pending,
+                        // ✅ NUEVO: Establecer campos multi-tenant desde la orden
+                        CompanyId = order.CompanyId,
+                        BranchId = order.BranchId
                     };
+                    
+                    // ✅ NUEVO: Establecer campos de auditoría usando BaseTrackingService
+                    SetCreatedTracking(newItem);
                     Console.WriteLine($"[OrderService] Intentando agregar item con ID: {newItem.Id}");
                     Console.WriteLine($"[OrderService] Item individual creado: {product.Name} x {itemDto.Quantity} = ${newItem.Quantity * newItem.UnitPrice}");
                     try
@@ -1531,36 +1667,61 @@ namespace RestBar.Services
                     }
                     total += (newItem.Quantity * newItem.UnitPrice) - newItem.Discount;
                 }
-                order.TotalAmount += total;
                 await _context.SaveChangesAsync();
                 Console.WriteLine($"[OrderService] ✅ Orden guardada exitosamente con {dto.Items.Count} items");
+                
+                // ✅ NUEVO: Recalcular TotalAmount después de agregar items (una sola vez)
+                order.TotalAmount = order.OrderItems.Sum(oi => (oi.Quantity * oi.UnitPrice) - oi.Discount);
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"[OrderService] TotalAmount recalculado: ${order.TotalAmount:F2}");
+                
                 // Si la orden es nueva y order.Table es null, cargar la mesa asociada
                 if (order.Table == null && order.TableId != Guid.Empty)
                 {
                     order.Table = await _context.Tables.FindAsync(order.TableId);
                 }
-                // Actualizar el estado de la mesa según los ítems de la orden
+                
+                // ✅ MEJORADO: Actualizar el estado de la mesa según los ítems de la orden
                 if (order.Table != null)
                 {
-                    var hasPendingOrPreparing = order.OrderItems.Any(oi =>
+                    // ✅ NUEVO: Considerar todos los items (antiguos y nuevos)
+                    var allItems = order.OrderItems.ToList();
+                    var hasPendingOrPreparing = allItems.Any(oi =>
                         oi.Status == OrderItemStatus.Pending || oi.Status == OrderItemStatus.Preparing);
+                    var allItemsReady = allItems.All(oi => oi.Status == OrderItemStatus.Ready);
+                    var hasReadyItems = allItems.Any(oi => oi.Status == OrderItemStatus.Ready);
+                    
                     if (hasPendingOrPreparing)
                     {
                         order.Table.Status = TableStatus.EnPreparacion;
+                        Console.WriteLine($"[OrderService] Mesa {order.Table.TableNumber} cambiada a EnPreparacion (hay items pendientes/preparándose)");
                     }
-                    else if (order.OrderItems.All(oi => oi.Status == OrderItemStatus.Ready))
+                    else if (allItemsReady && allItems.Any())
                     {
                         order.Table.Status = TableStatus.ParaPago;
+                        Console.WriteLine($"[OrderService] Mesa {order.Table.TableNumber} cambiada a ParaPago (todos los items listos)");
+                    }
+                    else if (hasReadyItems)
+                    {
+                        order.Table.Status = TableStatus.Servida;
+                        Console.WriteLine($"[OrderService] Mesa {order.Table.TableNumber} cambiada a Servida (hay items listos pero no todos)");
                     }
                     else
                     {
                         order.Table.Status = TableStatus.Ocupada;
+                        Console.WriteLine($"[OrderService] Mesa {order.Table.TableNumber} cambiada a Ocupada");
                     }
+                    
                     await _context.SaveChangesAsync();
                     // Notificar cambio de estado de mesa vía SignalR
                     await _orderHubService.NotifyTableStatusChanged(order.Table.Id, order.Table.Status.ToString());
                     Console.WriteLine($"[OrderService] Notificación de mesa enviada: {order.Table.Status}");
                 }
+                
+                // ✅ NUEVO: Notificar cambios de orden vía SignalR
+                await _orderHubService.NotifyOrderStatusChanged(order.Id, order.Status);
+                await _orderHubService.NotifyKitchenUpdate();
+                
                 return order;
             }
             catch (Exception ex)
@@ -1812,6 +1973,56 @@ namespace RestBar.Services
                 Console.WriteLine($"[OrderService] ERROR en GetPendingPaymentOrdersAsync: {ex.Message}");
                 Console.WriteLine($"[OrderService] Stack trace: {ex.StackTrace}");
                 throw;
+            }
+        }
+        
+        // ✅ NUEVO: Generar número de orden único
+        private async Task<string> GenerateOrderNumberAsync(Guid? companyId)
+        {
+            try
+            {
+                Console.WriteLine($"🔍 [OrderService] GenerateOrderNumberAsync() - Generando número de orden...");
+                
+                // Obtener el último número de orden para esta compañía
+                int lastOrderNumber = 0;
+                
+                var query = _context.Orders.AsQueryable();
+                
+                // Si hay CompanyId, filtrar por compañía
+                if (companyId.HasValue)
+                {
+                    query = query.Where(o => o.CompanyId == companyId.Value);
+                    Console.WriteLine($"🔍 [OrderService] GenerateOrderNumberAsync() - Filtrando por CompanyId: {companyId.Value}");
+                }
+                
+                // Obtener el último OrderNumber numérico
+                var lastOrder = await query
+                    .Where(o => !string.IsNullOrEmpty(o.OrderNumber) && 
+                                o.OrderNumber.All(char.IsDigit))
+                    .OrderByDescending(o => o.OrderNumber)
+                    .FirstOrDefaultAsync();
+                
+                if (lastOrder != null && int.TryParse(lastOrder.OrderNumber, out var parsedNumber))
+                {
+                    lastOrderNumber = parsedNumber;
+                    Console.WriteLine($"🔍 [OrderService] GenerateOrderNumberAsync() - Último número encontrado: {lastOrderNumber}");
+                }
+                
+                // Incrementar y generar nuevo número
+                var newOrderNumber = (lastOrderNumber + 1).ToString().PadLeft(6, '0');
+                Console.WriteLine($"✅ [OrderService] GenerateOrderNumberAsync() - Nuevo número generado: {newOrderNumber}");
+                
+                return newOrderNumber;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [OrderService] GenerateOrderNumberAsync() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [OrderService] GenerateOrderNumberAsync() - StackTrace: {ex.StackTrace}");
+                
+                // Fallback: usar timestamp como número de orden
+                var fallbackNumber = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+                Console.WriteLine($"⚠️ [OrderService] GenerateOrderNumberAsync() - Usando número de fallback: {fallbackNumber}");
+                return fallbackNumber;
             }
         }
     }

@@ -320,10 +320,9 @@ namespace RestBar.Controllers
                 Console.WriteLine($"🏪 [ProductController] Edit() - Sucursal: {currentUser.BranchId}");
                 Console.WriteLine($"📝 [ProductController] Edit() - Producto: {existingProduct.Name}");
                 Console.WriteLine($"👤 [ProductController] Edit() - Actualizado por: {existingProduct.UpdatedBy}");
-                Console.WriteLine($"🕒 [ProductController] Edit() - Actualizado en: {existingProduct.UpdatedAt}");
 
-                _context.Update(existingProduct);
-                await _context.SaveChangesAsync();
+                // ✅ Usar el servicio para actualizar (aplica SetUpdatedTracking)
+                await _productService.UpdateAsync(id, existingProduct);
 
                 return Json(new { success = true, data = existingProduct });
             }

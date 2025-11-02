@@ -238,6 +238,11 @@ namespace RestBar.Controllers
 
                 // Limpiar campos que no deben ser establecidos por el cliente
                 user.Id = Guid.NewGuid();
+                
+                // ✅ NUEVO: Obtener usuario actual para tracking
+                var currentUser = await _authService.GetCurrentUserAsync(User);
+                user.CreatedBy = currentUser?.Email ?? "Sistema";
+                
                 // ✅ Fechas se manejan automáticamente por el modelo y BaseTrackingService
                 // IsActive viene del formulario, no se fuerza
 
@@ -329,6 +334,11 @@ namespace RestBar.Controllers
 
                 // Mantener campos que no deben ser modificados
                 user.CreatedAt = existingUser.CreatedAt;
+                user.CreatedBy = existingUser.CreatedBy;
+                
+                // ✅ NUEVO: Obtener usuario actual para tracking
+                var currentUser = await _authService.GetCurrentUserAsync(User);
+                user.UpdatedBy = currentUser?.Email ?? "Sistema";
 
                 await _userService.UpdateAsync(user);
 

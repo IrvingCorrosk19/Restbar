@@ -23,17 +23,64 @@ namespace RestBar.Services
 
         public async Task<Customer> CreateAsync(Customer customer)
         {
-            // ✅ Fechas se manejan automáticamente por el modelo y BaseTrackingService
-            customer.LoyaltyPoints = 0;
-            _context.Customers.Add(customer);
-            await _context.SaveChangesAsync();
-            return customer;
+            try
+            {
+                Console.WriteLine($"🔍 [CustomerService] CreateAsync() - Iniciando creación de cliente: {customer.FullName}");
+                
+                // ✅ Generar ID si no existe
+                if (customer.Id == Guid.Empty)
+                {
+                    customer.Id = Guid.NewGuid();
+                }
+                
+                // ✅ Usar SetCreatedTracking para establecer todos los campos de auditoría
+                SetCreatedTracking(customer);
+                
+                customer.LoyaltyPoints = 0;
+                
+                // ✅ Obtener usuario actual para CompanyId y BranchId si no están establecidos
+                if (!customer.CompanyId.HasValue || !customer.BranchId.HasValue)
+                {
+                    var userIdClaim = _httpContextAccessor?.HttpContext?.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                    if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId))
+                    {
+                        var user = await _context.Users
+                            .Include(u => u.Branch)
+                            .FirstOrDefaultAsync(u => u.Id == userId);
+                        
+                        if (user != null && user.Branch != null)
+                        {
+                            if (!customer.CompanyId.HasValue)
+                                customer.CompanyId = user.Branch.CompanyId;
+                            if (!customer.BranchId.HasValue)
+                                customer.BranchId = user.BranchId;
+                            Console.WriteLine($"✅ [CustomerService] CreateAsync() - Asignando CompanyId: {customer.CompanyId}, BranchId: {customer.BranchId}");
+                        }
+                    }
+                }
+                
+                Console.WriteLine($"✅ [CustomerService] CreateAsync() - Campos establecidos: CreatedBy={customer.CreatedBy}, CreatedAt={customer.CreatedAt}, UpdatedAt={customer.UpdatedAt}");
+                
+                _context.Customers.Add(customer);
+                await _context.SaveChangesAsync();
+                
+                Console.WriteLine($"✅ [CustomerService] CreateAsync() - Cliente creado exitosamente: {customer.FullName} (ID: {customer.Id})");
+                return customer;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [CustomerService] CreateAsync() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [CustomerService] CreateAsync() - StackTrace: {ex.StackTrace}");
+                throw;
+            }
         }
 
         public async Task UpdateAsync(Customer customer)
         {
             try
             {
+                Console.WriteLine($"🔍 [CustomerService] UpdateAsync() - Actualizando cliente: {customer.FullName} (ID: {customer.Id})");
+                
                 // Buscar si hay una entidad con el mismo ID siendo rastreada
                 var existingEntity = _context.ChangeTracker.Entries<Customer>()
                     .FirstOrDefault(e => e.Entity.Id == customer.Id);
@@ -44,9 +91,15 @@ namespace RestBar.Services
                     existingEntity.State = EntityState.Detached;
                 }
 
-                // Usar Update para manejar automáticamente el tracking
+                // ✅ Usar SetUpdatedTracking para establecer campos de auditoría de actualización
+                SetUpdatedTracking(customer);
+                
+                Console.WriteLine($"✅ [CustomerService] UpdateAsync() - Campos actualizados: UpdatedBy={customer.UpdatedBy}, UpdatedAt={customer.UpdatedAt}");
+
                 _context.Customers.Update(customer);
                 await _context.SaveChangesAsync();
+                
+                Console.WriteLine($"✅ [CustomerService] UpdateAsync() - Cliente actualizado exitosamente");
             }
             catch (Exception ex)
             {

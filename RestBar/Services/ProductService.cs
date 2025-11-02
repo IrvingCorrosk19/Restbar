@@ -29,44 +29,98 @@ namespace RestBar.Services
         {
             try
             {
+                Console.WriteLine($"🔍 [ProductService] CreateAsync() - Iniciando creación de producto: {product.Name}");
+                
                 if (product == null)
                     throw new ArgumentNullException(nameof(product), "El producto no puede ser null.");
 
-                product.Id = Guid.NewGuid();
-                // El tracking automático se maneja en el contexto
+                // ✅ Obtener usuario actual para CompanyId y BranchId
+                var userIdClaim = _httpContextAccessor?.HttpContext?.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId))
+                {
+                    var user = await _context.Users
+                        .Include(u => u.Branch)
+                        .FirstOrDefaultAsync(u => u.Id == userId);
+                    
+                    if (user != null && user.Branch != null)
+                    {
+                        product.CompanyId = user.Branch.CompanyId;
+                        product.BranchId = user.BranchId;
+                        Console.WriteLine($"✅ [ProductService] CreateAsync() - Asignando CompanyId: {product.CompanyId}, BranchId: {product.BranchId}");
+                    }
+                }
+
+                // ✅ Generar ID si no existe
+                if (product.Id == Guid.Empty)
+                {
+                    product.Id = Guid.NewGuid();
+                }
+                
+                // ✅ Usar SetCreatedTracking para establecer todos los campos de auditoría
+                SetCreatedTracking(product);
+                
+                // Si el controlador ya estableció CreatedBy, mantenerlo
+                var existingCreatedBy = product.CreatedBy;
+                if (!string.IsNullOrWhiteSpace(existingCreatedBy))
+                {
+                    product.CreatedBy = existingCreatedBy;
+                    product.UpdatedBy = existingCreatedBy;
+                }
+                
+                Console.WriteLine($"✅ [ProductService] CreateAsync() - Campos establecidos: CreatedBy={product.CreatedBy}, CreatedAt={product.CreatedAt}, UpdatedAt={product.UpdatedAt}");
+
                 _context.Products.Add(product);
                 await _context.SaveChangesAsync();
 
+                Console.WriteLine($"✅ [ProductService] CreateAsync() - Producto creado exitosamente: {product.Name} (ID: {product.Id})");
                 return product;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ProductService] Error en CreateAsync: {ex.Message}");
-                throw; // Deja que el controlador maneje la excepción
+                Console.WriteLine($"❌ [ProductService] CreateAsync() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [ProductService] CreateAsync() - StackTrace: {ex.StackTrace}");
+                throw;
             }
         }
 
         public async Task<Product> UpdateAsync(Guid id, Product product)
         {
-            var existing = await _context.Products.FindAsync(id);
-            if (existing == null)
-                throw new KeyNotFoundException($"Producto con ID {id} no encontrado");
-            
-            // Actualizar campos
-            existing.Name = product.Name;
-            existing.Description = product.Description;
-            existing.Price = product.Price;
-            existing.Cost = product.Cost;
-            existing.TaxRate = product.TaxRate;
-            existing.Unit = product.Unit;
-            existing.ImageUrl = product.ImageUrl;
-            existing.IsActive = product.IsActive;
-            existing.CategoryId = product.CategoryId;
-            existing.StationId = product.StationId;
-            
-            // El tracking automático se maneja en el contexto
-            await _context.SaveChangesAsync();
-            return existing;
+            try
+            {
+                Console.WriteLine($"🔍 [ProductService] UpdateAsync() - Actualizando producto: {product.Name} (ID: {id})");
+                
+                var existing = await _context.Products.FindAsync(id);
+                if (existing == null)
+                    throw new KeyNotFoundException($"Producto con ID {id} no encontrado");
+                
+                // Actualizar campos
+                existing.Name = product.Name;
+                existing.Description = product.Description;
+                existing.Price = product.Price;
+                existing.Cost = product.Cost;
+                existing.TaxRate = product.TaxRate;
+                existing.Unit = product.Unit;
+                existing.ImageUrl = product.ImageUrl;
+                existing.IsActive = product.IsActive;
+                existing.CategoryId = product.CategoryId;
+                existing.StationId = product.StationId;
+                
+                // ✅ Usar SetUpdatedTracking para establecer campos de auditoría de actualización
+                SetUpdatedTracking(existing);
+                
+                Console.WriteLine($"✅ [ProductService] UpdateAsync() - Campos actualizados: UpdatedBy={existing.UpdatedBy}, UpdatedAt={existing.UpdatedAt}");
+
+                await _context.SaveChangesAsync();
+                
+                Console.WriteLine($"✅ [ProductService] UpdateAsync() - Producto actualizado exitosamente");
+                return existing;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [ProductService] UpdateAsync() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [ProductService] UpdateAsync() - StackTrace: {ex.StackTrace}");
+                throw;
+            }
         }
 
         public async Task<bool> DeleteAsync(Guid id)

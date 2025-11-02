@@ -8,15 +8,11 @@ using System.Threading.Tasks;
 
 namespace RestBar.Services
 {
-    public class StationService : IStationService
+    public class StationService : BaseTrackingService, IStationService
     {
-        private readonly RestBarContext _context;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-
         public StationService(RestBarContext context, IHttpContextAccessor httpContextAccessor)
+            : base(context, httpContextAccessor)
         {
-            _context = context;
-            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<IEnumerable<Station>> GetAllStationsAsync()
@@ -95,13 +91,7 @@ namespace RestBar.Services
                 station.CompanyId = currentUser.Branch.CompanyId;
                 station.BranchId = currentUser.BranchId;
 
-                // ✅ NUEVO: Asignar propiedades de auditoría
-                station.CreatedBy = currentUser.Email;
-                station.UpdatedBy = currentUser.Email;
-
                 Console.WriteLine($"✅ [StationService] CreateStationAsync() - Asignando CompanyId: {station.CompanyId}, BranchId: {station.BranchId}");
-                Console.WriteLine($"👤 [StationService] CreateStationAsync() - Creado por: {station.CreatedBy}");
-                Console.WriteLine($"🕒 [StationService] CreateStationAsync() - Creado en: {station.CreatedAt}");
 
                 // Verificar si ya existe una estación con el mismo nombre en la misma compañía/sucursal
                 var existingStation = await _context.Stations
@@ -112,7 +102,17 @@ namespace RestBar.Services
                 if (existingStation != null)
                     throw new InvalidOperationException($"Ya existe una estación con el nombre '{station.Name}' en esta sucursal");
 
-                station.Id = Guid.NewGuid();
+                // ✅ Generar ID si no existe
+                if (station.Id == Guid.Empty)
+                {
+                    station.Id = Guid.NewGuid();
+                }
+                
+                // ✅ Usar SetCreatedTracking para establecer todos los campos de auditoría
+                SetCreatedTracking(station);
+                
+                Console.WriteLine($"✅ [StationService] CreateStationAsync() - Campos establecidos: CreatedBy={station.CreatedBy}, CreatedAt={station.CreatedAt}, UpdatedAt={station.UpdatedAt}");
+                
                 _context.Stations.Add(station);
                 await _context.SaveChangesAsync();
                 
@@ -158,8 +158,10 @@ namespace RestBar.Services
             existing.AreaId = station.AreaId;
             existing.IsActive = station.IsActive;
             
-            // ✅ NUEVO: Actualizar propiedades de auditoría
-            existing.UpdatedBy = currentUser?.Email ?? "Sistema";
+            // ✅ Usar SetUpdatedTracking para establecer campos de auditoría de actualización
+            SetUpdatedTracking(existing);
+            
+            Console.WriteLine($"✅ [StationService] UpdateStationAsync() - Campos actualizados: UpdatedBy={existing.UpdatedBy}, UpdatedAt={existing.UpdatedAt}");
             
             await _context.SaveChangesAsync();
             

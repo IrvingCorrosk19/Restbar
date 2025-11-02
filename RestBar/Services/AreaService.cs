@@ -5,15 +5,11 @@ using RestBar.Models;
 
 namespace RestBar.Services
 {
-    public class AreaService : IAreaService
+    public class AreaService : BaseTrackingService, IAreaService
     {
-        private readonly RestBarContext _context;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-
         public AreaService(RestBarContext context, IHttpContextAccessor httpContextAccessor)
+            : base(context, httpContextAccessor)
         {
-            _context = context;
-            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<IEnumerable<Area>> GetAllAsync()
@@ -98,11 +94,21 @@ namespace RestBar.Services
                 if (existingArea != null)
                     throw new InvalidOperationException($"Ya existe un área con el nombre '{area.Name}' en esta sucursal");
 
-                area.Id = Guid.NewGuid();
+                // ✅ Generar ID si no existe
+                if (area.Id == Guid.Empty)
+                {
+                    area.Id = Guid.NewGuid();
+                }
+                
+                // ✅ Usar SetCreatedTracking para establecer todos los campos de auditoría
+                SetCreatedTracking(area);
+                
+                Console.WriteLine($"✅ [AreaService] CreateAsync() - Campos establecidos: CreatedBy={area.CreatedBy}, CreatedAt={area.CreatedAt}, UpdatedAt={area.UpdatedAt}");
+                
                 _context.Areas.Add(area);
                 await _context.SaveChangesAsync();
                 
-                Console.WriteLine($"✅ [AreaService] CreateAsync() - Área creada exitosamente: {area.Name}");
+                Console.WriteLine($"✅ [AreaService] CreateAsync() - Área creada exitosamente: {area.Name} (ID: {area.Id})");
                 return area;
             }
             catch (Exception ex)
@@ -117,6 +123,8 @@ namespace RestBar.Services
         {
             try
             {
+                Console.WriteLine($"🔍 [AreaService] UpdateAsync() - Actualizando área: {area.Name} (ID: {area.Id})");
+                
                 // Buscar si hay una entidad con el mismo ID siendo rastreada
                 var existingEntity = _context.ChangeTracker.Entries<Area>()
                     .FirstOrDefault(e => e.Entity.Id == area.Id);
@@ -127,9 +135,15 @@ namespace RestBar.Services
                     existingEntity.State = EntityState.Detached;
                 }
 
-                // Usar Update para manejar automáticamente el tracking
+                // ✅ Usar SetUpdatedTracking para establecer campos de auditoría de actualización
+                SetUpdatedTracking(area);
+                
+                Console.WriteLine($"✅ [AreaService] UpdateAsync() - Campos actualizados: UpdatedBy={area.UpdatedBy}, UpdatedAt={area.UpdatedAt}");
+
                 _context.Areas.Update(area);
                 await _context.SaveChangesAsync();
+                
+                Console.WriteLine($"✅ [AreaService] UpdateAsync() - Área actualizada exitosamente");
             }
             catch (Exception ex)
             {

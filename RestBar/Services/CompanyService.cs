@@ -29,6 +29,8 @@ namespace RestBar.Services
         {
             try
             {
+                Console.WriteLine($"🔍 [CompanyService] CreateAsync() - Iniciando creación de compañía: {company.Name}");
+                
                 if (string.IsNullOrWhiteSpace(company.Name))
                     throw new ArgumentException("El nombre es requerido", nameof(company.Name));
 
@@ -41,14 +43,25 @@ namespace RestBar.Services
                     Address = company.Address,
                     Phone = company.Phone,
                     Email = company.Email,
-                    IsActive = true, // Activo por defecto
-                    // ✅ Fechas se manejan automáticamente por el modelo
-                    CreatedBy = string.IsNullOrWhiteSpace(company.CreatedBy) ? "Sistema" : company.CreatedBy
+                    IsActive = true // Activo por defecto
                 };
+
+                // ✅ Usar SetCreatedTracking para establecer todos los campos de auditoría
+                SetCreatedTracking(newCompany);
+                
+                // Si el controlador ya estableció CreatedBy, mantenerlo
+                if (!string.IsNullOrWhiteSpace(company.CreatedBy))
+                {
+                    newCompany.CreatedBy = company.CreatedBy;
+                    newCompany.UpdatedBy = company.CreatedBy;
+                }
+                
+                Console.WriteLine($"✅ [CompanyService] CreateAsync() - Campos establecidos: CreatedBy={newCompany.CreatedBy}, CreatedAt={newCompany.CreatedAt}, UpdatedAt={newCompany.UpdatedAt}");
 
                 _context.Companies.Add(newCompany);
                 await _context.SaveChangesAsync();
 
+                Console.WriteLine($"✅ [CompanyService] CreateAsync() - Compañía creada exitosamente con ID: {newCompany.Id}");
                 return newCompany;
             }
             catch (ArgumentException ex)
@@ -73,7 +86,8 @@ namespace RestBar.Services
         {
             try
             {
-                // El tracking automático se maneja en el contexto
+                Console.WriteLine($"🔍 [CompanyService] UpdateAsync() - Actualizando compañía: {company.Name} (ID: {company.Id})");
+                
                 // Buscar si hay una entidad con el mismo ID siendo rastreada
                 var existingEntity = _context.ChangeTracker.Entries<Company>()
                     .FirstOrDefault(e => e.Entity.Id == company.Id);
@@ -84,9 +98,15 @@ namespace RestBar.Services
                     existingEntity.State = EntityState.Detached;
                 }
 
-                // Usar Update para manejar automáticamente el tracking
+                // ✅ Usar SetUpdatedTracking para establecer campos de auditoría de actualización
+                SetUpdatedTracking(company);
+                
+                Console.WriteLine($"✅ [CompanyService] UpdateAsync() - Campos actualizados: UpdatedBy={company.UpdatedBy}, UpdatedAt={company.UpdatedAt}");
+
                 _context.Companies.Update(company);
                 await _context.SaveChangesAsync();
+                
+                Console.WriteLine($"✅ [CompanyService] UpdateAsync() - Compañía actualizada exitosamente");
             }
             catch (Exception ex)
             {

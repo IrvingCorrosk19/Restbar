@@ -42,7 +42,18 @@ namespace RestBar.Services
 
                 user.IsActive = true;
                 user.PasswordHash = HashPassword(user.PasswordHash);
-                // El tracking automático se maneja en el contexto
+                
+                // ✅ Usar SetCreatedTracking para establecer todos los campos de auditoría
+                SetCreatedTracking(user);
+                
+                // Si el controlador ya estableció CreatedBy, mantenerlo
+                if (!string.IsNullOrWhiteSpace(user.CreatedBy))
+                {
+                    user.UpdatedBy = user.CreatedBy;
+                }
+                
+                Console.WriteLine($"✅ [UserService] CreateAsync() - Campos establecidos: CreatedBy={user.CreatedBy}, CreatedAt={user.CreatedAt}, UpdatedAt={user.UpdatedAt}");
+                
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
 
@@ -94,7 +105,11 @@ namespace RestBar.Services
                     user.PasswordHash = HashPassword(user.PasswordHash);
                 }
 
-                // El tracking automático se maneja en el contexto
+                // ✅ Usar SetUpdatedTracking para establecer campos de auditoría de actualización
+                SetUpdatedTracking(user);
+                
+                Console.WriteLine($"✅ [UserService] UpdateAsync() - Campos actualizados: UpdatedBy={user.UpdatedBy}, UpdatedAt={user.UpdatedAt}");
+
                 _context.Users.Update(user);
                 await _context.SaveChangesAsync();
 
