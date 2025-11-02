@@ -102,24 +102,24 @@
                             </li>
                         </ul>
                     }
-                    
-                    <!-- Información de Compañía y Sucursal - Esquina Derecha -->
-                    @if (User.Identity.IsAuthenticated && User.FindFirst("CompanyId")?.Value != null && User.FindFirst("BranchId")?.Value != null)
-                    {
-                        <div class="company-branch-info-corner">
-                            <div class="company-info">
-                                <i class="fas fa-building"></i>
-                                <span class="company-name">@(User.FindFirst("CompanyName")?.Value ?? "Compañía")</span>
-                            </div>
-                            <div class="branch-info">
-                                <i class="fas fa-store"></i>
-                                <span class="branch-name">@(User.FindFirst("BranchName")?.Value ?? "Sucursal")</span>
-                            </div>
-                        </div>
-                    }
                 </div>
             </div>
         </nav>
+        
+        <!-- Información de Compañía y Sucursal - Esquina Derecha (fuera del navbar-collapse) -->
+        @if (User.Identity.IsAuthenticated && User.FindFirst("CompanyId")?.Value != null && User.FindFirst("BranchId")?.Value != null)
+        {
+            <div class="company-branch-info-corner">
+                <div class="company-info">
+                    <i class="fas fa-building"></i>
+                    <span class="company-name">@(User.FindFirst("CompanyName")?.Value ?? "Compañía")</span>
+                </div>
+                <div class="branch-info">
+                    <i class="fas fa-store"></i>
+                    <span class="branch-name">@(User.FindFirst("BranchName")?.Value ?? "Sucursal")</span>
+                </div>
+            </div>
+        }
     </header>
     
     <!-- Contenedor principal optimizado para aprovechar laterales -->

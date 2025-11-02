@@ -26,12 +26,17 @@ body {
     top: 0;
     z-index: 1000;
     flex-shrink: 0;
+    overflow: visible;
+    position: relative;
 }
 
 .navbar {
     padding: 0.5rem 0;
     width: 100%;
     margin: 0;
+    overflow: visible !important;
+    position: relative;
+    z-index: 1001;
 }
 
 .navbar-container {
@@ -42,6 +47,15 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    overflow: visible !important;
+    position: relative;
+    z-index: 1002;
+}
+
+.navbar-collapse {
+    overflow: visible !important;
+    position: relative !important;
+    z-index: 1003 !important;
 }
 
 /* Contenedor principal optimizado para aprovechar laterales */
@@ -61,6 +75,8 @@ body {
     margin: 0;
     padding: 0;
     background: var(--bs-body-bg);
+    position: relative;
+    z-index: 1;
 }
 
 .content-wrapper {
@@ -68,6 +84,8 @@ body {
     max-width: 100%;
     padding: 20px;
     margin: 0;
+    position: relative;
+    z-index: 1;
 }
 
 /* Footer optimizado */

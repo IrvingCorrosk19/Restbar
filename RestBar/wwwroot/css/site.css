@@ -96,8 +96,9 @@ body.dark-theme::before {
     border-bottom: 3px solid var(--border-color);
     box-shadow: var(--shadow-lg);
     position: relative;
-    overflow: hidden;
+    overflow: visible !important;
     margin-bottom: 2rem;
+    z-index: 1000;
 }
 
 .main-header::before {
@@ -209,8 +210,9 @@ body.dark-theme::before {
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-md);
     border: 1px solid var(--border-light);
-    z-index: 1000;
+    z-index: 1005;
     min-width: 200px;
+    pointer-events: auto;
 }
 
 .company-info,
@@ -277,13 +279,57 @@ body.dark-theme::before {
     border-radius: var(--radius-sm);
 }
 
-/* Dropdown menus */
+/* Dropdown menus - Solución completa para que aparezcan por encima */
+.main-header {
+    overflow: visible !important;
+}
+
+.navbar {
+    overflow: visible !important;
+}
+
+.navbar-collapse {
+    position: relative !important;
+    z-index: 1010 !important;
+    overflow: visible !important;
+}
+
+.navbar-nav {
+    position: relative !important;
+    z-index: 1020 !important;
+    overflow: visible !important;
+}
+
+.nav-item.dropdown {
+    position: relative !important;
+    z-index: 1030 !important;
+    overflow: visible !important;
+}
+
 .dark-dropdown {
     background: var(--bg-secondary) !important;
     border: 1px solid var(--border-color) !important;
     border-radius: var(--radius-md) !important;
     box-shadow: var(--shadow-lg) !important;
     padding: 0.5rem 0;
+    z-index: 1100 !important;
+    min-width: 200px;
+    position: absolute !important;
+    margin-top: 0.125rem !important;
+    display: none !important;
+}
+
+.dark-dropdown.show {
+    display: block !important;
+}
+
+/* Asegurar que el dropdown del usuario también esté oculto por defecto */
+.dropdown-menu-end.dark-dropdown {
+    display: none !important;
+}
+
+.dropdown-menu-end.dark-dropdown.show {
+    display: block !important;
 }
 
 .dark-dropdown .dropdown-item {
