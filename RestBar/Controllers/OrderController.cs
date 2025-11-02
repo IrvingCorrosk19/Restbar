@@ -870,6 +870,8 @@ namespace RestBar.Controllers
 
         // POST: Order/UpdateItemQuantityInOrder
         [HttpPost]
+        [Route("Order/UpdateItemQuantity")]  // ✅ Ruta alternativa para compatibilidad con JavaScript
+        [Route("Order/UpdateItemQuantityInOrder")]  // ✅ Ruta original
         public async Task<IActionResult> UpdateItemQuantityInOrder([FromBody] UpdateItemQuantityDto dto)
         {
             try

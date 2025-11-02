@@ -295,7 +295,8 @@ async function updateQuantity(productId, delta, status = null) {
                 const requestData = {
                     orderId: currentOrder.orderId,
                     productId: productId,
-                    newQuantity: newQuantity
+                    quantity: newQuantity,  // ✅ Corregido: el DTO espera "quantity" no "newQuantity"
+                    itemId: item.id || null  // ✅ Agregado: ItemId para actualización precisa
                 };
 
                 const response = await fetch('/Order/UpdateItemQuantity', {

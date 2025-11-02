@@ -199,7 +199,8 @@ async function increaseQuantity(productId) {
             const requestData = {
                 orderId: currentOrder.orderId,
                 productId: productId,
-                newQuantity: newQuantity
+                quantity: newQuantity,  // ✅ Corregido: el DTO espera "quantity" no "newQuantity"
+                itemId: item.id || null  // ✅ Agregado: ItemId para actualización precisa
             };
 
             const response = await fetch('/Order/UpdateItemQuantity', {
@@ -271,7 +272,8 @@ async function decreaseQuantity(productId) {
                 const requestData = {
                     orderId: currentOrder.orderId,
                     productId: productId,
-                    newQuantity: newQuantity
+                    quantity: newQuantity,  // ✅ Corregido: el DTO espera "quantity" no "newQuantity"
+                    itemId: item.id || null  // ✅ Agregado: ItemId para actualización precisa
                 };
 
                 const response = await fetch('/Order/UpdateItemQuantity', {
