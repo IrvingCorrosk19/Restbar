@@ -428,33 +428,51 @@ function displayStockHistory(history) {
     modal.show();
 }
 
+// ✅ NUEVO: Funciones para alertas de stock bajo y reportes de consumo
 // Función para cargar alertas de bajo stock
 async function loadLowStockAlerts() {
     try {
-        const response = await fetch('/Inventory/GetLowStockReport');
+        console.log('🔍 [Inventory] loadLowStockAlerts() - Iniciando...');
+        const response = await fetch('/Inventory/GetLowStockProducts');
         const result = await response.json();
         
-        if (result.success && result.items && result.items.length > 0) {
+        console.log('📡 [Inventory] loadLowStockAlerts() - Respuesta:', result);
+        
+        if (result.success && result.data && result.data.length > 0) {
             const alertsDiv = document.getElementById('lowStockAlerts');
-            const itemsList = document.getElementById('lowStockItemsList');
             
-            if (alertsDiv && itemsList) {
-                const itemsHtml = result.items.map(item => `
-                    <div class="mb-2">
-                        <strong>${item.productName || 'Producto'}</strong> - 
-                        <span class="badge bg-warning">${item.currentStock || 0} unidades</span>
-                        <small class="text-muted">(${item.branchName || 'Sucursal'})</small>
-                    </div>
-                `).join('');
+            if (alertsDiv) {
+                const alertsHtml = result.data.map(item => {
+                    const isCritical = item.stock <= (item.minStock * 0.5);
+                    const alertClass = isCritical ? 'stock-alert critical' : 'stock-alert';
+                    return `
+                        <div class="${alertClass}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong><i class="fas fa-exclamation-triangle"></i> ${item.productName}</strong>
+                                    <br>
+                                    <small class="text-muted">${item.categoryName} - ${item.stationName}</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge ${isCritical ? 'bg-danger' : 'bg-warning'}">
+                                        Stock: ${item.stock.toFixed(2)}
+                                    </span>
+                                    <br>
+                                    <small class="text-muted">Mín: ${item.minStock.toFixed(2)}</small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
                 
-                itemsList.innerHTML = itemsHtml;
-                alertsDiv.style.display = 'block';
+                alertsDiv.innerHTML = alertsHtml;
+                console.log(`✅ [Inventory] loadLowStockAlerts() - ${result.data.length} alertas mostradas`);
             }
         } else {
-            // Ocultar alertas si no hay items
+            // Mostrar mensaje si no hay alertas
             const alertsDiv = document.getElementById('lowStockAlerts');
             if (alertsDiv) {
-                alertsDiv.style.display = 'none';
+                alertsDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> No hay productos con stock bajo</div>';
             }
         }
         
@@ -1098,8 +1116,130 @@ async function checkDatabaseData() {
     }
 }
 
+// ✅ NUEVO: Función para cargar reporte de consumo
+async function loadConsumptionReport() {
+    try {
+        console.log('🔍 [Inventory] loadConsumptionReport() - Iniciando...');
+        
+        const startDate = document.getElementById('startDate')?.value || '';
+        const endDate = document.getElementById('endDate')?.value || '';
+        const productId = document.getElementById('productFilter')?.value || '';
+        const stationId = document.getElementById('stationFilter')?.value || '';
+        
+        const url = new URL('/Inventory/ConsumptionReport', window.location.origin);
+        if (startDate) url.searchParams.append('startDate', startDate);
+        if (endDate) url.searchParams.append('endDate', endDate);
+        if (productId) url.searchParams.append('productId', productId);
+        if (stationId) url.searchParams.append('stationId', stationId);
+        
+        console.log('📤 [Inventory] loadConsumptionReport() - URL:', url.toString());
+        
+        const response = await fetch(url.toString());
+        const result = await response.json();
+        
+        console.log('📡 [Inventory] loadConsumptionReport() - Respuesta:', result);
+        
+        if (result.success && result.data) {
+            renderConsumptionReport(result.data, result.filters);
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: result.message || 'Error al generar el reporte'
+            });
+        }
+    } catch (error) {
+        console.error('❌ [Inventory] loadConsumptionReport() - Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error al generar el reporte: ' + error.message
+        });
+    }
+}
+
+// ✅ NUEVO: Función para renderizar reporte de consumo
+function renderConsumptionReport(data, filters) {
+    const reportDiv = document.getElementById('consumptionReport');
+    if (!reportDiv) return;
+    
+    if (!data || data.length === 0) {
+        reportDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-info-circle"></i> No hay datos para el período seleccionado</div>';
+        return;
+    }
+    
+    const reportHtml = `
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Reporte de Consumo</h5>
+            </div>
+            <div class="card-body">
+                ${data.map(item => `
+                    <div class="consumption-card">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-box"></i> ${item.productName}</h6>
+                                <p class="text-muted mb-0"><i class="fas fa-map-marker-alt"></i> ${item.stationName}</p>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <div class="mb-2">
+                                    <strong class="text-primary">Cantidad Total: ${item.totalQuantity.toFixed(2)}</strong>
+                                </div>
+                                <div class="small text-muted">
+                                    <div>Órdenes: ${item.totalOrders}</div>
+                                    <div>Promedio: ${item.averageQuantity.toFixed(2)}</div>
+                                    <div>Rango: ${item.minQuantity.toFixed(2)} - ${item.maxQuantity.toFixed(2)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    
+    reportDiv.innerHTML = reportHtml;
+    console.log(`✅ [Inventory] renderConsumptionReport() - ${data.length} registros renderizados`);
+}
+
+// ✅ NUEVO: Función para exportar reporte de consumo
+function exportConsumptionReport() {
+    // TODO: Implementar exportación a Excel/PDF
+    Swal.fire({
+        icon: 'info',
+        title: 'Próximamente',
+        text: 'La funcionalidad de exportación estará disponible pronto'
+    });
+}
+
+// Cargar alertas y reportes al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔍 [Inventory] DOMContentLoaded - Iniciando carga de datos...');
+    
+    // Cargar datos de inventario (solo si existe la tabla)
+    if (document.getElementById('inventoryTableBody')) {
+        console.log('✅ [Inventory] DOMContentLoaded - Tabla de inventario encontrada, cargando datos...');
+        loadInventoryData();
+        loadModalData();
+    } else {
+        console.log('⚠️ [Inventory] DOMContentLoaded - Tabla de inventario no encontrada, saltando carga de datos de tabla');
+    }
+    
+    // Cargar alertas de stock bajo
+    if (document.getElementById('lowStockAlerts')) {
+        console.log('✅ [Inventory] DOMContentLoaded - Sección de alertas encontrada, cargando alertas...');
+        loadLowStockAlerts();
+    } else {
+        console.log('⚠️ [Inventory] DOMContentLoaded - Sección de alertas no encontrada');
+    }
+});
+
 // Exportar funciones para uso global
+window.loadInventoryData = loadInventoryData;
 window.openUpdateStockModal = openUpdateStockModal;
+window.loadLowStockAlerts = loadLowStockAlerts;
+window.loadConsumptionReport = loadConsumptionReport;
+window.exportConsumptionReport = exportConsumptionReport;
 window.viewStockHistory = viewStockHistory;
 window.saveStockUpdate = saveStockUpdate;
 window.checkDatabaseData = checkDatabaseData;

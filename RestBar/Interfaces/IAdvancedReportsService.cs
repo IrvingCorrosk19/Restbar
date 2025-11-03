@@ -24,6 +24,21 @@ namespace RestBar.Interfaces
         Task<List<StationPerformance>> GetStationPerformanceAsync(ReportFilters filters);
         Task<List<TableUtilization>> GetTableUtilizationAsync(ReportFilters filters);
         
+        // Análisis de Inventario
+        Task<InventoryAnalysisReport> GetInventoryAnalysisAsync(ReportFilters filters);
+        
+        // Análisis de Proveedores
+        Task<SupplierAnalysisReport> GetSupplierAnalysisAsync(ReportFilters filters);
+        
+        // Análisis de Tendencias
+        Task<TrendAnalysisReport> GetTrendAnalysisAsync(ReportFilters filters);
+        
+        // Reporte de Auditoría
+        Task<AuditReportViewModel> GetAuditReportAsync(ReportFilters filters);
+        
+        // Salud del Sistema
+        Task<SystemHealthReport> GetSystemHealthAsync();
+        
         // Exportación
         Task<byte[]> ExportAdvancedReportToPdfAsync(string reportType, ReportFilters filters);
         Task<byte[]> ExportAdvancedReportToExcelAsync(string reportType, ReportFilters filters);

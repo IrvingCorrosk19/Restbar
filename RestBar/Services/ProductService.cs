@@ -105,6 +105,12 @@ namespace RestBar.Services
                 existing.CategoryId = product.CategoryId;
                 existing.StationId = product.StationId;
                 
+                // ✅ NUEVO: Actualizar campos de inventario
+                existing.Stock = product.Stock;
+                existing.MinStock = product.MinStock;
+                existing.TrackInventory = product.TrackInventory;
+                existing.AllowNegativeStock = product.AllowNegativeStock;
+                
                 // ✅ Usar SetUpdatedTracking para establecer campos de auditoría de actualización
                 SetUpdatedTracking(existing);
                 
@@ -211,6 +217,346 @@ namespace RestBar.Services
                     taxRate = p.TaxRate  // ✅ AGREGADO: Campo taxRate
                 })
                 .ToListAsync();
+        }
+
+        // ✅ NUEVO: MÉTODOS DE INVENTARIO
+
+        /// <summary>
+        /// Obtiene el stock disponible total de un producto (stock global + stock por estaciones)
+        /// </summary>
+        public async Task<decimal> GetAvailableStockAsync(Guid productId, Guid? branchId = null)
+        {
+            try
+            {
+                Console.WriteLine($"🔍 [ProductService] GetAvailableStockAsync() - ProductId: {productId}, BranchId: {branchId}");
+                
+                var product = await _context.Products
+                    .Include(p => p.StockAssignments.Where(sa => sa.IsActive))
+                    .FirstOrDefaultAsync(p => p.Id == productId);
+                
+                if (product == null)
+                {
+                    Console.WriteLine($"⚠️ [ProductService] GetAvailableStockAsync() - Producto no encontrado");
+                    return 0;
+                }
+
+                // Si no se controla inventario, retornar stock ilimitado (representado por -1)
+                if (!product.TrackInventory)
+                {
+                    Console.WriteLine($"✅ [ProductService] GetAvailableStockAsync() - Producto no controla inventario, stock ilimitado");
+                    return -1; // -1 representa stock ilimitado
+                }
+
+                // Filtrar asignaciones por sucursal si se especifica
+                var stockAssignments = product.StockAssignments.Where(sa => sa.IsActive);
+                if (branchId.HasValue)
+                {
+                    stockAssignments = stockAssignments.Where(sa => sa.BranchId == branchId.Value);
+                }
+                var assignmentsList = stockAssignments.ToList();
+
+                decimal totalStock = 0;
+
+                // ✅ LÓGICA CORREGIDA: Si hay asignaciones por estación, usar la suma de esas asignaciones
+                // Si NO hay asignaciones, usar el stock global
+                if (assignmentsList.Any())
+                {
+                    // Hay asignaciones por estación: sumar todas las asignaciones
+                    totalStock = assignmentsList.Sum(sa => sa.Stock);
+                    Console.WriteLine($"✅ [ProductService] GetAvailableStockAsync() - Stock total de asignaciones: {totalStock} (de {assignmentsList.Count} asignaciones)");
+                }
+                else
+                {
+                    // No hay asignaciones: usar stock global
+                    totalStock = product.Stock ?? 0;
+                    Console.WriteLine($"✅ [ProductService] GetAvailableStockAsync() - Stock global disponible: {totalStock}");
+                }
+
+                Console.WriteLine($"✅ [ProductService] GetAvailableStockAsync() - Stock total disponible: {totalStock}");
+                return totalStock;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [ProductService] GetAvailableStockAsync() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [ProductService] GetAvailableStockAsync() - StackTrace: {ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Obtiene el stock disponible de un producto en una estación específica
+        /// </summary>
+        public async Task<decimal> GetStockInStationAsync(Guid productId, Guid stationId, Guid? branchId = null)
+        {
+            try
+            {
+                Console.WriteLine($"🔍 [ProductService] GetStockInStationAsync() - ProductId: {productId}, StationId: {stationId}, BranchId: {branchId}");
+                
+                var assignment = await _context.ProductStockAssignments
+                    .Where(sa => sa.ProductId == productId && 
+                                 sa.StationId == stationId && 
+                                 sa.IsActive &&
+                                 (!branchId.HasValue || sa.BranchId == branchId.Value))
+                    .FirstOrDefaultAsync();
+                
+                if (assignment == null)
+                {
+                    Console.WriteLine($"⚠️ [ProductService] GetStockInStationAsync() - No hay asignación para esta estación");
+                    // Si no hay asignación específica, retornar stock global del producto
+                    var product = await GetByIdAsync(productId);
+                    return product?.Stock ?? 0;
+                }
+
+                Console.WriteLine($"✅ [ProductService] GetStockInStationAsync() - Stock en estación: {assignment.Stock}");
+                return assignment.Stock;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [ProductService] GetStockInStationAsync() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [ProductService] GetStockInStationAsync() - StackTrace: {ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Encuentra la mejor estación para asignar un producto basándose en stock disponible y prioridad
+        /// </summary>
+        public async Task<Guid?> FindBestStationForProductAsync(Guid productId, decimal requiredQuantity, Guid? branchId = null)
+        {
+            try
+            {
+                Console.WriteLine($"🔍 [ProductService] FindBestStationForProductAsync() - ProductId: {productId}, RequiredQuantity: {requiredQuantity}, BranchId: {branchId}");
+                
+                var product = await _context.Products
+                    .Include(p => p.StockAssignments.Where(sa => sa.IsActive))
+                    .Include(p => p.Station)
+                    .FirstOrDefaultAsync(p => p.Id == productId);
+                
+                if (product == null)
+                {
+                    Console.WriteLine($"⚠️ [ProductService] FindBestStationForProductAsync() - Producto no encontrado");
+                    return null;
+                }
+
+                // Si el producto no controla inventario, retornar estación predeterminada
+                if (!product.TrackInventory)
+                {
+                    Console.WriteLine($"✅ [ProductService] FindBestStationForProductAsync() - Producto no controla inventario, usando estación predeterminada: {product.StationId}");
+                    return product.StationId;
+                }
+
+                // Obtener asignaciones de stock por estación con stock suficiente
+                var assignments = product.StockAssignments
+                    .Where(sa => sa.IsActive && 
+                                 (!branchId.HasValue || sa.BranchId == branchId.Value) &&
+                                 sa.Stock >= requiredQuantity)
+                    .OrderByDescending(sa => sa.Priority) // Mayor prioridad primero
+                    .ThenByDescending(sa => sa.Stock) // Mayor stock después
+                    .ToList();
+
+                if (assignments.Any())
+                {
+                    var bestAssignment = assignments.First();
+                    Console.WriteLine($"✅ [ProductService] FindBestStationForProductAsync() - Estación seleccionada: {bestAssignment.StationId} (Prioridad: {bestAssignment.Priority}, Stock: {bestAssignment.Stock})");
+                    return bestAssignment.StationId;
+                }
+
+                // Si no hay asignaciones por estación pero hay stock global suficiente
+                if (product.Stock.HasValue && product.Stock.Value >= requiredQuantity)
+                {
+                    Console.WriteLine($"✅ [ProductService] FindBestStationForProductAsync() - Usando estación predeterminada con stock global: {product.StationId}");
+                    return product.StationId;
+                }
+
+                // Si se permite stock negativo o hay stock global insuficiente pero se permite
+                if (product.AllowNegativeStock)
+                {
+                    Console.WriteLine($"⚠️ [ProductService] FindBestStationForProductAsync() - Stock insuficiente pero permitido negativo, usando estación predeterminada: {product.StationId}");
+                    return product.StationId;
+                }
+
+                Console.WriteLine($"⚠️ [ProductService] FindBestStationForProductAsync() - No hay stock suficiente en ninguna estación");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [ProductService] FindBestStationForProductAsync() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [ProductService] FindBestStationForProductAsync() - StackTrace: {ex.StackTrace}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Reduce el stock de un producto (global o por estación)
+        /// </summary>
+        public async Task<bool> ReduceStockAsync(Guid productId, decimal quantity, Guid? stationId = null, Guid? branchId = null)
+        {
+            try
+            {
+                Console.WriteLine($"🔍 [ProductService] ReduceStockAsync() - ProductId: {productId}, Quantity: {quantity}, StationId: {stationId}, BranchId: {branchId}");
+                
+                var product = await _context.Products
+                    .Include(p => p.StockAssignments.Where(sa => sa.IsActive))
+                    .FirstOrDefaultAsync(p => p.Id == productId);
+                
+                if (product == null)
+                {
+                    Console.WriteLine($"⚠️ [ProductService] ReduceStockAsync() - Producto no encontrado");
+                    return false;
+                }
+
+                // Si no se controla inventario, no reducir stock
+                if (!product.TrackInventory)
+                {
+                    Console.WriteLine($"✅ [ProductService] ReduceStockAsync() - Producto no controla inventario, skip");
+                    return true;
+                }
+
+                // Si hay estación específica, reducir stock de esa estación
+                if (stationId.HasValue)
+                {
+                    var assignment = product.StockAssignments
+                        .FirstOrDefault(sa => sa.StationId == stationId.Value && 
+                                              (!branchId.HasValue || sa.BranchId == branchId.Value));
+                    
+                    if (assignment != null)
+                    {
+                        if (assignment.Stock < quantity && !product.AllowNegativeStock)
+                        {
+                            Console.WriteLine($"❌ [ProductService] ReduceStockAsync() - Stock insuficiente en estación: {assignment.Stock} < {quantity}");
+                            throw new InvalidOperationException($"Stock insuficiente en estación. Disponible: {assignment.Stock}, Requerido: {quantity}");
+                        }
+                        
+                        assignment.Stock -= quantity;
+                        SetUpdatedTracking(assignment);
+                        Console.WriteLine($"✅ [ProductService] ReduceStockAsync() - Stock reducido en estación: {assignment.Stock + quantity} -> {assignment.Stock}");
+                    }
+                    else
+                    {
+                        // No hay asignación específica, reducir stock global
+                        if (product.Stock.HasValue)
+                        {
+                            if (product.Stock.Value < quantity && !product.AllowNegativeStock)
+                            {
+                                Console.WriteLine($"❌ [ProductService] ReduceStockAsync() - Stock global insuficiente: {product.Stock.Value} < {quantity}");
+                                throw new InvalidOperationException($"Stock insuficiente. Disponible: {product.Stock.Value}, Requerido: {quantity}");
+                            }
+                            
+                            product.Stock = (product.Stock ?? 0) - quantity;
+                            SetUpdatedTracking(product);
+                            Console.WriteLine($"✅ [ProductService] ReduceStockAsync() - Stock global reducido: {product.Stock + quantity} -> {product.Stock}");
+                        }
+                    }
+                }
+                else
+                {
+                    // Reducir stock global
+                    if (product.Stock.HasValue)
+                    {
+                        if (product.Stock.Value < quantity && !product.AllowNegativeStock)
+                        {
+                            Console.WriteLine($"❌ [ProductService] ReduceStockAsync() - Stock global insuficiente: {product.Stock.Value} < {quantity}");
+                            throw new InvalidOperationException($"Stock insuficiente. Disponible: {product.Stock.Value}, Requerido: {quantity}");
+                        }
+                        
+                        product.Stock = (product.Stock ?? 0) - quantity;
+                        SetUpdatedTracking(product);
+                        Console.WriteLine($"✅ [ProductService] ReduceStockAsync() - Stock global reducido: {product.Stock + quantity} -> {product.Stock}");
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"✅ [ProductService] ReduceStockAsync() - Stock reducido exitosamente");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [ProductService] ReduceStockAsync() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [ProductService] ReduceStockAsync() - StackTrace: {ex.StackTrace}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Restaura stock de un producto (al cancelar una orden)
+        /// </summary>
+        public async Task<bool> RestoreStockAsync(Guid productId, decimal quantity, Guid? stationId = null, Guid? branchId = null)
+        {
+            try
+            {
+                Console.WriteLine($"🔍 [ProductService] RestoreStockAsync() - ProductId: {productId}, Quantity: {quantity}, StationId: {stationId}, BranchId: {branchId}");
+                
+                var product = await _context.Products
+                    .Include(p => p.StockAssignments.Where(sa => sa.IsActive))
+                    .FirstOrDefaultAsync(p => p.Id == productId);
+                
+                if (product == null || !product.TrackInventory)
+                {
+                    Console.WriteLine($"✅ [ProductService] RestoreStockAsync() - Producto no encontrado o no controla inventario, skip");
+                    return true;
+                }
+
+                // Si hay estación específica, restaurar stock de esa estación
+                if (stationId.HasValue)
+                {
+                    var assignment = product.StockAssignments
+                        .FirstOrDefault(sa => sa.StationId == stationId.Value && 
+                                              (!branchId.HasValue || sa.BranchId == branchId.Value));
+                    
+                    if (assignment != null)
+                    {
+                        assignment.Stock += quantity;
+                        SetUpdatedTracking(assignment);
+                        Console.WriteLine($"✅ [ProductService] RestoreStockAsync() - Stock restaurado en estación: {assignment.Stock - quantity} -> {assignment.Stock}");
+                    }
+                    else
+                    {
+                        // No hay asignación específica, restaurar stock global
+                        product.Stock = (product.Stock ?? 0) + quantity;
+                        SetUpdatedTracking(product);
+                        Console.WriteLine($"✅ [ProductService] RestoreStockAsync() - Stock global restaurado: {product.Stock - quantity} -> {product.Stock}");
+                    }
+                }
+                else
+                {
+                    // Restaurar stock global
+                    product.Stock = (product.Stock ?? 0) + quantity;
+                    SetUpdatedTracking(product);
+                    Console.WriteLine($"✅ [ProductService] RestoreStockAsync() - Stock global restaurado: {product.Stock - quantity} -> {product.Stock}");
+                }
+
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"✅ [ProductService] RestoreStockAsync() - Stock restaurado exitosamente");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [ProductService] RestoreStockAsync() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [ProductService] RestoreStockAsync() - StackTrace: {ex.StackTrace}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Verifica si un producto tiene stock suficiente
+        /// </summary>
+        public async Task<bool> HasStockAvailableAsync(Guid productId, decimal quantity, Guid? branchId = null)
+        {
+            try
+            {
+                var availableStock = await GetAvailableStockAsync(productId, branchId);
+                
+                // -1 significa stock ilimitado
+                if (availableStock == -1)
+                    return true;
+                
+                return availableStock >= quantity;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [ProductService] HasStockAvailableAsync() - Error: {ex.Message}");
+                return false;
+            }
         }
     }
 } 

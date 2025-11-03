@@ -57,6 +57,48 @@
                 </div>
             }
 
+            <!-- Inventario -->
+            @if (Model.VisibleCards.Inventory)
+            {
+                <div class="col-lg-3 col-md-6">
+                    <a href="@Url.Action("Index", "Inventory")" class="dashboard-card card-inventory">
+                        <div class="card-icon">
+                            <i class="fas fa-boxes"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Inventario</h3>
+                            <p>Stock, alertas y reportes</p>
+                            <div class="card-btn">
+                                <span>Acceder</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+                        <div class="card-overlay"></div>
+                    </a>
+                </div>
+            }
+
+            <!-- Asignaciones de Stock -->
+            @if (Model.VisibleCards.StockAssignments)
+            {
+                <div class="col-lg-3 col-md-6">
+                    <a href="@Url.Action("Index", "ProductStockAssignment")" class="dashboard-card card-stock-assignments">
+                        <div class="card-icon">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Asignaciones de Stock</h3>
+                            <p>Productos y estaciones</p>
+                            <div class="card-btn">
+                                <span>Acceder</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+                        <div class="card-overlay"></div>
+                    </a>
+                </div>
+            }
+
             <!-- Mesas -->
             @if (Model.VisibleCards.Tables)
             {
@@ -880,6 +922,20 @@
         }
         .card-products:hover { 
             background: linear-gradient(135deg, var(--home-bg-secondary) 0%, rgba(8, 145, 178, 0.1) 100%); 
+        }
+
+        .card-inventory .card-icon { 
+            background: linear-gradient(135deg, #8B5CF6 0%, #C4B5FD 100%); 
+        }
+        .card-inventory:hover { 
+            background: linear-gradient(135deg, var(--home-bg-secondary) 0%, rgba(139, 92, 246, 0.1) 100%); 
+        }
+
+        .card-stock-assignments .card-icon { 
+            background: linear-gradient(135deg, #10B981 0%, #6EE7B7 100%); 
+        }
+        .card-stock-assignments:hover { 
+            background: linear-gradient(135deg, var(--home-bg-secondary) 0%, rgba(16, 185, 129, 0.1) 100%); 
         }
 
         .card-tables .card-icon { 

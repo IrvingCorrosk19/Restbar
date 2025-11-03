@@ -464,6 +464,11 @@ namespace RestBar.Controllers
                         product.IsActive,
                         product.CategoryId,
                         product.StationId,
+                        // ✅ NUEVO: Campos de inventario
+                        product.TrackInventory,
+                        product.Stock,
+                        product.MinStock,
+                        product.AllowNegativeStock,
                         Category = product.Category != null ? new { product.Category.Id, product.Category.Name } : null,
                         Station = product.Station != null ? new { product.Station.Id, product.Station.Name, product.Station.Type } : null
                     }
@@ -475,6 +480,120 @@ namespace RestBar.Controllers
             {
                 _logger.LogError(ex, "Error al obtener producto con ID {ProductId}", id);
                 return Json(new { success = false, message = "Error al obtener el producto" });
+            }
+        }
+
+        // ✅ NUEVO: ENDPOINTS DE INVENTARIO
+
+        /// <summary>
+        /// Obtiene el stock disponible total de un producto
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetAvailableStock(Guid productId, Guid? branchId = null)
+        {
+            try
+            {
+                Console.WriteLine($"🔍 [ProductController] GetAvailableStock() - ProductId: {productId}, BranchId: {branchId}");
+                
+                var stock = await _productService.GetAvailableStockAsync(productId, branchId);
+                
+                Console.WriteLine($"✅ [ProductController] GetAvailableStock() - Stock disponible: {stock}");
+                return Json(new { success = true, stock = stock, isUnlimited = stock == -1 });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [ProductController] GetAvailableStock() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [ProductController] GetAvailableStock() - StackTrace: {ex.StackTrace}");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Obtiene el stock disponible de un producto en una estación específica
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetStockInStation(Guid productId, Guid stationId, Guid? branchId = null)
+        {
+            try
+            {
+                Console.WriteLine($"🔍 [ProductController] GetStockInStation() - ProductId: {productId}, StationId: {stationId}, BranchId: {branchId}");
+                
+                var stock = await _productService.GetStockInStationAsync(productId, stationId, branchId);
+                
+                Console.WriteLine($"✅ [ProductController] GetStockInStation() - Stock en estación: {stock}");
+                return Json(new { success = true, stock = stock });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [ProductController] GetStockInStation() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [ProductController] GetStockInStation() - StackTrace: {ex.StackTrace}");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Verifica si un producto tiene stock suficiente para una cantidad requerida
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> CheckStockAvailability(Guid productId, decimal quantity, Guid? branchId = null)
+        {
+            try
+            {
+                Console.WriteLine($"🔍 [ProductController] CheckStockAvailability() - ProductId: {productId}, Quantity: {quantity}, BranchId: {branchId}");
+                
+                var hasStock = await _productService.HasStockAvailableAsync(productId, quantity, branchId);
+                var availableStock = await _productService.GetAvailableStockAsync(productId, branchId);
+                
+                Console.WriteLine($"✅ [ProductController] CheckStockAvailability() - HasStock: {hasStock}, AvailableStock: {availableStock}");
+                return Json(new { 
+                    success = true, 
+                    hasStock = hasStock, 
+                    availableStock = availableStock,
+                    isUnlimited = availableStock == -1
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [ProductController] CheckStockAvailability() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [ProductController] CheckStockAvailability() - StackTrace: {ex.StackTrace}");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Encuentra la mejor estación para asignar un producto basándose en stock disponible
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> FindBestStation(Guid productId, decimal requiredQuantity, Guid? branchId = null)
+        {
+            try
+            {
+                Console.WriteLine($"🔍 [ProductController] FindBestStation() - ProductId: {productId}, RequiredQuantity: {requiredQuantity}, BranchId: {branchId}");
+                
+                var stationId = await _productService.FindBestStationForProductAsync(productId, requiredQuantity, branchId);
+                
+                if (stationId.HasValue)
+                {
+                    var station = await _stationService.GetStationByIdAsync(stationId.Value);
+                    var stockInStation = await _productService.GetStockInStationAsync(productId, stationId.Value, branchId);
+                    
+                    Console.WriteLine($"✅ [ProductController] FindBestStation() - Estación encontrada: {station?.Name}, Stock: {stockInStation}");
+                    return Json(new { 
+                        success = true, 
+                        stationId = stationId.Value,
+                        stationName = station?.Name,
+                        stockInStation = stockInStation
+                    });
+                }
+                
+                Console.WriteLine($"⚠️ [ProductController] FindBestStation() - No se encontró estación adecuada");
+                return Json(new { success = false, message = "No hay estación disponible con stock suficiente" });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [ProductController] FindBestStation() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [ProductController] FindBestStation() - StackTrace: {ex.StackTrace}");
+                return Json(new { success = false, message = ex.Message });
             }
         }
 

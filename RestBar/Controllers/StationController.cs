@@ -492,18 +492,31 @@ namespace RestBar.Controllers
         [HttpGet]
         public async Task<IActionResult> GetStations()
         {
-            var stations = await _stationService.GetAllStationsAsync();
-            var data = stations.Select(s => new { 
-                id = s.Id, 
-                name = s.Name, 
-                type = s.Type,
-                areaId = s.AreaId,
-                areaName = s.Area?.Name,
-                isActive = s.IsActive,
-                icon = s.Icon,
-                productCount = s.Products.Count
-            }).ToList();
-            return Json(new { success = true, data });
+            try
+            {
+                Console.WriteLine("🔍 [StationController] GetStations() - Iniciando...");
+                
+                var stations = await _stationService.GetAllStationsAsync();
+                var data = stations.Select(s => new { 
+                    id = s.Id, 
+                    name = s.Name, 
+                    type = s.Type,
+                    areaId = s.AreaId,
+                    areaName = s.Area?.Name,
+                    isActive = s.IsActive,
+                    icon = s.Icon,
+                    productCount = s.Products?.Count ?? 0
+                }).ToList();
+                
+                Console.WriteLine($"✅ [StationController] GetStations() - Total estaciones: {data.Count}");
+                return Json(new { success = true, data });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [StationController] GetStations() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [StationController] GetStations() - StackTrace: {ex.StackTrace}");
+                return Json(new { success = false, message = ex.Message });
+            }
         }
 
         [HttpGet]

@@ -24,6 +24,12 @@
             </span>
         </div>
         <div class="hero-actions">
+            <a href="/ProductStockAssignment" class="btn btn-hero" style="margin-right: 1rem; background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);">
+                <i class="fas fa-boxes"></i> Asignaciones de Stock
+            </a>
+            <a href="/Inventory" class="btn btn-hero" style="margin-right: 1rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <i class="fas fa-chart-bar"></i> Reportes de Inventario
+            </a>
             <button type="button" class="btn btn-hero" data-bs-toggle="modal" data-bs-target="#createProductModal">
                 <i class="fas fa-plus"></i> Nuevo Producto
             </button>
@@ -220,6 +226,62 @@
                             <input type="url" class="form-control modern-input" name="ImageUrl">
                         </div>
                     </div>
+                    
+                    <!-- ✅ NUEVO: Sección de Inventario -->
+                    <div class="card mt-3 mb-3" style="border: 2px solid #667eea;">
+                        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                            <h6 class="mb-0"><i class="fas fa-boxes"></i> Configuración de Inventario</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="form-check modern-check">
+                                    <input type="checkbox" class="form-check-input" name="TrackInventory" id="createTrackInventory" onchange="toggleInventoryFields('create')">
+                                    <label class="form-check-label" for="createTrackInventory">
+                                        <strong>Controlar Inventario</strong>
+                                        <br>
+                                        <small class="text-muted">Activa el seguimiento de stock para este producto</small>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div id="createInventoryFields" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">
+                                            <i class="fas fa-box text-primary"></i> Stock Disponible
+                                            <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="number" class="form-control modern-input" name="Stock" step="0.01" min="0" placeholder="0.00" id="createStock">
+                                        <small class="text-muted">Cantidad actual en inventario</small>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">
+                                            <i class="fas fa-exclamation-triangle text-warning"></i> Stock Mínimo
+                                        </label>
+                                        <input type="number" class="form-control modern-input" name="MinStock" step="0.01" min="0" placeholder="0.00" id="createMinStock">
+                                        <small class="text-muted">Alerta cuando el stock llegue a este nivel</small>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">
+                                            <i class="fas fa-minus-circle text-danger"></i> Permitir Stock Negativo
+                                        </label>
+                                        <div class="form-check mt-3">
+                                            <input type="checkbox" class="form-check-input" name="AllowNegativeStock" id="createAllowNegativeStock">
+                                            <label class="form-check-label" for="createAllowNegativeStock">
+                                                Permitir ventas sin stock
+                                            </label>
+                                        </div>
+                                        <small class="text-muted">Útil para productos que se preparan al momento</small>
+                                    </div>
+                                </div>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i> 
+                                    <strong>Nota:</strong> Para asignar stock por estación, ve a <strong>Asignaciones de Stock</strong> después de crear el producto.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="mb-3">
                         <div class="form-check modern-check">
                             <input type="checkbox" class="form-check-input" name="IsActive" checked>
@@ -312,6 +374,62 @@
                             <input type="url" class="form-control modern-input" name="ImageUrl">
                         </div>
                     </div>
+                    
+                    <!-- ✅ NUEVO: Sección de Inventario -->
+                    <div class="card mt-3 mb-3" style="border: 2px solid #667eea;">
+                        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                            <h6 class="mb-0"><i class="fas fa-boxes"></i> Configuración de Inventario</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="form-check modern-check">
+                                    <input type="checkbox" class="form-check-input" name="TrackInventory" id="editTrackInventory" onchange="toggleInventoryFields('edit')">
+                                    <label class="form-check-label" for="editTrackInventory">
+                                        <strong>Controlar Inventario</strong>
+                                        <br>
+                                        <small class="text-muted">Activa el seguimiento de stock para este producto</small>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div id="editInventoryFields" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">
+                                            <i class="fas fa-box text-primary"></i> Stock Disponible
+                                            <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="number" class="form-control modern-input" name="Stock" step="0.01" min="0" placeholder="0.00" id="editStock">
+                                        <small class="text-muted">Cantidad actual en inventario</small>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">
+                                            <i class="fas fa-exclamation-triangle text-warning"></i> Stock Mínimo
+                                        </label>
+                                        <input type="number" class="form-control modern-input" name="MinStock" step="0.01" min="0" placeholder="0.00" id="editMinStock">
+                                        <small class="text-muted">Alerta cuando el stock llegue a este nivel</small>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">
+                                            <i class="fas fa-minus-circle text-danger"></i> Permitir Stock Negativo
+                                        </label>
+                                        <div class="form-check mt-3">
+                                            <input type="checkbox" class="form-check-input" name="AllowNegativeStock" id="editAllowNegativeStock">
+                                            <label class="form-check-label" for="editAllowNegativeStock">
+                                                Permitir ventas sin stock
+                                            </label>
+                                        </div>
+                                        <small class="text-muted">Útil para productos que se preparan al momento</small>
+                                    </div>
+                                </div>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i> 
+                                    <strong>Nota:</strong> Para asignar stock por estación, ve a <strong>Asignaciones de Stock</strong> después de editar el producto.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="mb-3">
                         <div class="form-check modern-check">
                             <input type="checkbox" class="form-check-input" name="IsActive">
@@ -1124,6 +1242,65 @@
                 });
             }
 
+            // ✅ NUEVO: Función para mostrar/ocultar campos de inventario
+            window.toggleInventoryFields = function(mode) {
+                const checkbox = document.getElementById(mode + 'TrackInventory');
+                const fields = document.getElementById(mode + 'InventoryFields');
+                
+                if (checkbox && fields) {
+                    if (checkbox.checked) {
+                        fields.style.display = 'block';
+                        // Marcar Stock como requerido si TrackInventory está activo
+                        const stockInput = document.getElementById(mode + 'Stock');
+                        if (stockInput) {
+                            stockInput.required = true;
+                        }
+                    } else {
+                        fields.style.display = 'none';
+                        // Desmarcar Stock como requerido
+                        const stockInput = document.getElementById(mode + 'Stock');
+                        if (stockInput) {
+                            stockInput.required = false;
+                            stockInput.value = '';
+                        }
+                        // Limpiar otros campos de inventario
+                        const minStockInput = document.getElementById(mode + 'MinStock');
+                        const allowNegativeCheckbox = document.getElementById(mode + 'AllowNegativeStock');
+                        if (minStockInput) minStockInput.value = '';
+                        if (allowNegativeCheckbox) allowNegativeCheckbox.checked = false;
+                    }
+                }
+            };
+            
+            // ✅ NUEVO: Función para cargar datos de inventario en modal de edición
+            function loadInventoryDataInEditModal(product) {
+                const trackInventory = product.trackInventory || false;
+                const stock = product.stock || product.stock === 0 ? product.stock : '';
+                const minStock = product.minStock || product.minStock === 0 ? product.minStock : '';
+                const allowNegativeStock = product.allowNegativeStock || false;
+                
+                const trackInventoryCheckbox = document.getElementById('editTrackInventory');
+                if (trackInventoryCheckbox) {
+                    trackInventoryCheckbox.checked = trackInventory;
+                    toggleInventoryFields('edit');
+                }
+                
+                const stockInput = document.getElementById('editStock');
+                if (stockInput && stock !== '') {
+                    stockInput.value = stock;
+                }
+                
+                const minStockInput = document.getElementById('editMinStock');
+                if (minStockInput && minStock !== '') {
+                    minStockInput.value = minStock;
+                }
+                
+                const allowNegativeCheckbox = document.getElementById('editAllowNegativeStock');
+                if (allowNegativeCheckbox) {
+                    allowNegativeCheckbox.checked = allowNegativeStock;
+                }
+            }
+            
             // Exponer funciones globalmente para onclick
             window.createProduct = function () {
                 const form = $('#createProductForm');
@@ -1138,6 +1315,38 @@
                 formData.IsActive = form.find('[name="IsActive"]').is(':checked');
                 formData.CategoryId = formData.CategoryId || null;
                 formData.StationId = formData.StationId || null;
+                
+                // ✅ NUEVO: Procesar campos de inventario
+                formData.TrackInventory = form.find('[name="TrackInventory"]').is(':checked');
+                formData.AllowNegativeStock = form.find('[name="AllowNegativeStock"]').is(':checked');
+                
+                if (formData.TrackInventory) {
+                    // Validar que Stock esté presente cuando TrackInventory está activo
+                    const stockValue = form.find('[name="Stock"]').val();
+                    if (!stockValue || stockValue.trim() === '') {
+                        errors.push('El stock disponible es requerido cuando se controla inventario');
+                    } else {
+                        formData.Stock = parseFloat(stockValue);
+                        if (isNaN(formData.Stock) || formData.Stock < 0) {
+                            errors.push('El stock debe ser un número mayor o igual a 0');
+                        }
+                    }
+                    
+                    // Procesar MinStock (opcional)
+                    const minStockValue = form.find('[name="MinStock"]').val();
+                    if (minStockValue && minStockValue.trim() !== '') {
+                        formData.MinStock = parseFloat(minStockValue);
+                        if (isNaN(formData.MinStock) || formData.MinStock < 0) {
+                            errors.push('El stock mínimo debe ser un número mayor o igual a 0');
+                        }
+                    } else {
+                        formData.MinStock = null;
+                    }
+                } else {
+                    formData.Stock = null;
+                    formData.MinStock = null;
+                    formData.AllowNegativeStock = false;
+                }
 
                 // Validaciones
                 if (!formData.Name || formData.Name.trim() === "") {
@@ -1234,6 +1443,9 @@
                                     if (product.stationId) {
                                         form.find('[name="StationId"]').val(product.stationId);
                                     }
+                                    
+                                    // ✅ NUEVO: Cargar datos de inventario
+                                    loadInventoryDataInEditModal(product);
 
                                     // Mostrar el modal
                                     const editModal = new bootstrap.Modal(document.getElementById('editProductModal'));
@@ -1267,6 +1479,38 @@
                 formData.IsActive = form.find('[name="IsActive"]').is(':checked');
                 formData.CategoryId = formData.CategoryId || null;
                 formData.StationId = formData.StationId || null;
+                
+                // ✅ NUEVO: Procesar campos de inventario
+                formData.TrackInventory = form.find('[name="TrackInventory"]').is(':checked');
+                formData.AllowNegativeStock = form.find('[name="AllowNegativeStock"]').is(':checked');
+                
+                if (formData.TrackInventory) {
+                    // Validar que Stock esté presente cuando TrackInventory está activo
+                    const stockValue = form.find('[name="Stock"]').val();
+                    if (!stockValue || stockValue.trim() === '') {
+                        errors.push('El stock disponible es requerido cuando se controla inventario');
+                    } else {
+                        formData.Stock = parseFloat(stockValue);
+                        if (isNaN(formData.Stock) || formData.Stock < 0) {
+                            errors.push('El stock debe ser un número mayor o igual a 0');
+                        }
+                    }
+                    
+                    // Procesar MinStock (opcional)
+                    const minStockValue = form.find('[name="MinStock"]').val();
+                    if (minStockValue && minStockValue.trim() !== '') {
+                        formData.MinStock = parseFloat(minStockValue);
+                        if (isNaN(formData.MinStock) || formData.MinStock < 0) {
+                            errors.push('El stock mínimo debe ser un número mayor o igual a 0');
+                        }
+                    } else {
+                        formData.MinStock = null;
+                    }
+                } else {
+                    formData.Stock = null;
+                    formData.MinStock = null;
+                    formData.AllowNegativeStock = false;
+                }
 
                 // Validaciones
                 if (!formData.Name || formData.Name.trim() === "") {

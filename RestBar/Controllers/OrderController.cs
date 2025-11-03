@@ -1603,6 +1603,90 @@ namespace RestBar.Controllers
         }
 
         // 🎯 MÉTODO ESTRATÉGICO: OBTENER ITEMS DE UNA ORDEN
+        // ✅ NUEVO: ENDPOINT PARA VERIFICAR DISPONIBILIDAD DE STOCK ANTES DE AGREGAR ITEMS
+        /// <summary>
+        /// Verifica la disponibilidad de stock para un producto antes de agregarlo a una orden
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> CheckItemStockAvailability(Guid productId, decimal quantity, Guid? orderId = null)
+        {
+            try
+            {
+                Console.WriteLine($"🔍 [OrderController] CheckItemStockAvailability() - ProductId: {productId}, Quantity: {quantity}, OrderId: {orderId}");
+                
+                // Obtener usuario actual para BranchId
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (userIdClaim == null)
+                {
+                    return Json(new { success = false, message = "Usuario no autenticado" });
+                }
+
+                var currentUser = await _areaService.GetCurrentUserWithAssignmentsAsync(Guid.Parse(userIdClaim.Value));
+                if (currentUser?.Branch == null)
+                {
+                    return Json(new { success = false, message = "Usuario o sucursal no encontrado" });
+                }
+
+                var product = await _productService.GetByIdAsync(productId);
+                if (product == null)
+                {
+                    return Json(new { success = false, message = "Producto no encontrado" });
+                }
+
+                // Si el producto no controla inventario, siempre está disponible
+                if (!product.TrackInventory)
+                {
+                    return Json(new { 
+                        success = true, 
+                        hasStock = true, 
+                        availableStock = -1, // Stock ilimitado
+                        isUnlimited = true,
+                        message = "El producto no controla inventario"
+                    });
+                }
+
+                // Verificar stock disponible
+                var hasStock = await _productService.HasStockAvailableAsync(productId, quantity, currentUser.BranchId);
+                var availableStock = await _productService.GetAvailableStockAsync(productId, currentUser.BranchId);
+
+                // Encontrar la mejor estación si hay stock
+                Guid? bestStationId = null;
+                string? bestStationName = null;
+                decimal stockInStation = 0;
+
+                if (hasStock)
+                {
+                    bestStationId = await _productService.FindBestStationForProductAsync(productId, quantity, currentUser.BranchId);
+                    if (bestStationId.HasValue)
+                    {
+                        var station = await _context.Stations.FindAsync(bestStationId.Value);
+                        bestStationName = station?.Name;
+                        stockInStation = await _productService.GetStockInStationAsync(productId, bestStationId.Value, currentUser.BranchId);
+                    }
+                }
+
+                Console.WriteLine($"✅ [OrderController] CheckItemStockAvailability() - HasStock: {hasStock}, AvailableStock: {availableStock}, BestStationId: {bestStationId}");
+                return Json(new { 
+                    success = true, 
+                    hasStock = hasStock, 
+                    availableStock = availableStock,
+                    isUnlimited = availableStock == -1,
+                    bestStationId = bestStationId,
+                    bestStationName = bestStationName,
+                    stockInStation = stockInStation,
+                    message = hasStock 
+                        ? "Stock disponible" 
+                        : $"Stock insuficiente. Disponible: {availableStock}, Requerido: {quantity}"
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [OrderController] CheckItemStockAvailability() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [OrderController] CheckItemStockAvailability() - StackTrace: {ex.StackTrace}");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetOrderItems(Guid orderId)
         {

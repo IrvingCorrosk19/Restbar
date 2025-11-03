@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
@@ -5,6 +6,8 @@ using RestBar.Models;
 using RestBar.Interfaces;
 using System.Threading.Tasks;
 using System.Security.Claims;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace RestBar.Controllers
 {
@@ -30,32 +33,55 @@ namespace RestBar.Controllers
             {
                 Console.WriteLine("🔍 [HomeController] Index() - Iniciando...");
                 
-                var stations = await _stationService.GetAllStationsAsync();
-                Console.WriteLine($"📊 [HomeController] Index() - Estaciones obtenidas: {stations?.Count() ?? 0}");
-                
-                // ✅ NUEVO: Obtener nombres de estaciones únicos para crear cards dinámicas
-                var stationNames = await _stationService.GetDistinctStationTypesAsync();
-                Console.WriteLine($"📊 [HomeController] Index() - Estaciones obtenidas: {stationNames?.Count() ?? 0}");
-                if (stationNames != null)
-                {
-                    foreach (var name in stationNames)
-                    {
-                        Console.WriteLine($"📋 [HomeController] Index() - Estación: {name}");
-                    }
-                }
-                
-                // Obtener información del usuario actual
+                // Obtener información del usuario actual primero
                 var userRole = User.FindFirst("UserRole")?.Value ?? "";
                 var userId = User.FindFirst("UserId")?.Value ?? "";
                 var userName = User.FindFirst(ClaimTypes.Name)?.Value ?? "";
                 
                 Console.WriteLine($"✅ [HomeController] Index() - Usuario: {userName}, Rol: {userRole}");
                 
+                // Obtener estaciones con manejo de errores
+                List<Station> stations = new List<Station>();
+                try
+                {
+                    var stationsResult = await _stationService.GetAllStationsAsync();
+                    stations = stationsResult?.ToList() ?? new List<Station>();
+                    Console.WriteLine($"📊 [HomeController] Index() - Estaciones obtenidas: {stations.Count}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"⚠️ [HomeController] Index() - Error al obtener estaciones: {ex.Message}");
+                    // Continuar con lista vacía si falla
+                    stations = new List<Station>();
+                }
+                
+                // ✅ NUEVO: Obtener nombres de estaciones únicos para crear cards dinámicas
+                List<string> stationNames = new List<string>();
+                try
+                {
+                    var stationNamesResult = await _stationService.GetDistinctStationTypesAsync();
+                    stationNames = stationNamesResult?.ToList() ?? new List<string>();
+                    Console.WriteLine($"📊 [HomeController] Index() - Tipos de estaciones obtenidos: {stationNames.Count}");
+                    if (stationNames != null)
+                    {
+                        foreach (var name in stationNames)
+                        {
+                            Console.WriteLine($"📋 [HomeController] Index() - Tipo de Estación: {name}");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"⚠️ [HomeController] Index() - Error al obtener tipos de estaciones: {ex.Message}");
+                    // Continuar con lista vacía si falla
+                    stationNames = new List<string>();
+                }
+                
                 // Crear modelo de vista con información del usuario y permisos
                 var viewModel = new DashboardViewModel
                 {
                     Stations = stations,
-                    StationTypes = stationNames.ToList(), // ✅ NUEVO: Pasar nombres de estaciones
+                    StationTypes = stationNames,
                     UserInfo = new UserInfo
                     {
                         Id = userId,
@@ -73,7 +99,21 @@ namespace RestBar.Controllers
             {
                 Console.WriteLine($"❌ [HomeController] Index() - Error: {ex.Message}");
                 Console.WriteLine($"🔍 [HomeController] Index() - StackTrace: {ex.StackTrace}");
-                return View("Error");
+                _logger.LogError(ex, "Error en HomeController.Index()");
+                
+                // Retornar modelo vacío en caso de error para evitar NullReferenceException
+                var errorViewModel = new DashboardViewModel
+                {
+                    Stations = new List<Station>(),
+                    StationTypes = new List<string>(),
+                    UserInfo = new UserInfo
+                    {
+                        IsAuthenticated = User.Identity?.IsAuthenticated ?? false
+                    },
+                    VisibleCards = new CardVisibility()
+                };
+                
+                return View(errorViewModel);
             }
         }
 
@@ -106,6 +146,9 @@ namespace RestBar.Controllers
                     // ✅ NUEVO: Acceso a órdenes por estación
                     cards.KitchenOrders = true;
                     cards.BarOrders = true;
+                    // ✅ NUEVO: Acceso a Inventario
+                    cards.Inventory = true;
+                    cards.StockAssignments = true;
                     break;
                     
                 case "manager":
@@ -128,6 +171,9 @@ namespace RestBar.Controllers
                     // ✅ NUEVO: Acceso a órdenes por estación
                     cards.KitchenOrders = true;
                     cards.BarOrders = true;
+                    // ✅ NUEVO: Acceso a Inventario
+                    cards.Inventory = true;
+                    cards.StockAssignments = true;
                     break;
                     
                 case "supervisor":
@@ -148,6 +194,8 @@ namespace RestBar.Controllers
                     // ✅ NUEVO: Acceso a órdenes por estación
                     cards.KitchenOrders = true;
                     cards.BarOrders = true;
+                    // ✅ NUEVO: Acceso a Inventario (para ver reportes y alertas)
+                    cards.Inventory = true;
                     break;
                     
                 case "waiter":
@@ -240,6 +288,8 @@ namespace RestBar.Controllers
                     cards.Companies = false;
                     cards.Branches = false;
                     cards.SecurityAdmin = false;
+                    // ✅ NUEVO: Acceso a Inventario (para reportes financieros)
+                    cards.Inventory = true;
                     break;
                     
                 case "support":
@@ -256,6 +306,27 @@ namespace RestBar.Controllers
                     cards.Branches = false;
                     cards.Reports = false;
                     cards.SecurityAdmin = false;
+                    break;
+                    
+                case "inventarista":
+                    // Inventarista acceso completo a inventario
+                    cards.Inventory = true;
+                    cards.StockAssignments = true;
+                    cards.Products = true; // Para ver productos
+                    cards.Reports = true; // Para reportes de inventario
+                    cards.AdvancedReports = true; // Para reportes avanzados de inventario
+                    cards.Orders = false;
+                    cards.Tables = false;
+                    cards.Payments = false;
+                    cards.UserManagement = false;
+                    cards.Categories = false;
+                    cards.Stations = false;
+                    cards.Areas = false;
+                    cards.Companies = false;
+                    cards.Branches = false;
+                    cards.SecurityAdmin = false;
+                    cards.KitchenOrders = false;
+                    cards.BarOrders = false;
                     break;
                     
                 default:
@@ -319,5 +390,9 @@ namespace RestBar.Controllers
         // ✅ NUEVO: Cards para órdenes por estación
         public bool KitchenOrders { get; set; } = false;
         public bool BarOrders { get; set; } = false;
+        
+        // ✅ NUEVO: Cards para inventario
+        public bool Inventory { get; set; } = false;
+        public bool StockAssignments { get; set; } = false;
     }
 }

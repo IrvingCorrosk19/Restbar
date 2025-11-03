@@ -279,6 +279,222 @@ namespace RestBar.Controllers
             }
         }
 
+        // ===== ANÁLISIS DE INVENTARIO =====
+        public async Task<IActionResult> InventoryAnalysis(DateTime? startDate, DateTime? endDate, Guid? branchId)
+        {
+            try
+            {
+                var filters = new ReportFilters
+                {
+                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
+                    EndDate = endDate ?? DateTime.Today,
+                    BranchId = branchId
+                };
+
+                var report = await _advancedReportsService.GetInventoryAnalysisAsync(filters);
+                return View(report);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[AdvancedReportsController] Error en análisis de inventario");
+                return View(new InventoryAnalysisReport());
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetInventoryAnalysis(DateTime? startDate, DateTime? endDate, Guid? branchId)
+        {
+            try
+            {
+                Console.WriteLine("🔍 [AdvancedReportsController] GetInventoryAnalysis() - Iniciando...");
+                Console.WriteLine($"📋 [AdvancedReportsController] GetInventoryAnalysis() - Parámetros: startDate={startDate}, endDate={endDate}, branchId={branchId}");
+                
+                var filters = new ReportFilters
+                {
+                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
+                    EndDate = endDate ?? DateTime.Today,
+                    BranchId = branchId
+                };
+
+                Console.WriteLine($"📋 [AdvancedReportsController] GetInventoryAnalysis() - Filtros aplicados: StartDate={filters.StartDate}, EndDate={filters.EndDate}");
+
+                var report = await _advancedReportsService.GetInventoryAnalysisAsync(filters);
+                
+                Console.WriteLine($"✅ [AdvancedReportsController] GetInventoryAnalysis() - Reporte generado: TotalProducts={report.TotalProducts}, LowStockProducts={report.LowStockProducts}, OutOfStockProducts={report.OutOfStockProducts}");
+                
+                return Json(new { success = true, data = report });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [AdvancedReportsController] GetInventoryAnalysis() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [AdvancedReportsController] GetInventoryAnalysis() - StackTrace: {ex.StackTrace}");
+                _logger.LogError(ex, "[AdvancedReportsController] Error obteniendo análisis de inventario");
+                return Json(new { success = false, message = "Error obteniendo análisis" });
+            }
+        }
+
+        // ===== ANÁLISIS DE PROVEEDORES =====
+        public async Task<IActionResult> SupplierAnalysis(DateTime? startDate, DateTime? endDate, Guid? branchId)
+        {
+            try
+            {
+                var filters = new ReportFilters
+                {
+                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
+                    EndDate = endDate ?? DateTime.Today,
+                    BranchId = branchId
+                };
+
+                var report = await _advancedReportsService.GetSupplierAnalysisAsync(filters);
+                return View(report);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[AdvancedReportsController] Error en análisis de proveedores");
+                return View(new SupplierAnalysisReport());
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetSupplierAnalysis(DateTime? startDate, DateTime? endDate, Guid? branchId)
+        {
+            try
+            {
+                var filters = new ReportFilters
+                {
+                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
+                    EndDate = endDate ?? DateTime.Today,
+                    BranchId = branchId
+                };
+
+                var report = await _advancedReportsService.GetSupplierAnalysisAsync(filters);
+                return Json(new { success = true, data = report });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[AdvancedReportsController] Error obteniendo análisis de proveedores");
+                return Json(new { success = false, message = "Error obteniendo análisis" });
+            }
+        }
+
+        // ===== ANÁLISIS DE TENDENCIAS =====
+        public async Task<IActionResult> TrendAnalysis(DateTime? startDate, DateTime? endDate, Guid? branchId)
+        {
+            try
+            {
+                var filters = new ReportFilters
+                {
+                    StartDate = startDate ?? DateTime.Today.AddDays(-90),
+                    EndDate = endDate ?? DateTime.Today,
+                    BranchId = branchId
+                };
+
+                var report = await _advancedReportsService.GetTrendAnalysisAsync(filters);
+                return View(report);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[AdvancedReportsController] Error en análisis de tendencias");
+                return View(new TrendAnalysisReport());
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetTrendAnalysis(DateTime? startDate, DateTime? endDate, Guid? branchId)
+        {
+            try
+            {
+                var filters = new ReportFilters
+                {
+                    StartDate = startDate ?? DateTime.Today.AddDays(-90),
+                    EndDate = endDate ?? DateTime.Today,
+                    BranchId = branchId
+                };
+
+                var report = await _advancedReportsService.GetTrendAnalysisAsync(filters);
+                return Json(new { success = true, data = report });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[AdvancedReportsController] Error obteniendo análisis de tendencias");
+                return Json(new { success = false, message = "Error obteniendo análisis" });
+            }
+        }
+
+        // ===== REPORTE DE AUDITORÍA =====
+        public async Task<IActionResult> AuditReport(DateTime? startDate, DateTime? endDate, Guid? branchId)
+        {
+            try
+            {
+                var filters = new ReportFilters
+                {
+                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
+                    EndDate = endDate ?? DateTime.Today,
+                    BranchId = branchId
+                };
+
+                var report = await _advancedReportsService.GetAuditReportAsync(filters);
+                return View(report);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[AdvancedReportsController] Error en reporte de auditoría");
+                return View(new AuditReportViewModel());
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAuditReport(DateTime? startDate, DateTime? endDate, Guid? branchId)
+        {
+            try
+            {
+                var filters = new ReportFilters
+                {
+                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
+                    EndDate = endDate ?? DateTime.Today,
+                    BranchId = branchId
+                };
+
+                var report = await _advancedReportsService.GetAuditReportAsync(filters);
+                return Json(new { success = true, data = report });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[AdvancedReportsController] Error obteniendo reporte de auditoría");
+                return Json(new { success = false, message = "Error obteniendo reporte" });
+            }
+        }
+
+        // ===== SALUD DEL SISTEMA =====
+        public async Task<IActionResult> SystemHealth()
+        {
+            try
+            {
+                var report = await _advancedReportsService.GetSystemHealthAsync();
+                return View(report);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[AdvancedReportsController] Error en salud del sistema");
+                return View(new SystemHealthReport());
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetSystemHealth()
+        {
+            try
+            {
+                var report = await _advancedReportsService.GetSystemHealthAsync();
+                return Json(new { success = true, data = report });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[AdvancedReportsController] Error obteniendo salud del sistema");
+                return Json(new { success = false, message = "Error obteniendo salud" });
+            }
+        }
+
         // ===== EXPORTACIÓN =====
         [HttpGet]
         public async Task<IActionResult> ExportToPdf(string reportType, DateTime? startDate, DateTime? endDate)

@@ -1179,7 +1179,13 @@ namespace RestBar.Services
                     {
                         if (item.ProductId != null && item.ProductId != Guid.Empty)
                         {
-    
+                            // Restaurar stock en la estación asignada o stock global
+                            await _productService.RestoreStockAsync(
+                                item.ProductId.Value,
+                                item.Quantity,
+                                item.PreparedByStationId,
+                                order.BranchId);
+                            
                             Console.WriteLine($"[OrderService] ✅ Inventario restaurado para item {item.Product?.Name}: {item.Quantity} unidades");
                         }
                         else
@@ -1643,6 +1649,45 @@ namespace RestBar.Services
                         continue;
                     }
 
+                    // ✅ NUEVO: Verificar stock disponible antes de crear el item
+                    Console.WriteLine($"🔍 [OrderService] Verificando stock para producto: {product.Name}, Cantidad requerida: {itemDto.Quantity}");
+                    
+                    if (product.TrackInventory)
+                    {
+                        var hasStock = await _productService.HasStockAvailableAsync(product.Id, itemDto.Quantity, order.BranchId);
+                        if (!hasStock)
+                        {
+                            var availableStock = await _productService.GetAvailableStockAsync(product.Id, order.BranchId);
+                            Console.WriteLine($"❌ [OrderService] Stock insuficiente para {product.Name}. Disponible: {availableStock}, Requerido: {itemDto.Quantity}");
+                            throw new InvalidOperationException($"Stock insuficiente para {product.Name}. Disponible: {availableStock}, Requerido: {itemDto.Quantity}");
+                        }
+                        Console.WriteLine($"✅ [OrderService] Stock disponible confirmado para {product.Name}");
+                    }
+
+                    // ✅ NUEVO: Encontrar la mejor estación basada en stock disponible
+                    var bestStationId = await _productService.FindBestStationForProductAsync(
+                        product.Id, 
+                        itemDto.Quantity, 
+                        order.BranchId);
+                    
+                    // Si no se encontró estación con stock suficiente y no se permite stock negativo, lanzar error
+                    if (!bestStationId.HasValue && product.TrackInventory && !product.AllowNegativeStock)
+                    {
+                        Console.WriteLine($"❌ [OrderService] No hay estación disponible con stock suficiente para {product.Name}");
+                        throw new InvalidOperationException($"No hay estación disponible con stock suficiente para {product.Name}");
+                    }
+
+                    // Usar estación encontrada o estación predeterminada del producto
+                    var assignedStationId = bestStationId ?? product.StationId;
+                    if (assignedStationId.HasValue)
+                    {
+                        Console.WriteLine($"✅ [OrderService] Estación asignada para {product.Name}: {assignedStationId.Value}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"⚠️ [OrderService] No se asignó estación para {product.Name}, usará la estación predeterminada del producto");
+                    }
+
                     // Crear un OrderItem individual para cada item del DTO
                     var newItem = new OrderItem
                     {
@@ -1657,6 +1702,8 @@ namespace RestBar.Services
                         Status = !string.IsNullOrEmpty(itemDto.Status)
                             ? Enum.Parse<OrderItemStatus>(itemDto.Status, ignoreCase: true)
                             : OrderItemStatus.Pending,
+                        // ✅ NUEVO: Asignar estación basada en stock disponible
+                        PreparedByStationId = assignedStationId,
                         // ✅ NUEVO: Establecer campos multi-tenant desde la orden
                         CompanyId = order.CompanyId,
                         BranchId = order.BranchId
@@ -1677,6 +1724,43 @@ namespace RestBar.Services
                         Console.WriteLine($"[OrderService] Stack trace: {ex.StackTrace}");
                         throw;
                     }
+                    
+                    // ✅ NUEVO: Reducir stock del producto después de agregar el item exitosamente
+                    if (product.TrackInventory && assignedStationId.HasValue)
+                    {
+                        try
+                        {
+                            await _productService.ReduceStockAsync(
+                                product.Id, 
+                                itemDto.Quantity, 
+                                assignedStationId.Value, 
+                                order.BranchId);
+                            Console.WriteLine($"✅ [OrderService] Stock reducido para {product.Name}: -{itemDto.Quantity}");
+                        }
+                        catch (Exception stockEx)
+                        {
+                            Console.WriteLine($"❌ [OrderService] Error al reducir stock para {product.Name}: {stockEx.Message}");
+                            // No hacer rollback aquí, el item ya se agregó
+                            // El error de stock se manejará después con notificaciones
+                        }
+                    }
+                    else if (product.TrackInventory)
+                    {
+                        try
+                        {
+                            await _productService.ReduceStockAsync(
+                                product.Id, 
+                                itemDto.Quantity, 
+                                null, 
+                                order.BranchId);
+                            Console.WriteLine($"✅ [OrderService] Stock global reducido para {product.Name}: -{itemDto.Quantity}");
+                        }
+                        catch (Exception stockEx)
+                        {
+                            Console.WriteLine($"❌ [OrderService] Error al reducir stock global para {product.Name}: {stockEx.Message}");
+                        }
+                    }
+                    
                     total += (newItem.Quantity * newItem.UnitPrice) - newItem.Discount;
                 }
                 await _context.SaveChangesAsync();

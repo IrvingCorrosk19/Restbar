@@ -76,6 +76,8 @@ function selectCategory(categoryId, categoryName) {
 // Cargar productos
 async function loadProducts(categoryId) {
     try {
+        console.log('🔍 [Categories] loadProducts() - Iniciando carga de productos...');
+        
         const response = await fetch(`/Order/GetProducts?categoryId=${categoryId}`);
         const products = await response.json();
         
@@ -91,23 +93,68 @@ async function loadProducts(categoryId) {
             });
         }
         
-        const productsHtml = products.map(product => {
+        // ✅ NUEVO: Consultar stock disponible para cada producto
+        const productsWithStock = await Promise.all(products.map(async (product) => {
+            try {
+                const stockResponse = await fetch(`/Product/GetAvailableStock?productId=${product.id}`);
+                const stockResult = await stockResponse.json();
+                
+                if (stockResult.success) {
+                    product.availableStock = stockResult.stock;
+                    product.isUnlimited = stockResult.isUnlimited;
+                    product.hasStock = stockResult.isUnlimited || stockResult.stock > 0;
+                } else {
+                    product.availableStock = null;
+                    product.isUnlimited = true;
+                    product.hasStock = true;
+                }
+            } catch (error) {
+                console.warn(`⚠️ [Categories] Error al consultar stock para producto ${product.id}:`, error);
+                product.availableStock = null;
+                product.isUnlimited = true;
+                product.hasStock = true;
+            }
+            
+            return product;
+        }));
+        
+        const productsHtml = productsWithStock.map(product => {
             const quantity = productQuantities[product.id] || 0;
             const showControls = quantity > 0;
-            const stockStatus = product.stock !== null && product.stock !== undefined ? 
-                (product.stock > 0 ? 
-                    `<span class="badge bg-success">Stock: ${product.stock}</span>` : 
-                    `<span class="badge bg-danger">Sin stock</span>`) : 
-                `<span class="badge bg-warning">Stock no configurado</span>`;
+            
+            // ✅ NUEVO: Mostrar stock disponible con indicadores visuales
+            let stockStatus = '';
+            let stockClass = 'secondary';
+            
+            if (product.isUnlimited || product.availableStock === -1) {
+                stockStatus = `<span class="badge bg-info"><i class="fas fa-infinity"></i> Stock ilimitado</span>`;
+                stockClass = 'info';
+            } else if (product.availableStock === null || product.availableStock === undefined) {
+                stockStatus = `<span class="badge bg-warning"><i class="fas fa-exclamation-triangle"></i> Stock no configurado</span>`;
+                stockClass = 'warning';
+            } else if (product.availableStock > 0) {
+                // Verificar si hay stock mínimo configurado
+                const isLowStock = product.minStock && product.availableStock <= product.minStock;
+                const stockBadgeClass = isLowStock ? 'bg-danger' : (product.availableStock < (product.minStock || 0) * 1.5 ? 'bg-warning' : 'bg-success');
+                stockStatus = `<span class="badge ${stockBadgeClass}"><i class="fas fa-box"></i> Stock: ${product.availableStock.toFixed(2)}${isLowStock ? ' ⚠️ Bajo' : ''}</span>`;
+                stockClass = isLowStock ? 'danger' : 'success';
+            } else {
+                stockStatus = `<span class="badge bg-danger"><i class="fas fa-times-circle"></i> Sin stock</span>`;
+                stockClass = 'danger';
+            }
             
             // ✅ NUEVO: Calcular precio con impuesto
             const taxRate = product.taxRate || 0;
             const priceWithTax = product.price * (1 + taxRate / 100);
             const taxAmount = product.price * (taxRate / 100);
             
+            const isAvailable = product.hasStock && (product.isUnlimited || product.availableStock > 0);
+            
             return `
             <div class="col-md-3 col-sm-6 mb-4">
-                <div class="card h-100 product-card${showControls ? ' selected-product' : ''}" data-product-id="${product.id}">
+                <div class="card h-100 product-card${showControls ? ' selected-product' : ''}${!isAvailable ? ' opacity-50' : ''}" 
+                     data-product-id="${product.id}"
+                     data-product-stock="${product.availableStock || 'unlimited'}">
                     <img src="${product.imageUrl || '/images/no-image.png'}" 
                          class="card-img-top" 
                          alt="${product.name}"
@@ -116,20 +163,21 @@ async function loadProducts(categoryId) {
                         <h6 class="card-title mb-1">${product.name}</h6>
                         <p class="card-text text-primary mb-1">$${product.price.toFixed(2)}</p>
                         ${taxRate > 0 ? `<small class="text-muted">+ ${taxRate}% IVA = $${priceWithTax.toFixed(2)}</small>` : ''}
-                        <div class="mb-2">
+                        <div class="mb-2" id="stock-${product.id}">
                             ${stockStatus}
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
                             <div class="btn-group" role="group">
                                 <button class="btn btn-sm btn-outline-primary" 
-                                        onclick="addToOrder('${product.id}', '${product.name}', ${product.price}, ${taxRate})"
-                                        ${product.stock !== null && product.stock <= 0 ? 'disabled' : ''}>
-                                    ${product.stock !== null && product.stock <= 0 ? 'Sin stock' : '+ Agregar'}
+                                        onclick="checkStockAndAddToOrder('${product.id}', '${product.name}', ${product.price}, ${taxRate})"
+                                        ${!isAvailable ? 'disabled' : ''}
+                                        data-product-id="${product.id}">
+                                    ${!isAvailable ? '<i class="fas fa-ban"></i> Sin stock' : '+ Agregar'}
                                 </button>
                                 <button class="btn btn-sm btn-outline-info" 
-                                        onclick="addToOrderWithNotes('${product.id}', '${product.name}', ${product.price}, ${taxRate})"
+                                        onclick="checkStockAndAddWithNotes('${product.id}', '${product.name}', ${product.price}, ${taxRate})"
                                         title="Agregar con notas"
-                                        ${product.stock !== null && product.stock <= 0 ? 'disabled' : ''}>
+                                        ${!isAvailable ? 'disabled' : ''}>
                                     📝
                                 </button>
                             </div>
@@ -140,8 +188,96 @@ async function loadProducts(categoryId) {
             `;
         }).join('');
         document.getElementById('products').innerHTML = productsHtml;
+        
+        console.log(`✅ [Categories] loadProducts() - Productos cargados: ${productsWithStock.length}`);
+        
+        // ✅ NUEVO: Verificar y mostrar alertas de stock bajo
+        checkLowStockAlerts(productsWithStock);
     } catch (error) {
         Swal.fire('Error', 'No se pudieron cargar los productos', 'error');
+    }
+}
+
+// ✅ NUEVO: Verificar stock antes de agregar al pedido
+async function checkStockAndAddToOrder(productId, productName, price, taxRate = 0) {
+    try {
+        console.log(`🔍 [Categories] checkStockAndAddToOrder() - Verificando stock para: ${productName}`);
+        
+        // Consultar stock disponible
+        const stockResponse = await fetch(`/Order/CheckItemStockAvailability?productId=${productId}&quantity=1`);
+        const stockResult = await stockResponse.json();
+        
+        if (stockResult.success && stockResult.hasStock) {
+            console.log(`✅ [Categories] checkStockAndAddToOrder() - Stock disponible: ${stockResult.availableStock}`);
+            addToOrder(productId, productName, price, taxRate);
+        } else {
+            console.warn(`⚠️ [Categories] checkStockAndAddToOrder() - Stock insuficiente: ${stockResult.message}`);
+            Swal.fire({
+                icon: 'warning',
+                title: 'Stock Insuficiente',
+                html: `<p>${stockResult.message || 'No hay stock disponible para este producto'}</p>`,
+                confirmButtonText: 'Aceptar'
+            });
+        }
+    } catch (error) {
+        console.error('❌ [Categories] checkStockAndAddToOrder() - Error:', error);
+        // En caso de error, permitir agregar sin verificar (modo fallback)
+        addToOrder(productId, productName, price, taxRate);
+    }
+}
+
+// ✅ NUEVO: Verificar stock antes de agregar con notas
+async function checkStockAndAddWithNotes(productId, productName, price, taxRate = 0) {
+    try {
+        console.log(`🔍 [Categories] checkStockAndAddWithNotes() - Verificando stock para: ${productName}`);
+        
+        // Consultar stock disponible
+        const stockResponse = await fetch(`/Order/CheckItemStockAvailability?productId=${productId}&quantity=1`);
+        const stockResult = await stockResponse.json();
+        
+        if (stockResult.success && stockResult.hasStock) {
+            console.log(`✅ [Categories] checkStockAndAddWithNotes() - Stock disponible: ${stockResult.availableStock}`);
+            addToOrderWithNotes(productId, productName, price, taxRate);
+        } else {
+            console.warn(`⚠️ [Categories] checkStockAndAddWithNotes() - Stock insuficiente: ${stockResult.message}`);
+            Swal.fire({
+                icon: 'warning',
+                title: 'Stock Insuficiente',
+                html: `<p>${stockResult.message || 'No hay stock disponible para este producto'}</p>`,
+                confirmButtonText: 'Aceptar'
+            });
+        }
+    } catch (error) {
+        console.error('❌ [Categories] checkStockAndAddWithNotes() - Error:', error);
+        // En caso de error, permitir agregar sin verificar (modo fallback)
+        addToOrderWithNotes(productId, productName, price, taxRate);
+    }
+}
+
+// ✅ NUEVO: Verificar y mostrar alertas de stock bajo
+function checkLowStockAlerts(products) {
+    const lowStockProducts = products.filter(p => 
+        !p.isUnlimited && 
+        p.availableStock !== null && 
+        p.availableStock !== undefined &&
+        p.minStock && 
+        p.availableStock <= p.minStock
+    );
+    
+    if (lowStockProducts.length > 0) {
+        const productNames = lowStockProducts.map(p => p.name).join(', ');
+        console.warn(`⚠️ [Categories] Productos con stock bajo: ${productNames}`);
+        
+        // Mostrar notificación
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Stock Bajo',
+                html: `<p>Los siguientes productos tienen stock bajo:</p><ul>${lowStockProducts.map(p => `<li>${p.name}: ${p.availableStock} (Mín: ${p.minStock})</li>`).join('')}</ul>`,
+                confirmButtonText: 'Aceptar',
+                timer: 5000
+            });
+        }
     }
 }
 
@@ -356,6 +492,31 @@ async function saveItemChanges() {
             priceWithTax,
             isEditing: !!itemId
         });
+    
+        // ✅ NUEVO: Verificar stock disponible antes de guardar (solo si es nuevo item o cantidad aumentó)
+        if (!itemId || (itemId && quantity > 1)) {
+            console.log(`🔍 [Categories] saveItemChanges() - Verificando stock disponible...`);
+            try {
+                const stockResponse = await fetch(`/Order/CheckItemStockAvailability?productId=${productId}&quantity=${quantity}`);
+                const stockResult = await stockResponse.json();
+                
+                if (stockResult.success && !stockResult.hasStock && !stockResult.isUnlimited) {
+                    console.warn(`⚠️ [Categories] saveItemChanges() - Stock insuficiente: ${stockResult.message}`);
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: 'Stock Insuficiente',
+                        html: `<p>${stockResult.message || `No hay stock disponible. Disponible: ${stockResult.availableStock || 0}, Requerido: ${quantity}`}</p>`,
+                        confirmButtonText: 'Aceptar'
+                    });
+                    return; // No continuar con el guardado
+                } else if (stockResult.success && stockResult.hasStock) {
+                    console.log(`✅ [Categories] saveItemChanges() - Stock disponible: ${stockResult.availableStock}`);
+                }
+            } catch (error) {
+                console.warn(`⚠️ [Categories] saveItemChanges() - Error al verificar stock (continuando):`, error);
+                // Continuar sin verificación en caso de error
+            }
+        }
     
         if (itemId) {
             console.log('🔄 [Categories] saveItemChanges() - Editando item existente...');

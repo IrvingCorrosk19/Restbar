@@ -1,0 +1,304 @@
+@model IEnumerable<RestBar.Models.ProductStockAssignment>
+@{
+    ViewData["Title"] = "Asignaciones de Stock por Estación";
+}
+
+<style>
+    .assignments-hero {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 3rem 2rem;
+        border-radius: 20px;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        color: white;
+    }
+    
+    .assignments-container {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .assignment-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        background: white;
+    }
+    
+    .assignment-card:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .stock-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+    
+    .stock-high {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .stock-medium {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .stock-low {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .stock-unlimited {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+    
+    .btn-assignment {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 25px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-assignment:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .filters-section {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+    
+    .filter-group {
+        margin-bottom: 1rem;
+    }
+    
+    .filter-label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    .filter-select select,
+    .filter-input input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+    }
+</style>
+
+<!-- Error Message -->
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert" style="background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; padding: 1rem 2rem; border-radius: 20px; margin: 2rem auto; max-width: 800px; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <i class="fas fa-exclamation-triangle"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- Hero Section -->
+<div class="assignments-hero">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="fas fa-boxes"></i> Asignaciones de Stock por Estación</h1>
+            <p class="mb-0">Gestiona el inventario de productos en diferentes estaciones</p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-assignment" data-bs-toggle="modal" data-bs-target="#createAssignmentModal">
+                <i class="fas fa-plus"></i> Nueva Asignación
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="assignments-container">
+    <!-- Filters Section -->
+    <div class="filters-section">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="filter-group">
+                    <label class="filter-label">Buscar por Producto</label>
+                    <div class="filter-input">
+                        <input type="text" id="productSearchInput" placeholder="Buscar producto...">
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="filter-group">
+                    <label class="filter-label">Filtrar por Estación</label>
+                    <div class="filter-select">
+                        <select id="stationFilter">
+                            <option value="">Todas las estaciones</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="filter-group">
+                    <label class="filter-label">Estado</label>
+                    <div class="filter-select">
+                        <select id="statusFilter">
+                            <option value="">Todos</option>
+                            <option value="true">Activas</option>
+                            <option value="false">Inactivas</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assignments Table -->
+    <div class="table-responsive">
+        <table class="table table-hover" id="assignmentsTable">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Estación</th>
+                    <th>Stock</th>
+                    <th>Stock Mínimo</th>
+                    <th>Prioridad</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="assignmentsTableBody">
+                <!-- Se llena dinámicamente -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Crear Asignación -->
+<div class="modal fade" id="createAssignmentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h5 class="modal-title"><i class="fas fa-plus"></i> Nueva Asignación de Stock</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createAssignmentForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Producto *</label>
+                            <select class="form-select" id="createProductId" required>
+                                <option value="">Seleccionar producto...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Estación *</label>
+                            <select class="form-select" id="createStationId" required>
+                                <option value="">Seleccionar estación...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Stock *</label>
+                            <input type="number" class="form-control" id="createStock" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Stock Mínimo</label>
+                            <input type="number" class="form-control" id="createMinStock" step="0.01" min="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Prioridad</label>
+                            <input type="number" class="form-control" id="createPriority" value="0" min="0">
+                            <small class="text-muted">Mayor número = mayor prioridad</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Estado</label>
+                            <select class="form-select" id="createIsActive">
+                                <option value="true">Activa</option>
+                                <option value="false">Inactiva</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-assignment" onclick="createAssignment()">
+                    <i class="fas fa-save"></i> Crear Asignación
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Editar Asignación -->
+<div class="modal fade" id="editAssignmentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h5 class="modal-title"><i class="fas fa-edit"></i> Editar Asignación de Stock</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editAssignmentForm">
+                    <input type="hidden" id="editAssignmentId">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Producto *</label>
+                            <input type="text" class="form-control" id="editProductName" readonly>
+                            <input type="hidden" id="editProductId">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Estación *</label>
+                            <input type="text" class="form-control" id="editStationName" readonly>
+                            <input type="hidden" id="editStationId">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Stock *</label>
+                            <input type="number" class="form-control" id="editStock" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Stock Mínimo</label>
+                            <input type="number" class="form-control" id="editMinStock" step="0.01" min="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Prioridad</label>
+                            <input type="number" class="form-control" id="editPriority" value="0" min="0">
+                            <small class="text-muted">Mayor número = mayor prioridad</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Estado</label>
+                            <select class="form-select" id="editIsActive">
+                                <option value="true">Activa</option>
+                                <option value="false">Inactiva</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-assignment" onclick="updateAssignment()">
+                    <i class="fas fa-save"></i> Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/product-stock-assignment.js"></script>
+}
+

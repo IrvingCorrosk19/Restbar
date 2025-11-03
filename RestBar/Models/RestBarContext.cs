@@ -45,6 +45,9 @@ public partial class RestBarContext : DbContext
     public virtual DbSet<Product> Products { get; set; }
 
     public virtual DbSet<ProductCategory> ProductCategories { get; set; }
+    
+    // ✅ NUEVO: Asignaciones de stock por estación
+    public virtual DbSet<ProductStockAssignment> ProductStockAssignments { get; set; }
 
     public virtual DbSet<SplitPayment> SplitPayments { get; set; }
 
@@ -756,6 +759,26 @@ public partial class RestBarContext : DbContext
                 .HasForeignKey(d => d.StationId)
                 .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("products_station_id_fkey");
+            
+            // ✅ NUEVO: Campos de inventario
+            entity.Property(e => e.Stock)
+                .HasPrecision(18, 2)
+                .HasColumnName("stock");
+            entity.Property(e => e.MinStock)
+                .HasPrecision(18, 2)
+                .HasColumnName("min_stock");
+            entity.Property(e => e.TrackInventory)
+                .HasDefaultValue(false)
+                .HasColumnName("track_inventory");
+            entity.Property(e => e.AllowNegativeStock)
+                .HasDefaultValue(false)
+                .HasColumnName("allow_negative_stock");
+            
+            // ✅ NUEVO: Relación con asignaciones de stock por estación
+            entity.HasMany(p => p.StockAssignments)
+                .WithOne(psa => psa.Product)
+                .HasForeignKey(psa => psa.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
                 
             // ✅ NUEVO: Configurar relaciones multi-tenant
             entity.HasOne(p => p.Company)
@@ -801,6 +824,82 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.Name)
                 .HasMaxLength(50)
                 .HasColumnName("name");
+        });
+
+        // ✅ NUEVO: Configuración de ProductStockAssignment
+        modelBuilder.Entity<ProductStockAssignment>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("product_stock_assignments_pkey");
+
+            entity.ToTable("product_stock_assignments");
+
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.StationId).HasColumnName("station_id");
+            
+            entity.Property(e => e.Stock)
+                .HasPrecision(18, 2)
+                .HasColumnName("stock");
+            entity.Property(e => e.MinStock)
+                .HasPrecision(18, 2)
+                .HasColumnName("min_stock");
+            entity.Property(e => e.Priority)
+                .HasDefaultValue(0)
+                .HasColumnName("priority");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+
+            // Multi-tenant
+            entity.Property(e => e.CompanyId).HasColumnName("company_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+
+            // Auditoría
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.CreatedBy)
+                .HasMaxLength(255)
+                .HasColumnName("created_by");
+            entity.Property(e => e.UpdatedBy)
+                .HasMaxLength(255)
+                .HasColumnName("updated_by");
+
+            // Relaciones
+            entity.HasOne(d => d.Product)
+                .WithMany(p => p.StockAssignments)
+                .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("product_stock_assignments_product_id_fkey");
+
+            entity.HasOne(d => d.Station)
+                .WithMany()
+                .HasForeignKey(d => d.StationId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("product_stock_assignments_station_id_fkey");
+
+            entity.HasOne(d => d.Company)
+                .WithMany()
+                .HasForeignKey(d => d.CompanyId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(d => d.Branch)
+                .WithMany()
+                .HasForeignKey(d => d.BranchId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Índice único para evitar duplicados de producto-estación
+            entity.HasIndex(e => new { e.ProductId, e.StationId, e.BranchId })
+                .IsUnique()
+                .HasDatabaseName("ix_product_stock_assignments_unique");
         });
 
         modelBuilder.Entity<SplitPayment>(entity =>

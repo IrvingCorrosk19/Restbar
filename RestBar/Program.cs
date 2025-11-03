@@ -76,10 +76,10 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("PaymentAccess", policy => policy.RequireRole("admin", "manager", "supervisor", "cashier", "accountant"));
     
     // Políticas para área de inventario
-    
+    options.AddPolicy("InventoryAccess", policy => policy.RequireRole("admin", "manager", "supervisor", "accountant", "inventarista"));
     
     // Políticas para área de productos
-                options.AddPolicy("ProductAccess", policy => policy.RequireRole("admin", "manager"));
+    options.AddPolicy("ProductAccess", policy => policy.RequireRole("admin", "manager"));
     
     // Políticas para área de usuarios
     options.AddPolicy("UserManagement", policy => policy.RequireRole("admin", "manager", "support"));
@@ -131,6 +131,12 @@ builder.Services.AddScoped<IStationService>(provider =>
     return new StationService(context, httpContextAccessor);
 });
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IProductStockAssignmentService>(provider =>
+{
+    var context = provider.GetRequiredService<RestBarContext>();
+    var httpContextAccessor = provider.GetRequiredService<IHttpContextAccessor>();
+    return new ProductStockAssignmentService(context, httpContextAccessor);
+});
 builder.Services.AddScoped<ITableService, TableService>();
 // Registrar AreaService con IHttpContextAccessor
 builder.Services.AddScoped<IAreaService>(provider =>

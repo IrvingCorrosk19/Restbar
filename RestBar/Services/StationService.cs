@@ -30,6 +30,12 @@ namespace RestBar.Services
                     return new List<Station>();
                 }
 
+                if (currentUser.Branch == null)
+                {
+                    Console.WriteLine("⚠️ [StationService] GetAllStationsAsync() - Usuario no tiene sucursal asignada");
+                    return new List<Station>();
+                }
+
                 Console.WriteLine($"✅ [StationService] GetAllStationsAsync() - Usuario: {currentUser.Email}, CompanyId: {currentUser.Branch?.CompanyId}, BranchId: {currentUser.BranchId}");
 
                 // Filtrar estaciones por compañía y sucursal del usuario
@@ -200,22 +206,22 @@ namespace RestBar.Services
         {
             try
             {
-                Console.WriteLine("🔍 [StationService] GetDistinctStationTypesAsync() - Iniciando consulta de nombres de estaciones...");
+                Console.WriteLine("🔍 [StationService] GetDistinctStationTypesAsync() - Iniciando consulta de tipos de estaciones...");
                 
-                var stationNames = await _context.Stations
-                    .Where(s => s.IsActive && !string.IsNullOrEmpty(s.Name))
-                    .Select(s => s.Name)
+                var stationTypes = await _context.Stations
+                    .Where(s => s.IsActive && !string.IsNullOrEmpty(s.Type))
+                    .Select(s => s.Type)
                     .Distinct()
-                    .OrderBy(n => n)
+                    .OrderBy(t => t)
                     .ToListAsync();
                 
-                Console.WriteLine($"✅ [StationService] GetDistinctStationTypesAsync() - Estaciones encontradas: {stationNames.Count}");
-                foreach (var name in stationNames)
+                Console.WriteLine($"✅ [StationService] GetDistinctStationTypesAsync() - Tipos de estaciones encontrados: {stationTypes.Count}");
+                foreach (var type in stationTypes)
                 {
-                    Console.WriteLine($"📋 [StationService] GetDistinctStationTypesAsync() - Estación: {name}");
+                    Console.WriteLine($"📋 [StationService] GetDistinctStationTypesAsync() - Tipo: {type}");
                 }
                 
-                return stationNames;
+                return stationTypes;
             }
             catch (Exception ex)
             {

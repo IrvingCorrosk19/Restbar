@@ -19,8 +19,38 @@
         </div>
     </div>
 
-    <!-- Estadísticas Generales -->
+    <!-- Filtros Generales -->
     <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-filter me-2"></i>Filtros de Fecha
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="startDate" class="form-label">Fecha Inicio</label>
+                            <input type="date" class="form-control" id="startDate" value="@DateTime.Now.AddDays(-30).ToString("yyyy-MM-dd")">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="endDate" class="form-label">Fecha Fin</label>
+                            <input type="date" class="form-control" id="endDate" value="@DateTime.Now.ToString("yyyy-MM-dd")">
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button class="btn btn-primary w-100" onclick="applyFilters()">
+                                <i class="fas fa-search me-2"></i>Aplicar Filtros
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas Generales -->
+    <div class="row mb-4" id="statisticsCards">
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">
                 <div class="card-body">
@@ -29,7 +59,7 @@
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                 Análisis de Inventario
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">Stock & Alertas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="inventoryStats">Cargando...</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-boxes fa-2x text-gray-300"></i>
@@ -47,7 +77,7 @@
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                 Análisis de Proveedores
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">Rendimiento & Órdenes</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="supplierStats">Cargando...</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-truck fa-2x text-gray-300"></i>
@@ -65,7 +95,7 @@
                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                 Análisis de Rentabilidad
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">Margenes & Costos</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="profitabilityStats">Cargando...</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
@@ -83,7 +113,7 @@
                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                 Análisis de Tendencias
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">Crecimiento & Patrones</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="trendsStats">Cargando...</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-chart-line fa-2x text-gray-300"></i>
@@ -95,14 +125,17 @@
     </div>
 
     <!-- Cards de Reportes -->
-    <div class="row">
+    <div class="row" id="reportCards">
         <!-- Análisis de Inventario -->
         <div class="col-lg-4 col-md-6 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">
+            <div class="card shadow h-100 report-card" data-report="inventory">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-primary text-white">
+                    <h6 class="m-0 font-weight-bold">
                         <i class="fas fa-boxes me-2"></i>Análisis de Inventario
                     </h6>
+                    <button class="btn btn-sm btn-light" onclick="loadReport('inventory')">
+                        <i class="fas fa-sync"></i>
+                    </button>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
@@ -114,45 +147,32 @@
                             <li><i class="fas fa-check text-success me-2"></i>Eficiencia de stock</li>
                         </ul>
                     </div>
-                    <a href="@Url.Action("InventoryAnalysis", "AdvancedReports")" class="btn btn-primary btn-sm">
-                        <i class="fas fa-chart-bar me-2"></i>Ver Análisis
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Análisis de Proveedores -->
-        <div class="col-lg-4 col-md-6 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-success">
-                        <i class="fas fa-truck me-2"></i>Análisis de Proveedores
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <p class="text-muted small">Evaluación del rendimiento de proveedores:</p>
-                        <ul class="list-unstyled small">
-                            <li><i class="fas fa-check text-success me-2"></i>Rendimiento por proveedor</li>
-                            <li><i class="fas fa-check text-success me-2"></i>Análisis de órdenes de compra</li>
-                            <li><i class="fas fa-check text-success me-2"></i>Tiempos de entrega</li>
-                            <li><i class="fas fa-check text-success me-2"></i>Calidad de servicio</li>
-                        </ul>
+                    <div id="inventoryReportContent" class="mb-3"></div>
+                    <div class="d-flex gap-2">
+                        <a href="@Url.Action("InventoryAnalysis", "AdvancedReports")" class="btn btn-primary btn-sm flex-fill">
+                            <i class="fas fa-chart-bar me-2"></i>Ver Detalles
+                        </a>
+                        <button class="btn btn-outline-primary btn-sm" onclick="exportReport('inventory', 'pdf')">
+                            <i class="fas fa-file-pdf"></i>
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="exportReport('inventory', 'excel')">
+                            <i class="fas fa-file-excel"></i>
+                        </button>
                     </div>
-                    <a href="@Url.Action("SupplierAnalysis", "AdvancedReports")" class="btn btn-success btn-sm">
-                        <i class="fas fa-chart-pie me-2"></i>Ver Análisis
-                    </a>
                 </div>
             </div>
         </div>
 
         <!-- Análisis de Rentabilidad -->
         <div class="col-lg-4 col-md-6 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-info">
+            <div class="card shadow h-100 report-card" data-report="profitability">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-info text-white">
+                    <h6 class="m-0 font-weight-bold">
                         <i class="fas fa-dollar-sign me-2"></i>Análisis de Rentabilidad
                     </h6>
+                    <button class="btn btn-sm btn-light" onclick="loadReport('profitability')">
+                        <i class="fas fa-sync"></i>
+                    </button>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
@@ -164,20 +184,143 @@
                             <li><i class="fas fa-check text-success me-2"></i>ROI por inversión</li>
                         </ul>
                     </div>
-                    <a href="@Url.Action("ProfitabilityAnalysis", "AdvancedReports")" class="btn btn-info btn-sm">
-                        <i class="fas fa-chart-area me-2"></i>Ver Análisis
-                    </a>
+                    <div id="profitabilityReportContent" class="mb-3"></div>
+                    <div class="d-flex gap-2">
+                        <a href="@Url.Action("ProfitabilityAnalysis", "AdvancedReports")" class="btn btn-info btn-sm flex-fill">
+                            <i class="fas fa-chart-area me-2"></i>Ver Detalles
+                        </a>
+                        <button class="btn btn-outline-primary btn-sm" onclick="exportReport('profitability', 'pdf')">
+                            <i class="fas fa-file-pdf"></i>
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="exportReport('profitability', 'excel')">
+                            <i class="fas fa-file-excel"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Análisis de Ventas -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100 report-card" data-report="sales">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-success text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-chart-pie me-2"></i>Análisis de Ventas
+                    </h6>
+                    <button class="btn btn-sm btn-light" onclick="loadReport('sales')">
+                        <i class="fas fa-sync"></i>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <p class="text-muted small">Análisis completo de ventas:</p>
+                        <ul class="list-unstyled small">
+                            <li><i class="fas fa-check text-success me-2"></i>Productos más vendidos</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Categorías más vendidas</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Tendencias por hora</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Análisis diario/semanal</li>
+                        </ul>
+                    </div>
+                    <div id="salesReportContent" class="mb-3"></div>
+                    <div class="d-flex gap-2">
+                        <a href="@Url.Action("SalesAnalysis", "AdvancedReports")" class="btn btn-success btn-sm flex-fill">
+                            <i class="fas fa-chart-line me-2"></i>Ver Detalles
+                        </a>
+                        <button class="btn btn-outline-primary btn-sm" onclick="exportReport('sales', 'pdf')">
+                            <i class="fas fa-file-pdf"></i>
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="exportReport('sales', 'excel')">
+                            <i class="fas fa-file-excel"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Análisis de Clientes -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100 report-card" data-report="customers">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-warning text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-users me-2"></i>Análisis de Clientes
+                    </h6>
+                    <button class="btn btn-sm btn-light" onclick="loadReport('customers')">
+                        <i class="fas fa-sync"></i>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <p class="text-muted small">Análisis de comportamiento de clientes:</p>
+                        <ul class="list-unstyled small">
+                            <li><i class="fas fa-check text-success me-2"></i>Clientes principales</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Segmentación</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Retención y fidelidad</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Valor de vida del cliente</li>
+                        </ul>
+                    </div>
+                    <div id="customersReportContent" class="mb-3"></div>
+                    <div class="d-flex gap-2">
+                        <a href="@Url.Action("CustomerAnalysis", "AdvancedReports")" class="btn btn-warning btn-sm flex-fill">
+                            <i class="fas fa-user-chart me-2"></i>Ver Detalles
+                        </a>
+                        <button class="btn btn-outline-primary btn-sm" onclick="exportReport('customers', 'pdf')">
+                            <i class="fas fa-file-pdf"></i>
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="exportReport('customers', 'excel')">
+                            <i class="fas fa-file-excel"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Análisis de Operaciones -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100 report-card" data-report="operational">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-secondary text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-cogs me-2"></i>Análisis Operacional
+                    </h6>
+                    <button class="btn btn-sm btn-light" onclick="loadReport('operational')">
+                        <i class="fas fa-sync"></i>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <p class="text-muted small">Análisis de eficiencia operativa:</p>
+                        <ul class="list-unstyled small">
+                            <li><i class="fas fa-check text-success me-2"></i>Rendimiento de estaciones</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Utilización de mesas</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Horas pico</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Tiempos de preparación</li>
+                        </ul>
+                    </div>
+                    <div id="operationalReportContent" class="mb-3"></div>
+                    <div class="d-flex gap-2">
+                        <a href="@Url.Action("OperationalAnalysis", "AdvancedReports")" class="btn btn-secondary btn-sm flex-fill">
+                            <i class="fas fa-chart-bar me-2"></i>Ver Detalles
+                        </a>
+                        <button class="btn btn-outline-primary btn-sm" onclick="exportReport('operational', 'pdf')">
+                            <i class="fas fa-file-pdf"></i>
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="exportReport('operational', 'excel')">
+                            <i class="fas fa-file-excel"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Análisis de Tendencias -->
         <div class="col-lg-4 col-md-6 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-warning">
+            <div class="card shadow h-100 report-card" data-report="trends">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-dark text-white">
+                    <h6 class="m-0 font-weight-bold">
                         <i class="fas fa-chart-line me-2"></i>Análisis de Tendencias
                     </h6>
+                    <button class="btn btn-sm btn-light" onclick="loadReport('trends')">
+                        <i class="fas fa-sync"></i>
+                    </button>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
@@ -189,20 +332,32 @@
                             <li><i class="fas fa-check text-success me-2"></i>Patrones de comportamiento</li>
                         </ul>
                     </div>
-                    <a href="@Url.Action("TrendAnalysis", "AdvancedReports")" class="btn btn-warning btn-sm">
-                        <i class="fas fa-chart-line me-2"></i>Ver Análisis
-                    </a>
+                    <div id="trendsReportContent" class="mb-3"></div>
+                    <div class="d-flex gap-2">
+                        <a href="@Url.Action("TrendAnalysis", "AdvancedReports")" class="btn btn-dark btn-sm flex-fill">
+                            <i class="fas fa-chart-line me-2"></i>Ver Detalles
+                        </a>
+                        <button class="btn btn-outline-primary btn-sm" onclick="exportReport('trends', 'pdf')">
+                            <i class="fas fa-file-pdf"></i>
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="exportReport('trends', 'excel')">
+                            <i class="fas fa-file-excel"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Reporte de Auditoría -->
         <div class="col-lg-4 col-md-6 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-secondary">
+            <div class="card shadow h-100 report-card" data-report="audit">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <h6 class="m-0 font-weight-bold">
                         <i class="fas fa-shield-alt me-2"></i>Reporte de Auditoría
                     </h6>
+                    <button class="btn btn-sm btn-light" onclick="loadReport('audit')">
+                        <i class="fas fa-sync"></i>
+                    </button>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
@@ -214,22 +369,32 @@
                             <li><i class="fas fa-check text-success me-2"></i>Traza de cambios</li>
                         </ul>
                     </div>
-                    <a href="@Url.Action("AuditReport", "AdvancedReports")" class="btn btn-secondary btn-sm">
-                        <i class="fas fa-clipboard-list me-2"></i>Ver Reporte
-                    </a>
+                    <div id="auditReportContent" class="mb-3"></div>
+                    <div class="d-flex gap-2">
+                        <a href="@Url.Action("AuditReport", "AdvancedReports")" class="btn btn-sm flex-fill" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                            <i class="fas fa-clipboard-list me-2"></i>Ver Reporte
+                        </a>
+                        <button class="btn btn-outline-primary btn-sm" onclick="exportReport('audit', 'pdf')">
+                            <i class="fas fa-file-pdf"></i>
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="exportReport('audit', 'excel')">
+                            <i class="fas fa-file-excel"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
 
-
-
         <!-- Salud del Sistema -->
         <div class="col-lg-4 col-md-6 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-danger">
+            <div class="card shadow h-100 report-card" data-report="health">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-danger text-white">
+                    <h6 class="m-0 font-weight-bold">
                         <i class="fas fa-heartbeat me-2"></i>Salud del Sistema
                     </h6>
+                    <button class="btn btn-sm btn-light" onclick="loadReport('health')">
+                        <i class="fas fa-sync"></i>
+                    </button>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
@@ -241,51 +406,17 @@
                             <li><i class="fas fa-check text-success me-2"></i>Uptime y disponibilidad</li>
                         </ul>
                     </div>
-                    <a href="@Url.Action("SystemHealth", "AdvancedReports")" class="btn btn-danger btn-sm">
-                        <i class="fas fa-tachometer-alt me-2"></i>Ver Estado
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Exportación -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-download me-2"></i>Exportación de Reportes
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6 class="text-muted">Exportar a PDF</h6>
-                            <div class="btn-group-vertical w-100">
-                                    <i class="fas fa-file-pdf me-2"></i>Análisis de Inventario
-                                </a>
-                                <a href="@Url.Action("ExportToPdf", "AdvancedReports", new { reportType = "suppliers" })" class="btn btn-outline-primary btn-sm mb-2">
-                                    <i class="fas fa-file-pdf me-2"></i>Análisis de Proveedores
-                                </a>
-                                <a href="@Url.Action("ExportToPdf", "AdvancedReports", new { reportType = "profitability" })" class="btn btn-outline-primary btn-sm mb-2">
-                                    <i class="fas fa-file-pdf me-2"></i>Análisis de Rentabilidad
-                                </a>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <h6 class="text-muted">Exportar a Excel</h6>
-                            <div class="btn-group-vertical w-100">
-                                    <i class="fas fa-file-excel me-2"></i>Análisis de Inventario
-                                </a>
-                                <a href="@Url.Action("ExportToExcel", "AdvancedReports", new { reportType = "suppliers" })" class="btn btn-outline-success btn-sm mb-2">
-                                    <i class="fas fa-file-excel me-2"></i>Análisis de Proveedores
-                                </a>
-                                <a href="@Url.Action("ExportToExcel", "AdvancedReports", new { reportType = "profitability" })" class="btn btn-outline-success btn-sm mb-2">
-                                    <i class="fas fa-file-excel me-2"></i>Análisis de Rentabilidad
-                                </a>
-                            </div>
-                        </div>
+                    <div id="healthReportContent" class="mb-3"></div>
+                    <div class="d-flex gap-2">
+                        <a href="@Url.Action("SystemHealth", "AdvancedReports")" class="btn btn-danger btn-sm flex-fill">
+                            <i class="fas fa-tachometer-alt me-2"></i>Ver Estado
+                        </a>
+                        <button class="btn btn-outline-primary btn-sm" onclick="exportReport('health', 'pdf')">
+                            <i class="fas fa-file-pdf"></i>
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="exportReport('health', 'excel')">
+                            <i class="fas fa-file-excel"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -294,20 +425,29 @@
 </div>
 
 @section Scripts {
-    <script>
-        $(document).ready(function() {
-            // Animaciones para las cards
-            $('.card').hover(
-                function() {
-                    $(this).addClass('shadow-lg').removeClass('shadow');
-                },
-                function() {
-                    $(this).removeClass('shadow-lg').addClass('shadow');
-                }
-            );
-
-            // Tooltips
-            $('[data-toggle="tooltip"]').tooltip();
-        });
-    </script>
-} 
+    <script src="~/js/advanced-reports.js"></script>
+    <style>
+        .report-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .report-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        }
+        .border-left-primary {
+            border-left: 0.25rem solid #4e73df !important;
+        }
+        .border-left-success {
+            border-left: 0.25rem solid #1cc88a !important;
+        }
+        .border-left-info {
+            border-left: 0.25rem solid #36b9cc !important;
+        }
+        .border-left-warning {
+            border-left: 0.25rem solid #f6c23e !important;
+        }
+        .text-xs {
+            font-size: 0.7rem;
+        }
+    </style>
+}

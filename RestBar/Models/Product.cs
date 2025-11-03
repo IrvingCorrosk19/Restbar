@@ -62,4 +62,22 @@ public partial class Product : ITrackableEntity
     // Propiedades de navegación multi-tenant
     public virtual Company? Company { get; set; }
     public virtual Branch? Branch { get; set; }
+
+    // ✅ NUEVO: CAMPOS DE INVENTARIO
+    [Display(Name = "Stock Disponible")]
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal? Stock { get; set; }
+
+    [Display(Name = "Stock Mínimo")]
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal? MinStock { get; set; }
+
+    [Display(Name = "Controlar Inventario")]
+    public bool TrackInventory { get; set; } = false;
+
+    [Display(Name = "Permitir Stock Negativo")]
+    public bool AllowNegativeStock { get; set; } = false;
+
+    // ✅ NUEVO: Navegación a asignaciones de stock por estación
+    public virtual ICollection<ProductStockAssignment> StockAssignments { get; set; } = new List<ProductStockAssignment>();
 }
