@@ -70,14 +70,21 @@ namespace RestBar.Controllers
         {
             try
             {
+                Console.WriteLine("🔍 [OrderController] Index() - Iniciando carga de órdenes...");
+                
                 var orders = await _orderService.GetAllAsync();
                 ViewBag.Tables = await _tableService.GetTablesForViewBagAsync();
                 ViewBag.Customers = await _customerService.GetAllAsync();
                 ViewBag.Products = await _productService.GetActiveProductsForViewBagAsync();
+                
+                Console.WriteLine($"✅ [OrderController] Index() - Órdenes cargadas: {orders?.Count() ?? 0}");
                 return View(orders);
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"❌ [OrderController] Index() - Error: {ex.Message}");
+                Console.WriteLine($"🔍 [OrderController] Index() - StackTrace: {ex.StackTrace}");
+                _logger.LogError(ex, "[OrderController] Error en Index()");
                 return View("Error");
             }
         }
@@ -1245,126 +1252,86 @@ namespace RestBar.Controllers
             }
         }
 
-        // ✅ NUEVO: GET: Order/StationOrders - Vista unificada que recibe el parámetro de estación
+        // GET: Order/StationOrders?stationType=kitchen  (o cualquier tipo definido en DB)
         public async Task<IActionResult> StationOrders(string stationType = "kitchen")
         {
             try
             {
-                Console.WriteLine($"🔍 [OrderController] StationOrders() - Iniciando carga de órdenes para estación: {stationType}");
-                
-                // ✅ LOG: Verificar parámetro de entrada
-                Console.WriteLine($"📋 [OrderController] StationOrders() - Parámetro stationType recibido: '{stationType}'");
-                
-                // ✅ LOG: Llamada al servicio
-                Console.WriteLine($"🚀 [OrderController] StationOrders() - Llamando a _orderService.GetKitchenOrdersAsync()...");
-                
-                // Obtener todas las órdenes usando el servicio
-                var allOrders = await _orderService.GetKitchenOrdersAsync();
-                
-                // ✅ LOG: Verificar datos recibidos del servicio
-                Console.WriteLine($"📊 [OrderController] StationOrders() - Total órdenes recibidas del servicio: {allOrders?.Count() ?? 0}");
-                
-                if (allOrders != null && allOrders.Any())
+                _logger.LogInformation("[KDS] StationOrders - stationType: '{StationType}'", stationType);
+
+                // ─── 1. Obtener IDs reales de las estaciones de ese tipo desde DB ────────
+                // Sin strings mágicos: la comparación se hace sobre el campo Type de Station.
+                // Si mañana hay 10 estaciones del tipo "cocina", todas quedan incluidas
+                // automáticamente sin tocar una sola línea de código.
+                var matchingStationIds = await _context.Stations
+                    .AsNoTracking()
+                    .Where(s => s.IsActive &&
+                                s.Type.ToLower() == stationType.ToLower())
+                    .Select(s => s.Id)
+                    .ToListAsync();
+
+                // Nombre amigable para la vista (del primer resultado o el parámetro)
+                var stationDisplayName = await _context.Stations
+                    .AsNoTracking()
+                    .Where(s => s.IsActive && s.Type.ToLower() == stationType.ToLower())
+                    .Select(s => s.Type)
+                    .FirstOrDefaultAsync() ?? stationType;
+
+                if (matchingStationIds.Count == 0)
                 {
-                    Console.WriteLine($"📋 [OrderController] StationOrders() - Detalle de órdenes recibidas:");
-                    foreach (var order in allOrders)
-                    {
-                        Console.WriteLine($"  🍽️ Orden ID: {order.OrderId}, Mesa: {order.TableNumber}, Items: {order.Items?.Count() ?? 0}");
-                        if (order.Items != null)
-                        {
-                            foreach (var item in order.Items)
-                            {
-                                Console.WriteLine($"    📦 Item: {item.ProductName}, Estación: '{item.StationName}', Estado: {item.KitchenStatus}");
-                            }
-                        }
-                    }
+                    _logger.LogWarning("[KDS] StationOrders - no se encontraron estaciones activas de tipo '{StationType}' en DB", stationType);
                 }
                 else
                 {
-                    Console.WriteLine($"⚠️ [OrderController] StationOrders() - No se recibieron órdenes del servicio");
+                    _logger.LogInformation("[KDS] StationOrders - {Count} estación(es) activa(s) del tipo '{Type}'", matchingStationIds.Count, stationType);
                 }
-                
-                // ✅ LOG: Proceso de filtrado
-                Console.WriteLine($"🎯 [OrderController] StationOrders() - Iniciando filtrado por estación: '{stationType}'");
-                
-                // ✅ CORREGIDO: Mapear el tipo de URL a tipos de estación en BD
-                var stationTypesToMatch = GetStationTypesFromUrl(stationType);
-                Console.WriteLine($"📋 [OrderController] StationOrders() - Tipos de estación a buscar: {string.Join(", ", stationTypesToMatch)}");
-                
-                // ✅ CORREGIDO: Filtrar SOLO los items de la estación específica, no toda la orden
+
+                // ─── 2. Obtener todas las órdenes activas ────────────────────────────────
+                var allOrders = await _orderService.GetKitchenOrdersAsync();
+                _logger.LogInformation("[KDS] StationOrders - {Count} órdenes activas totales", allOrders.Count);
+
+                // ─── 3. Filtrar por estación usando StationId (no strings) ───────────────
+                // Regla: un ítem pertenece a esta vista si:
+                //   a) Su StationId coincide con una de las estaciones de este tipo, O
+                //   b) No tiene estación asignada (StationId == null), lo que significa
+                //      que el producto no está configurado → se muestra en TODAS las vistas
+                //      para garantizar visibilidad y forzar configuración correcta.
                 var filteredOrders = allOrders
-                    .Where(order => order.Items.Any(item => 
-                        stationTypesToMatch.Any(stationTypeToMatch => 
-                            item.StationName.Equals(stationTypeToMatch, StringComparison.OrdinalIgnoreCase)
-                        )
+                    .Where(order => order.Items.Any(item =>
+                        item.StationId == null ||
+                        (item.StationId.HasValue && matchingStationIds.Contains(item.StationId.Value))
                     ))
                     .Select(order => new KitchenOrderViewModel
                     {
-                        OrderId = order.OrderId,
-                        TableNumber = order.TableNumber,
-                        OpenedAt = order.OpenedAt,
-                        OrderStatus = order.OrderStatus,
-                        // ✅ FILTRAR SOLO ITEMS DE LA ESTACIÓN CORRECTA
-                        Items = order.Items.Where(item => 
-                            stationTypesToMatch.Any(stationTypeToMatch => 
-                                item.StationName.Equals(stationTypeToMatch, StringComparison.OrdinalIgnoreCase)
-                            )
-                        ).ToList(),
-                        TotalItems = order.Items.Count,
-                        PendingItems = order.Items.Count(i => i.KitchenStatus == "Pending"),
-                        ReadyItems = order.Items.Count(i => i.KitchenStatus == "Ready"),
-                        PreparingItems = order.Items.Count(i => i.KitchenStatus == "Preparing"),
-                        Notes = order.Notes
+                        OrderId        = order.OrderId,
+                        TableNumber    = order.TableNumber,
+                        OpenedAt       = order.OpenedAt,
+                        OrderStatus    = order.OrderStatus,
+                        Items          = order.Items
+                            .Where(item =>
+                                item.StationId == null ||
+                                (item.StationId.HasValue && matchingStationIds.Contains(item.StationId.Value)))
+                            .ToList(),
+                        TotalItems     = order.TotalItems,
+                        PendingItems   = order.PendingItems,
+                        ReadyItems     = order.ReadyItems,
+                        PreparingItems = order.PreparingItems,
+                        Notes          = order.Notes
                     })
-                    .Where(order => order.Items.Any()) // Solo órdenes con items de esta estación
+                    .Where(order => order.Items.Any()) // Solo órdenes con ítems para esta estación
                     .ToList();
-                
-                // ✅ LOG: Resultado del filtrado
-                Console.WriteLine($"📊 [OrderController] StationOrders() - Órdenes filtradas para '{stationType}': {filteredOrders.Count}");
-                
-                if (filteredOrders.Any())
-                {
-                    Console.WriteLine($"📋 [OrderController] StationOrders() - Detalle de órdenes filtradas:");
-                    foreach (var order in filteredOrders)
-                    {
-                        Console.WriteLine($"  🍽️ Orden ID: {order.OrderId}, Mesa: {order.TableNumber}");
-                        var stationItems = order.Items.Where(i => i.StationName.Equals(stationType, StringComparison.OrdinalIgnoreCase));
-                        foreach (var item in stationItems)
-                        {
-                            Console.WriteLine($"    📦 Item: {item.ProductName}, Estado: {item.KitchenStatus}");
-                        }
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"⚠️ [OrderController] StationOrders() - No hay órdenes para la estación '{stationType}'");
-                    Console.WriteLine($"🔍 [OrderController] StationOrders() - Verificando estaciones disponibles en todas las órdenes:");
-                    if (allOrders != null)
-                    {
-                        var allStations = allOrders.SelectMany(o => o.Items?.Select(i => i.StationName) ?? new List<string>()).Distinct();
-                        foreach (var station in allStations)
-                        {
-                            Console.WriteLine($"  📍 Estación encontrada: '{station}'");
-                        }
-                    }
-                }
-                
-                // ✅ LOG: Configuración de ViewBag
-                ViewBag.StationType = stationType;
-                ViewBag.StationTitle = $"Órdenes de {stationType}";
-                Console.WriteLine($"📋 [OrderController] StationOrders() - ViewBag configurado - StationType: '{stationType}', StationTitle: 'Órdenes de {stationType}'");
-                
-                // ✅ LOG: Envío a vista
-                Console.WriteLine($"📤 [OrderController] StationOrders() - Enviando {filteredOrders.Count} órdenes a la vista StationOrders");
-                
+
+                _logger.LogInformation("[KDS] StationOrders - {Count} órdenes para tipo '{Type}'", filteredOrders.Count, stationType);
+
+                ViewBag.StationType  = stationType;
+                ViewBag.StationTitle = $"Órdenes de {stationDisplayName}";
+
                 return View("StationOrders", filteredOrders);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ [OrderController] StationOrders() - Error: {ex.Message}");
-                Console.WriteLine($"🔍 [OrderController] StationOrders() - StackTrace: {ex.StackTrace}");
-                _logger.LogError(ex, "Error al cargar órdenes de estación");
-                TempData["ErrorMessage"] = "Error al cargar las órdenes";
+                _logger.LogError(ex, "[KDS] StationOrders - error cargando órdenes para tipo '{StationType}'", stationType);
+                TempData["ErrorMessage"] = "Error al cargar las órdenes. Intente nuevamente.";
                 return View("StationOrders", new List<KitchenOrderViewModel>());
             }
         }
@@ -1381,54 +1348,9 @@ namespace RestBar.Controllers
             return RedirectToAction("StationOrders", new { stationType = "bar" });
         }
 
-        // ✅ NUEVO: Método para mapear tipos de URL a tipos de estación en BD
-        private List<string> GetStationTypesFromUrl(string stationTypeFromUrl)
-        {
-            try
-            {
-                Console.WriteLine($"🔍 [OrderController] GetStationTypesFromUrl() - Mapeando URL: '{stationTypeFromUrl}'");
-                
-                // ✅ DINÁMICO: Mapeo flexible basado en palabras clave
-                var stationTypeLower = stationTypeFromUrl.ToLower().Trim();
-                
-                var stationTypes = new List<string>();
-                
-                // ✅ MAPEO DINÁMICO: Identificar tipo por palabras clave
-                if (stationTypeLower.Contains("bar") || stationTypeLower.Contains("bebida") || stationTypeLower.Contains("cocktail"))
-                {
-                    stationTypes.Add("Bar");
-                    Console.WriteLine($"📋 [OrderController] GetStationTypesFromUrl() - Detectado tipo BAR");
-                }
-                
-                if (stationTypeLower.Contains("cocina") || stationTypeLower.Contains("kitchen") || stationTypeLower.Contains("comida"))
-                {
-                    stationTypes.Add("Cocina");
-                    Console.WriteLine($"📋 [OrderController] GetStationTypesFromUrl() - Detectado tipo COCINA");
-                }
-                
-                if (stationTypeLower.Contains("cafe") || stationTypeLower.Contains("coffee"))
-                {
-                    stationTypes.Add("Café");
-                    Console.WriteLine($"📋 [OrderController] GetStationTypesFromUrl() - Detectado tipo CAFÉ");
-                }
-                
-                // ✅ FALLBACK: Si no se detecta ningún tipo, usar el nombre tal como viene
-                if (!stationTypes.Any())
-                {
-                    stationTypes.Add(stationTypeFromUrl);
-                    Console.WriteLine($"📋 [OrderController] GetStationTypesFromUrl() - Usando nombre tal como viene: '{stationTypeFromUrl}'");
-                }
-                
-                Console.WriteLine($"✅ [OrderController] GetStationTypesFromUrl() - Tipos mapeados: {string.Join(", ", stationTypes)}");
-                return stationTypes;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ [OrderController] GetStationTypesFromUrl() - Error: {ex.Message}");
-                Console.WriteLine($"🔍 [OrderController] GetStationTypesFromUrl() - StackTrace: {ex.StackTrace}");
-                return new List<string> { stationTypeFromUrl }; // Fallback al nombre original
-            }
-        }
+        // GetStationTypesFromUrl eliminado: el filtrado por tipo ahora se hace directamente
+        // en StationOrders() mediante una consulta a la tabla Stations de la base de datos,
+        // sin depender de strings hard-coded ni mappings manuales.
 
         // ✅ NUEVO: POST: Order/UpdateItemStatus - Para actualizar estado de items
         [HttpPost]

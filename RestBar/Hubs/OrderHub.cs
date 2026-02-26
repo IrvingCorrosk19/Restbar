@@ -5,6 +5,37 @@ namespace RestBar.Hubs
 {
     public class OrderHub : Hub
     {
+        // ─── GRUPOS POR TIPO DE ESTACIÓN ────────────────────────────────────────
+        // Cada vista de estación se une a "station_{stationType}" (ej. "station_kitchen", "station_bar").
+        // Esto permite notificaciones dirigidas sin que la cocina reciba eventos del bar y viceversa.
+        // Las vistas también siguen unidas a "kitchen" para recibir eventos de difusión general.
+
+        /// <summary>
+        /// Une la conexión al grupo específico de la estación indicada.
+        /// El nombre del grupo sigue el patrón: station_{stationType} (minúsculas).
+        /// </summary>
+        public async Task JoinStationTypeGroup(string stationType)
+        {
+            if (string.IsNullOrWhiteSpace(stationType))
+                return;
+
+            var groupName = $"station_{stationType.ToLower().Trim()}";
+            await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
+        }
+
+        /// <summary>
+        /// Saca la conexión del grupo específico de la estación indicada.
+        /// </summary>
+        public async Task LeaveStationTypeGroup(string stationType)
+        {
+            if (string.IsNullOrWhiteSpace(stationType))
+                return;
+
+            var groupName = $"station_{stationType.ToLower().Trim()}";
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
+        }
+
+
         public async Task JoinOrderGroup(string orderId)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, $"order_{orderId}");
@@ -37,18 +68,7 @@ namespace RestBar.Hubs
 
         public async Task JoinKitchenGroup()
         {
-            try
-            {
-                Console.WriteLine($"🔍 [OrderHub] JoinKitchenGroup() - ConnectionId: {Context.ConnectionId}");
-                await Groups.AddToGroupAsync(Context.ConnectionId, "kitchen");
-                Console.WriteLine($"✅ [OrderHub] JoinKitchenGroup() - Usuario unido al grupo 'kitchen' exitosamente");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ [OrderHub] JoinKitchenGroup() - Error: {ex.Message}");
-                Console.WriteLine($"🔍 [OrderHub] JoinKitchenGroup() - StackTrace: {ex.StackTrace}");
-                throw;
-            }
+            await Groups.AddToGroupAsync(Context.ConnectionId, "kitchen");
         }
 
         public async Task LeaveKitchenGroup()
@@ -56,25 +76,9 @@ namespace RestBar.Hubs
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, "kitchen");
         }
 
-        // ✅ NUEVO: Método para unirse al grupo de órdenes
         public async Task JoinOrdersGroup()
         {
-            try
-            {
-                Console.WriteLine($"🔍 [OrderHub] JoinOrdersGroup() - INICIANDO - ConnectionId: {Context.ConnectionId}");
-                Console.WriteLine($"📋 [OrderHub] JoinOrdersGroup() - Agregando conexión al grupo 'orders'");
-                
-                await Groups.AddToGroupAsync(Context.ConnectionId, "orders");
-                
-                Console.WriteLine($"✅ [OrderHub] JoinOrdersGroup() - COMPLETADO - Usuario unido al grupo 'orders' exitosamente");
-                Console.WriteLine($"📊 [OrderHub] JoinOrdersGroup() - ConnectionId: {Context.ConnectionId} ahora en grupo 'orders'");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ [OrderHub] JoinOrdersGroup() - ERROR: {ex.Message}");
-                Console.WriteLine($"🔍 [OrderHub] JoinOrdersGroup() - StackTrace: {ex.StackTrace}");
-                throw;
-            }
+            await Groups.AddToGroupAsync(Context.ConnectionId, "orders");
         }
 
         public async Task LeaveOrdersGroup()

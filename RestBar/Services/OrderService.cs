@@ -11,18 +11,22 @@ namespace RestBar.Services
     {
         private readonly IProductService _productService;
         private readonly IOrderHubService _orderHubService;
-
-
+        private readonly IUserAssignmentService _userAssignmentService;
+        private readonly ILogger<OrderService> _logger;
 
         public OrderService(
-            RestBarContext context, 
-            IProductService productService, 
-            IOrderHubService orderHubService, 
-            IHttpContextAccessor httpContextAccessor) 
+            RestBarContext context,
+            IProductService productService,
+            IOrderHubService orderHubService,
+            IUserAssignmentService userAssignmentService,
+            IHttpContextAccessor httpContextAccessor,
+            ILogger<OrderService> logger)
             : base(context, httpContextAccessor)
         {
             _productService = productService;
             _orderHubService = orderHubService;
+            _userAssignmentService = userAssignmentService;
+            _logger = logger;
         }
 
 
@@ -303,130 +307,89 @@ namespace RestBar.Services
         {
             try
             {
-                Console.WriteLine("🔍 [OrderService] GetKitchenOrdersAsync() - Iniciando obtención de órdenes...");
-                
-                // Traer pedidos abiertos con sus items y productos y mesa
+                _logger.LogInformation("[KDS] GetKitchenOrdersAsync - iniciando consulta de órdenes activas");
+
+                // ─── Consulta principal ──────────────────────────────────────────────────
+                // AsNoTracking: lectura pura, sin overhead de change-tracking (crítico en concurrencia)
                 var orders = await _context.Orders
-                    .Where(o => o.Status == OrderStatus.SentToKitchen || 
-                               o.Status == OrderStatus.Preparing || 
-                               o.Status == OrderStatus.Ready)
+                    .AsNoTracking()
+                    .Where(o => o.Status == OrderStatus.SentToKitchen ||
+                               o.Status == OrderStatus.Preparing      ||
+                               o.Status == OrderStatus.Ready          ||
+                               o.Status == OrderStatus.ReadyToPay)
                     .Include(o => o.Table)
                     .Include(o => o.OrderItems)
                         .ThenInclude(oi => oi.Product)
-                            .ThenInclude(p => p.Station)
+                    .Include(o => o.OrderItems)
+                        .ThenInclude(oi => oi.PreparedByStation)
                     .ToListAsync();
 
-                Console.WriteLine($"📊 [OrderService] GetKitchenOrdersAsync() - Total órdenes encontradas: {orders.Count}");
-                
-                if (orders.Any())
-                {
-                    Console.WriteLine($"📋 [OrderService] GetKitchenOrdersAsync() - Detalle de órdenes encontradas:");
-                    foreach (var order in orders)
-                    {
-                        Console.WriteLine($"  🍽️ Orden ID: {order.Id}, Mesa: {order.Table?.TableNumber ?? "Sin mesa"}, Estado: {order.Status}, Items: {order.OrderItems.Count}");
-                        foreach (var item in order.OrderItems)
-                        {
-                            Console.WriteLine($"    📦 Item: {item.Product?.Name ?? "Sin nombre"}, Cantidad: {item.Quantity}, Estación: {item.Product?.Station?.Name ?? "Sin estación"}, Estado: {item.Status}");
-                        }
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"⚠️ [OrderService] GetKitchenOrdersAsync() - No se encontraron órdenes");
-                }
+                _logger.LogInformation("[KDS] GetKitchenOrdersAsync - {Count} órdenes activas encontradas", orders.Count);
 
-                // ✅ CORREGIDO: Incluir tanto cocina como bar
-                var kitchenOrders = orders
-                    .Select(order => {
-                        Console.WriteLine($"🎯 [OrderService] GetKitchenOrdersAsync() - Procesando orden: {order.Id}");
-                        
-                        // ✅ CAMBIADO: Incluir items de cocina Y bar
-                        var allKitchenItems = order.OrderItems
-                            .Where(oi => oi.Product != null && oi.Product.Station != null && 
-                                       (oi.Product.Station.Type.ToLower() == "cocina" || 
-                                        oi.Product.Station.Type.ToLower() == "bar"))
+                // ─── Mapeo a ViewModel ───────────────────────────────────────────────────
+                // ELIMINADO: filtro hard-coded a "cocina/kitchen/bar".
+                // Ahora se incluyen ítems de CUALQUIER tipo de estación y también los
+                // ítems sin estación asignada (PreparedByStationId == null).
+                // El filtro por estación se realiza en StationOrders() usando los IDs
+                // reales de estación obtenidos de la base de datos.
+                var result = orders
+                    .Select(order =>
+                    {
+                        // Solo ítems con producto válido y no cancelados
+                        var activeItems = order.OrderItems
+                            .Where(oi => oi.Product != null
+                                         && oi.Status != OrderItemStatus.Cancelled)
                             .ToList();
-                        
-                        Console.WriteLine($"  📦 [OrderService] GetKitchenOrdersAsync() - Items de cocina/bar en esta orden: {allKitchenItems.Count}");
-                        foreach (var item in allKitchenItems)
+
+                        // Ítems que aún no están listos (pendientes o en preparación)
+                        var itemsToShow = activeItems
+                            .Where(oi => oi.Status != OrderItemStatus.Ready)
+                            .Select(oi => new KitchenOrderItemViewModel
+                            {
+                                ItemId        = oi.Id,
+                                ProductName   = oi.Product!.Name,
+                                Quantity      = oi.Quantity,
+                                Notes         = oi.Notes,
+                                Status        = oi.Status.ToString(),
+                                KitchenStatus = oi.KitchenStatus.ToString(),
+                                // StationId permite filtrar por ID real (sin strings mágicos)
+                                StationId     = oi.PreparedByStationId,
+                                // StationName para compatibilidad con vista existente;
+                                // string.Empty cuando no hay estación (sin fallback a "kitchen")
+                                StationName   = oi.PreparedByStation?.Type ?? string.Empty
+                            })
+                            .ToList();
+
+                        if (activeItems.Count == 0)
+                            _logger.LogWarning("[KDS] Orden {OrderId} no tiene ítems activos", order.Id);
+
+                        return new KitchenOrderViewModel
                         {
-                            Console.WriteLine($"    🍽️ {item.Product.Name} - Estación: {item.Product.Station.Type} - Estado: {item.Status}");
-                        }
-                        
-                        var pendingItems = allKitchenItems
-                            .Where(oi => oi.Status == OrderItemStatus.Pending)
-                            .ToList();
-                        
-                        var readyItems = allKitchenItems
-                            .Where(oi => oi.Status == OrderItemStatus.Ready)
-                            .ToList();
-                        
-                        var preparingItems = allKitchenItems
-                            .Where(oi => oi.Status == OrderItemStatus.Preparing)
-                            .ToList();
-                        
-                        var result = new KitchenOrderViewModel
-                        {
-                            OrderId = order.Id,
-                            TableNumber = order.Table != null ? order.Table.TableNumber : "Delivery",
-                            OpenedAt = order.OpenedAt,
-                            // ✅ CAMBIADO: Mostrar items pendientes de cocina Y bar
-                            Items = pendingItems
-                                .Select(oi => new KitchenOrderItemViewModel
-                                {
-                                    ItemId = oi.Id,
-                                    ProductName = oi.Product.Name,
-                                    Quantity = oi.Quantity,
-                                    Notes = oi.Notes,
-                                    Status = oi.Status.ToString(),
-                                    KitchenStatus = oi.KitchenStatus.ToString(),
-                                    StationName = oi.Product.Station.Type // ✅ AGREGADO: Nombre de la estación
-                                }).ToList(),
-                            // Información adicional sobre el estado de la orden
-                            TotalItems = allKitchenItems.Count,
-                            PendingItems = pendingItems.Count,
-                            ReadyItems = readyItems.Count,
-                            PreparingItems = preparingItems.Count,
-                            Notes = order.OrderItems
+                            OrderId        = order.Id,
+                            TableNumber    = order.Table?.TableNumber ?? "Delivery",
+                            OpenedAt       = order.OpenedAt,
+                            Items          = itemsToShow,
+                            TotalItems     = activeItems.Count,
+                            PendingItems   = activeItems.Count(i => i.Status == OrderItemStatus.Pending),
+                            ReadyItems     = activeItems.Count(i => i.Status == OrderItemStatus.Ready),
+                            PreparingItems = activeItems.Count(i => i.Status == OrderItemStatus.Preparing),
+                            Notes          = activeItems
                                 .Where(oi => !string.IsNullOrWhiteSpace(oi.Notes))
                                 .Select(oi => oi.Notes)
                                 .FirstOrDefault()
                         };
-                        
-                        Console.WriteLine($"  ✅ [OrderService] GetKitchenOrdersAsync() - Orden procesada - Items pendientes: {result.Items.Count}");
-                        return result;
                     })
-                    .Where(k => k.Items.Any()) // Solo mostrar órdenes con items pendientes
+                    .Where(k => k.Items.Any())                // Sólo órdenes con ítems pendientes
                     .OrderByDescending(k => k.OpenedAt)
                     .ToList();
 
-                Console.WriteLine($"📊 [OrderService] GetKitchenOrdersAsync() - Órdenes finales con items pendientes: {kitchenOrders.Count}");
-                
-                if (kitchenOrders.Any())
-                {
-                    Console.WriteLine($"📋 [OrderService] GetKitchenOrdersAsync() - Detalle de órdenes finales:");
-                    foreach (var order in kitchenOrders)
-                    {
-                        Console.WriteLine($"  🍽️ Orden ID: {order.OrderId}, Mesa: {order.TableNumber}, Items pendientes: {order.Items.Count}");
-                        foreach (var item in order.Items)
-                        {
-                            Console.WriteLine($"    📦 {item.ProductName} - Estación: {item.StationName} - Estado: {item.Status}");
-                        }
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"⚠️ [OrderService] GetKitchenOrdersAsync() - No hay órdenes con items pendientes");
-                }
-
-                Console.WriteLine($"✅ [OrderService] GetKitchenOrdersAsync() - Completado exitosamente");
-                return kitchenOrders;
+                _logger.LogInformation("[KDS] GetKitchenOrdersAsync - {Count} órdenes con ítems pendientes retornadas", result.Count);
+                return result;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ [OrderService] GetKitchenOrdersAsync() - Error: {ex.Message}");
-                Console.WriteLine($"🔍 [OrderService] GetKitchenOrdersAsync() - StackTrace: {ex.StackTrace}");
-                throw;
+                _logger.LogError(ex, "[KDS] GetKitchenOrdersAsync - error inesperado");
+                throw; // Re-lanza para que el caller maneje con lista vacía si corresponde
             }
         }
 
@@ -1664,28 +1627,87 @@ namespace RestBar.Services
                         Console.WriteLine($"✅ [OrderService] Stock disponible confirmado para {product.Name}");
                     }
 
-                    // ✅ NUEVO: Encontrar la mejor estación basada en stock disponible
-                    var bestStationId = await _productService.FindBestStationForProductAsync(
-                        product.Id, 
-                        itemDto.Quantity, 
-                        order.BranchId);
+                    // ✅ NUEVO: Prioridad de asignación de estación:
+                    // 1. Si el admin seleccionó una estación manualmente (SelectedStationId), usarla
+                    // 2. Si el salonero tiene estación asignada, usarla
+                    // 3. Si no, usar la lógica del producto (mejor estación con stock o estación predeterminada)
+                    Guid? assignedStationId = null;
                     
-                    // Si no se encontró estación con stock suficiente y no se permite stock negativo, lanzar error
-                    if (!bestStationId.HasValue && product.TrackInventory && !product.AllowNegativeStock)
+                    // Prioridad 1: Estación seleccionada manualmente por admin
+                    if (dto.SelectedStationId.HasValue)
                     {
-                        Console.WriteLine($"❌ [OrderService] No hay estación disponible con stock suficiente para {product.Name}");
-                        throw new InvalidOperationException($"No hay estación disponible con stock suficiente para {product.Name}");
-                    }
-
-                    // Usar estación encontrada o estación predeterminada del producto
-                    var assignedStationId = bestStationId ?? product.StationId;
-                    if (assignedStationId.HasValue)
-                    {
-                        Console.WriteLine($"✅ [OrderService] Estación asignada para {product.Name}: {assignedStationId.Value}");
+                        assignedStationId = dto.SelectedStationId.Value;
+                        Console.WriteLine($"✅ [OrderService] Usando estación seleccionada manualmente por admin para {product.Name}: {assignedStationId.Value}");
                     }
                     else
                     {
-                        Console.WriteLine($"⚠️ [OrderService] No se asignó estación para {product.Name}, usará la estación predeterminada del producto");
+                        // Prioridad 2: Obtener la estación del salonero (waiter) desde UserAssignment
+                        Guid? waiterStationId = null;
+                        if (userId.HasValue)
+                        {
+                            var userAssignment = await _userAssignmentService.GetActiveByUserIdAsync(userId.Value);
+                            if (userAssignment != null && userAssignment.StationId.HasValue)
+                            {
+                                waiterStationId = userAssignment.StationId.Value;
+                                Console.WriteLine($"✅ [OrderService] Estación del salonero encontrada: {waiterStationId.Value}");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"⚠️ [OrderService] El salonero no tiene una estación asignada en UserAssignment");
+                            }
+                        }
+
+                        if (waiterStationId.HasValue)
+                        {
+                            // Usar la estación del salonero
+                            assignedStationId = waiterStationId;
+                            Console.WriteLine($"✅ [OrderService] Usando estación del salonero para {product.Name}: {assignedStationId.Value}");
+                            
+                            // Validar que el producto pueda ser preparado en esta estación
+                            if (product.TrackInventory)
+                            {
+                                // Verificar stock en la estación del salonero
+                                var stationStock = await _productService.GetStockInStationAsync(
+                                    product.Id, 
+                                    assignedStationId.Value, 
+                                    order.BranchId);
+                                
+                                if (stationStock < itemDto.Quantity && !product.AllowNegativeStock)
+                                {
+                                    Console.WriteLine($"⚠️ [OrderService] Stock insuficiente en la estación del salonero. Stock disponible: {stationStock}, Requerido: {itemDto.Quantity}");
+                                    // No lanzar error, continuar con la asignación pero notificar
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // Prioridad 3: Si el salonero no tiene estación asignada, usar la lógica anterior del producto
+                            Console.WriteLine($"⚠️ [OrderService] Salonero sin estación asignada, usando lógica de producto");
+                            
+                            // ✅ NUEVO: Encontrar la mejor estación basada en stock disponible
+                            var bestStationId = await _productService.FindBestStationForProductAsync(
+                                product.Id, 
+                                itemDto.Quantity, 
+                                order.BranchId);
+                            
+                            // Si no se encontró estación con stock suficiente y no se permite stock negativo, lanzar error
+                            if (!bestStationId.HasValue && product.TrackInventory && !product.AllowNegativeStock)
+                            {
+                                Console.WriteLine($"❌ [OrderService] No hay estación disponible con stock suficiente para {product.Name}");
+                                throw new InvalidOperationException($"No hay estación disponible con stock suficiente para {product.Name}");
+                            }
+
+                            // Usar estación encontrada (ya no hay estación predeterminada en producto)
+                            assignedStationId = bestStationId;
+                            if (assignedStationId.HasValue)
+                            {
+                                Console.WriteLine($"✅ [OrderService] Estación asignada para {product.Name}: {assignedStationId.Value}");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"⚠️ [OrderService] No se asignó estación para {product.Name}, usará la estación predeterminada del producto");
+                            }
+                        }
                     }
 
                     // Crear un OrderItem individual para cada item del DTO
@@ -1830,46 +1852,56 @@ namespace RestBar.Services
         // NUEVO: Enviar a cocina solo los ítems Pending, marcarlos como Sent y notificar
         public async Task<List<OrderItem>> SendPendingItemsToKitchenAsync(Guid orderId)
         {
-            Console.WriteLine($"[OrderService] SendPendingItemsToKitchenAsync iniciado - orderId: {orderId}");
-            
-            var order = await _context.Orders.Include(o => o.OrderItems).FirstOrDefaultAsync(o => o.Id == orderId);
-            if (order == null) throw new Exception("Orden no encontrada");
-            
-            Console.WriteLine($"[OrderService] Orden encontrada - Status actual: {order.Status}");
-            
-            // Asegurar que la orden esté en estado SentToKitchen
+            _logger.LogInformation("[KDS] SendPendingItemsToKitchenAsync - orderId: {OrderId}", orderId);
+
+            var order = await _context.Orders
+                .Include(o => o.OrderItems)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            if (order == null)
+                throw new KeyNotFoundException($"Orden {orderId} no encontrada en SendPendingItemsToKitchenAsync");
+
+            // Garantizar estado correcto en la orden ANTES de persistir
             if (order.Status != OrderStatus.SentToKitchen)
             {
-                Console.WriteLine($"[OrderService] Cambiando estado de orden de {order.Status} a SentToKitchen");
+                _logger.LogInformation("[KDS] Orden {OrderId} en estado {From} → cambiando a SentToKitchen", orderId, order.Status);
                 order.Status = OrderStatus.SentToKitchen;
             }
-            
-            var pendingItems = order.OrderItems.Where(oi => oi.KitchenStatus == KitchenStatus.Pending).ToList();
-            Console.WriteLine($"[OrderService] Items pendientes encontrados: {pendingItems.Count}");
-            
+
+            // Seleccionar sólo los ítems que aún no fueron enviados a cocina
+            var pendingItems = order.OrderItems
+                .Where(oi => oi.KitchenStatus == KitchenStatus.Pending)
+                .ToList();
+
+            _logger.LogInformation("[KDS] {Count} ítems con KitchenStatus=Pending encontrados en orden {OrderId}", pendingItems.Count, orderId);
+
             foreach (var item in pendingItems)
             {
+                // Solo KitchenStatus cambia a Sent.
+                // OrderItemStatus permanece en Pending hasta que la estación
+                // confirme inicio de preparación (MarkItemAsPreparingAsync).
                 item.KitchenStatus = KitchenStatus.Sent;
-                item.SentAt = DateTime.UtcNow; // ✅ Fecha específica de envío a cocina
-                Console.WriteLine($"[OrderService] Item {item.Product?.Name} marcado como enviado a cocina");
+                item.SentAt        = DateTime.UtcNow;
             }
-            
+
+            // ─── PERSISTIR ANTES DE NOTIFICAR ──────────────────────────────────────
+            // Garantía: el estado en DB refleja la realidad antes de que el cliente
+            // reciba la notificación SignalR (elimina "estados fantasma" en la UI).
             await _context.SaveChangesAsync();
-            Console.WriteLine($"[OrderService] Cambios guardados en base de datos");
-            
-            // Notificar a cocina vía SignalR
+            _logger.LogInformation("[KDS] Estado persistido en DB para {Count} ítems de orden {OrderId}", pendingItems.Count, orderId);
+
+            // ─── NOTIFICACIONES SignalR ─────────────────────────────────────────────
+            // Notificamos el estado REAL persistido (item.Status = Pending),
+            // NO un estado futuro hipotético como Preparing.
             foreach (var item in pendingItems)
             {
-                await _orderHubService.NotifyOrderItemStatusChanged(order.Id, item.Id, OrderItemStatus.Preparing);
+                await _orderHubService.NotifyOrderItemStatusChanged(order.Id, item.Id, item.Status);
             }
-            
-            // Notificar cambio de estado de la orden
+
             await _orderHubService.NotifyOrderStatusChanged(order.Id, order.Status);
             await _orderHubService.NotifyKitchenUpdate();
-            
-            Console.WriteLine($"[OrderService] Notificaciones SignalR enviadas");
-            Console.WriteLine($"[OrderService] SendPendingItemsToKitchenAsync completado - Orden en estado: {order.Status}");
-            
+
+            _logger.LogInformation("[KDS] SendPendingItemsToKitchenAsync completado - orden {OrderId} en {Status}", orderId, order.Status);
             return pendingItems;
         }
 

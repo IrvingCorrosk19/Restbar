@@ -15,7 +15,12 @@ namespace RestBar.Services
         Task NotifyKitchenUpdate();
         Task NotifyPaymentProcessed(Guid orderId, decimal amount, string method, bool isFullyPaid);
         
-        // ✅ NUEVO: Métodos para notificar cambios de stock
+        // Notificación dirigida a una estación específica por tipo (ej. "kitchen", "bar")
+        // Envía evento "KitchenUpdate" al grupo "station_{stationType}".
+        // Usar cuando el tipo de estación del ítem actualizado sea conocido.
+        Task NotifyStationUpdate(string stationType);
+
+        // Métodos para notificar cambios de stock
         Task NotifyStockUpdated(Guid productId, string productName, decimal newStock);
         Task NotifyStockReduced(Guid productId, string productName, decimal oldStock, decimal newStock, decimal quantityReduced);
     }

@@ -230,13 +230,18 @@
                 });
 
                 await window.signalRConnection.start();
-                console.log('✅ [StationOrders] SignalR conectado exitosamente');
-                console.log('🔗 [StationOrders] Connection ID:', window.signalRConnection.connectionId);
+                console.log('✅ [StationOrders] SignalR conectado. ConnectionId:', window.signalRConnection.connectionId);
 
-                // Unirse al grupo de cocina
-                console.log('🔍 [StationOrders] Uniéndose al grupo de cocina...');
+                // Unirse al grupo legacy "kitchen" — recibe eventos de difusión general (NewOrder, OrderCompleted, etc.)
                 await window.signalRConnection.invoke("JoinKitchenGroup");
-                console.log('✅ [StationOrders] Unido al grupo de cocina exitosamente');
+                console.log('✅ [StationOrders] Unido al grupo "kitchen" (difusión general)');
+
+                // Unirse al grupo específico de esta estación — recibe actualizaciones dirigidas (solo a este tipo)
+                // Grupo: "station_kitchen", "station_bar", etc.
+                if (stationType) {
+                    await window.signalRConnection.invoke("JoinStationTypeGroup", stationType);
+                    console.log(`✅ [StationOrders] Unido al grupo "station_${stationType}" (notificaciones dirigidas)`);
+                }
 
             } catch (error) {
                 console.error('❌ [StationOrders] Error inicializando SignalR:', error);
@@ -527,11 +532,14 @@
             initializeOrderCounters(); // ✅ NUEVO: Inicializar contadores
         });
 
-        // ✅ NUEVO: Limpiar conexión SignalR cuando se cierra la página
+        // Limpiar conexión SignalR cuando se cierra la página
         window.addEventListener('beforeunload', function() {
-            if (signalRConnection) {
-                console.log('🔌 [StationOrders] Cerrando conexión SignalR...');
-                signalRConnection.stop();
+            if (window.signalRConnection) {
+                if (stationType) {
+                    window.signalRConnection.invoke("LeaveStationTypeGroup", stationType).catch(() => {});
+                }
+                window.signalRConnection.invoke("LeaveKitchenGroup").catch(() => {});
+                window.signalRConnection.stop();
             }
         });
     </script>

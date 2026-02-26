@@ -33,7 +33,16 @@ namespace RestBar.ViewModel
         public string? Notes { get; set; }
         public string Status { get; set; } = "Pending";
         public string KitchenStatus { get; set; } = "Pending";
+        /// <summary>
+        /// Tipo de estación almacenado en Station.Type (ej. "kitchen", "bar").
+        /// Vacío cuando el ítem no tiene estación asignada (PreparedByStationId == null).
+        /// </summary>
         public string StationName { get; set; } = string.Empty;
+        /// <summary>
+        /// FK hacia la estación real en DB. Null = producto sin estación configurada.
+        /// Usado por StationOrders() para filtrar por ID en lugar de strings mágicos.
+        /// </summary>
+        public Guid? StationId { get; set; }
         public bool IsReady => Status == "Ready" || KitchenStatus == "Ready";
     }
 } 
