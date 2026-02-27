@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using RestBar.Helpers;
 using RestBar.Interfaces;
 using RestBar.Models;
 using System;
@@ -8,80 +10,136 @@ using System.Threading.Tasks;
 
 namespace RestBar.Services
 {
+    /// <summary>
+    /// Servicio para gestionar asignaciones de stock de productos a estaciones
+    /// </summary>
     public class ProductStockAssignmentService : BaseTrackingService, IProductStockAssignmentService
     {
-        public ProductStockAssignmentService(RestBarContext context, IHttpContextAccessor httpContextAccessor) 
+        private readonly ILogger<ProductStockAssignmentService>? _logger;
+
+        public ProductStockAssignmentService(
+            RestBarContext context, 
+            IHttpContextAccessor httpContextAccessor,
+            ILogger<ProductStockAssignmentService>? logger = null) 
             : base(context, httpContextAccessor)
         {
+            _logger = logger;
         }
 
+        /// <summary>
+        /// Obtiene todas las asignaciones de stock, opcionalmente filtradas por sucursal
+        /// </summary>
         public async Task<IEnumerable<ProductStockAssignment>> GetAllAsync(Guid? branchId = null)
         {
             try
             {
-                Console.WriteLine($"🔍 [ProductStockAssignmentService] GetAllAsync() - BranchId: {branchId}");
+                LoggingHelper.LogInfo(_logger, nameof(ProductStockAssignmentService), nameof(GetAllAsync), 
+                    $"BranchId: {branchId?.ToString() ?? "null"}");
                 
                 var query = _context.ProductStockAssignments
                     .Include(psa => psa.Product)
                     .Include(psa => psa.Station)
-                    .Include(psa => psa.Company)
-                    .Include(psa => psa.Branch)
                     .AsQueryable();
+
+                // Contar total antes del filtro
+                var totalCount = await query.CountAsync();
+                LoggingHelper.LogData(_logger, nameof(ProductStockAssignmentService), nameof(GetAllAsync), 
+                    $"Total asignaciones (sin filtro): {totalCount}");
 
                 if (branchId.HasValue)
                 {
                     query = query.Where(psa => psa.BranchId == branchId.Value);
+                    var filteredCount = await query.CountAsync();
+                    LoggingHelper.LogData(_logger, nameof(ProductStockAssignmentService), nameof(GetAllAsync), 
+                        $"Total asignaciones (con filtro BranchId={branchId}): {filteredCount}");
                 }
 
-                var assignments = await query.ToListAsync();
-                Console.WriteLine($"✅ [ProductStockAssignmentService] GetAllAsync() - Total asignaciones: {assignments.Count}");
+                var assignments = await query
+                    .OrderBy(psa => psa.Product != null ? psa.Product.Name : "")
+                    .ThenBy(psa => psa.Station != null ? psa.Station.Name : "")
+                    .ToListAsync();
+                
+                LoggingHelper.LogSuccess(_logger, nameof(ProductStockAssignmentService), nameof(GetAllAsync), 
+                    $"Total asignaciones retornadas: {assignments.Count}");
+                
+                // Log de detalles si hay asignaciones
+                if (assignments.Count > 0)
+                {
+                    foreach (var assignment in assignments.Take(3))
+                    {
+                        LoggingHelper.LogData(_logger, nameof(ProductStockAssignmentService), nameof(GetAllAsync), 
+                            $"ID: {assignment.Id}, Producto: {assignment.Product?.Name ?? "N/A"}, Estación: {assignment.Station?.Name ?? "N/A"}, Stock: {assignment.Stock}");
+                    }
+                }
+                else
+                {
+                    LoggingHelper.LogWarning(_logger, nameof(ProductStockAssignmentService), nameof(GetAllAsync), 
+                        "No hay asignaciones para retornar");
+                }
+                
                 return assignments;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ [ProductStockAssignmentService] GetAllAsync() - Error: {ex.Message}");
-                Console.WriteLine($"🔍 [ProductStockAssignmentService] GetAllAsync() - StackTrace: {ex.StackTrace}");
+                LoggingHelper.LogError(_logger, nameof(ProductStockAssignmentService), nameof(GetAllAsync), ex);
                 throw;
             }
         }
 
+        /// <summary>
+        /// Obtiene una asignación por su ID
+        /// </summary>
         public async Task<ProductStockAssignment?> GetByIdAsync(Guid id)
         {
             try
             {
-                Console.WriteLine($"🔍 [ProductStockAssignmentService] GetByIdAsync() - Id: {id}");
+                if (id == Guid.Empty)
+                {
+                    throw new ArgumentException("El ID no puede estar vacío", nameof(id));
+                }
+
+                LoggingHelper.LogInfo(_logger, nameof(ProductStockAssignmentService), nameof(GetByIdAsync), $"Id: {id}");
                 
                 var assignment = await _context.ProductStockAssignments
                     .Include(psa => psa.Product)
                     .Include(psa => psa.Station)
-                    .Include(psa => psa.Company)
-                    .Include(psa => psa.Branch)
+                    .AsNoTracking() // Optimización: solo lectura
                     .FirstOrDefaultAsync(psa => psa.Id == id);
 
                 if (assignment == null)
                 {
-                    Console.WriteLine($"⚠️ [ProductStockAssignmentService] GetByIdAsync() - Asignación no encontrada");
+                    LoggingHelper.LogWarning(_logger, nameof(ProductStockAssignmentService), nameof(GetByIdAsync), 
+                        "Asignación no encontrada");
                 }
                 else
                 {
-                    Console.WriteLine($"✅ [ProductStockAssignmentService] GetByIdAsync() - Asignación encontrada");
+                    LoggingHelper.LogSuccess(_logger, nameof(ProductStockAssignmentService), nameof(GetByIdAsync), 
+                        "Asignación encontrada");
                 }
 
                 return assignment;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ [ProductStockAssignmentService] GetByIdAsync() - Error: {ex.Message}");
-                Console.WriteLine($"🔍 [ProductStockAssignmentService] GetByIdAsync() - StackTrace: {ex.StackTrace}");
+                LoggingHelper.LogError(_logger, nameof(ProductStockAssignmentService), nameof(GetByIdAsync), ex);
                 throw;
             }
         }
 
+        /// <summary>
+        /// Obtiene asignaciones por ID de producto
+        /// </summary>
         public async Task<IEnumerable<ProductStockAssignment>> GetByProductIdAsync(Guid productId, Guid? branchId = null)
         {
             try
             {
-                Console.WriteLine($"🔍 [ProductStockAssignmentService] GetByProductIdAsync() - ProductId: {productId}, BranchId: {branchId}");
+                if (productId == Guid.Empty)
+                {
+                    throw new ArgumentException("ProductId no puede estar vacío", nameof(productId));
+                }
+
+                LoggingHelper.LogParams(_logger, nameof(ProductStockAssignmentService), nameof(GetByProductIdAsync), 
+                    $"ProductId: {productId}, BranchId: {branchId?.ToString() ?? "null"}");
                 
                 var query = _context.ProductStockAssignments
                     .Include(psa => psa.Product)
@@ -94,22 +152,31 @@ namespace RestBar.Services
                 }
 
                 var assignments = await query.ToListAsync();
-                Console.WriteLine($"✅ [ProductStockAssignmentService] GetByProductIdAsync() - Total asignaciones: {assignments.Count}");
+                LoggingHelper.LogSuccess(_logger, nameof(ProductStockAssignmentService), nameof(GetByProductIdAsync), 
+                    $"Total asignaciones: {assignments.Count}");
                 return assignments;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ [ProductStockAssignmentService] GetByProductIdAsync() - Error: {ex.Message}");
-                Console.WriteLine($"🔍 [ProductStockAssignmentService] GetByProductIdAsync() - StackTrace: {ex.StackTrace}");
+                LoggingHelper.LogError(_logger, nameof(ProductStockAssignmentService), nameof(GetByProductIdAsync), ex);
                 throw;
             }
         }
 
+        /// <summary>
+        /// Obtiene asignaciones por ID de estación
+        /// </summary>
         public async Task<IEnumerable<ProductStockAssignment>> GetByStationIdAsync(Guid stationId, Guid? branchId = null)
         {
             try
             {
-                Console.WriteLine($"🔍 [ProductStockAssignmentService] GetByStationIdAsync() - StationId: {stationId}, BranchId: {branchId}");
+                if (stationId == Guid.Empty)
+                {
+                    throw new ArgumentException("StationId no puede estar vacío", nameof(stationId));
+                }
+
+                LoggingHelper.LogParams(_logger, nameof(ProductStockAssignmentService), nameof(GetByStationIdAsync), 
+                    $"StationId: {stationId}, BranchId: {branchId?.ToString() ?? "null"}");
                 
                 var query = _context.ProductStockAssignments
                     .Include(psa => psa.Product)
@@ -122,22 +189,47 @@ namespace RestBar.Services
                 }
 
                 var assignments = await query.ToListAsync();
-                Console.WriteLine($"✅ [ProductStockAssignmentService] GetByStationIdAsync() - Total asignaciones: {assignments.Count}");
+                LoggingHelper.LogSuccess(_logger, nameof(ProductStockAssignmentService), nameof(GetByStationIdAsync), 
+                    $"Total asignaciones: {assignments.Count}");
                 return assignments;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ [ProductStockAssignmentService] GetByStationIdAsync() - Error: {ex.Message}");
-                Console.WriteLine($"🔍 [ProductStockAssignmentService] GetByStationIdAsync() - StackTrace: {ex.StackTrace}");
+                LoggingHelper.LogError(_logger, nameof(ProductStockAssignmentService), nameof(GetByStationIdAsync), ex);
                 throw;
             }
         }
 
+        /// <summary>
+        /// Crea una nueva asignación de stock con validaciones
+        /// </summary>
         public async Task<ProductStockAssignment> CreateAsync(ProductStockAssignment assignment)
         {
             try
             {
-                Console.WriteLine($"🔍 [ProductStockAssignmentService] CreateAsync() - ProductId: {assignment.ProductId}, StationId: {assignment.StationId}, Stock: {assignment.Stock}");
+                // Validaciones de entrada
+                if (assignment == null)
+                {
+                    throw new ArgumentNullException(nameof(assignment), "La asignación no puede ser nula");
+                }
+
+                if (assignment.ProductId == Guid.Empty)
+                {
+                    throw new ArgumentException("ProductId es requerido", nameof(assignment));
+                }
+
+                if (assignment.StationId == Guid.Empty)
+                {
+                    throw new ArgumentException("StationId es requerido", nameof(assignment));
+                }
+
+                if (assignment.Stock < 0)
+                {
+                    throw new ArgumentException("El stock no puede ser negativo", nameof(assignment));
+                }
+
+                LoggingHelper.LogParams(_logger, nameof(ProductStockAssignmentService), nameof(CreateAsync), 
+                    $"ProductId: {assignment.ProductId}, StationId: {assignment.StationId}, Stock: {assignment.Stock}");
                 
                 // Obtener usuario actual para CompanyId y BranchId
                 var userIdClaim = _httpContextAccessor?.HttpContext?.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
@@ -151,7 +243,8 @@ namespace RestBar.Services
                     {
                         assignment.CompanyId = user.Branch.CompanyId;
                         assignment.BranchId = user.BranchId;
-                        Console.WriteLine($"✅ [ProductStockAssignmentService] CreateAsync() - Asignando CompanyId: {assignment.CompanyId}, BranchId: {assignment.BranchId}");
+                        LoggingHelper.LogSuccess(_logger, nameof(ProductStockAssignmentService), nameof(CreateAsync), 
+                            $"Asignando CompanyId: {assignment.CompanyId}, BranchId: {assignment.BranchId}");
                     }
                 }
 
@@ -169,7 +262,8 @@ namespace RestBar.Services
 
                 if (existing != null)
                 {
-                    Console.WriteLine($"⚠️ [ProductStockAssignmentService] CreateAsync() - Ya existe una asignación para este producto y estación");
+                    LoggingHelper.LogWarning(_logger, nameof(ProductStockAssignmentService), nameof(CreateAsync), 
+                        "Ya existe una asignación para este producto y estación");
                     throw new InvalidOperationException("Ya existe una asignación de stock para este producto en esta estación");
                 }
 
@@ -178,27 +272,46 @@ namespace RestBar.Services
                 _context.ProductStockAssignments.Add(assignment);
                 await _context.SaveChangesAsync();
 
-                Console.WriteLine($"✅ [ProductStockAssignmentService] CreateAsync() - Asignación creada exitosamente: {assignment.Id}");
+                LoggingHelper.LogSuccess(_logger, nameof(ProductStockAssignmentService), nameof(CreateAsync), 
+                    $"Asignación creada exitosamente: {assignment.Id}");
                 return assignment;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ [ProductStockAssignmentService] CreateAsync() - Error: {ex.Message}");
-                Console.WriteLine($"🔍 [ProductStockAssignmentService] CreateAsync() - StackTrace: {ex.StackTrace}");
+                LoggingHelper.LogError(_logger, nameof(ProductStockAssignmentService), nameof(CreateAsync), ex);
                 throw;
             }
         }
 
+        /// <summary>
+        /// Actualiza una asignación existente con validaciones
+        /// </summary>
         public async Task<ProductStockAssignment> UpdateAsync(Guid id, ProductStockAssignment assignment)
         {
             try
             {
-                Console.WriteLine($"🔍 [ProductStockAssignmentService] UpdateAsync() - Id: {id}");
+                if (id == Guid.Empty)
+                {
+                    throw new ArgumentException("El ID no puede estar vacío", nameof(id));
+                }
+
+                if (assignment == null)
+                {
+                    throw new ArgumentNullException(nameof(assignment), "La asignación no puede ser nula");
+                }
+
+                if (assignment.Stock < 0)
+                {
+                    throw new ArgumentException("El stock no puede ser negativo", nameof(assignment));
+                }
+
+                LoggingHelper.LogInfo(_logger, nameof(ProductStockAssignmentService), nameof(UpdateAsync), $"Id: {id}");
                 
                 var existing = await _context.ProductStockAssignments.FindAsync(id);
                 if (existing == null)
                 {
-                    Console.WriteLine($"⚠️ [ProductStockAssignmentService] UpdateAsync() - Asignación no encontrada");
+                    LoggingHelper.LogWarning(_logger, nameof(ProductStockAssignmentService), nameof(UpdateAsync), 
+                        "Asignación no encontrada");
                     throw new KeyNotFoundException($"Asignación con ID {id} no encontrada");
                 }
 
@@ -214,40 +327,49 @@ namespace RestBar.Services
                 
                 await _context.SaveChangesAsync();
 
-                Console.WriteLine($"✅ [ProductStockAssignmentService] UpdateAsync() - Asignación actualizada exitosamente");
+                LoggingHelper.LogSuccess(_logger, nameof(ProductStockAssignmentService), nameof(UpdateAsync), 
+                    "Asignación actualizada exitosamente");
                 return existing;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ [ProductStockAssignmentService] UpdateAsync() - Error: {ex.Message}");
-                Console.WriteLine($"🔍 [ProductStockAssignmentService] UpdateAsync() - StackTrace: {ex.StackTrace}");
+                LoggingHelper.LogError(_logger, nameof(ProductStockAssignmentService), nameof(UpdateAsync), ex);
                 throw;
             }
         }
 
+        /// <summary>
+        /// Elimina una asignación por su ID
+        /// </summary>
         public async Task<bool> DeleteAsync(Guid id)
         {
             try
             {
-                Console.WriteLine($"🔍 [ProductStockAssignmentService] DeleteAsync() - Id: {id}");
+                if (id == Guid.Empty)
+                {
+                    throw new ArgumentException("El ID no puede estar vacío", nameof(id));
+                }
+
+                LoggingHelper.LogInfo(_logger, nameof(ProductStockAssignmentService), nameof(DeleteAsync), $"Id: {id}");
                 
                 var assignment = await _context.ProductStockAssignments.FindAsync(id);
                 if (assignment == null)
                 {
-                    Console.WriteLine($"⚠️ [ProductStockAssignmentService] DeleteAsync() - Asignación no encontrada");
+                    LoggingHelper.LogWarning(_logger, nameof(ProductStockAssignmentService), nameof(DeleteAsync), 
+                        "Asignación no encontrada");
                     return false;
                 }
 
                 _context.ProductStockAssignments.Remove(assignment);
                 await _context.SaveChangesAsync();
 
-                Console.WriteLine($"✅ [ProductStockAssignmentService] DeleteAsync() - Asignación eliminada exitosamente");
+                LoggingHelper.LogSuccess(_logger, nameof(ProductStockAssignmentService), nameof(DeleteAsync), 
+                    "Asignación eliminada exitosamente");
                 return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ [ProductStockAssignmentService] DeleteAsync() - Error: {ex.Message}");
-                Console.WriteLine($"🔍 [ProductStockAssignmentService] DeleteAsync() - StackTrace: {ex.StackTrace}");
+                LoggingHelper.LogError(_logger, nameof(ProductStockAssignmentService), nameof(DeleteAsync), ex);
                 throw;
             }
         }

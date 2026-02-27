@@ -54,7 +54,8 @@ namespace RestBar.Models
         public virtual Area? Area { get; set; }
         public virtual Company? Company { get; set; }
         public virtual Branch? Branch { get; set; }
-        public virtual ICollection<Product> Products { get; set; } = new List<Product>();
+        // ✅ ACTUALIZADO: Productos asociados mediante asignaciones de stock
+        public virtual ICollection<ProductStockAssignment> StockAssignments { get; set; } = new List<ProductStockAssignment>();
         
         // Items preparados por esta estación
         public virtual ICollection<OrderItem> PreparedItems { get; set; } = new List<OrderItem>();

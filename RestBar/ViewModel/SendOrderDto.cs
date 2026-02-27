@@ -10,6 +10,7 @@ namespace RestBar.ViewModel
         public Guid TableId { get; set; }
         public string OrderType { get; set; } = "DineIn";
         public List<OrderItemDto> Items { get; set; } = new();
+        public Guid? SelectedStationId { get; set; } // ✅ NUEVO: Estación seleccionada manualmente por admin
     }
 
     public class OrderItemDto

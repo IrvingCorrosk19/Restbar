@@ -23,22 +23,60 @@ async function loadAssignments() {
     try {
         console.log('🔍 [ProductStockAssignment] loadAssignments() - Iniciando...');
         
+        // Mostrar mensaje de carga
+        const tbody = document.getElementById('assignmentsTableBody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted"><i class="fas fa-spinner fa-spin"></i> Cargando asignaciones...</td></tr>';
+        }
+        
         const response = await fetch('/ProductStockAssignment/GetAssignments');
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status} ${response.statusText}`);
+        }
+        
         const result = await response.json();
         
         console.log('📡 [ProductStockAssignment] loadAssignments() - Respuesta recibida:', result);
         
         if (result.success) {
             const dataArray = result.data.$values || result.data;
-            assignments = dataArray || [];
+            assignments = Array.isArray(dataArray) ? dataArray : [];
+            
             console.log(`✅ [ProductStockAssignment] loadAssignments() - Total asignaciones: ${assignments.length}`);
-            renderAssignments();
+            
+            if (assignments.length === 0) {
+                console.log('⚠️ [ProductStockAssignment] loadAssignments() - No hay asignaciones registradas');
+                // Mostrar mensaje informativo, no un error
+                if (tbody) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="text-center">
+                                <div class="py-4">
+                                    <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted mb-2">No hay asignaciones de stock registradas</p>
+                                    <p class="text-muted small">Haz clic en "Nueva Asignación" para crear una asignación de stock por estación</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }
+            } else {
+                renderAssignments();
+            }
         } else {
-            console.warn('⚠️ [ProductStockAssignment] loadAssignments() - No hay datos o hay error:', result.message);
+            console.warn('⚠️ [ProductStockAssignment] loadAssignments() - Respuesta con error:', result.message);
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger"><i class="fas fa-exclamation-triangle"></i> ${result.message || 'Error al cargar asignaciones'}</td></tr>`;
+            }
             showError(result.message || 'Error al cargar asignaciones');
         }
     } catch (error) {
         console.error('❌ [ProductStockAssignment] loadAssignments() - Error:', error);
+        const tbody = document.getElementById('assignmentsTableBody');
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger"><i class="fas fa-exclamation-triangle"></i> Error al cargar asignaciones: ${error.message}</td></tr>`;
+        }
         showError('Error al cargar asignaciones: ' + error.message);
     }
 }
@@ -51,14 +89,36 @@ async function loadProducts() {
         const response = await fetch('/Product/GetProducts');
         const result = await response.json();
         
+        console.log('📡 [ProductStockAssignment] loadProducts() - Respuesta recibida:', result);
+
         if (result.success) {
-            const dataArray = result.data.$values || result.data;
-            products = dataArray || [];
+            const dataArray = result.data?.$values || result.data || [];
+
+            products = Array.isArray(dataArray)
+                ? dataArray.map((product, index) => {
+                    const normalized = {
+                        id: product.id ?? product.Id ?? product.productId ?? product.ProductId ?? null,
+                        name: product.name ?? product.Name ?? `Producto sin nombre #${index + 1}`,
+                        isActive: product.isActive ?? product.IsActive ?? false,
+                        branchId: product.branchId ?? product.BranchId ?? null,
+                        companyId: product.companyId ?? product.CompanyId ?? null
+                    };
+
+                    console.log('📋 [ProductStockAssignment] loadProducts() - Producto normalizado:', normalized);
+                    return normalized;
+                })
+                : [];
             
+            const activeProducts = products.filter(p => p.isActive);
             const createSelect = document.getElementById('createProductId');
             if (createSelect) {
                 createSelect.innerHTML = '<option value="">Seleccionar producto...</option>';
-                products.forEach(product => {
+                activeProducts.forEach(product => {
+                    if (!product.id) {
+                        console.warn('⚠️ [ProductStockAssignment] loadProducts() - Producto sin ID válido:', product);
+                        return;
+                    }
+
                     const option = document.createElement('option');
                     option.value = product.id;
                     option.textContent = product.name;
@@ -66,10 +126,17 @@ async function loadProducts() {
                 });
             }
             
-            console.log(`✅ [ProductStockAssignment] loadProducts() - Total productos: ${products.length}`);
+            console.log(`✅ [ProductStockAssignment] loadProducts() - Total productos: ${products.length} | Activos: ${activeProducts.length}`);
+
+            if (products.length === 0) {
+                console.warn('⚠️ [ProductStockAssignment] loadProducts() - No se recibieron productos del backend');
+            }
+        } else {
+            console.warn('⚠️ [ProductStockAssignment] loadProducts() - Respuesta con error:', result.message);
         }
     } catch (error) {
         console.error('❌ [ProductStockAssignment] loadProducts() - Error:', error);
+        showError('Error al cargar productos: ' + error.message);
     }
 }
 
@@ -118,47 +185,94 @@ async function loadStations() {
 // Renderizar asignaciones
 function renderAssignments(filteredAssignments = null) {
     const tbody = document.getElementById('assignmentsTableBody');
-    if (!tbody) return;
-    
-    const dataToRender = filteredAssignments || assignments;
-    tbody.innerHTML = '';
-    
-    if (dataToRender.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No hay asignaciones registradas</td></tr>';
+    if (!tbody) {
+        console.warn('⚠️ [ProductStockAssignment] renderAssignments() - tbody no encontrado');
         return;
     }
     
-    dataToRender.forEach(assignment => {
-        const row = document.createElement('tr');
-        
-        const stockClass = getStockClass(assignment.stock, assignment.minStock);
-        const stockBadge = `<span class="stock-badge ${stockClass}">${formatStock(assignment.stock)}</span>`;
-        
-        row.innerHTML = `
-            <td>${assignment.productName || 'N/A'}</td>
-            <td>${assignment.stationName || 'N/A'}</td>
-            <td>${stockBadge}</td>
-            <td>${assignment.minStock != null ? assignment.minStock : '-'}</td>
-            <td><span class="badge bg-secondary">${assignment.priority || 0}</span></td>
-            <td>
-                <span class="badge ${assignment.isActive ? 'bg-success' : 'bg-danger'}">
-                    ${assignment.isActive ? 'Activa' : 'Inactiva'}
-                </span>
-            </td>
-            <td>
-                <button class="btn btn-sm btn-primary" onclick="editAssignment('${assignment.id}')">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-sm btn-danger" onclick="deleteAssignment('${assignment.id}')">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
+    const dataToRender = filteredAssignments || assignments;
+    
+    // Validar que dataToRender sea un array
+    if (!Array.isArray(dataToRender)) {
+        console.warn('⚠️ [ProductStockAssignment] renderAssignments() - dataToRender no es un array:', typeof dataToRender);
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error: Formato de datos inválido</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    
+    if (dataToRender.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center">
+                    <div class="py-4">
+                        <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                        <p class="text-muted mb-2">No se encontraron asignaciones con los filtros aplicados</p>
+                        <p class="text-muted small">Intenta cambiar los filtros o crear una nueva asignación</p>
+                    </div>
+                </td>
+            </tr>
         `;
-        
-        tbody.appendChild(row);
+        console.log('⚠️ [ProductStockAssignment] renderAssignments() - No hay datos para renderizar');
+        return;
+    }
+    
+    console.log(`🔄 [ProductStockAssignment] renderAssignments() - Renderizando ${dataToRender.length} asignaciones`);
+    
+    dataToRender.forEach((assignment, index) => {
+        try {
+            // Validar que assignment tenga las propiedades necesarias
+            if (!assignment || typeof assignment !== 'object') {
+                console.warn(`⚠️ [ProductStockAssignment] renderAssignments() - Asignación ${index} inválida:`, assignment);
+                return;
+            }
+            
+            const row = document.createElement('tr');
+            
+            const stockClass = getStockClass(assignment.stock, assignment.minStock);
+            const stockBadge = `<span class="stock-badge ${stockClass}">${formatStock(assignment.stock)}</span>`;
+            
+            // Escapar valores para prevenir XSS
+            const productName = escapeHtml(assignment.productName || 'N/A');
+            const stationName = escapeHtml(assignment.stationName || 'N/A');
+            const assignmentId = assignment.id || '';
+            
+            row.innerHTML = `
+                <td>${productName}</td>
+                <td>${stationName}</td>
+                <td>${stockBadge}</td>
+                <td>${assignment.minStock != null ? assignment.minStock : '-'}</td>
+                <td><span class="badge bg-secondary">${assignment.priority || 0}</span></td>
+                <td>
+                    <span class="badge ${assignment.isActive ? 'bg-success' : 'bg-danger'}">
+                        ${assignment.isActive ? 'Activa' : 'Inactiva'}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="editAssignment('${assignmentId}')" title="Editar">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteAssignment('${assignmentId}')" title="Eliminar">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            
+            tbody.appendChild(row);
+        } catch (error) {
+            console.error(`❌ [ProductStockAssignment] renderAssignments() - Error renderizando asignación ${index}:`, error);
+        }
     });
     
     console.log(`✅ [ProductStockAssignment] renderAssignments() - Renderizadas ${dataToRender.length} asignaciones`);
+}
+
+// Función auxiliar para escapar HTML
+function escapeHtml(text) {
+    if (text == null) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // Filtrar asignaciones

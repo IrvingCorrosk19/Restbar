@@ -85,7 +85,7 @@
                             <div class="modern-order-item @(item.KitchenStatus.ToLower() == "ready" ? "ready" : "pending")" data-item-id="@item.ItemId">
                                 <div class="modern-item-info">
                                     <h4>@item.ProductName</h4>
-                                    <span class="modern-quantity">x@item.Quantity</span>
+                                    <span class="modern-quantity">x@(item.Quantity)</span>
                                     @if (!string.IsNullOrEmpty(item.Notes))
                                     {
                                         <p class="modern-notes"><i class="fas fa-sticky-note"></i> @item.Notes</p>

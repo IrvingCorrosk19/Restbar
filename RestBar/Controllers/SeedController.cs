@@ -189,7 +189,7 @@ namespace RestBar.Controllers
                             CompanyId = company.Id,
                             BranchId = branch.Id,
                             CategoryId = category.Id,
-                            StationId = station.Id,
+                            // ✅ ELIMINADO: StationId - Ahora se usa ProductStockAssignment
                             Name = name,
                             Description = name,
                             Price = price,

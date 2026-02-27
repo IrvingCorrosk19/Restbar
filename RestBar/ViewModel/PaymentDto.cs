@@ -60,5 +60,11 @@ namespace RestBar.ViewModel
         public decimal TotalPaidAmount { get; set; }
         public decimal RemainingAmount { get; set; }
         public List<PaymentResponseDto> Payments { get; set; } = new();
+        /// <summary>OBS-2: true cuando totalPaid &gt; orderTotal (sobrepago). Opcional para clientes existentes.</summary>
+        public bool? IsOverpaid { get; set; }
+        /// <summary>OBS-2: monto en exceso cuando hay sobrepago. Opcional.</summary>
+        public decimal? OverpaidAmount { get; set; }
+        /// <summary>OBS-2: "OVERPAID" cuando hay sobrepago. Opcional.</summary>
+        public string? WarningCode { get; set; }
     }
 } 

@@ -135,7 +135,8 @@ builder.Services.AddScoped<IProductStockAssignmentService>(provider =>
 {
     var context = provider.GetRequiredService<RestBarContext>();
     var httpContextAccessor = provider.GetRequiredService<IHttpContextAccessor>();
-    return new ProductStockAssignmentService(context, httpContextAccessor);
+    var logger = provider.GetRequiredService<ILogger<ProductStockAssignmentService>>();
+    return new ProductStockAssignmentService(context, httpContextAccessor, logger);
 });
 builder.Services.AddScoped<ITableService, TableService>();
 // Registrar AreaService con IHttpContextAccessor
@@ -249,8 +250,34 @@ builder.Services.AddScoped<IEmailTemplateService, EmailTemplateService>();
 
 var app = builder.Build();
 
+// Verificación en DB (ejecutar: dotnet run -- --verify-db)
+if (args.Contains("--verify-db"))
+{
+    using var scope = app.Services.CreateScope();
+    var ctx = scope.ServiceProvider.GetRequiredService<RestBarContext>();
+    var conn = ctx.Database.GetDbConnection();
+    await conn.OpenAsync();
+    var cmd = conn.CreateCommand();
+    cmd.CommandText = "SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'orders' ORDER BY ordinal_position";
+    var columns = new List<string>();
+    await using (var reader = await cmd.ExecuteReaderAsync())
+    {
+        while (await reader.ReadAsync())
+            columns.Add($"{reader.GetString(0)} ({reader.GetString(1)})");
+    }
+    Console.WriteLine("Columnas en tabla 'orders':");
+    foreach (var c in columns) Console.WriteLine("  " + c);
+    var hasVersion = columns.Any(c => c.StartsWith("version ", StringComparison.OrdinalIgnoreCase));
+    Console.WriteLine(hasVersion ? "\n[OK] Columna 'version' existe en la DB." : "\n[ERROR] Columna 'version' NO existe. Ejecute: dotnet ef database update");
+    return;
+}
+
 // Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+else
 {
     app.UseExceptionHandler("/Home/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
@@ -298,16 +325,16 @@ else
 
 app.UseRouting();
 
-// ✅ NUEVO: Agregar middlewares de auditoría y manejo de errores
-app.UseErrorHandling();
-app.UseAuditLogging();
-
-// ✅ NUEVO: Configurar sesiones
+// ✅ NUEVO: Configurar sesiones (debe estar después de UseRouting)
 app.UseSession();
 
 // Configurar middleware de autenticación (orden importante)
 app.UseAuthentication();
 app.UseAuthorization();
+
+// ✅ NUEVO: Agregar middlewares de auditoría y manejo de errores (después de autenticación)
+app.UseAuditLogging();
+app.UseErrorHandling();
 
 // Middleware personalizado para validación de permisos
 app.UsePermissionValidation();

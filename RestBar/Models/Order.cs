@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -39,6 +39,9 @@ public partial class Order : ITrackableEntity
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public string? CreatedBy { get; set; }
     public string? UpdatedBy { get; set; }
+
+    /// <summary>Token de concurrencia para evitar actualizaciones perdidas y condiciones de carrera.</summary>
+    public int Version { get; set; }
 
     // Propiedades de navegación multi-tenant
     public virtual Company? Company { get; set; }

@@ -59,7 +59,6 @@ namespace RestBar.Controllers
                 // Obtener productos con inventario activo
                 var products = await _context.Products
                     .Include(p => p.Category)
-                    .Include(p => p.Station)
                     .Include(p => p.StockAssignments.Where(sa => sa.IsActive && sa.BranchId == currentUser.BranchId))
                     .Where(p => p.IsActive && 
                                p.TrackInventory && 
@@ -84,7 +83,7 @@ namespace RestBar.Controllers
                                 minStock = product.MinStock.Value,
                                 availableStock = availableStock,
                                 categoryName = product.Category?.Name ?? "Sin categoría",
-                                stationName = product.Station?.Name ?? "Sin estación",
+                                // ✅ ELIMINADO: stationName - Ya no se usa Station en Product
                                 type = "global"
                             });
                         }

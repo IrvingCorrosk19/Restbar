@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using RestBar.Interfaces;
 using RestBar.Models;
 using RestBar.ViewModel;
@@ -21,8 +22,6 @@ namespace RestBar.Controllers
         private readonly IProductService _productService;
         private readonly IEmailService _emailService;
 
-
-
         public PaymentController(
             IPaymentService paymentService,
             ISplitPaymentService splitPaymentService,
@@ -32,7 +31,6 @@ namespace RestBar.Controllers
             IProductService productService,
             IEmailService emailService)
         {
-            Console.WriteLine($"[PaymentController] 🔥🔥🔥 CONSTRUCTOR PaymentController LLAMADO 🔥🔥🔥");
             _paymentService = paymentService;
             _splitPaymentService = splitPaymentService;
             _orderService = orderService;
@@ -40,294 +38,226 @@ namespace RestBar.Controllers
             _orderHubService = orderHubService;
             _productService = productService;
             _emailService = emailService;
-
-            Console.WriteLine($"[PaymentController] ✅ Constructor completado - ProductService: {_productService != null}, EmailService: {_emailService != null}");
         }
 
         [HttpPost("partial")]
         public async Task<IActionResult> CreatePartialPayment([FromBody] PaymentRequestDto request)
         {
+            if (request == null)
+                return BadRequest(new { success = false, message = "Datos de pago inválidos" });
+
+            if (request.OrderId == Guid.Empty)
+                return BadRequest(new { success = false, message = "OrderId es requerido" });
+
+            if (request.Amount <= 0)
+                return BadRequest(new { success = false, message = "El monto debe ser mayor a 0" });
+
             try
             {
-                Console.WriteLine($"[PaymentController] 🔥🔥🔥 MÉTODO CreatePartialPayment LLAMADO 🔥🔥🔥");
-                Console.WriteLine($"[PaymentController] === INICIANDO PROCESAMIENTO DE PAGO ===");
-                Console.WriteLine($"[PaymentController] OrderId: {request.OrderId}");
-                Console.WriteLine($"[PaymentController] Amount: ${request.Amount}");
-                Console.WriteLine($"[PaymentController] Method: {request.Method}");
-                Console.WriteLine($"[PaymentController] IsShared: {request.IsShared}");
-                Console.WriteLine($"[PaymentController] PayerName: {request.PayerName}");
-                Console.WriteLine($"[PaymentController] Split Payments Count: {request.SplitPayments?.Count ?? 0}");
-                
                 var order = await _orderService.GetOrderWithDetailsAsync(request.OrderId);
                 if (order == null)
-                {
-                    Console.WriteLine($"[PaymentController] ERROR: Orden no encontrada");
-                    return NotFound("Orden no encontrada");
-                }
-                Console.WriteLine($"[PaymentController] ✅ Orden encontrada - Items: {order.OrderItems?.Count ?? 0}");
-                
-                // Validar lógica de pagos compartidos
+                    return NotFound(new { success = false, message = "Orden no encontrada" });
+
+                // Regla de negocio: no pagar órdenes canceladas o ya completadas
+                if (order.Status == OrderStatus.Cancelled)
+                    return BadRequest(new { success = false, message = "No se puede pagar una orden cancelada" });
+
+                if (order.Status == OrderStatus.Completed)
+                    return BadRequest(new { success = false, message = "La orden ya está completada y pagada" });
+
                 if (request.IsShared)
                 {
-                    Console.WriteLine($"[PaymentController] Validando pago compartido...");
-                    
                     if (request.Method != "Compartido")
-                    {
-                        Console.WriteLine($"[PaymentController] ERROR: Pago compartido debe tener método 'Compartido', recibido: {request.Method}");
-                        return BadRequest("Para pagos compartidos, el método debe ser 'Compartido'");
-                    }
-                    
+                        return BadRequest(new { success = false, message = "Para pagos compartidos, el método debe ser 'Compartido'" });
                     if (request.SplitPayments == null || request.SplitPayments.Count == 0)
-                    {
-                        Console.WriteLine($"[PaymentController] ERROR: Pago compartido debe tener al menos un split payment");
-                        return BadRequest("Para pagos compartidos, debe especificar al menos una persona");
-                    }
-                    
-                    Console.WriteLine($"[PaymentController] ✅ Validación de pago compartido exitosa");
+                        return BadRequest(new { success = false, message = "Para pagos compartidos, debe especificar al menos una persona" });
                 }
                 else
                 {
-                    Console.WriteLine($"[PaymentController] Validando pago individual...");
-                    
                     if (request.Method == "Compartido")
-                    {
-                        Console.WriteLine($"[PaymentController] ERROR: Pago individual no puede tener método 'Compartido'");
-                        return BadRequest("Para pagos individuales, no se puede usar el método 'Compartido'");
-                    }
-                    
-                    Console.WriteLine($"[PaymentController] ✅ Validación de pago individual exitosa");
+                        return BadRequest(new { success = false, message = "Para pagos individuales, no use el método 'Compartido'" });
                 }
 
-                // Validar que el monto no exceda el total de la orden
-                Console.WriteLine($"[PaymentController] Calculando montos de la orden...");
-                var totalPaid = await _paymentService.GetTotalPaymentsByOrderAsync(request.OrderId);
-                var orderTotal = order.OrderItems?.Sum(i => i.Quantity * i.UnitPrice) ?? 0;
-                var remainingAmount = orderTotal - totalPaid;
-                
-                Console.WriteLine($"[PaymentController] Total orden: ${orderTotal:F2}");
-                Console.WriteLine($"[PaymentController] Total pagado: ${totalPaid:F2}");
-                Console.WriteLine($"[PaymentController] Monto restante: ${remainingAmount:F2}");
+                // Total de la orden solo con ítems no cancelados (regla de negocio POS)
+                var payableItems = order.OrderItems?.Where(oi => oi.Status != OrderItemStatus.Cancelled) ?? Enumerable.Empty<OrderItem>();
+                var orderTotal = payableItems.Sum(i => i.Quantity * i.UnitPrice - i.Discount);
 
-                if (request.Amount > remainingAmount)
-                {
-                    Console.WriteLine($"[PaymentController] ERROR: El monto ${request.Amount:F2} excede el saldo pendiente ${remainingAmount:F2}");
-                    return BadRequest($"El monto excede el saldo pendiente. Saldo: ${remainingAmount:F2}");
-                }
-
-                // Validar split payments antes de crear el pago principal
+                // Pre-validación de split payments (no requiere DB)
                 if (request.SplitPayments != null && request.SplitPayments.Any())
                 {
-                    Console.WriteLine($"[PaymentController] Validando pagos divididos...");
                     var splitTotal = request.SplitPayments.Sum(sp => sp.Amount);
-                    Console.WriteLine($"[PaymentController] Suma de split payments: ${splitTotal:F2}");
-                    Console.WriteLine($"[PaymentController] Monto total del pago: ${request.Amount:F2}");
-                    
-                    for (int i = 0; i < request.SplitPayments.Count; i++)
-                    {
-                        var split = request.SplitPayments[i];
-                        Console.WriteLine($"[PaymentController] Split {i + 1}: {split.PersonName} - ${split.Amount:F2}");
-                    }
-                    
                     if (Math.Abs(splitTotal - request.Amount) > 0.01m)
-                    {
-                        Console.WriteLine($"[PaymentController] ERROR: La suma de split payments ${splitTotal:F2} no coincide con el monto total ${request.Amount:F2}");
-                        return BadRequest("La suma de los pagos divididos debe ser igual al monto total");
-                    }
-                    Console.WriteLine($"[PaymentController] ✅ Validación de split payments exitosa");
+                        return BadRequest(new { success = false, message = "La suma de los pagos divididos debe ser igual al monto total" });
                 }
 
-
-
-                // Crear el pago principal
-                Console.WriteLine($"[PaymentController] Creando pago principal...");
-                var payment = new Payment
-                {
-                    Id = Guid.NewGuid(),
-                    OrderId = request.OrderId,
-                    Amount = request.Amount,
-                    Method = request.Method,
-                    IsShared = request.IsShared,
-                    PayerName = request.PayerName,
-                    PaidAt = DateTime.UtcNow, // ✅ Fecha específica de pago
-                    IsVoided = false
-                };
-                Console.WriteLine($"[PaymentController] Pago principal creado con ID: {payment.Id}");
-
-                var createdPayment = await _paymentService.CreateAsync(payment);
-                Console.WriteLine($"[PaymentController] ✅ Pago principal guardado exitosamente");
-
-                // Crear pagos divididos si es pago compartido
-                if (request.IsShared && request.SplitPayments != null && request.SplitPayments.Any())
-                {
-                    Console.WriteLine($"[PaymentController] Creando {request.SplitPayments.Count} pagos divididos...");
-                    
-                    for (int i = 0; i < request.SplitPayments.Count; i++)
-                    {
-                        var splitRequest = request.SplitPayments[i];
-                        Console.WriteLine($"[PaymentController] Creando split payment {i + 1}: {splitRequest.PersonName} - ${splitRequest.Amount:F2} - {splitRequest.Method}");
-                        
-                        var splitPayment = new SplitPayment
-                        {
-                            Id = Guid.NewGuid(),
-                            PaymentId = createdPayment.Id,
-                            PersonName = splitRequest.PersonName,
-                            Amount = splitRequest.Amount,
-                            Method = splitRequest.Method
-                        };
-                        Console.WriteLine($"[PaymentController] Split payment creado con ID: {splitPayment.Id}");
-
-                        await _splitPaymentService.CreateAsync(splitPayment);
-                        Console.WriteLine($"[PaymentController] ✅ Split payment {i + 1} guardado exitosamente");
-                    }
-                    
-                    Console.WriteLine($"[PaymentController] ✅ Todos los split payments creados exitosamente");
-                }
-
-                // Verificar si la orden está completamente pagada
-                var totalPaidAfterPayment = await _paymentService.GetTotalPaymentsByOrderAsync(request.OrderId);
-                var orderTotalAfterPayment = order.OrderItems?.Sum(i => i.Quantity * i.UnitPrice) ?? 0;
-                var isFullyPaid = totalPaidAfterPayment >= orderTotalAfterPayment;
-
-                Console.WriteLine($"[PaymentController] Verificando pago completo - Total pagado: ${totalPaidAfterPayment}, Total orden: ${orderTotalAfterPayment}, Pagado completo: {isFullyPaid}");
-
-                // Actualizar estado de la orden según el pago
-                if (isFullyPaid)
-                {
-                    // Pago completo: cambiar orden a Completed
-                    Console.WriteLine($"[PaymentController] Pago completo - Cambiando orden de {order.Status} a Completed");
-                    order.Status = OrderStatus.Completed;
-                    order.ClosedAt = DateTime.UtcNow; // ✅ Fecha específica de cierre de orden
-                    
-
-                    
-                    // Cambiar todos los items a Served
-                    foreach (var item in order.OrderItems)
-                    {
-                        if (item.Status == OrderItemStatus.Ready)
-                        {
-                            item.Status = OrderItemStatus.Served;
-                            Console.WriteLine($"[PaymentController] Item {item.Product?.Name} cambiado a Served");
-                        }
-                    }
-                    
-                    // Actualizar el estado de la mesa
-                    if (order.TableId.HasValue)
-                    {
-                        var table = await _context.Tables.FindAsync(order.TableId.Value);
-                        if (table != null)
-                        {
-                            table.Status = TableStatus.Disponible;
-                            Console.WriteLine($"[PaymentController] Mesa {table.TableNumber} cambiada a Disponible");
-                        }
-                    }
-
-
-                }
-                else
-                {
-                    // Pago parcial: cambiar orden a Served si estaba en ReadyToPay
-                    if (order.Status == OrderStatus.ReadyToPay)
-                    {
-                        Console.WriteLine($"[PaymentController] Pago parcial - Cambiando orden de {order.Status} a Served");
-                        order.Status = OrderStatus.Served;
-                    }
-                }
-
-                await _context.SaveChangesAsync();
-                Console.WriteLine($"[PaymentController] Estados actualizados - Orden: {order.Status}");
-
-                // 🎯 LOG ESTRATÉGICO: PAGO PROCESADO
-                Console.WriteLine($"🚀 [PaymentController] ProcessPayment() - PAGO PROCESADO - ${request.Amount} ({request.Method}) - Completo: {isFullyPaid}");
-
-                // Enviar notificaciones SignalR sobre cambios de estado
-                if (isFullyPaid)
-                {
-                    // Notificar que la orden está completada
-                    await _orderHubService.NotifyOrderStatusChanged(order.Id, order.Status);
-                    Console.WriteLine($"[PaymentController] Notificación enviada: Orden completada");
-                    
-                    // Notificar cambio de estado de cada item individual
-                    foreach (var item in order.OrderItems)
-                    {
-                        if (item.Status == OrderItemStatus.Served)
-                        {
-                            await _orderHubService.NotifyOrderItemStatusChanged(order.Id, item.Id, item.Status);
-                            Console.WriteLine($"[PaymentController] Notificación enviada: Item {item.Product?.Name} cambiado a Served");
-                        }
-                    }
-                    
-                    // Notificar cambio de estado de mesa
-                    if (order.TableId.HasValue)
-                    {
-                        // 🎯 LOG ESTRATÉGICO: MESA LIBERADA
-                        Console.WriteLine($"🚀 [PaymentController] ProcessPayment() - MESA LIBERADA - Mesa liberada después del pago completo");
-                        await _orderHubService.NotifyTableStatusChanged(order.TableId.Value, "Disponible");
-                        Console.WriteLine($"[PaymentController] Notificación enviada: Mesa disponible");
-                    }
-                    
-                    // Notificar actualización general de cocina para refrescar vistas
-                    await _orderHubService.NotifyKitchenUpdate();
-                    Console.WriteLine($"[PaymentController] Notificación enviada: Actualización general de cocina");
-                }
-                else
-                {
-                    // Notificar cambio de estado de orden (pago parcial)
-                    await _orderHubService.NotifyOrderStatusChanged(order.Id, order.Status);
-                    Console.WriteLine($"[PaymentController] Notificación enviada: Orden en estado {order.Status}");
-                    
-                    // Notificar actualización general para refrescar resumen
-                    await _orderHubService.NotifyKitchenUpdate();
-                    Console.WriteLine($"[PaymentController] Notificación enviada: Actualización general para pago parcial");
-                }
-                
-                // Notificar específicamente sobre el pago procesado
-                await _orderHubService.NotifyPaymentProcessed(order.Id, request.Amount, request.Method, isFullyPaid);
-                Console.WriteLine($"[PaymentController] Notificación enviada: Pago procesado - ${request.Amount} ({request.Method}) - Completo: {isFullyPaid}");
-
-                // ✅ NUEVO: Enviar email de confirmación si el pago está completo
-                if (isFullyPaid)
+                Payment createdPayment;
+                bool isFullyPaid;
+                using (var transaction = await _context.Database.BeginTransactionAsync())
                 {
                     try
                     {
-                        Console.WriteLine("📧 [PaymentController] ProcessPayment() - Enviando email de confirmación...");
-                        
-                        // Obtener email del cliente si existe
-                        var customerEmail = order.Customer?.Email;
-                        if (string.IsNullOrEmpty(customerEmail))
+                        // FIX: totalPaid re-leído DENTRO de la transacción para evitar race condition.
+                        // Aunque el ConcurrencyToken (Version) protege la consistencia en DB,
+                        // validar aquí evita el error confuso "modificado por otro usuario".
+                        var totalPaid = await _paymentService.GetTotalPaymentsByOrderAsync(request.OrderId);
+                        var remainingAmount = orderTotal - totalPaid;
+
+                        if (remainingAmount <= 0)
                         {
-                            // Si no hay cliente asociado, intentar obtener email del usuario que creó la orden
-                            var orderUser = await _context.Users.FindAsync(order.UserId);
-                            customerEmail = orderUser?.Email;
+                            await transaction.RollbackAsync();
+                            return BadRequest(new { success = false, message = "La orden ya está pagada por completo" });
                         }
 
-                        if (!string.IsNullOrEmpty(customerEmail))
+                        if (request.Amount > remainingAmount + 0.01m)
                         {
-                            var emailSent = await _emailService.SendOrderConfirmationAsync(order, customerEmail);
-                            if (emailSent)
+                            await transaction.RollbackAsync();
+                            return BadRequest(new { success = false, message = $"El monto excede el saldo pendiente. Saldo: ${remainingAmount:F2}" });
+                        }
+
+                        var payment = new Payment
+                        {
+                            Id = Guid.NewGuid(),
+                            OrderId = request.OrderId,
+                            Amount = request.Amount,
+                            Method = request.Method ?? "Efectivo",
+                            IsShared = request.IsShared,
+                            PayerName = request.PayerName,
+                            PaidAt = DateTime.UtcNow,
+                            IsVoided = false
+                        };
+                        _context.Payments.Add(payment);
+
+                        if (request.IsShared && request.SplitPayments != null && request.SplitPayments.Any())
+                        {
+                            foreach (var splitRequest in request.SplitPayments)
                             {
-                                Console.WriteLine($"✅ [PaymentController] ProcessPayment() - Email de confirmación enviado a: {customerEmail}");
+                                _context.SplitPayments.Add(new SplitPayment
+                                {
+                                    Id = Guid.NewGuid(),
+                                    PaymentId = payment.Id,
+                                    PersonName = splitRequest.PersonName,
+                                    Amount = splitRequest.Amount,
+                                    Method = splitRequest.Method ?? "Efectivo"
+                                });
+                            }
+                        }
+
+                        await _context.SaveChangesAsync();
+
+                        var totalPaidAfterPayment = totalPaid + request.Amount;
+                        var orderTotalForComparison = payableItems.Sum(i => i.Quantity * i.UnitPrice - i.Discount);
+                        isFullyPaid = totalPaidAfterPayment >= orderTotalForComparison - 0.01m;
+
+                        var hasPendingItems = order.OrderItems?.Any(oi => oi.Status != OrderItemStatus.Cancelled && (oi.Status == OrderItemStatus.Pending || oi.Status == OrderItemStatus.Preparing)) ?? false;
+                        var hasReadyItems = order.OrderItems?.Any(oi => oi.Status != OrderItemStatus.Cancelled && oi.Status == OrderItemStatus.Ready) ?? false;
+                        var allItemsReadyOrServed = order.OrderItems?.Where(oi => oi.Status != OrderItemStatus.Cancelled).All(oi => oi.Status == OrderItemStatus.Ready || oi.Status == OrderItemStatus.Served) ?? false;
+
+                        if (isFullyPaid)
+                        {
+                            if (allItemsReadyOrServed)
+                            {
+                                order.Status = OrderStatus.Completed;
+                                order.ClosedAt = DateTime.UtcNow;
+                                foreach (var item in order.OrderItems.Where(oi => oi.Status == OrderItemStatus.Ready))
+                                    item.Status = OrderItemStatus.Served;
+                                if (order.TableId.HasValue)
+                                {
+                                    var table = await _context.Tables.FindAsync(order.TableId.Value);
+                                    if (table != null) table.Status = TableStatus.Disponible;
+                                }
+                            }
+                            else if (hasPendingItems || hasReadyItems)
+                            {
+                                order.Status = OrderStatus.ReadyToPay;
+                                foreach (var item in order.OrderItems.Where(oi => oi.Status == OrderItemStatus.Ready))
+                                    item.Status = OrderItemStatus.Served;
+                                if (order.TableId.HasValue)
+                                {
+                                    var table = await _context.Tables.FindAsync(order.TableId.Value);
+                                    if (table != null) table.Status = TableStatus.ParaPago;
+                                }
                             }
                             else
                             {
-                                Console.WriteLine($"⚠️ [PaymentController] ProcessPayment() - No se pudo enviar email de confirmación");
+                                order.Status = OrderStatus.Completed;
+                                order.ClosedAt = DateTime.UtcNow;
+                                if (order.TableId.HasValue)
+                                {
+                                    var table = await _context.Tables.FindAsync(order.TableId.Value);
+                                    if (table != null) table.Status = TableStatus.Disponible;
+                                }
                             }
                         }
                         else
                         {
-                            Console.WriteLine("⚠️ [PaymentController] ProcessPayment() - No hay email disponible para enviar confirmación");
+                            if (hasPendingItems || hasReadyItems)
+                            {
+                                if (order.Status != OrderStatus.ReadyToPay && order.Status != OrderStatus.Completed)
+                                {
+                                    order.Status = OrderStatus.ReadyToPay;
+                                    if (order.TableId.HasValue)
+                                    {
+                                        var table = await _context.Tables.FindAsync(order.TableId.Value);
+                                        if (table != null && table.Status != TableStatus.EnPreparacion) table.Status = TableStatus.ParaPago;
+                                    }
+                                }
+                            }
+                            else if (allItemsReadyOrServed && order.Status != OrderStatus.Completed && order.Status != OrderStatus.Served)
+                            {
+                                order.Status = OrderStatus.Served;
+                                foreach (var item in order.OrderItems.Where(oi => oi.Status == OrderItemStatus.Ready))
+                                    item.Status = OrderItemStatus.Served;
+                                if (order.TableId.HasValue)
+                                {
+                                    var table = await _context.Tables.FindAsync(order.TableId.Value);
+                                    if (table != null) table.Status = TableStatus.ParaPago;
+                                }
+                            }
                         }
+
+                        order.Version++;
+                        await _context.SaveChangesAsync();
+                        await transaction.CommitAsync();
+                        createdPayment = payment;
                     }
-                    catch (Exception emailEx)
+                    catch
                     {
-                        Console.WriteLine($"❌ [PaymentController] ProcessPayment() - Error al enviar email: {emailEx.Message}");
-                        // No lanzar excepción para no afectar el flujo del pago
+                        await transaction.RollbackAsync();
+                        throw;
                     }
                 }
 
-                // Obtener el pago con sus splits para la respuesta
+                // Notificaciones fuera de la transacción (no críticas para consistencia)
+                if (isFullyPaid)
+                {
+                    // Notificar que la orden está completada
+                    await _orderHubService.NotifyOrderStatusChanged(order.Id, order.Status);
+                    foreach (var item in order.OrderItems.Where(oi => oi.Status == OrderItemStatus.Served))
+                        await _orderHubService.NotifyOrderItemStatusChanged(order.Id, item.Id, item.Status);
+                    if (order.TableId.HasValue)
+                        await _orderHubService.NotifyTableStatusChanged(order.TableId.Value, "Disponible");
+                    await _orderHubService.NotifyKitchenUpdate();
+                }
+                else
+                {
+                    await _orderHubService.NotifyOrderStatusChanged(order.Id, order.Status);
+                    await _orderHubService.NotifyKitchenUpdate();
+                }
+                await _orderHubService.NotifyPaymentProcessed(order.Id, request.Amount, request.Method ?? "Efectivo", isFullyPaid);
+
+                if (isFullyPaid)
+                {
+                    try
+                    {
+                        var customerEmail = order.Customer?.Email ?? (await _context.Users.FindAsync(order.UserId))?.Email;
+                        if (!string.IsNullOrEmpty(customerEmail))
+                            await _emailService.SendOrderConfirmationAsync(order, customerEmail);
+                    }
+                    catch { /* no fallar el flujo por email */ }
+                }
+
                 var paymentWithSplits = await _paymentService.GetPaymentWithSplitsAsync(createdPayment.Id);
-                
-                var response = new PaymentResponseDto
+                var responseDto = new PaymentResponseDto
                 {
                     Id = paymentWithSplits!.Id,
                     OrderId = paymentWithSplits.OrderId!.Value,
@@ -337,34 +267,24 @@ namespace RestBar.Controllers
                     IsVoided = paymentWithSplits.IsVoided,
                     IsShared = paymentWithSplits.IsShared,
                     PayerName = paymentWithSplits.PayerName,
-                    SplitPayments = paymentWithSplits.SplitPayments.Select(sp => new SplitPaymentResponseDto
+                    SplitPayments = paymentWithSplits.SplitPayments?.Select(sp => new SplitPaymentResponseDto
                     {
                         Id = sp.Id,
                         PersonName = sp.PersonName!,
                         Amount = sp.Amount ?? 0,
                         Method = sp.Method!
-                    }).ToList()
+                    }).ToList() ?? new List<SplitPaymentResponseDto>()
                 };
 
-                Console.WriteLine($"[PaymentController] ✅ Pago procesado exitosamente");
-                Console.WriteLine($"[PaymentController] === FIN PROCESAMIENTO DE PAGO EXITOSO ===");
-                return Ok(response);
+                return Ok(new { success = true, isFullyPaid, message = isFullyPaid ? "Pago completado" : "Pago parcial registrado", payment = responseDto });
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return StatusCode(409, new { success = false, message = "La orden fue modificada por otro usuario. Actualice e intente de nuevo." });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[PaymentController] ❌ ERROR CRÍTICO en CreatePartialPayment:");
-                Console.WriteLine($"[PaymentController] Error Type: {ex.GetType().Name}");
-                Console.WriteLine($"[PaymentController] Error Message: {ex.Message}");
-                Console.WriteLine($"[PaymentController] Stack Trace: {ex.StackTrace}");
-                
-                if (ex.InnerException != null)
-                {
-                    Console.WriteLine($"[PaymentController] Inner Exception: {ex.InnerException.Message}");
-                    Console.WriteLine($"[PaymentController] Inner Stack Trace: {ex.InnerException.StackTrace}");
-                }
-                
-                Console.WriteLine($"[PaymentController] === FIN ERROR CRÍTICO ===");
-                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+                return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
 
@@ -375,21 +295,25 @@ namespace RestBar.Controllers
             {
                 var order = await _orderService.GetOrderWithDetailsAsync(orderId);
                 if (order == null)
-                {
-                    return NotFound("Orden no encontrada");
-                }
+                    return NotFound(new { success = false, message = "Orden no encontrada" });
+
+                var payableItems = order.OrderItems?.Where(oi => oi.Status != OrderItemStatus.Cancelled) ?? Enumerable.Empty<OrderItem>();
+                var orderTotal = payableItems.Sum(i => i.Quantity * i.UnitPrice - i.Discount);
+                var totalPaid = await _paymentService.GetTotalPaymentsByOrderAsync(orderId);
+                var remainingAmount = Math.Max(0m, orderTotal - totalPaid); // P0-FIX-01 defensive: never negative
+                var isOverpaid = totalPaid > orderTotal;
+                var overpaidAmount = isOverpaid ? Math.Max(0m, totalPaid - orderTotal) : (decimal?)null;
 
                 var payments = await _paymentService.GetByOrderIdAsync(orderId);
-                var totalPaid = await _paymentService.GetTotalPaymentsByOrderAsync(orderId);
-                var orderTotal = order.OrderItems?.Sum(i => i.Quantity * i.UnitPrice) ?? 0;
-                var remainingAmount = orderTotal - totalPaid;
-
                 var summary = new OrderPaymentSummaryDto
                 {
                     OrderId = orderId,
                     TotalOrderAmount = orderTotal,
                     TotalPaidAmount = totalPaid,
                     RemainingAmount = remainingAmount,
+                    IsOverpaid = isOverpaid ? true : null,
+                    OverpaidAmount = overpaidAmount,
+                    WarningCode = isOverpaid ? "OVERPAID" : null,
                     Payments = payments.Select(p => new PaymentResponseDto
                     {
                         Id = p.Id,
@@ -398,12 +322,15 @@ namespace RestBar.Controllers
                         Method = p.Method!,
                         PaidAt = p.PaidAt,
                         IsVoided = p.IsVoided,
-                        SplitPayments = p.SplitPayments.Select(sp => new SplitPaymentResponseDto
+                        IsShared = p.IsShared,       // P2-FIX-05
+                        PayerName = p.PayerName,     // P2-FIX-05
+                        SplitPayments = p.SplitPayments?.Select(sp => new SplitPaymentResponseDto
                         {
                             Id = sp.Id,
                             PersonName = sp.PersonName!,
-                            Amount = sp.Amount ?? 0
-                        }).ToList()
+                            Amount = sp.Amount ?? 0,
+                            Method = sp.Method ?? string.Empty  // P2-FIX-05
+                        }).ToList() ?? new List<SplitPaymentResponseDto>()
                     }).ToList()
                 };
 
@@ -411,7 +338,7 @@ namespace RestBar.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+                return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
 
@@ -429,12 +356,12 @@ namespace RestBar.Controllers
                     Method = p.Method!,
                     PaidAt = p.PaidAt,
                     IsVoided = p.IsVoided,
-                    SplitPayments = p.SplitPayments.Select(sp => new SplitPaymentResponseDto
+                    SplitPayments = p.SplitPayments?.Select(sp => new SplitPaymentResponseDto
                     {
                         Id = sp.Id,
                         PersonName = sp.PersonName!,
                         Amount = sp.Amount ?? 0
-                    }).ToList()
+                    }).ToList() ?? new List<SplitPaymentResponseDto>()
                 });
 
                 return Ok(response);
@@ -502,19 +429,19 @@ namespace RestBar.Controllers
             }
             catch (KeyNotFoundException ex)
             {
-                Console.WriteLine($"[PaymentController] ERROR: Pago no encontrado - {ex.Message}");
-                return NotFound(new { error = ex.Message });
+                return NotFound(new { success = false, message = ex.Message });
             }
             catch (InvalidOperationException ex)
             {
-                Console.WriteLine($"[PaymentController] ERROR: Operación inválida - {ex.Message}");
-                return BadRequest(new { error = ex.Message });
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return StatusCode(409, new { success = false, message = "La orden fue modificada simultáneamente. Intente de nuevo." });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[PaymentController] ERROR interno del servidor: {ex.Message}");
-                Console.WriteLine($"[PaymentController] Stack trace: {ex.StackTrace}");
-                return StatusCode(500, new { error = "Error interno del servidor" });
+                return StatusCode(500, new { success = false, message = "Error interno del servidor" });
             }
         }
     }

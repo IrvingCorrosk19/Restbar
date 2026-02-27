@@ -56,7 +56,6 @@ namespace RestBar.Controllers
 
                 var allProducts = await _context.Products
                     .Include(p => p.Category)
-                    .Include(p => p.Station)
                     .OrderBy(p => p.Name)
                     .ToListAsync();
                 
@@ -108,7 +107,6 @@ namespace RestBar.Controllers
 
                 var allProducts = await _context.Products
                     .Include(p => p.Category)
-                    .Include(p => p.Station)
                     .OrderBy(p => p.Name)
                     .ToListAsync();
                 
@@ -122,6 +120,17 @@ namespace RestBar.Controllers
                 Console.WriteLine($"🏢 [ProductController] GetProducts() - Compañía: {currentUser.Branch.CompanyId}");
                 Console.WriteLine($"🏪 [ProductController] GetProducts() - Sucursal: {currentUser.BranchId}");
                 Console.WriteLine($"📊 [ProductController] GetProducts() - Productos encontrados: {filteredProducts.Count}");
+                if (!filteredProducts.Any())
+                {
+                    Console.WriteLine("⚠️ [ProductController] GetProducts() - No se encontraron productos para la sucursal actual");
+                }
+                else
+                {
+                    foreach (var product in filteredProducts.Take(5))
+                    {
+                        Console.WriteLine($"📋 [ProductController] GetProducts() - Producto: {product.Id} | {product.Name} | Activo: {product.IsActive} | BranchId: {product.BranchId}");
+                    }
+                }
 
                 return Json(new { success = true, data = filteredProducts });
             }
@@ -225,7 +234,7 @@ namespace RestBar.Controllers
                     ImageUrl = model.ImageUrl,
                     IsActive = model.IsActive,
                     CategoryId = model.CategoryId,
-                    StationId = model.StationId,
+                    // ✅ ELIMINADO: StationId - Ahora se usa ProductStockAssignment
                     // ✅ Fechas se manejan automáticamente por el modelo y BaseTrackingService
                     CreatedBy = userNameClaim?.Value ?? currentUser.Email,
                     UpdatedBy = userNameClaim?.Value ?? currentUser.Email,
@@ -309,7 +318,7 @@ namespace RestBar.Controllers
                 existingProduct.ImageUrl = model.ImageUrl;
                 existingProduct.IsActive = model.IsActive;
                 existingProduct.CategoryId = model.CategoryId;
-                existingProduct.StationId = model.StationId;
+                // ✅ ELIMINADO: StationId - Ahora se usa ProductStockAssignment
                 // ✅ Fechas se manejan automáticamente por el modelo y BaseTrackingService
                 existingProduct.UpdatedBy = userNameClaim?.Value ?? currentUser.Email;
                 existingProduct.CompanyId = currentUser.Branch.CompanyId;
@@ -438,7 +447,6 @@ namespace RestBar.Controllers
             {
                 var product = await _context.Products
                     .Include(p => p.Category)
-                    .Include(p => p.Station)
                     .AsNoTracking()
                     .FirstOrDefaultAsync(p => p.Id == id);
 
@@ -463,14 +471,13 @@ namespace RestBar.Controllers
                         product.ImageUrl,
                         product.IsActive,
                         product.CategoryId,
-                        product.StationId,
+                        // ✅ ELIMINADO: StationId y Station - Ahora se usa ProductStockAssignment
                         // ✅ NUEVO: Campos de inventario
                         product.TrackInventory,
                         product.Stock,
                         product.MinStock,
                         product.AllowNegativeStock,
-                        Category = product.Category != null ? new { product.Category.Id, product.Category.Name } : null,
-                        Station = product.Station != null ? new { product.Station.Id, product.Station.Name, product.Station.Type } : null
+                        Category = product.Category != null ? new { product.Category.Id, product.Category.Name } : null
                     }
                 };
 

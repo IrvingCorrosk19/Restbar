@@ -48,42 +48,84 @@ async function checkForSeparateAccounts() {
 }
 
 // 🎯 FUNCIÓN ESTRATÉGICA: MOSTRAR MODAL DE PAGO PARA CUENTA ÚNICA
-function showSingleAccountPaymentModal() {
+// FIX: Consulta saldo pendiente real del servidor (no calcula del frontend)
+async function showSingleAccountPaymentModal() {
     try {
-        console.log('🔍 [Payments] showSingleAccountPaymentModal() - Mostrando modal de cuenta única...');
-        
-        const orderTotal = currentOrder.items ? 
-            currentOrder.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice) - item.discount, 0) : 0;
+        if (!currentOrder || !currentOrder.orderId) {
+            Swal.fire('Error', 'No hay una orden activa', 'error');
+            return;
+        }
+
+        // Obtener saldo real desde el servidor
+        let orderTotal = 0;
+        let remainingAmount = 0;
+        let totalPaid = 0;
+        try {
+            const summaryResp = await fetch(`/api/Payment/order/${currentOrder.orderId}/summary`);
+            if (summaryResp.ok) {
+                const summary = await summaryResp.json();
+                orderTotal = summary.totalOrderAmount ?? 0;
+                totalPaid = summary.totalPaidAmount ?? 0;
+                remainingAmount = summary.remainingAmount ?? (orderTotal - totalPaid);
+            }
+        } catch (_) {}
+
+        // Fallback al cálculo local si el servidor falla
+        if (orderTotal === 0) {
+            const rawTotal = currentOrder.items
+                ? currentOrder.items.reduce((sum, item) => {
+                    const unitPrice = item.unitPrice ?? item.price ?? 0;
+                    const quantity = item.quantity ?? 0;
+                    const discount = item.discount ?? 0;
+                    return sum + (quantity * unitPrice) - discount;
+                  }, 0)
+                : 0;
+            orderTotal = Math.round(rawTotal * 100) / 100;
+            remainingAmount = orderTotal;
+        }
+
+        remainingAmount = Math.round(remainingAmount * 100) / 100;
+
+        if (remainingAmount <= 0) {
+            Swal.fire('Info', 'Esta orden ya está pagada por completo', 'info');
+            return;
+        }
 
         Swal.fire({
             title: '💳 Pago de Cuenta',
             html: `
                 <div class="payment-modal-container">
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <h6>Total de la Orden: <strong>$${orderTotal.toFixed(2)}</strong></h6>
+                    <div class="row mb-2">
+                        <div class="col-6 text-start">
+                            <small class="text-muted">Total orden: <strong>$${orderTotal.toFixed(2)}</strong></small>
+                        </div>
+                        <div class="col-6 text-end">
+                            <small class="text-muted">Ya pagado: <strong>$${totalPaid.toFixed(2)}</strong></small>
                         </div>
                     </div>
-                    
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <h6>Saldo Pendiente: <strong class="text-danger">$${remainingAmount.toFixed(2)}</strong></h6>
+                        </div>
+                    </div>
                     <div class="row mb-3">
                         <div class="col-6">
-                            <label class="form-label">Monto</label>
-                            <input type="number" id="paymentAmount" class="form-control" step="0.01" min="0.01" value="${orderTotal.toFixed(2)}">
+                            <label class="form-label">Monto a Pagar</label>
+                            <input type="number" id="swal-paymentAmount" class="form-control" step="0.01" min="0.01" max="${remainingAmount.toFixed(2)}" value="${remainingAmount.toFixed(2)}">
                         </div>
                         <div class="col-6">
                             <label class="form-label">Método de Pago</label>
-                            <select id="paymentMethod" class="form-select">
+                            <select id="swal-paymentMethod" class="form-select">
                                 <option value="Efectivo">Efectivo</option>
                                 <option value="Tarjeta">Tarjeta</option>
                                 <option value="Transferencia">Transferencia</option>
                             </select>
                         </div>
                     </div>
-                    
                     <div class="row mb-3">
                         <div class="col-12">
                             <label class="form-label">Nombre del Pagador (Opcional)</label>
-                            <input type="text" id="payerName" class="form-control" placeholder="Nombre de quien paga">
+                            <input type="text" id="swal-payerName" class="form-control" placeholder="Nombre de quien paga">
                         </div>
                     </div>
                 </div>
@@ -95,20 +137,19 @@ function showSingleAccountPaymentModal() {
             confirmButtonColor: '#28a745',
             cancelButtonColor: '#6c757d',
             preConfirm: () => {
-                const amount = parseFloat(document.getElementById('paymentAmount').value);
-                const method = document.getElementById('paymentMethod').value;
-                const payerName = document.getElementById('payerName').value;
-                
+                const amount = parseFloat(document.getElementById('swal-paymentAmount').value);
+                const method = document.getElementById('swal-paymentMethod').value;
+                const payerName = document.getElementById('swal-payerName').value;
+
                 if (!amount || amount <= 0) {
                     Swal.showValidationMessage('El monto debe ser mayor a 0');
                     return false;
                 }
-                
-                if (amount > orderTotal) {
-                    Swal.showValidationMessage('El monto no puede ser mayor al total de la orden');
+                // FIX: Validar contra saldo pendiente real, no el total bruto
+                if (amount > remainingAmount + 0.01) {
+                    Swal.showValidationMessage(`El monto no puede exceder el saldo pendiente ($${remainingAmount.toFixed(2)})`);
                     return false;
                 }
-                
                 return { amount, method, payerName };
             }
         }).then((result) => {
@@ -116,10 +157,9 @@ function showSingleAccountPaymentModal() {
                 processPayment(result.value.amount, result.value.method, false, result.value.payerName);
             }
         });
-
-        console.log('✅ [Payments] showSingleAccountPaymentModal() - Modal de cuenta única mostrado');
     } catch (error) {
         console.error('❌ [Payments] showSingleAccountPaymentModal() - Error:', error);
+        Swal.fire('Error', 'Error al mostrar modal de pago', 'error');
     }
 }
 
@@ -460,13 +500,21 @@ function showFullPaymentModal(totalAmount) {
     }
 }
 
+// Evitar doble envío de pago (concurrencia frontend)
+let paymentProcessing = false;
+
 // Función para procesar pago
 async function processPayment(amount, method, isShared = false, payerName = '', splitPayments = []) {
+    if (paymentProcessing) {
+        Swal.fire('Espere', 'Ya hay un pago en proceso', 'info');
+        return;
+    }
     if (!currentOrder || !currentOrder.orderId) {
         Swal.fire('Error', 'No hay una orden activa para procesar el pago', 'error');
         return;
     }
 
+    paymentProcessing = true;
     try {
         // Validar split payments si existen
         if (splitPayments && splitPayments.length > 0) {
@@ -534,11 +582,17 @@ async function processPayment(amount, method, isShared = false, payerName = '', 
                 Swal.fire('Error', result.message || 'Error al procesar el pago', 'error');
             }
         } else {
-            const errorData = await response.json();
-            Swal.fire('Error', errorData.message || 'Error del servidor al procesar el pago', 'error');
+            let msg = 'Error del servidor al procesar el pago';
+            try {
+                const errorData = await response.json();
+                if (errorData && errorData.message) msg = errorData.message;
+            } catch (_) {}
+            Swal.fire('Error', msg, 'error');
         }
     } catch (error) {
-        Swal.fire('Error', 'Error de conexión al procesar el pago', 'error');
+        Swal.fire('Error', error.message || 'Error de conexión al procesar el pago', 'error');
+    } finally {
+        paymentProcessing = false;
     }
 }
 
@@ -631,18 +685,23 @@ function calculateTaxBreakdown() {
     let totalTax = 0;
 
     currentOrder.items.forEach(item => {
-        const itemSubtotal = item.price * item.quantity;
-        const taxRate = item.taxRate || 0;
+        const price = item.unitPrice ?? item.price ?? 0;
+        const quantity = item.quantity ?? 0;
+
+        const itemSubtotal = price * quantity;
+        const taxRate = item.taxRate ?? 0;
         const itemTax = itemSubtotal * (taxRate / 100);
-        
+
         subtotal += itemSubtotal;
         totalTax += itemTax;
     });
 
+    const total = subtotal + totalTax;
+
     return {
-        subtotal: subtotal,
-        tax: totalTax,
-        total: subtotal + totalTax
+        subtotal: Math.round(subtotal * 100) / 100,
+        tax: Math.round(totalTax * 100) / 100,
+        total: Math.round(total * 100) / 100
     };
 }
 
@@ -671,120 +730,34 @@ async function voidPayment(paymentId) {
 
     if (result.isConfirmed) {
         try {
-            const response = await fetch(`/Order/VoidPayment/${paymentId}`, {
-                method: 'POST',
+            // FIX: URL correcta — endpoint es DELETE /api/Payment/{id}
+            const response = await fetch(`/api/Payment/${paymentId}`, {
+                method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json'
                 }
             });
 
-            if (response.ok) {
-                const result = await response.json();
-                
-                if (result.success) {
-                    Swal.fire({
-                        title: 'Pago Anulado',
-                        text: 'El pago ha sido anulado exitosamente',
-                        icon: 'success',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
+            const data = await response.json();
 
-                    // Actualizar información de pagos
-                    if (typeof updatePaymentInfo === 'function') {
-                        await updatePaymentInfo();
-                    }
-                } else {
-                    Swal.fire('Error', result.message || 'Error al anular el pago', 'error');
+            if (response.ok && data.success) {
+                Swal.fire({
+                    title: 'Pago Anulado',
+                    text: 'El pago ha sido anulado exitosamente',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                if (typeof updatePaymentInfo === 'function') {
+                    await updatePaymentInfo();
                 }
             } else {
-                Swal.fire('Error', 'Error del servidor al anular el pago', 'error');
+                const msg = data?.message || 'Error al anular el pago';
+                Swal.fire('Error', msg, 'error');
             }
         } catch (error) {
             Swal.fire('Error', 'Error de conexión al anular el pago', 'error');
         }
-    }
-}
-
-// 🎯 FUNCIÓN ESTRATÉGICA: MOSTRAR MODAL DE PAGO PARCIAL
-function showPaymentModal() {
-    try {
-        console.log('🚀 [Payments] showPaymentModal() - MODAL DE PAGO MOSTRADO');
-        
-        if (!currentOrder || !currentOrder.orderId) {
-            Swal.fire('Error', 'No hay una orden activa para procesar el pago', 'error');
-            return;
-        }
-
-        // Calcular total de la orden
-        const taxBreakdown = calculateTaxBreakdown();
-        const totalAmount = taxBreakdown.total;
-
-        // Crear modal de pago con SweetAlert2
-        Swal.fire({
-            title: '💳 Pago Parcial',
-            html: `
-                <div class="payment-modal">
-                    <div class="mb-3">
-                        <label class="form-label">Total de la Orden:</label>
-                        <input type="text" class="form-control" value="$${totalAmount.toFixed(2)}" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Monto a Pagar:</label>
-                        <input type="number" id="paymentAmount" class="form-control" step="0.01" min="0.01" max="${totalAmount}" value="${totalAmount}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Método de Pago:</label>
-                        <select id="paymentMethod" class="form-select" required>
-                            <option value="">Seleccionar método</option>
-                            <option value="Cash">💵 Efectivo</option>
-                            <option value="CreditCard">💳 Tarjeta de Crédito</option>
-                            <option value="DebitCard">💳 Tarjeta de Débito</option>
-                            <option value="MobilePayment">📱 Pago Móvil</option>
-                        </select>
-                    </div>
-                </div>
-            `,
-            showCancelButton: true,
-            confirmButtonText: '💳 Procesar Pago',
-            cancelButtonText: '❌ Cancelar',
-            confirmButtonColor: '#28a745',
-            cancelButtonColor: '#dc3545',
-            preConfirm: () => {
-                const amount = parseFloat(document.getElementById('paymentAmount').value);
-                const method = document.getElementById('paymentMethod').value;
-
-                if (!amount || amount <= 0) {
-                    Swal.showValidationMessage('Ingresa un monto válido');
-                    return false;
-                }
-
-                if (!method) {
-                    Swal.showValidationMessage('Selecciona un método de pago');
-                    return false;
-                }
-
-                if (amount > totalAmount) {
-                    Swal.showValidationMessage('El monto no puede ser mayor al total de la orden');
-                    return false;
-                }
-
-                return { amount, method };
-            }
-        }).then(async (result) => {
-            if (result.isConfirmed) {
-                const { amount, method } = result.value;
-                
-                // 🎯 LOG ESTRATÉGICO: PROCESANDO PAGO PARCIAL
-                console.log('🚀 [Payments] showPaymentModal() - PROCESANDO PAGO PARCIAL - Monto:', amount, 'Método:', method);
-                
-                await processPayment(amount, method);
-            }
-        });
-
-    } catch (error) {
-        console.error('❌ [Payments] showPaymentModal() - Error:', error);
-        Swal.fire('Error', 'Error al mostrar el modal de pago', 'error');
     }
 }
 

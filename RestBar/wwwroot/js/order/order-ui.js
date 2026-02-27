@@ -355,6 +355,7 @@ function clearOrderUI() {
 }
 
 // 🎯 FUNCIÓN ESTRATÉGICA: ACTUALIZAR BOTONES DE PAGO SEGÚN ESTADO
+// ✅ MEJORADO: Permite pagar en cualquier momento que haya una orden activa
 function updatePaymentButtons() {
     try {
         console.log('🔍 [OrderUI] updatePaymentButtons() - Iniciando actualización de botones de pago...');
@@ -369,41 +370,31 @@ function updatePaymentButtons() {
             return;
         }
         
-        // Verificar si hay una orden activa
+        // ✅ MEJORADO: Verificar si hay una orden activa con items
         const hasActiveOrder = currentOrder && currentOrder.orderId && currentOrder.items && currentOrder.items.length > 0;
         
         // Verificar estado de la orden
         const orderStatus = currentOrder?.status;
-        const isCancelled = orderStatus === 'Cancelled' || orderStatus === 'cancelled';
+        const isCancelled = orderStatus === 'Cancelled' || orderStatus === 'cancelled' || orderStatus === 'Completed';
+        const isCompleted = orderStatus === 'Completed' || orderStatus === 'completed';
         
-        // Verificar si todos los items están listos
-        const allItemsReady = currentOrder?.items?.every(item => item.status === 'Ready' || item.status === 'Served') || false;
-        
-        // Permitir pago si:
-        // 1. La orden está en estados que permiten pago, O
-        // 2. La orden está en SentToKitchen pero todos los items están listos
-        const isReadyForPayment = !isCancelled && (
-            orderStatus === 'ReadyToPay' || 
-            orderStatus === 'Ready' || 
-            orderStatus === 'ParaPago' ||
-            (orderStatus === 'SentToKitchen' && allItemsReady)
-        );
+        // ✅ MEJORADO: Permitir pago en cualquier momento mientras haya una orden activa
+        // Solo ocultar si la orden está cancelada o completada
+        const canPay = hasActiveOrder && !isCancelled && !isCompleted;
         
         console.log('📋 [OrderUI] updatePaymentButtons() - Estado verificado:', {
             hasActiveOrder,
             orderStatus,
             isCancelled,
-            allItemsReady,
-            isReadyForPayment,
+            isCompleted,
+            canPay,
             itemsCount: currentOrder?.items?.length || 0
         });
         
-        // Mostrar botones de pago si:
-        // 1. Hay una orden activa
-        // 2. La orden está en estado ReadyToPay, Ready o ParaPago
-        if (hasActiveOrder && isReadyForPayment) {
-            // 🎯 LOG ESTRATÉGICO: BOTONES DE PAGO HABILITADOS
-            console.log('🚀 [OrderUI] updatePaymentButtons() - BOTONES DE PAGO HABILITADOS - Orden lista para pago');
+        // ✅ MEJORADO: Mostrar botones de pago siempre que haya una orden activa y no esté cancelada/completada
+        if (canPay) {
+            // 🎯 LOG ESTRATÉGICO: BOTONES DE PAGO HABILITADOS - Pago disponible en cualquier momento
+            console.log('🚀 [OrderUI] updatePaymentButtons() - BOTONES DE PAGO HABILITADOS - Pago disponible');
             
             // Mostrar botón de cuentas separadas siempre que haya una orden activa
             if (separateAccountsBtn) {
@@ -413,8 +404,11 @@ function updatePaymentButtons() {
             partialPaymentBtn.style.display = '';
             paymentHistoryBtn.style.display = '';
             
-            if (cancelOrderBtn) {
+            // Mostrar botón de cancelar solo si la orden no está completada
+            if (cancelOrderBtn && !isCompleted) {
                 cancelOrderBtn.style.display = '';
+            } else if (cancelOrderBtn) {
+                cancelOrderBtn.style.display = 'none';
             }
         } else {
             // Ocultar botones si no se cumplen las condiciones
@@ -429,7 +423,7 @@ function updatePaymentButtons() {
                 cancelOrderBtn.style.display = 'none';
             }
             
-            console.log('🔒 [OrderUI] updatePaymentButtons() - Botones de pago ocultos - Condiciones no cumplidas');
+            console.log('🔒 [OrderUI] updatePaymentButtons() - Botones de pago ocultos - Orden cancelada, completada o sin items');
         }
         
     } catch (error) {

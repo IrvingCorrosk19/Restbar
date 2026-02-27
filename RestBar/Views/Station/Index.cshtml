@@ -799,7 +799,7 @@
                 <div class="station-card @(station.IsActive ? "" : "station-inactive")" 
                      data-name="@station.Name.ToLower()" 
                      data-type="@station.Type" 
-                     data-products="@(station.Products.Any() ? "with" : "without")"
+                     data-products="@(station.StockAssignments.Any(sa => sa.IsActive) ? "with" : "without")"
                      data-area="@(station.Area?.Name ?? "sin-area")"
                      data-status="@(station.IsActive ? "active" : "inactive")">
                     <div class="station-card-header">
@@ -878,10 +878,10 @@
                             </div>
                             <div class="station-info-item">
                                 <div class="station-info-label">Productos:</div>
-                                @if (station.Products.Any())
+                                @if (station.StockAssignments.Any(sa => sa.IsActive))
                                 {
                                     <span class="station-badge products-with">
-                                        <i class="fas fa-box"></i> @station.Products.Count producto(s)
+                                        <i class="fas fa-box"></i> @station.StockAssignments.Count(sa => sa.IsActive) producto(s)
                                     </span>
                                 }
                                 else

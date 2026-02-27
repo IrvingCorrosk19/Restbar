@@ -406,5 +406,63 @@ namespace RestBar.Controllers
             await _tableService.DeleteAsync(id);
             return Json(new { success = true });
         }
+
+        // ✅ Liberar mesas fantasma: OCUPADA sin órdenes activas → Disponible
+        [HttpPost]
+        public async Task<IActionResult> ReleaseGhostTables()
+        {
+            try
+            {
+                Console.WriteLine("🔍 [TableController] ReleaseGhostTables() - Iniciando...");
+
+                var context = _tableService.GetContext();
+
+                // Mesas que están OCUPADA/EnPreparacion/ParaPago pero no tienen
+                // ninguna orden en estado activo
+                var activeStatuses = new[]
+                {
+                    OrderStatus.Pending,
+                    OrderStatus.SentToKitchen,
+                    OrderStatus.Preparing,
+                    OrderStatus.Ready,
+                    OrderStatus.ReadyToPay,
+                    OrderStatus.Served
+                };
+
+                var ghostTables = await context.Tables
+                    .Where(t => t.Status == TableStatus.Ocupada ||
+                                t.Status == TableStatus.EnPreparacion ||
+                                t.Status == TableStatus.ParaPago)
+                    .Where(t => !context.Orders
+                        .Any(o => o.TableId == t.Id && activeStatuses.Contains(o.Status)))
+                    .ToListAsync();
+
+                Console.WriteLine($"🔍 [TableController] ReleaseGhostTables() - Mesas fantasma encontradas: {ghostTables.Count}");
+
+                var released = new List<object>();
+                foreach (var table in ghostTables)
+                {
+                    var prev = table.Status.ToString();
+                    table.Status = TableStatus.Disponible;
+                    released.Add(new { id = table.Id, tableNumber = table.TableNumber, previousStatus = prev });
+                    Console.WriteLine($"✅ [TableController] ReleaseGhostTables() - Mesa {table.TableNumber}: {prev} → Disponible");
+                }
+
+                await context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    releasedCount = released.Count,
+                    tables = released,
+                    message = $"Se liberaron {released.Count} mesa(s) fantasma"
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [TableController] ReleaseGhostTables() - Error: {ex.Message}");
+                return Json(new { success = false, message = $"Error: {ex.Message}" });
+            }
+        }
     }
 } 

@@ -85,7 +85,11 @@ namespace RestBar.Controllers
                 Console.WriteLine($"❌ [OrderController] Index() - Error: {ex.Message}");
                 Console.WriteLine($"🔍 [OrderController] Index() - StackTrace: {ex.StackTrace}");
                 _logger.LogError(ex, "[OrderController] Error en Index()");
-                return View("Error");
+                return View("Error", new ErrorViewModel
+                {
+                    RequestId = System.Diagnostics.Activity.Current?.Id ?? HttpContext.TraceIdentifier,
+                    Message = ex.Message
+                });
             }
         }
 
@@ -759,44 +763,40 @@ namespace RestBar.Controllers
         [HttpPost]
         public async Task<IActionResult> Cancel([FromBody] CancelOrderDto dto)
         {
-            Console.WriteLine($"🔍 ENTRADA: Cancel() - OrderId: {dto?.OrderId}");
+            if (dto == null)
+                return BadRequest(new { success = false, message = "Datos de entrada inválidos" });
+            if (dto.OrderId == Guid.Empty)
+                return BadRequest(new { success = false, message = "OrderId es requerido" });
+
+            Guid? userId = null;
+            if (!string.IsNullOrEmpty(User.FindFirst("UserId")?.Value) && Guid.TryParse(User.FindFirst("UserId")?.Value, out var parsedUserId))
+                userId = parsedUserId;
+
             try
             {
-                // Validar que dto no sea null
-                if (dto == null)
-                {
-                    _logger.LogWarning("Cancel: dto es null");
-                    return BadRequest(new { error = "Datos de entrada inválidos - dto es null" });
-                }
-
-                // Validar que OrderId no sea vacío
-                if (dto.OrderId == Guid.Empty)
-                {
-                    _logger.LogWarning("Cancel: OrderId es vacío");
-                    return BadRequest(new { error = "OrderId es requerido" });
-                }
-
-                // Obtener userId del contexto de autenticación
-                Guid? userId = null;
-                var userIdClaim = User.FindFirst("UserId")?.Value;
-                
-                if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out Guid parsedUserId))
-                {
-                    userId = parsedUserId;
-                }
-                
                 await _orderService.CancelOrderAsync(dto.OrderId, userId, dto.Reason, dto.SupervisorId);
-                
-                return Ok(new
-                {
-                    success = true,
-                    message = "Orden cancelada exitosamente"
-                });
+                return Ok(new { success = true, message = "Orden cancelada exitosamente" });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { success = false, message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return StatusCode(409, new { success = false, message = "La orden fue modificada por otro usuario. Actualice e intente de nuevo." });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al cancelar orden");
-                return BadRequest(new { error = ex.Message });
+                return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
 
@@ -1115,7 +1115,7 @@ namespace RestBar.Controllers
                 
                 if (!orderExists)
                 {
-                    return Json(new { success = false, error = "Orden no encontrada" });
+                    return NotFound(new { success = false, error = "Orden no encontrada" }); // P2-FIX-06
                 }
                 
                 var order = await _orderService.GetOrderWithDetailsAsync(guidOrderId);
@@ -1151,16 +1151,16 @@ namespace RestBar.Controllers
                             itemsData = new List<object>();
                         }
                         
-                        return Json(new { 
-                            success = true, 
+                        return Json(new {
+                            success = true,
                             orderId = simpleOrder.Id,
                             status = simpleOrder.Status.ToString(),
-                            totalAmount = simpleOrder.TotalAmount,
+                            totalAmount = simpleOrder.TotalAmount, // items no disponibles en este path, stale aceptable
                             items = itemsData
                         });
                     }
                     
-                    return Json(new { success = false, error = "Orden no encontrada" });
+                    return NotFound(new { success = false, error = "Orden no encontrada" }); // P2-FIX-06
                 }
 
                 var orderItems = order.OrderItems.Select(oi => new
@@ -1178,12 +1178,18 @@ namespace RestBar.Controllers
                     notes = oi.Notes
                 }).ToList();
 
+                var computedTotal = Math.Round(
+                    order.OrderItems
+                        .Where(oi => oi.Status != OrderItemStatus.Cancelled)
+                        .Sum(oi => oi.Quantity * oi.UnitPrice - oi.Discount),
+                    2);
+
                 return Json(new
                 {
                     success = true,
                     orderId = order.Id,
                     status = order.Status.ToString(),
-                    totalAmount = order.TotalAmount,
+                    totalAmount = computedTotal,
                     items = orderItems
                 });
             }
@@ -1394,12 +1400,24 @@ namespace RestBar.Controllers
                 
                 return Json(new { success = true, message = "Item actualizado exitosamente" });
             }
+            catch (InvalidOperationException ex)
+            {
+                Console.WriteLine($"❌ [OrderController] UpdateItemStatus() - Error: {ex.Message}");
+                _logger.LogWarning(ex, "Error de validación al actualizar estado del item");
+                return StatusCode(400, new { success = false, message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                Console.WriteLine($"❌ [OrderController] UpdateItemStatus() - No encontrado: {ex.Message}");
+                _logger.LogWarning(ex, "Item no encontrado al actualizar estado");
+                return StatusCode(404, new { success = false, message = ex.Message });
+            }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ [OrderController] UpdateItemStatus() - Error: {ex.Message}");
                 Console.WriteLine($"🔍 [OrderController] UpdateItemStatus() - StackTrace: {ex.StackTrace}");
                 _logger.LogError(ex, "Error al actualizar estado del item");
-                return Json(new { success = false, message = $"Error: {ex.Message}" });
+                return StatusCode(500, new { success = false, message = $"Error: {ex.Message}" });
             }
         }
 

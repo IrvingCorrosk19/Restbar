@@ -49,8 +49,7 @@ public partial class Product : ITrackableEntity
 
     public virtual ICollection<Modifier> Modifiers { get; set; } = new List<Modifier>();
 
-    public Guid? StationId { get; set; }
-    public virtual Station? Station { get; set; }
+    // ✅ ELIMINADO: StationId y Station - Ahora se usa ProductStockAssignment para asignar estaciones
 
     // ✅ NUEVO: Propiedades multi-tenant
     [Display(Name = "Compañía")]

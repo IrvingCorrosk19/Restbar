@@ -38,10 +38,13 @@
 
                                 <dt class="col-sm-4">Productos Asociados:</dt>
                                 <dd class="col-sm-8">
-                                    @if (Model.Products.Any())
+                                    @{
+                                        var activeAssignments = Model.StockAssignments.Where(sa => sa.IsActive);
+                                    }
+                                    @if (activeAssignments.Any())
                                     {
                                         <span class="badge bg-warning">
-                                            @Model.Products.Count producto(s)
+                                            @activeAssignments.Count() producto(s)
                                         </span>
                                     }
                                     else
@@ -52,7 +55,7 @@
                             </dl>
                         </div>
                         <div class="col-md-6">
-                            @if (Model.Products.Any())
+                            @if (Model.StockAssignments.Any(sa => sa.IsActive))
                             {
                                 <h5>Productos de esta Estación:</h5>
                                 <div class="table-responsive">
@@ -60,18 +63,23 @@
                                         <thead>
                                             <tr>
                                                 <th>Producto</th>
+                                                <th>Stock en estación</th>
                                                 <th>Precio</th>
                                                 <th>Estado</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach (var product in Model.Products.OrderBy(p => p.Name))
+                                            @foreach (var assignment in Model.StockAssignments
+                                                .Where(sa => sa.IsActive)
+                                                .OrderBy(sa => sa.Product?.Name))
                                             {
+                                                var product = assignment.Product;
                                                 <tr>
-                                                    <td>@product.Name</td>
-                                                    <td>@product.Price.ToString("C")</td>
+                                                    <td>@(product?.Name ?? "Producto no disponible")</td>
+                                                    <td>@assignment.Stock.ToString("N2")</td>
+                                                    <td>@(product != null ? product.Price.ToString("C") : "-")</td>
                                                     <td>
-                                                        @if (product.IsActive == true)
+                                                        @if (product?.IsActive == true)
                                                         {
                                                             <span class="badge bg-success">Activo</span>
                                                         }

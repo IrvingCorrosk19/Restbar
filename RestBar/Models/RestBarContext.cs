@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -510,6 +510,10 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.OrderNumber)
                 .HasMaxLength(50)
                 .HasColumnName("OrderNumber");
+            entity.Property(e => e.Version)
+                .HasDefaultValue(0)
+                .HasColumnName("version")
+                .IsConcurrencyToken();
 
             entity.HasOne(d => d.Customer).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.CustomerId)
@@ -732,7 +736,7 @@ public partial class RestBarContext : DbContext
                 .HasMaxLength(20)
                 .HasDefaultValueSql("'unit'::character varying")
                 .HasColumnName("unit");
-            entity.Property(e => e.StationId).HasColumnName("station_id");
+            // ✅ ELIMINADO: StationId - Ahora se usa ProductStockAssignment
             
             // ✅ NUEVO: Propiedades multi-tenant
             entity.Property(e => e.CompanyId)
@@ -754,11 +758,7 @@ public partial class RestBarContext : DbContext
                 .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("products_category_id_fkey");
 
-            entity.HasOne(d => d.Station)
-                .WithMany(p => p.Products)
-                .HasForeignKey(d => d.StationId)
-                .OnDelete(DeleteBehavior.SetNull)
-                .HasConstraintName("products_station_id_fkey");
+            // ✅ ELIMINADO: Relación con Station - Ahora se usa ProductStockAssignment
             
             // ✅ NUEVO: Campos de inventario
             entity.Property(e => e.Stock)
@@ -881,7 +881,7 @@ public partial class RestBarContext : DbContext
                 .HasConstraintName("product_stock_assignments_product_id_fkey");
 
             entity.HasOne(d => d.Station)
-                .WithMany()
+                .WithMany(s => s.StockAssignments)
                 .HasForeignKey(d => d.StationId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("product_stock_assignments_station_id_fkey");

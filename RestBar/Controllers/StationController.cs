@@ -50,6 +50,29 @@ namespace RestBar.Controllers
             if (station == null)
                 return Json(new { success = false, message = "Estación no encontrada" });
 
+            var activeAssignments = station.StockAssignments
+                .Where(sa => sa.IsActive)
+                .OrderBy(sa => sa.Product?.Name)
+                .ToList();
+
+            var assignmentsRows = string.Join("", activeAssignments.Select(sa =>
+            {
+                var product = sa.Product;
+                var productName = product?.Name ?? "Producto no disponible";
+                var productPrice = product != null ? product.Price.ToString("C") : "-";
+                var productStatusBadge = product?.IsActive == true
+                    ? "<span class='badge bg-success'>Activo</span>"
+                    : "<span class='badge bg-danger'>Inactivo</span>";
+
+                return $@"
+                    <tr>
+                        <td>{productName}</td>
+                        <td>{sa.Stock:N2}</td>
+                        <td>{productPrice}</td>
+                        <td>{productStatusBadge}</td>
+                    </tr>";
+            }));
+
             var detailsHtml = $@"
                 <div class='row'>
                     <div class='col-md-6'>
@@ -74,34 +97,27 @@ namespace RestBar.Controllers
                             </dd>
                             <dt class='col-sm-4'>Productos:</dt>
                             <dd class='col-sm-8'>
-                                <span class='badge bg-warning'>{station.Products.Count} producto(s)</span>
+                                {(activeAssignments.Any()
+                                    ? $"<span class='badge bg-warning'>{activeAssignments.Count} producto(s)</span>"
+                                    : "<span class='badge bg-secondary'>Sin productos</span>")}
                             </dd>
                         </dl>
                     </div>
                     <div class='col-md-6'>
-                        {(station.Products.Any() ? $@"
+                        {(activeAssignments.Any() ? $@"
                             <h5>Productos de esta Estación:</h5>
                             <div class='table-responsive'>
                                 <table class='table table-sm table-striped'>
                                     <thead>
                                         <tr>
                                             <th>Producto</th>
+                                            <th>Stock en estación</th>
                                             <th>Precio</th>
                                             <th>Estado</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {string.Join("", station.Products.OrderBy(p => p.Name).Select(p => $@"
-                                            <tr>
-                                                <td>{p.Name}</td>
-                                                <td>{p.Price:C}</td>
-                                                <td>
-                                                    <span class='badge {(p.IsActive == true ? "bg-success" : "bg-danger")}'>
-                                                        {(p.IsActive == true ? "Activo" : "Inactivo")}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        "))}
+                                        {assignmentsRows}
                                     </tbody>
                                 </table>
                             </div>
@@ -505,7 +521,7 @@ namespace RestBar.Controllers
                     areaName = s.Area?.Name,
                     isActive = s.IsActive,
                     icon = s.Icon,
-                    productCount = s.Products?.Count ?? 0
+                    productCount = s.StockAssignments?.Count(sa => sa.IsActive) ?? 0
                 }).ToList();
                 
                 Console.WriteLine($"✅ [StationController] GetStations() - Total estaciones: {data.Count}");
@@ -543,7 +559,7 @@ namespace RestBar.Controllers
                 areaName = station.Area?.Name,
                 isActive = station.IsActive,
                 icon = station.Icon,
-                productCount = station.Products.Count
+                productCount = station.StockAssignments.Count(sa => sa.IsActive)
             };
 
             return Json(new { success = true, data });

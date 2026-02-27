@@ -540,7 +540,24 @@ namespace RestBar.Services
                 order.Status = OrderStatus.Pending;
                 Console.WriteLine($"[OrderService] AddItemsToOrderAsync - Estado de la orden cambiado de {previousStatus} a {order.Status}");
 
-                await _context.SaveChangesAsync();
+                // P1-FIX-04: Retry ante DbUpdateConcurrencyException (Version token puede incrementar por pagos concurrentes)
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    _logger.LogWarning("[P1-FIX-04] Concurrencia detectada en AddItemsToOrderAsync para orden {OrderId}. Reintentando...", order.Id);
+                    try
+                    {
+                        await _context.Entry(order).ReloadAsync();
+                        await _context.SaveChangesAsync();
+                    }
+                    catch (DbUpdateConcurrencyException)
+                    {
+                        throw new InvalidOperationException("La orden fue modificada simultáneamente. Por favor, intente de nuevo.");
+                    }
+                }
 
                 order.TotalAmount = order.OrderItems.Sum(oi => (oi.Quantity * oi.UnitPrice) - oi.Discount);
 
@@ -650,7 +667,25 @@ namespace RestBar.Services
                 }
 
                 Console.WriteLine($"[OrderService] Intentando eliminar item del contexto...");
-                
+
+                // P0-FIX-01: Bloquear cancelación si totalPaid > newTotal para evitar saldo negativo
+                var totalPaidForCancel = await _context.Payments
+                    .Where(p => p.OrderId == orderId && !p.IsVoided)
+                    .SumAsync(p => p.Amount);
+
+                if (totalPaidForCancel > 0)
+                {
+                    var newTotal = order.OrderItems
+                        .Where(oi => oi.Id != itemToRemove.Id)
+                        .Sum(oi => oi.Quantity * oi.UnitPrice - oi.Discount);
+
+                    if (totalPaidForCancel > newTotal + 0.01m)
+                    {
+                        throw new InvalidOperationException(
+                            $"No se puede cancelar el ítem porque el pago registrado (${totalPaidForCancel:F2}) supera el nuevo total (${newTotal:F2}). Anule primero el pago excedente.");
+                    }
+                }
+
                 // Eliminar el item del contexto
                 _context.OrderItems.Remove(itemToRemove);
                 
@@ -666,41 +701,35 @@ namespace RestBar.Services
                 // Verificar si la orden quedó vacía después de eliminar el item
                 if (order.OrderItems.Count == 0)
                 {
-                    Console.WriteLine($"[OrderService] La orden quedó vacía, eliminando orden completa...");
-                    
+                    // P1-FIX-03: Cancelar la orden en lugar de borrarla para preservar auditoría
+                    _logger.LogInformation("[P1-FIX-03] Orden {OrderId} quedó vacía. Cambiando a Cancelled en lugar de eliminar.", order.Id);
+
                     // Actualizar estado de la mesa si existe
                     if (order.Table != null)
                     {
                         Console.WriteLine($"[OrderService] Actualizando estado de la mesa a Disponible...");
-                        Console.WriteLine($"[OrderService] Estado anterior de la mesa: {order.Table.Status}");
                         order.Table.Status = TableStatus.Disponible;
-                        Console.WriteLine($"[OrderService] Nuevo estado de la mesa: {order.Table.Status}");
                     }
                     else
                     {
                         Console.WriteLine($"[OrderService] WARNING: No se encontró mesa asociada a la orden");
                     }
-                    
-                    // Eliminar la orden completa
-                    _context.Orders.Remove(order);
+
+                    // Cancelar orden (NO borrar) para preservar auditoría y FK references
+                    order.Status = OrderStatus.Cancelled;
+                    order.ClosedAt = DateTime.UtcNow;
                     await _context.SaveChangesAsync();
-                    
-                    Console.WriteLine($"[OrderService] Orden eliminada completamente");
-                    
+
                     // 🔄 NOTIFICAR CAMBIO DE ESTADO DE MESA VIA SIGNALR
                     if (order.Table != null)
                     {
-                        Console.WriteLine($"[OrderService] Enviando notificación SignalR de cambio de estado de mesa...");
                         await _orderHubService.NotifyTableStatusChanged(order.Table.Id, order.Table.Status.ToString());
-                        Console.WriteLine($"[OrderService] Notificación SignalR de mesa enviada");
                     }
-                    
-                    // 📡 NOTIFICAR ELIMINACIÓN DE ORDEN VIA SIGNALR
-                    Console.WriteLine($"[OrderService] Enviando notificación SignalR de orden eliminada...");
+
+                    // 📡 NOTIFICAR CANCELACIÓN DE ORDEN VIA SIGNALR
                     await _orderHubService.NotifyOrderStatusChanged(order.Id, OrderStatus.Cancelled);
-                    Console.WriteLine($"[OrderService] Notificación SignalR de orden enviada");
-                    
-                    // Retornar null para indicar que la orden fue eliminada
+
+                    // Retornar null para indicar que la orden quedó vacía
                     return null;
                 }
                 
@@ -760,38 +789,18 @@ namespace RestBar.Services
                     
                     Console.WriteLine($"[OrderService] Item eliminado, items restantes: {order.OrderItems.Count}");
                     
-                    // Verificar si la orden quedó vacía
+                    // Verificar si la orden quedó vacía — OBS-1: Cancelar en lugar de borrar (auditoría)
                     if (order.OrderItems.Count == 0)
                     {
-                        Console.WriteLine($"[OrderService] La orden quedó vacía, eliminando orden completa...");
-                        
-                        // Actualizar estado de la mesa si existe
+                        _logger.LogInformation("[OBS-1] Orden {OrderId} quedó vacía. Cancelando (no borrar).", order.Id);
                         if (order.Table != null)
-                        {
-                            Console.WriteLine($"[OrderService] Actualizando estado de la mesa a Disponible...");
                             order.Table.Status = TableStatus.Disponible;
-                        }
-                        
-                        // Eliminar la orden completa
-                        _context.Orders.Remove(order);
+                        order.Status = OrderStatus.Cancelled;
+                        order.ClosedAt = DateTime.UtcNow;
                         await _context.SaveChangesAsync();
-                        
-                        Console.WriteLine($"[OrderService] Orden eliminada completamente");
-                        
-                        // 🔄 NOTIFICAR CAMBIO DE ESTADO DE MESA VIA SIGNALR
                         if (order.Table != null)
-                        {
-                            Console.WriteLine($"[OrderService] Enviando notificación SignalR de cambio de estado de mesa...");
                             await _orderHubService.NotifyTableStatusChanged(order.Table.Id, order.Table.Status.ToString());
-                            Console.WriteLine($"[OrderService] Notificación SignalR de mesa enviada");
-                        }
-                        
-                        // 📡 NOTIFICAR ELIMINACIÓN DE ORDEN VIA SIGNALR
-                        Console.WriteLine($"[OrderService] Enviando notificación SignalR de orden eliminada...");
                         await _orderHubService.NotifyOrderStatusChanged(order.Id, OrderStatus.Cancelled);
-                        Console.WriteLine($"[OrderService] Notificación SignalR de orden enviada");
-                        
-                        // Retornar null para indicar que la orden fue eliminada
                         return null;
                     }
                 }
@@ -883,44 +892,18 @@ namespace RestBar.Services
                     
                     Console.WriteLine($"[OrderService] Item eliminado, items restantes: {order.OrderItems.Count}");
                     
-                    // Verificar si la orden quedó vacía
+                    // Verificar si la orden quedó vacía — OBS-1: Cancelar en lugar de borrar (auditoría)
                     if (order.OrderItems.Count == 0)
                     {
-                        Console.WriteLine($"[OrderService] La orden quedó vacía, eliminando orden completa...");
-                        
-                        // Actualizar estado de la mesa si existe
+                        _logger.LogInformation("[OBS-1] Orden {OrderId} quedó vacía. Cancelando (no borrar).", order.Id);
                         if (order.Table != null)
-                        {
-                            Console.WriteLine($"[OrderService] Actualizando estado de la mesa a Disponible...");
-                            Console.WriteLine($"[OrderService] Estado anterior de la mesa: {order.Table.Status}");
                             order.Table.Status = TableStatus.Disponible;
-                            Console.WriteLine($"[OrderService] Nuevo estado de la mesa: {order.Table.Status}");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"[OrderService] WARNING: No se encontró mesa asociada a la orden");
-                        }
-                        
-                        // Eliminar la orden completa
-                        _context.Orders.Remove(order);
+                        order.Status = OrderStatus.Cancelled;
+                        order.ClosedAt = DateTime.UtcNow;
                         await _context.SaveChangesAsync();
-                        
-                        Console.WriteLine($"[OrderService] Orden eliminada completamente");
-                        
-                        // 🔄 NOTIFICAR CAMBIO DE ESTADO DE MESA VIA SIGNALR
                         if (order.Table != null)
-                        {
-                            Console.WriteLine($"[OrderService] Enviando notificación SignalR de cambio de estado de mesa...");
                             await _orderHubService.NotifyTableStatusChanged(order.Table.Id, order.Table.Status.ToString());
-                            Console.WriteLine($"[OrderService] Notificación SignalR de mesa enviada");
-                        }
-                        
-                        // 📡 NOTIFICAR ELIMINACIÓN DE ORDEN VIA SIGNALR
-                        Console.WriteLine($"[OrderService] Enviando notificación SignalR de orden eliminada...");
                         await _orderHubService.NotifyOrderStatusChanged(order.Id, OrderStatus.Cancelled);
-                        Console.WriteLine($"[OrderService] Notificación SignalR de orden enviada");
-                        
-                        // Retornar null para indicar que la orden fue eliminada
                         return null;
                     }
                 }
@@ -985,44 +968,18 @@ namespace RestBar.Services
                     
                     Console.WriteLine($"[OrderService] Item eliminado, items restantes: {order.OrderItems.Count}");
                     
-                    // Verificar si la orden quedó vacía
+                    // Verificar si la orden quedó vacía — OBS-1: Cancelar en lugar de borrar (auditoría)
                     if (order.OrderItems.Count == 0)
                     {
-                        Console.WriteLine($"[OrderService] La orden quedó vacía, eliminando orden completa...");
-                        
-                        // Actualizar estado de la mesa si existe
+                        _logger.LogInformation("[OBS-1] Orden {OrderId} quedó vacía. Cancelando (no borrar).", order.Id);
                         if (order.Table != null)
-                        {
-                            Console.WriteLine($"[OrderService] Actualizando estado de la mesa a Disponible...");
-                            Console.WriteLine($"[OrderService] Estado anterior de la mesa: {order.Table.Status}");
                             order.Table.Status = TableStatus.Disponible;
-                            Console.WriteLine($"[OrderService] Nuevo estado de la mesa: {order.Table.Status}");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"[OrderService] WARNING: No se encontró mesa asociada a la orden");
-                        }
-                        
-                        // Eliminar la orden completa
-                        _context.Orders.Remove(order);
+                        order.Status = OrderStatus.Cancelled;
+                        order.ClosedAt = DateTime.UtcNow;
                         await _context.SaveChangesAsync();
-                        
-                        Console.WriteLine($"[OrderService] Orden eliminada completamente");
-                        
-                        // 🔄 NOTIFICAR CAMBIO DE ESTADO DE MESA VIA SIGNALR
                         if (order.Table != null)
-                        {
-                            Console.WriteLine($"[OrderService] Enviando notificación SignalR de cambio de estado de mesa...");
                             await _orderHubService.NotifyTableStatusChanged(order.Table.Id, order.Table.Status.ToString());
-                            Console.WriteLine($"[OrderService] Notificación SignalR de mesa enviada");
-                        }
-                        
-                        // 📡 NOTIFICAR ELIMINACIÓN DE ORDEN VIA SIGNALR
-                        Console.WriteLine($"[OrderService] Enviando notificación SignalR de orden eliminada...");
                         await _orderHubService.NotifyOrderStatusChanged(order.Id, OrderStatus.Cancelled);
-                        Console.WriteLine($"[OrderService] Notificación SignalR de orden enviada");
-                        
-                        // Retornar null para indicar que la orden fue eliminada
                         return null;
                     }
                 }
@@ -1045,139 +1002,95 @@ namespace RestBar.Services
             }
         }
 
-        // Cancelar orden
+        /// <summary>Cancelar orden. Regla: no se puede cancelar una orden ya Completed.</summary>
         public async Task CancelOrderAsync(Guid orderId, Guid? userId, string? reason = null, Guid? supervisorId = null)
         {
-            try
+            if (orderId == Guid.Empty)
+                throw new ArgumentException("OrderId es requerido.", nameof(orderId));
+
+            var order = await _context.Orders
+                .Include(o => o.Table)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Product)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            if (order == null)
+                throw new KeyNotFoundException($"No se encontró la orden con ID {orderId}");
+
+            if (order.Status == OrderStatus.Cancelled)
+                throw new InvalidOperationException("La orden ya está cancelada.");
+
+            if (order.Status == OrderStatus.Completed)
+                throw new InvalidOperationException("No se puede cancelar una orden ya completada y pagada.");
+
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-                Console.WriteLine($"[OrderService] CancelOrderAsync iniciado");
-                Console.WriteLine($"[OrderService] orderId: {orderId}, userId: {userId}, reason: {reason}, supervisorId: {supervisorId}");
-                
-                var order = await _context.Orders
-                    .Include(o => o.Table)
-                    .Include(o => o.OrderItems)
-                    .FirstOrDefaultAsync(o => o.Id == orderId);
-
-                if (order == null)
+                try
                 {
-                    Console.WriteLine($"[OrderService] ERROR: Orden no encontrada con ID {orderId}");
-                    throw new KeyNotFoundException($"No se encontró la orden con ID {orderId}");
-                }
-
-                Console.WriteLine($"[OrderService] Orden encontrada - Status actual: {order.Status}");
-                Console.WriteLine($"[OrderService] Mesa asociada: {(order.Table != null ? $"ID={order.Table.Id}, Estado={order.Table.Status}" : "NO")}");
-
-                // ✅ NUEVO: Verificar si la orden tiene pagos antes de cancelarla
-                var orderPayments = await _context.Payments
-                    .Where(p => p.OrderId == orderId && !p.IsVoided)
-                    .ToListAsync();
-                
-                var totalPaid = orderPayments.Sum(p => p.Amount);
-                Console.WriteLine($"[OrderService] Total pagado en orden cancelada: ${totalPaid:F2}");
-                
-                // ✅ NUEVO: Anular todos los pagos de la orden cancelada
-                if (orderPayments.Any())
-                {
-                    Console.WriteLine($"[OrderService] Anulando {orderPayments.Count} pagos de la orden cancelada...");
+                    var orderPayments = await _context.Payments
+                        .Where(p => p.OrderId == orderId && !p.IsVoided)
+                        .ToListAsync();
                     foreach (var payment in orderPayments)
-                    {
                         payment.IsVoided = true;
-                        Console.WriteLine($"[OrderService] Pago ${payment.Amount:F2} ({payment.Method}) anulado");
-                    }
-                    Console.WriteLine($"[OrderService] ✅ Todos los pagos anulados");
-                }
 
-                // Marcar la orden como cancelada
-                order.Status = OrderStatus.Cancelled;
-                order.ClosedAt = DateTime.UtcNow; // ✅ Fecha específica de cierre de orden
+                    order.Status = OrderStatus.Cancelled;
+                    order.ClosedAt = DateTime.UtcNow;
+                    order.Version++;
 
-                // Crear log de cancelación
-                var cancellationLog = new OrderCancellationLog
-                {
-                    OrderId = orderId,
-                    UserId = userId,
-                    SupervisorId = supervisorId,
-                    Reason = reason ?? "Cancelación por usuario",
-                    Date = DateTime.UtcNow, // ✅ Fecha específica de notificación
-                    Products = string.Join(", ", order.OrderItems.Select(oi => oi.Product?.Name ?? "Producto desconocido"))
-                };
-
-                _context.OrderCancellationLogs.Add(cancellationLog);
-
-                // Actualizar el estado de la mesa si existe
-                if (order.Table != null)
-                {
-                    Console.WriteLine($"[OrderService] Verificando si hay otras órdenes activas para la mesa {order.Table.Id}");
-                    
-                    // ✅ MEJORADO: Verificar si hay otras órdenes activas para esta mesa (incluye ReadyToPay y Served)
-                    var activeOrdersForTable = await _context.Orders
-                        .Where(o => o.TableId == order.TableId && 
-                                   o.Id != orderId && 
-                                   (o.Status == OrderStatus.Pending || 
-                                    o.Status == OrderStatus.SentToKitchen || 
-                                    o.Status == OrderStatus.Preparing ||
-                                    o.Status == OrderStatus.Ready ||
-                                    o.Status == OrderStatus.ReadyToPay ||
-                                    o.Status == OrderStatus.Served))
-                        .CountAsync();
-                    
-                    Console.WriteLine($"[OrderService] Órdenes activas para la mesa: {activeOrdersForTable}");
-                    
-                    // Si no hay más órdenes activas, cambiar el estado de la mesa a disponible
-                    if (activeOrdersForTable == 0)
+                    var productNames = string.Join(", ", order.OrderItems.Select(oi => oi.Product?.Name ?? "Producto"));
+                    _context.OrderCancellationLogs.Add(new OrderCancellationLog
                     {
-                        order.Table.Status = TableStatus.Disponible;
-                        Console.WriteLine($"[OrderService] Estado de mesa actualizado a: {order.Table.Status}");
-                    }
-                }
+                        Id = Guid.NewGuid(),
+                        OrderId = orderId,
+                        UserId = userId,
+                        SupervisorId = supervisorId,
+                        Reason = reason ?? "Cancelación por usuario",
+                        Date = DateTime.UtcNow,
+                        Products = productNames
+                    });
 
-                await _context.SaveChangesAsync();
-                Console.WriteLine($"[OrderService] Orden cancelada exitosamente");
-
-                // ✅ NUEVO: Restaurar el inventario de todos los items de la orden cancelada
-                Console.WriteLine($"[OrderService] Restaurando inventario de {order.OrderItems.Count} items...");
-                foreach (var item in order.OrderItems)
-                {
-                    try
+                    if (order.Table != null)
                     {
-                        if (item.ProductId != null && item.ProductId != Guid.Empty)
-                        {
-                            // Restaurar stock en la estación asignada o stock global
-                            await _productService.RestoreStockAsync(
-                                item.ProductId.Value,
-                                item.Quantity,
-                                item.PreparedByStationId,
-                                order.BranchId);
-                            
-                            Console.WriteLine($"[OrderService] ✅ Inventario restaurado para item {item.Product?.Name}: {item.Quantity} unidades");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"[OrderService] ⚠️ Item con ProductId nulo o vacío, no se puede restaurar inventario");
-                        }
+                        var activeOrdersForTable = await _context.Orders
+                            .Where(o => o.TableId == order.TableId && o.Id != orderId &&
+                                o.Status != OrderStatus.Cancelled && o.Status != OrderStatus.Completed)
+                            .CountAsync();
+                        if (activeOrdersForTable == 0)
+                            order.Table.Status = TableStatus.Disponible;
                     }
-                    catch (Exception restoreEx)
-                    {
-                        Console.WriteLine($"[OrderService] ERROR al restaurar inventario para item {item.Product?.Name}: {restoreEx.Message}");
-                        // No lanzar excepción aquí para no afectar la cancelación principal
-                    }
-                }
-                Console.WriteLine($"[OrderService] ✅ Proceso de restauración de inventario completado");
 
-                // Notificar cambios vía SignalR
-                await _orderHubService.NotifyOrderCancelled(orderId);
-                await _orderHubService.NotifyOrderStatusChanged(orderId, order.Status);
-                if (order.Table != null)
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                }
+                catch
                 {
-                    await _orderHubService.NotifyTableStatusChanged(order.Table.Id, order.Table.Status.ToString());
+                    await transaction.RollbackAsync();
+                    throw;
                 }
             }
-            catch (Exception ex)
+
+            // Restaurar inventario solo de ítems no cancelados (ítems ya cancelados no tienen stock a restaurar)
+            foreach (var item in order.OrderItems.Where(oi => oi.Status != OrderItemStatus.Cancelled))
             {
-                Console.WriteLine($"[OrderService] ERROR en CancelOrderAsync: {ex.Message}");
-                Console.WriteLine($"[OrderService] Stack trace: {ex.StackTrace}");
-                throw;
+                if (item.ProductId == null || item.ProductId == Guid.Empty) continue;
+                try
+                {
+                    await _productService.RestoreStockAsync(
+                        item.ProductId.Value,
+                        item.Quantity,
+                        item.PreparedByStationId,
+                        order.BranchId);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[OrderService] RestoreStock falló para item {item.Product?.Name}: {ex.Message}");
+                }
             }
+
+            await _orderHubService.NotifyOrderCancelled(orderId);
+            await _orderHubService.NotifyOrderStatusChanged(orderId, OrderStatus.Cancelled);
+            if (order.Table != null)
+                await _orderHubService.NotifyTableStatusChanged(order.Table.Id, order.Table.Status.ToString());
         }
 
         // ✅ NUEVO: Método para marcar mesa como ocupada cuando se selecciona
@@ -1525,52 +1438,86 @@ namespace RestBar.Services
                     .SumAsync(p => p.Amount);
                 
                 Console.WriteLine($"[OrderService] Total pagado en orden: ${totalPaid:F2}");
-                
-                // ✅ NUEVO: Validar si la orden está completada o pagada
-                if (order.Status == OrderStatus.Completed || order.Status == OrderStatus.Served)
+
+                // P0-FIX-02: Si la orden está completamente pagada, crear NUEVA orden para la misma mesa
+                var currentOrderTotal = order.OrderItems
+                    .Where(oi => oi.Status != OrderItemStatus.Cancelled)
+                    .Sum(oi => oi.Quantity * oi.UnitPrice - oi.Discount);
+
+                if (totalPaid > 0 && totalPaid >= currentOrderTotal - 0.01m)
                 {
-                    Console.WriteLine($"⚠️ [OrderService] ADVERTENCIA: Orden en estado {order.Status}, cambiando a SentToKitchen para agregar nuevos items");
-                    // Permitir agregar items a órdenes completadas (puede ser para reordenar)
-                    order.Status = OrderStatus.SentToKitchen;
+                    _logger.LogWarning("[P0-FIX-02] Orden {OrderId} completamente pagada (pagado={TotalPaid}, total={CurrentTotal}). Creando nueva orden para mesa {TableId}.",
+                        order.Id, totalPaid, currentOrderTotal, dto.TableId);
+
+                    var newOrderNumber = await GenerateOrderNumberAsync(order.CompanyId);
+                    var newOrder = new Order
+                    {
+                        Id = Guid.NewGuid(),
+                        OrderNumber = newOrderNumber,
+                        TableId = dto.TableId,
+                        UserId = userId,
+                        OrderType = (OrderType)Enum.Parse(typeof(OrderType), dto.OrderType),
+                        Status = OrderStatus.SentToKitchen,
+                        OpenedAt = DateTime.UtcNow,
+                        TotalAmount = 0,
+                        CompanyId = order.CompanyId,
+                        BranchId = order.BranchId
+                    };
+                    SetCreatedTracking(newOrder);
+                    _context.Orders.Add(newOrder);
+                    order = newOrder; // continuar el método con la nueva orden
+                    _logger.LogInformation("[P0-FIX-02] Nueva orden {OrderId} (#{OrderNumber}) creada para mesa {TableId}.", order.Id, order.OrderNumber, dto.TableId);
+                }
+                else
+                {
+                // OBS-3: Órdenes en estado cerrado (Completed, Served, Cancelled) nunca se reutilizan; crear siempre nueva
+                if (order.Status == OrderStatus.Completed || order.Status == OrderStatus.Served || order.Status == OrderStatus.Cancelled)
+                {
+                    _logger.LogWarning("[OBS-3] Orden {OrderId} en estado {Status}. Creando nueva orden para mesa {TableId}.", order.Id, order.Status, dto.TableId);
+                    var newOrderNumberObs3 = await GenerateOrderNumberAsync(order.CompanyId);
+                    var newOrderObs3 = new Order
+                    {
+                        Id = Guid.NewGuid(),
+                        OrderNumber = newOrderNumberObs3,
+                        TableId = dto.TableId,
+                        UserId = userId,
+                        OrderType = (OrderType)Enum.Parse(typeof(OrderType), dto.OrderType),
+                        Status = OrderStatus.SentToKitchen,
+                        OpenedAt = DateTime.UtcNow,
+                        TotalAmount = 0,
+                        CompanyId = order.CompanyId,
+                        BranchId = order.BranchId
+                    };
+                    SetCreatedTracking(newOrderObs3);
+                    _context.Orders.Add(newOrderObs3);
+                    order = newOrderObs3;
+                    _logger.LogInformation("[OBS-3] Nueva orden {OrderId} (#{OrderNumber}) creada para mesa {TableId}.", order.Id, order.OrderNumber, dto.TableId);
                 }
                 else if (order.Status == OrderStatus.ReadyToPay || order.Status == OrderStatus.Ready)
                 {
-                    // ✅ MEJORADO: Si está lista para pago, cambiar a SentToKitchen porque hay nuevos items
                     Console.WriteLine($"[OrderService] Orden existente en estado {order.Status}, cambiando a SentToKitchen por nuevos items");
                     order.Status = OrderStatus.SentToKitchen;
-                    
-                    // ✅ NUEVO: Si hay pagos parciales, mantenerlos (no se cancelan)
                     if (totalPaid > 0)
-                    {
                         Console.WriteLine($"⚠️ [OrderService] ADVERTENCIA: Orden tiene pagos parciales (${totalPaid:F2}), pero se agregan nuevos items");
-                    }
                 }
                 else if (order.Status == OrderStatus.Preparing)
                 {
-                    // Si ya está en preparación, mantener el estado (nuevos items se agregan a la preparación)
                     Console.WriteLine($"[OrderService] Orden existente en estado {order.Status}, manteniendo estado actual");
                 }
                 else if (order.Status == OrderStatus.Pending)
                 {
-                    // Si está pendiente, cambiar a SentToKitchen
                     Console.WriteLine($"[OrderService] Orden existente en estado {order.Status}, cambiando a SentToKitchen");
                     order.Status = OrderStatus.SentToKitchen;
                 }
-                else if (order.Status == OrderStatus.Cancelled)
-                {
-                    throw new InvalidOperationException("No se pueden agregar items a una orden cancelada");
-                }
                 else
                 {
-                    // Para cualquier otro estado, asegurar que esté en SentToKitchen
                     Console.WriteLine($"[OrderService] Orden existente en estado {order.Status}, cambiando a SentToKitchen");
                     order.Status = OrderStatus.SentToKitchen;
                 }
                 Console.WriteLine($"[OrderService] Estado final de orden: {order.Status}");
-                
-                // ✅ NUEVO: Establecer campos de auditoría de actualización cuando se actualiza una orden existente
                 SetUpdatedTracking(order);
                 Console.WriteLine($"✅ [OrderService] AddOrUpdateOrderWithPendingItemsAsync() - Orden existente actualizada: UpdatedBy={order.UpdatedBy}, UpdatedAt={order.UpdatedAt}");
+                } // end else (orden no completamente pagada)
             }
 
             decimal total = 0;
@@ -2000,34 +1947,54 @@ namespace RestBar.Services
         // ✅ NUEVO: Cancelar item de orden
         public async Task CancelOrderItemAsync(Guid orderId, Guid itemId)
         {
-            Console.WriteLine($"🔍 ENTRADA: CancelOrderItemAsync() - OrderId: {orderId}, ItemId: {itemId}");
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                Console.WriteLine($"🔍 [OrderService] CancelOrderItemAsync() - Iniciando...");
-                Console.WriteLine($"📋 [OrderService] CancelOrderItemAsync() - OrderId: {orderId}, ItemId: {itemId}");
-                
                 var orderItem = await _context.OrderItems
                     .Include(oi => oi.Order)
+                        .ThenInclude(o => o.Branch)
                     .Include(oi => oi.Product)
                     .FirstOrDefaultAsync(oi => oi.Id == itemId && oi.OrderId == orderId);
-                
-                if (orderItem == null) 
-                {
-                    Console.WriteLine($"⚠️ [OrderService] CancelOrderItemAsync() - Item no encontrado con ID {itemId}");
-                    throw new Exception("Item no encontrado");
-                }
-                
-                // Marcar como cancelado
+
+                if (orderItem == null)
+                    throw new KeyNotFoundException($"Item {itemId} no encontrado en la orden {orderId}");
+
+                // FIX: Validar que el ítem no esté ya cancelado
+                if (orderItem.Status == OrderItemStatus.Cancelled)
+                    throw new InvalidOperationException("El ítem ya está cancelado");
+
+                // FIX: No permitir cancelar ítems de órdenes completadas
+                if (orderItem.Order?.Status == OrderStatus.Completed)
+                    throw new InvalidOperationException("No se puede cancelar un ítem de una orden ya completada y pagada");
+
                 orderItem.Status = OrderItemStatus.Cancelled;
                 orderItem.UpdatedAt = DateTime.UtcNow;
-                
+
                 await _context.SaveChangesAsync();
-                Console.WriteLine($"✅ [OrderService] CancelOrderItemAsync() - Item cancelado exitosamente");
+                await transaction.CommitAsync();
+
+                // FIX: Restaurar stock FUERA de la transacción (best-effort, como en CancelOrderAsync)
+                if (orderItem.ProductId.HasValue && orderItem.ProductId != Guid.Empty)
+                {
+                    try
+                    {
+                        await _productService.RestoreStockAsync(
+                            orderItem.ProductId.Value,
+                            orderItem.Quantity,
+                            orderItem.PreparedByStationId,
+                            orderItem.Order?.BranchId);
+                        _logger.LogInformation("[OrderService] Stock restaurado para item {ItemId}, producto {ProductId}, qty {Qty}",
+                            itemId, orderItem.ProductId, orderItem.Quantity);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "[OrderService] No se pudo restaurar stock para item {ItemId}", itemId);
+                    }
+                }
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine($"❌ [OrderService] CancelOrderItemAsync() - Error: {ex.Message}");
-                Console.WriteLine($"🔍 [OrderService] CancelOrderItemAsync() - StackTrace: {ex.StackTrace}");
+                await transaction.RollbackAsync();
                 throw;
             }
         }

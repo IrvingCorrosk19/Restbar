@@ -181,7 +181,11 @@
                 </tr>
             </thead>
             <tbody id="assignmentsTableBody">
-                <!-- Se llena dinámicamente -->
+                <tr>
+                    <td colspan="7" class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin"></i> Cargando asignaciones...
+                    </td>
+                </tr>
             </tbody>
         </table>
     </div>
@@ -299,6 +303,7 @@
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="~/js/product-stock-assignment.js"></script>
 }
 

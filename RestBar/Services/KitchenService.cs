@@ -51,7 +51,8 @@ namespace RestBar.Services
                 .Include(o => o.Table)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
-                        .ThenInclude(p => p.Station)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.PreparedByStation)
                 .Where(o => o.Status == OrderStatus.SentToKitchen || o.Status == OrderStatus.Preparing)
                 .OrderBy(o => o.OpenedAt)
                 .Select(o => new KitchenOrderViewModel
@@ -63,8 +64,8 @@ namespace RestBar.Services
                     Notes = o.Notes,
                     OrderStatus = o.Status.ToString(),
                     Items = o.OrderItems
-                        .Where(i => i.Product != null && i.Product.Station != null && 
-                                   i.Product.Station.Type.ToLower() == stationType.ToLower() &&
+                        .Where(i => i.Product != null && i.PreparedByStation != null && 
+                                   i.PreparedByStation.Type.ToLower() == stationType.ToLower() &&
                                    (i.KitchenStatus == KitchenStatus.Pending || i.KitchenStatus == KitchenStatus.Sent))
                         .Select(i => new KitchenOrderItemViewModel
                         {
@@ -74,7 +75,7 @@ namespace RestBar.Services
                             Notes = i.Notes,
                             Status = i.Status.ToString(),
                             KitchenStatus = i.KitchenStatus.ToString(),
-                            StationName = i.Product.Station.Name
+                            StationName = i.PreparedByStation.Name ?? "Sin estación"
                         }).ToList(),
                     ReadyItemsCount = o.OrderItems.Count(oi => oi.KitchenStatus == KitchenStatus.Ready),
                     TotalItemsCount = o.OrderItems.Count,
@@ -165,7 +166,8 @@ namespace RestBar.Services
                 .Include(o => o.Table)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
-                        .ThenInclude(p => p.Station)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.PreparedByStation)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
                 
             if (order == null)
@@ -180,14 +182,14 @@ namespace RestBar.Services
             // Log detallado de todos los items
             foreach (var item in order.OrderItems)
             {
-                Console.WriteLine($"[KitchenService] Item: ID={item.Id}, Product={item.Product?.Name}, Status={item.Status}, Station={item.Product?.Station?.Type}");
+                Console.WriteLine($"[KitchenService] Item: ID={item.Id}, Product={item.Product?.Name}, Status={item.Status}, Station={item.PreparedByStation?.Type ?? "Sin estación"}");
             }
             
             // Marcar como listos solo los items de esta estación
             var itemsToMark = order.OrderItems
                 .Where(oi => oi.Product != null && 
-                            oi.Product.Station != null && 
-                            oi.Product.Station.Type.ToLower() == stationType.ToLower() &&
+                            oi.PreparedByStation != null && 
+                            oi.PreparedByStation.Type.ToLower() == stationType.ToLower() &&
                             oi.Status == OrderItemStatus.Pending)
                 .ToList();
 
@@ -326,7 +328,8 @@ namespace RestBar.Services
                 .Include(o => o.Table)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
-                        .ThenInclude(p => p.Station)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.PreparedByStation)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
                 
             if (order == null)
@@ -355,15 +358,15 @@ namespace RestBar.Services
                 throw new InvalidOperationException($"El item no está en estado Pending, estado actual: {itemToMark.Status}");
             }
 
-            // Obtener la estación del producto
-            var station = itemToMark.Product?.Station;
+            // Obtener la estación asignada al item (PreparedByStation)
+            var station = itemToMark.PreparedByStation;
             if (station == null)
             {
-                Console.WriteLine($"[KitchenService] Error: El producto no tiene estación asignada");
-                throw new InvalidOperationException("El producto no tiene estación asignada");
+                Console.WriteLine($"[KitchenService] Error: El item no tiene estación asignada");
+                throw new InvalidOperationException("El item no tiene estación asignada");
             }
 
-            Console.WriteLine($"[KitchenService] Estación del producto: {station.Name} (ID: {station.Id})");
+            Console.WriteLine($"[KitchenService] Estación del item: {station.Name} (ID: {station.Id})");
             
             // Marcar el item como listo
             itemToMark.Status = OrderItemStatus.Ready;

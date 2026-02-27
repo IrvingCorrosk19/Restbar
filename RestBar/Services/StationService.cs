@@ -40,7 +40,8 @@ namespace RestBar.Services
 
                 // Filtrar estaciones por compañía y sucursal del usuario
                 var stations = await _context.Stations
-                    .Include(s => s.Products)
+                    .Include(s => s.StockAssignments)
+                        .ThenInclude(sa => sa.Product)
                     .Include(s => s.Area)
                     .Include(s => s.Company)
                     .Include(s => s.Branch)
@@ -62,7 +63,8 @@ namespace RestBar.Services
         public async Task<Station?> GetStationByIdAsync(Guid id)
         {
             return await _context.Stations
-                .Include(s => s.Products)
+                .Include(s => s.StockAssignments)
+                    .ThenInclude(sa => sa.Product)
                 .Include(s => s.Area)
                 .FirstOrDefaultAsync(s => s.Id == id);
         }
@@ -182,16 +184,17 @@ namespace RestBar.Services
         public async Task<bool> DeleteStationAsync(Guid id)
         {
             var station = await _context.Stations
-                .Include(s => s.Products)
+                .Include(s => s.StockAssignments)
+                    .ThenInclude(sa => sa.Product)
                 .FirstOrDefaultAsync(s => s.Id == id);
                 
             if (station == null)
                 return false;
 
             // Verificar si la estación tiene productos asociados
-            if (station.Products.Any())
+            if (station.StockAssignments.Any(sa => sa.IsActive))
             {
-                var productCount = station.Products.Count;
+                var productCount = station.StockAssignments.Count(sa => sa.IsActive);
                 throw new InvalidOperationException(
                     $"No se puede eliminar la estación '{station.Name}' porque tiene {productCount} producto(s) asociado(s). " +
                     "Primero debe reasignar o eliminar los productos de esta estación.");
@@ -233,14 +236,16 @@ namespace RestBar.Services
 
         public async Task<bool> StationHasProductsAsync(Guid id)
         {
-            return await _context.Products
-                .AnyAsync(p => p.StationId == id);
+            // ✅ CAMBIADO: Verificar en ProductStockAssignment en lugar de Product.StationId
+            return await _context.ProductStockAssignments
+                .AnyAsync(psa => psa.StationId == id && psa.IsActive);
         }
 
         public async Task<int> GetProductCountAsync(Guid id)
         {
-            return await _context.Products
-                .CountAsync(p => p.StationId == id);
+            // ✅ CAMBIADO: Contar en ProductStockAssignment en lugar de Product.StationId
+            return await _context.ProductStockAssignments
+                .CountAsync(psa => psa.StationId == id && psa.IsActive);
         }
 
         public async Task<bool> StationExistsAsync(Guid id)

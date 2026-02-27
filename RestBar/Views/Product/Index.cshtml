@@ -177,17 +177,7 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Estación</label>
-                            <div class="input-group">
-                                <select class="form-select modern-select" name="StationId" id="productStationSelect">
-                                    <option value="">Seleccione una estación</option>
-                                </select>
-                                <button class="btn btn-outline-primary" type="button" id="btnAddStation" data-bs-toggle="modal" data-bs-target="#createStationModal" title="Agregar estación">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                            </div>
-                        </div>
+                        <!-- ✅ ELIMINADO: Campo Estación - Ahora se usa ProductStockAssignment para asignar estaciones -->
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Descripción</label>
@@ -324,19 +314,7 @@
                             </select>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Estación</label>
-                            <div class="input-group">
-                                <select class="form-select modern-select" name="StationId">
-                                    <option value="">Seleccione una estación</option>
-                                </select>
-                                <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#createStationModal" title="Agregar estación">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- ✅ ELIMINADO: Campo Estación - Ahora se usa ProductStockAssignment para asignar estaciones -->
                     <div class="mb-3">
                         <label class="form-label">Descripción</label>
                         <textarea class="form-control modern-textarea" name="Description" rows="3"></textarea>
@@ -1005,7 +983,7 @@
         (function () {
             $(document).ready(function () {
                 loadCategories();
-                loadStations();
+                // ✅ ELIMINADO: loadStations() - Ya no se usa StationId en Product
 
                 $('#searchInput').on('keyup', filterProducts);
                 $('#categoryFilter').on('change', filterProducts);
@@ -1105,14 +1083,7 @@
                     $('#editProductForm')[0].reset();
                 });
 
-                // Event handlers para el modal de estación
-                $('#createStationModal').on('show.bs.modal', function () {
-                    loadAreas();
-                });
-
-                $('#createStationModal').on('hidden.bs.modal', function () {
-                    $('#createStationForm')[0].reset();
-                });
+                // ✅ ELIMINADO: Event handlers para el modal de estación - Ya no se usa StationId en Product
             });
 
             function loadCategories(callback) {
@@ -1160,38 +1131,7 @@
                 });
             }
 
-            function loadStations(callback) {
-                $.get('/Station/GetStations', function (res) {
-                    
-                    if (res.success) {
-                        // Manejar serialización de Entity Framework
-                        const dataArray = res.data.$values || res.data;
-                        
-                        
-                        const selects = ['#productStationSelect', '#editProductForm select[name="StationId"]'];
-                        selects.forEach(selectId => {
-                            const select = $(selectId);
-                            const current = select.val();
-                            select.empty().append('<option value="">Seleccione una estación</option>');
-                            if (dataArray && Array.isArray(dataArray)) {
-                                dataArray.forEach(st => {
-                                    if (st && st.id) {
-                                        select.append(`<option value="${st.id}">${st.name || 'Sin nombre'} (${st.type || 'Sin tipo'})</option>`);
-                                    }
-                                });
-                            }
-                            if (callback && selectId === '#productStationSelect' && dataArray && dataArray.length > 0) {
-                                const lastStation = dataArray[dataArray.length - 1];
-                                if (lastStation && lastStation.id) {
-                                    callback(lastStation.id);
-                                }
-                            } else {
-                                select.val(current);
-                            }
-                        });
-                    }
-                });
-            }
+            // ✅ ELIMINADO: loadStations() - Ya no se usa StationId en Product
 
             function loadAreas() {
                 
@@ -1314,7 +1254,7 @@
                 formData.TaxRate = parseFloat(formData.TaxRate || 0);
                 formData.IsActive = form.find('[name="IsActive"]').is(':checked');
                 formData.CategoryId = formData.CategoryId || null;
-                formData.StationId = formData.StationId || null;
+                // ✅ ELIMINADO: StationId - Ahora se usa ProductStockAssignment
                 
                 // ✅ NUEVO: Procesar campos de inventario
                 formData.TrackInventory = form.find('[name="TrackInventory"]').is(':checked');
@@ -1407,7 +1347,8 @@
                 // Cargar categorías y estaciones
                 Promise.all([
                     new Promise(resolve => loadCategories(resolve)),
-                    new Promise(resolve => loadStations(resolve))
+                    // ✅ ELIMINADO: loadStations() - Ya no se usa StationId en Product
+                    Promise.resolve()
                 ]).then(() => {
                     // Obtener los datos del producto
                     $.ajax({
@@ -1439,10 +1380,7 @@
                                         form.find('[name="CategoryId"]').val(product.categoryId);
                                     }
                                     
-                                    // Establecer la estación
-                                    if (product.stationId) {
-                                        form.find('[name="StationId"]').val(product.stationId);
-                                    }
+                                    // ✅ ELIMINADO: Establecer estación - Ya no se usa StationId en Product
                                     
                                     // ✅ NUEVO: Cargar datos de inventario
                                     loadInventoryDataInEditModal(product);
@@ -1478,7 +1416,7 @@
                 formData.TaxRate = parseFloat(formData.TaxRate || 0);
                 formData.IsActive = form.find('[name="IsActive"]').is(':checked');
                 formData.CategoryId = formData.CategoryId || null;
-                formData.StationId = formData.StationId || null;
+                // ✅ ELIMINADO: StationId - Ahora se usa ProductStockAssignment
                 
                 // ✅ NUEVO: Procesar campos de inventario
                 formData.TrackInventory = form.find('[name="TrackInventory"]').is(':checked');

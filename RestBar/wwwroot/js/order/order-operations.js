@@ -98,12 +98,152 @@ async function sendToKitchen() {
             return;
         }
         
-        console.log('🔍 [OrderOperations] sendToKitchen() - Datos de la orden:', {
-            tableId: currentOrder.tableId,
-            itemsCount: currentOrder.items.length,
-            orderId: currentOrder.orderId,
-            status: currentOrder.status
+        // ✅ NUEVO: Verificar si el usuario es admin y mostrar modal para seleccionar estación
+        const userRole = await getCurrentUserRole();
+        console.log('🔍 [OrderOperations] sendToKitchen() - Rol del usuario:', userRole);
+        
+        if (userRole === 'admin' || userRole === 'superadmin') {
+            // Mostrar modal para seleccionar estación
+            await showStationSelectionModal();
+            return;
+        }
+        
+        // Si no es admin, continuar con el flujo normal
+        await sendOrderToKitchen(null);
+    } catch (error) {
+        console.error('❌ [OrderOperations] sendToKitchen() - Error:', error);
+        Swal.close();
+        Swal.fire('Error', 'Error al enviar la orden a cocina', 'error');
+    }
+}
+
+// ✅ NUEVO: Función para obtener el rol del usuario actual
+async function getCurrentUserRole() {
+    try {
+        // Intentar obtener desde window.currentUser si está disponible
+        if (typeof window.currentUser !== 'undefined' && window.currentUser && window.currentUser.role) {
+            return window.currentUser.role.toLowerCase();
+        }
+        
+        // Si no está disponible, obtener desde la API
+        if (typeof getCurrentUser === 'function') {
+            const user = await getCurrentUser();
+            if (user && user.role) {
+                return user.role.toLowerCase();
+            }
+        }
+        
+        // Fallback: obtener desde la API directamente
+        const response = await fetch('/Auth/CurrentUser', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
         });
+        
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.user && result.user.role) {
+                return result.user.role.toLowerCase();
+            }
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('❌ [OrderOperations] getCurrentUserRole() - Error:', error);
+        return null;
+    }
+}
+
+// ✅ NUEVO: Función para mostrar el modal de selección de estación
+async function showStationSelectionModal() {
+    try {
+        console.log('🔍 [OrderOperations] showStationSelectionModal() - Cargando estaciones...');
+        
+        // Cargar estaciones disponibles
+        const response = await fetch('/Station/GetStations');
+        const result = await response.json();
+        
+        if (!result.success) {
+            console.error('❌ [OrderOperations] showStationSelectionModal() - Error al cargar estaciones:', result.message);
+            Swal.fire('Error', 'No se pudieron cargar las estaciones', 'error');
+            return;
+        }
+        
+        const stations = result.data.$values || result.data || [];
+        console.log('✅ [OrderOperations] showStationSelectionModal() - Estaciones cargadas:', stations.length);
+        
+        // Llenar el select de estaciones
+        const stationSelect = document.getElementById('stationSelect');
+        if (!stationSelect) {
+            console.error('❌ [OrderOperations] showStationSelectionModal() - Select de estaciones no encontrado');
+            return;
+        }
+        
+        stationSelect.innerHTML = '<option value="">Seleccione una estación...</option>';
+        stations.forEach(station => {
+            const option = document.createElement('option');
+            option.value = station.id;
+            option.textContent = `${station.name} (${station.type || 'Sin tipo'})`;
+            option.dataset.stationType = station.type || '';
+            stationSelect.appendChild(option);
+        });
+        
+        // Event listener para mostrar información de la estación seleccionada
+        stationSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const stationInfo = document.getElementById('stationInfo');
+            const stationDetails = document.getElementById('stationDetails');
+            
+            if (this.value && selectedOption) {
+                stationInfo.style.display = 'block';
+                stationDetails.innerHTML = `
+                    <p class="mb-1"><strong>Nombre:</strong> ${selectedOption.textContent}</p>
+                    <p class="mb-0"><strong>Tipo:</strong> ${selectedOption.dataset.stationType || 'No especificado'}</p>
+                `;
+            } else {
+                stationInfo.style.display = 'none';
+            }
+        });
+        
+        // Mostrar el modal
+        const modal = new bootstrap.Modal(document.getElementById('selectStationModal'));
+        modal.show();
+        
+        // Guardar referencia al modal para usarla después
+        window.stationSelectionModal = modal;
+    } catch (error) {
+        console.error('❌ [OrderOperations] showStationSelectionModal() - Error:', error);
+        Swal.fire('Error', 'Error al cargar el modal de selección de estación', 'error');
+    }
+}
+
+// ✅ NUEVO: Función para confirmar la selección de estación y enviar la orden
+async function confirmStationSelection() {
+    const stationSelect = document.getElementById('stationSelect');
+    
+    if (!stationSelect || !stationSelect.value) {
+        Swal.fire('Error', 'Debes seleccionar una estación', 'error');
+        return;
+    }
+    
+    const selectedStationId = stationSelect.value;
+    console.log('✅ [OrderOperations] confirmStationSelection() - Estación seleccionada:', selectedStationId);
+    
+    // Cerrar el modal
+    if (window.stationSelectionModal) {
+        window.stationSelectionModal.hide();
+    }
+    
+    // Enviar la orden con la estación seleccionada
+    await sendOrderToKitchen(selectedStationId);
+}
+
+// ✅ NUEVO: Función para enviar la orden a cocina (refactorizada)
+async function sendOrderToKitchen(selectedStationId) {
+    try {
+        console.log('🔍 [OrderOperations] sendOrderToKitchen() - Enviando orden...', { selectedStationId });
         
         // Preparar datos para enviar (según SendOrderDto)
         const orderData = {
@@ -116,10 +256,11 @@ async function sendToKitchen() {
                 Notes: item.notes || '',
                 Discount: item.discount || 0,
                 Status: item.status || 'Pending'
-            }))
+            })),
+            SelectedStationId: selectedStationId || null // ✅ NUEVO: Estación seleccionada manualmente
         };
         
-        console.log('🔍 [OrderOperations] sendToKitchen() - Datos a enviar:', orderData);
+        console.log('🔍 [OrderOperations] sendOrderToKitchen() - Datos a enviar:', orderData);
         
         // Mostrar loading
         Swal.fire({
@@ -137,11 +278,11 @@ async function sendToKitchen() {
             body: JSON.stringify(orderData)
         });
         
-        console.log('📡 [OrderOperations] sendToKitchen() - Respuesta recibida:', response.status, response.statusText);
+        console.log('📡 [OrderOperations] sendOrderToKitchen() - Respuesta recibida:', response.status, response.statusText);
         
         if (response.ok) {
             const result = await response.json();
-            console.log('✅ [OrderOperations] sendToKitchen() - Resultado:', result);
+            console.log('✅ [OrderOperations] sendOrderToKitchen() - Resultado:', result);
             
             // Actualizar la orden actual con la respuesta
             if (result.orderId) {
@@ -172,24 +313,30 @@ async function sendToKitchen() {
                 showConfirmButton: false
             });
             
-            console.log('✅ [OrderOperations] sendToKitchen() - Orden enviada exitosamente');
+            console.log('✅ [OrderOperations] sendOrderToKitchen() - Orden enviada exitosamente');
         } else {
             const errorResult = await response.json();
-            console.log('❌ [OrderOperations] sendToKitchen() - Error:', errorResult);
+            console.log('❌ [OrderOperations] sendOrderToKitchen() - Error:', errorResult);
             
             Swal.close();
             Swal.fire('Error', errorResult.error || 'Error al enviar la orden a cocina', 'error');
         }
     } catch (error) {
-        console.error('❌ [OrderOperations] sendToKitchen() - Error:', error);
+        console.error('❌ [OrderOperations] sendOrderToKitchen() - Error:', error);
         Swal.close();
         Swal.fire('Error', 'Error al enviar la orden a cocina', 'error');
     }
 }
 
+// Evitar doble envío de cancelación
+let cancelProcessing = false;
+
 // Función para cancelar orden
 async function cancelOrder() {
-    console.log('🔍 ENTRADA: cancelOrder()');
+    if (cancelProcessing) {
+        Swal.fire('Espere', 'La cancelación ya está en proceso', 'info');
+        return;
+    }
     if (!currentOrder || !currentOrder.orderId) {
         Swal.fire('Error', 'No hay una orden activa para cancelar', 'error');
         return;
@@ -205,6 +352,7 @@ async function cancelOrder() {
     });
 
     if (result.isConfirmed) {
+        cancelProcessing = true;
         try {
             const response = await fetch('/Order/Cancel', {
                 method: 'POST',
@@ -254,10 +402,17 @@ async function cancelOrder() {
                     Swal.fire('Error', result.message || 'Error al cancelar la orden', 'error');
                 }
             } else {
-                Swal.fire('Error', 'Error al cancelar la orden', 'error');
+                let msg = 'Error al cancelar la orden';
+                try {
+                    const err = await response.json();
+                    if (err && err.message) msg = err.message;
+                } catch (_) {}
+                Swal.fire('Error', msg, 'error');
             }
         } catch (error) {
-            Swal.fire('Error', 'Error de conexión al cancelar la orden', 'error');
+            Swal.fire('Error', error.message || 'Error de conexión al cancelar la orden', 'error');
+        } finally {
+            cancelProcessing = false;
         }
     }
 }
