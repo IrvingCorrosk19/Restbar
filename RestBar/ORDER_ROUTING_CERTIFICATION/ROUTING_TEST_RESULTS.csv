@@ -1,0 +1,21 @@
+﻿"Id","Scenario","Name","Status","Details"
+"RT-ENV-01","Setup","SeedEnterpriseRouting","PASS","Enterprise routing seed completado"
+"RT-ENV-02","Setup","Admin session","PASS",""
+"RT-ENV-03","Setup","Chef session","PASS",""
+"RT-ENV-04","Setup","Enterprise tables/stations resolved","PASS","p1=23c1d592-7e88-456f-bdd0-917e0b4c8513 parrilla=b1a997c0-5a1e-498c-ad4e-f729baf872f3"
+"RT-S01-01","MultiPiso","Piso1 order NOT in Cocina Piso 2","PASS","leak=False"
+"RT-S01-02","MultiPiso","Piso1 burger in Parrilla Piso1","PASS",""
+"RT-S02-01","MultiEstacion","Pizza only in Horno","PASS",""
+"RT-S02-02","MultiEstacion","Cerveza only in Bar Principal","PASS",""
+"RT-S02-03","MultiEstacion","Postre only in PastelerÃ­a","PASS",""
+"RT-S03-01","DosBares","Trago VIP in Bar VIP","PASS",""
+"RT-S03-02","DosBares","Trago VIP NOT in Bar Principal","PASS",""
+"RT-S09-01","MultiEstacion","Pizza routed to Horno A (priority 20) not Horno B","PASS","station=Horno id=da2e57a1-4f1b-43a3-bbb2-ce1a47bf135a"
+"RT-S15-01","MultiTenant","Empresa B KDS no ve productos Empresa A","PASS","items=0"
+"RT-S06-01","CambioEstacion","Pizza moved Horno to Horno B","PASS","{
+  ""success"": true,
+  ""message"": ""Estación actualizada"",
+  ""itemId"": ""fa6d0eae-71ae-44c3-8b9f-f32f1ce5e999"",
+  ""stationId"": ""d743a57a-7801-416c-9079-2a79303bb337""
+}"
+"RT-S11-01","Reimpresion","KDS snapshot idempotent (no duplicate orders)","PASS","count=1/1"

@@ -21,6 +21,9 @@ namespace RestBar.Controllers
         private readonly IOrderHubService _orderHubService;
         private readonly IProductService _productService;
         private readonly IEmailService _emailService;
+        private readonly IGlobalLoggingService _loggingService;
+        private readonly IInventoryOperationsService _inventoryOps;
+        private readonly ILogger<PaymentController> _logger;
 
         public PaymentController(
             IPaymentService paymentService,
@@ -29,7 +32,10 @@ namespace RestBar.Controllers
             RestBarContext context,
             IOrderHubService orderHubService,
             IProductService productService,
-            IEmailService emailService)
+            IEmailService emailService,
+            IGlobalLoggingService loggingService,
+            IInventoryOperationsService inventoryOps,
+            ILogger<PaymentController> logger)
         {
             _paymentService = paymentService;
             _splitPaymentService = splitPaymentService;
@@ -38,6 +44,9 @@ namespace RestBar.Controllers
             _orderHubService = orderHubService;
             _productService = productService;
             _emailService = emailService;
+            _loggingService = loggingService;
+            _inventoryOps = inventoryOps;
+            _logger = logger;
         }
 
         [HttpPost("partial")]
@@ -52,11 +61,26 @@ namespace RestBar.Controllers
             if (request.Amount <= 0)
                 return BadRequest(new { success = false, message = "El monto debe ser mayor a 0" });
 
+            // Validar BranchId del usuario vs la orden (IDOR guard)
+            var userBranchClaim = User.FindFirst("BranchId")?.Value;
+            var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+
             try
             {
                 var order = await _orderService.GetOrderWithDetailsAsync(request.OrderId);
                 if (order == null)
                     return NotFound(new { success = false, message = "Orden no encontrada" });
+
+                // IDOR: validar que la orden pertenece a la branch del usuario (excepto superadmin/admin sin branch)
+                if (!string.IsNullOrEmpty(userBranchClaim) &&
+                    Guid.TryParse(userBranchClaim, out var userBranchId) &&
+                    order.BranchId != null &&
+                    order.BranchId != userBranchId)
+                {
+                    _logger.LogWarning("[PaymentController] Acceso denegado a orden de otra branch. UserId={UserId}, OrderId={OrderId}",
+                        User.FindFirst("UserId")?.Value, request.OrderId);
+                    return StatusCode(403, new { success = false, message = "No autorizado para esta orden" });
+                }
 
                 // Regla de negocio: no pagar órdenes canceladas o ya completadas
                 if (order.Status == OrderStatus.Cancelled)
@@ -80,7 +104,8 @@ namespace RestBar.Controllers
 
                 // Total de la orden solo con ítems no cancelados (regla de negocio POS)
                 var payableItems = order.OrderItems?.Where(oi => oi.Status != OrderItemStatus.Cancelled) ?? Enumerable.Empty<OrderItem>();
-                var orderTotal = payableItems.Sum(i => i.Quantity * i.UnitPrice - i.Discount);
+                var orderSubtotal = payableItems.Sum(i => i.Quantity * i.UnitPrice - i.Discount);
+                var orderTotal = Math.Max(0, orderSubtotal - order.DiscountAmount);
 
                 // Pre-validación de split payments (no requiere DB)
                 if (request.SplitPayments != null && request.SplitPayments.Any())
@@ -92,13 +117,55 @@ namespace RestBar.Controllers
 
                 Payment createdPayment;
                 bool isFullyPaid;
+                var processedByUserId = Guid.TryParse(User.FindFirst("UserId")?.Value, out var cashierId) ? cashierId : (Guid?)null;
                 using (var transaction = await _context.Database.BeginTransactionAsync())
                 {
                     try
                     {
-                        // FIX: totalPaid re-leído DENTRO de la transacción para evitar race condition.
-                        // Aunque el ConcurrencyToken (Version) protege la consistencia en DB,
-                        // validar aquí evita el error confuso "modificado por otro usuario".
+                        // IDEMPOTENCY CHECK: si el cliente reintenta con la misma key, devolver pago existente
+                        if (!string.IsNullOrEmpty(request.IdempotencyKey))
+                        {
+                            var existingPayment = await _context.Payments
+                                .AsNoTracking()
+                                .FirstOrDefaultAsync(p => p.IdempotencyKey == request.IdempotencyKey && !p.IsVoided);
+
+                            if (existingPayment != null)
+                            {
+                                await transaction.RollbackAsync();
+                                _logger.LogInformation(
+                                    "[PaymentController] Pago idempotente devuelto. IdempotencyKey={Key}, PaymentId={PaymentId}",
+                                    request.IdempotencyKey, existingPayment.Id);
+
+                                var existingWithSplits = await _paymentService.GetPaymentWithSplitsAsync(existingPayment.Id);
+                                var idempotentResponse = new PaymentResponseDto
+                                {
+                                    Id = existingWithSplits!.Id,
+                                    OrderId = existingWithSplits.OrderId!.Value,
+                                    Amount = existingWithSplits.Amount,
+                                    Method = existingWithSplits.Method!,
+                                    PaidAt = existingWithSplits.PaidAt,
+                                    IsVoided = existingWithSplits.IsVoided,
+                                    IsShared = existingWithSplits.IsShared,
+                                    PayerName = existingWithSplits.PayerName,
+                                    SplitPayments = existingWithSplits.SplitPayments?.Select(sp => new SplitPaymentResponseDto
+                                    {
+                                        Id = sp.Id,
+                                        PersonName = sp.PersonName!,
+                                        Amount = sp.Amount ?? 0,
+                                        Method = sp.Method!
+                                    }).ToList() ?? new List<SplitPaymentResponseDto>()
+                                };
+                                return Ok(new { success = true, isDuplicate = true, isFullyPaid = false, message = "Pago ya registrado (idempotente)", payment = idempotentResponse });
+                            }
+                        }
+
+                        // SELECT FOR UPDATE mediante advisory lock de PostgreSQL.
+                        // Bloquea la orden para pagos concurrentes durante esta transacción.
+                        var lockId = BitConverter.ToInt64(request.OrderId.ToByteArray(), 0);
+                        await _context.Database.ExecuteSqlInterpolatedAsync(
+                            $"SELECT pg_advisory_xact_lock({lockId})");
+
+                        // Re-leer totalPaid DENTRO de la transacción (con lock activo)
                         var totalPaid = await _paymentService.GetTotalPaymentsByOrderAsync(request.OrderId);
                         var remainingAmount = orderTotal - totalPaid;
 
@@ -108,7 +175,8 @@ namespace RestBar.Controllers
                             return BadRequest(new { success = false, message = "La orden ya está pagada por completo" });
                         }
 
-                        if (request.Amount > remainingAmount + 0.01m)
+                        // SOBREPAGO: eliminada tolerancia +0.01m — comparación exacta
+                        if (request.Amount > remainingAmount)
                         {
                             await transaction.RollbackAsync();
                             return BadRequest(new { success = false, message = $"El monto excede el saldo pendiente. Saldo: ${remainingAmount:F2}" });
@@ -118,12 +186,17 @@ namespace RestBar.Controllers
                         {
                             Id = Guid.NewGuid(),
                             OrderId = request.OrderId,
+                            IdempotencyKey = request.IdempotencyKey,
                             Amount = request.Amount,
+                            TipAmount = request.TipAmount < 0 ? 0 : request.TipAmount,
+                            ProcessedByUserId = processedByUserId,
                             Method = request.Method ?? "Efectivo",
                             IsShared = request.IsShared,
                             PayerName = request.PayerName,
                             PaidAt = DateTime.UtcNow,
-                            IsVoided = false
+                            IsVoided = false,
+                            CompanyId = order.CompanyId,
+                            BranchId = order.BranchId
                         };
                         _context.Payments.Add(payment);
 
@@ -145,7 +218,7 @@ namespace RestBar.Controllers
                         await _context.SaveChangesAsync();
 
                         var totalPaidAfterPayment = totalPaid + request.Amount;
-                        var orderTotalForComparison = payableItems.Sum(i => i.Quantity * i.UnitPrice - i.Discount);
+                        var orderTotalForComparison = Math.Max(0, payableItems.Sum(i => i.Quantity * i.UnitPrice - i.Discount) - order.DiscountAmount);
                         isFullyPaid = totalPaidAfterPayment >= orderTotalForComparison - 0.01m;
 
                         var hasPendingItems = order.OrderItems?.Any(oi => oi.Status != OrderItemStatus.Cancelled && (oi.Status == OrderItemStatus.Pending || oi.Status == OrderItemStatus.Preparing)) ?? false;
@@ -245,6 +318,15 @@ namespace RestBar.Controllers
                 }
                 await _orderHubService.NotifyPaymentProcessed(order.Id, request.Amount, request.Method ?? "Efectivo", isFullyPaid);
 
+                await _loggingService.LogPaymentActivityAsync(
+                    action: AuditAction.CREATE.ToString(),
+                    description: $"Pago registrado: ${request.Amount:F2} ({request.Method}), propina: ${request.TipAmount:F2}, cajero: {processedByUserId}",
+                    paymentId: createdPayment.Id,
+                    newValues: new { request.OrderId, request.Amount, request.TipAmount, request.Method, ProcessedByUserId = processedByUserId, isFullyPaid });
+
+                if (request.TipAmount > 0)
+                    await _inventoryOps.AllocateTipsAsync(createdPayment.Id, request.OrderId, request.TipAmount);
+
                 if (isFullyPaid)
                 {
                     try
@@ -267,6 +349,7 @@ namespace RestBar.Controllers
                     IsVoided = paymentWithSplits.IsVoided,
                     IsShared = paymentWithSplits.IsShared,
                     PayerName = paymentWithSplits.PayerName,
+                    TipAmount = paymentWithSplits.TipAmount,
                     SplitPayments = paymentWithSplits.SplitPayments?.Select(sp => new SplitPaymentResponseDto
                     {
                         Id = sp.Id,
@@ -297,8 +380,20 @@ namespace RestBar.Controllers
                 if (order == null)
                     return NotFound(new { success = false, message = "Orden no encontrada" });
 
+                var userBranchClaim = User.FindFirst("BranchId")?.Value;
+                if (!string.IsNullOrEmpty(userBranchClaim) &&
+                    Guid.TryParse(userBranchClaim, out var userBranchId) &&
+                    order.BranchId != null &&
+                    order.BranchId != userBranchId)
+                {
+                    _logger.LogWarning("[PaymentController] Acceso denegado a resumen de pago de otra branch. UserId={UserId}, OrderId={OrderId}",
+                        User.FindFirst("UserId")?.Value, orderId);
+                    return StatusCode(403, new { success = false, message = "No autorizado para esta orden" });
+                }
+
                 var payableItems = order.OrderItems?.Where(oi => oi.Status != OrderItemStatus.Cancelled) ?? Enumerable.Empty<OrderItem>();
-                var orderTotal = payableItems.Sum(i => i.Quantity * i.UnitPrice - i.Discount);
+                var orderSubtotal = payableItems.Sum(i => i.Quantity * i.UnitPrice - i.Discount);
+                var orderTotal = Math.Max(0, orderSubtotal - order.DiscountAmount);
                 var totalPaid = await _paymentService.GetTotalPaymentsByOrderAsync(orderId);
                 var remainingAmount = Math.Max(0m, orderTotal - totalPaid); // P0-FIX-01 defensive: never negative
                 var isOverpaid = totalPaid > orderTotal;
@@ -442,6 +537,40 @@ namespace RestBar.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { success = false, message = "Error interno del servidor" });
+            }
+        }
+
+        public class RefundRequestDto
+        {
+            public Guid PaymentId { get; set; }
+            public decimal? Amount { get; set; }
+            public string? Reason { get; set; }
+            public Guid? SupervisorId { get; set; }
+        }
+
+        [HttpPost("refund")]
+        public async Task<IActionResult> RefundPayment([FromBody] RefundRequestDto request)
+        {
+            if (request.PaymentId == Guid.Empty)
+                return BadRequest(new { success = false, message = "PaymentId requerido" });
+
+            var processedBy = Guid.TryParse(User.FindFirst("UserId")?.Value, out var uid) ? uid : (Guid?)null;
+            try
+            {
+                var refund = await _paymentService.RefundPaymentAsync(
+                    request.PaymentId, request.Amount, request.Reason, processedBy, request.SupervisorId);
+
+                await _loggingService.LogPaymentActivityAsync(
+                    AuditAction.UPDATE.ToString(),
+                    $"Reembolso: ${refund.Amount:F2}",
+                    refund.PaymentId,
+                    newValues: refund);
+
+                return Ok(new { success = true, refundId = refund.Id, amount = refund.Amount });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
             }
         }
     }

@@ -47,6 +47,12 @@ public partial class OrderItem : ITrackableEntity
     
     public bool IsShared { get; set; } = false;
 
+    /// <summary>Mesero que agregó este ítem al pedido.</summary>
+    public Guid? AddedByUserId { get; set; }
+
+    /// <summary>Usuario que marcó el ítem como entregado/listo al cliente.</summary>
+    public Guid? DeliveredByUserId { get; set; }
+
     // ✅ CAMPOS MULTI-TENANT
     public Guid? CompanyId { get; set; }
     public Guid? BranchId { get; set; }
@@ -66,4 +72,6 @@ public partial class OrderItem : ITrackableEntity
     public virtual Product? Product { get; set; }
     public virtual Station? PreparedByStation { get; set; }
     public virtual Person? AssignedToPerson { get; set; }
+    public virtual User? AddedByUser { get; set; }
+    public virtual User? DeliveredByUser { get; set; }
 }

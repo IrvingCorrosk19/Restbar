@@ -593,6 +593,7 @@ class PaymentManager {
 
     async submitPayment(orderId) {
         const amount = parseFloat($('#paymentAmount').val());
+        const tipAmount = parseFloat($('#paymentTipAmount').val()) || 0;
         const method = $('#paymentMethod').val();
         const payerName = $('#payerName').val();
 
@@ -610,6 +611,7 @@ class PaymentManager {
                 body: JSON.stringify({
                     orderId: orderId,
                     amount: amount,
+                    tipAmount: Math.max(0, tipAmount),
                     method: method,
                     payerName: payerName,
                     isShared: method === 'Compartido'

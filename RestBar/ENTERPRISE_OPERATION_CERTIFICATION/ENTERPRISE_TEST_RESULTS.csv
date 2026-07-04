@@ -1,0 +1,35 @@
+﻿"Id","Scenario","Name","Status","Details"
+"ENT-ENV-01","Setup","Admin session","PASS",""
+"ENT-ENV-02","Setup","Manager session","PASS",""
+"ENT-ENV-03","Setup","Cashier session","PASS",""
+"ENT-ENV-04","Setup","Inventarista session","PASS",""
+"ENT-DISC-01","Descuentos","Apply fixed discount","PASS","amount=2"
+"ENT-DISC-02","Descuentos","Apply percentage discount","PASS",""
+"ENT-TIP-01","Propinas","Payment with tip accepted","PASS",""
+"ENT-TIP-02","Propinas","TipAllocation rows created","PASS","count=1"
+"ENT-REF-01","Reembolsos","Partial refund processed","PASS","{
+  ""success"": true,
+  ""refundId"": ""08447124-5c69-4a33-9e0e-2e3ce461e0d8"",
+  ""amount"": 0.5
+}"
+"ENT-COMM-01","Comisiones","Active commission rules exist","PASS","count=1"
+"ENT-SHIFT-01","Turnos","Start shift","PASS",""
+"ENT-SHIFT-02","Turnos","Duplicate start rejected","PASS","Status=400"
+"ENT-SHIFT-03","Turnos","Table handoff recorded","PASS",""
+"ENT-SHIFT-04","Turnos","End shift","PASS",""
+"ENT-INV-01","Inventario","Create purchase movement","PASS","{
+  ""success"": true,
+  ""stockAfter"": -1
+}"
+"ENT-INV-02","Inventario","Get movements by date range","PASS",""
+"ENT-XFER-01","Transferencias","Request stock transfer","PASS",""
+"ENT-XFER-02","Transferencias","Approve stock transfer","PASS","{
+  ""success"": true
+}"
+"ENT-XFER-03","Transferencias","List transfers","PASS",""
+"ENT-REC-01","Recetas","Save recipe BOM","PASS","{
+  ""success"": true
+}"
+"ENT-REC-02","Recetas","Get recipe by product","PASS",""
+"ENT-CANC-01","Cancelacion","Waiter blocked cancel in-kitchen item","PASS","Status=403"
+"ENT-CANC-02","Cancelacion","Supervisor can cancel in-kitchen item","PASS",""

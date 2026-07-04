@@ -232,16 +232,51 @@
                 await window.signalRConnection.start();
                 console.log('✅ [StationOrders] SignalR conectado. ConnectionId:', window.signalRConnection.connectionId);
 
-                // Unirse al grupo legacy "kitchen" — recibe eventos de difusión general (NewOrder, OrderCompleted, etc.)
-                await window.signalRConnection.invoke("JoinKitchenGroup");
-                console.log('✅ [StationOrders] Unido al grupo "kitchen" (difusión general)');
-
-                // Unirse al grupo específico de esta estación — recibe actualizaciones dirigidas (solo a este tipo)
-                // Grupo: "station_kitchen", "station_bar", etc.
-                if (stationType) {
-                    await window.signalRConnection.invoke("JoinStationTypeGroup", stationType);
-                    console.log(`✅ [StationOrders] Unido al grupo "station_${stationType}" (notificaciones dirigidas)`);
+                // Función auxiliar reutilizable para unirse a los grupos de esta estación
+                async function joinStationGroups() {
+                    await window.signalRConnection.invoke("JoinKitchenGroup");
+                    console.log('✅ [StationOrders] Unido al grupo "kitchen" (difusión general)');
+                    if (stationType) {
+                        await window.signalRConnection.invoke("JoinStationTypeGroup", stationType);
+                        console.log(`✅ [StationOrders] Unido al grupo "station_${stationType}" (notificaciones dirigidas)`);
+                    }
                 }
+
+                // Unirse a grupos en la conexión inicial
+                await joinStationGroups();
+
+                // ✅ RESILIENCIA: Re-unirse a grupos automáticamente tras reconexión
+                // Necesario porque withAutomaticReconnect() obtiene un nuevo ConnectionId
+                // y los grupos del ConnectionId anterior se pierden en el servidor.
+                window.signalRConnection.onreconnected(async (connectionId) => {
+                    console.log('🔄 [StationOrders] SignalR reconectado. Nuevo ConnectionId:', connectionId);
+                    try {
+                        // Re-unirse a todos los grupos con el nuevo ConnectionId
+                        await joinStationGroups();
+
+                        // Cargar snapshot del servidor para recuperar eventos perdidos durante desconexión
+                        const snapshotUrl = `/api/kitchen/current?stationType=${encodeURIComponent(stationType || '')}`;
+                        const snapshotResp = await fetch(snapshotUrl, { credentials: 'same-origin' });
+                        if (snapshotResp.ok) {
+                            const snapshot = await snapshotResp.json();
+                            console.log(`✅ [StationOrders] Snapshot: ${snapshot.orderCount} órdenes cargadas tras reconexión`);
+                        }
+                        // Actualizar la lista visual completa
+                        await refreshOrdersList();
+                        console.log('✅ [StationOrders] Reconexión completada — grupos + snapshot + UI actualizados');
+                    } catch (err) {
+                        console.error('❌ [StationOrders] Error durante reconexión:', err);
+                        try { await refreshOrdersList(); } catch (_) {}
+                    }
+                });
+
+                window.signalRConnection.onclose((error) => {
+                    console.warn('⚠️ [StationOrders] Conexión SignalR cerrada.', error ?? 'Sin error reportado');
+                });
+
+                window.signalRConnection.onreconnecting((error) => {
+                    console.warn('🔄 [StationOrders] Reconectando SignalR...', error ?? '');
+                });
 
             } catch (error) {
                 console.error('❌ [StationOrders] Error inicializando SignalR:', error);

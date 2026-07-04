@@ -62,14 +62,17 @@ public partial class RestBarContext : DbContext
     public virtual DbSet<Station> Stations { get; set; }
     
     public virtual DbSet<UserAssignment> UserAssignments { get; set; }
-    
 
-    
+    public virtual DbSet<Recipe> Recipes { get; set; }
+    public virtual DbSet<RecipeLine> RecipeLines { get; set; }
+    public virtual DbSet<InventoryMovement> InventoryMovements { get; set; }
+    public virtual DbSet<StockTransfer> StockTransfers { get; set; }
+    public virtual DbSet<Shift> Shifts { get; set; }
+    public virtual DbSet<ShiftTableHandoff> ShiftTableHandoffs { get; set; }
+    public virtual DbSet<PaymentRefund> PaymentRefunds { get; set; }
+    public virtual DbSet<CommissionRule> CommissionRules { get; set; }
+    public virtual DbSet<TipAllocation> TipAllocations { get; set; }
 
-    
-
-    
-    // ✅ NUEVO: Ajustes Avanzados
     public virtual DbSet<SystemSettings> SystemSettings { get; set; }
     
     public virtual DbSet<Currency> Currencies { get; set; }
@@ -83,8 +86,12 @@ public partial class RestBarContext : DbContext
     public virtual DbSet<EmailTemplate> EmailTemplates { get; set; }
     
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
- => optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=RestBar;Username=postgres;Password=Panama2020$");
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=RestBar;Username=postgres;Password=Panama2020$");
+        }
+    }
 
 
     //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -514,6 +521,28 @@ public partial class RestBarContext : DbContext
                 .HasDefaultValue(0)
                 .HasColumnName("version")
                 .IsConcurrencyToken();
+            entity.Property(e => e.DiscountAmount)
+                .HasPrecision(18, 2)
+                .HasDefaultValue(0m)
+                .HasColumnName("discount_amount");
+            entity.Property(e => e.DiscountType)
+                .HasMaxLength(20)
+                .HasColumnName("discount_type");
+            entity.Property(e => e.DiscountReason)
+                .HasMaxLength(500)
+                .HasColumnName("discount_reason");
+            entity.Property(e => e.IsVip)
+                .HasDefaultValue(false)
+                .HasColumnName("is_vip");
+            entity.Property(e => e.Priority)
+                .HasDefaultValue(0)
+                .HasColumnName("priority");
+            entity.Property(e => e.CompanyId).HasColumnName("CompanyId");
+            entity.Property(e => e.BranchId).HasColumnName("BranchId");
+            entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt");
+            entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt");
+            entity.Property(e => e.CreatedBy).HasColumnName("CreatedBy");
+            entity.Property(e => e.UpdatedBy).HasColumnName("UpdatedBy");
 
             entity.HasOne(d => d.Customer).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.CustomerId)
@@ -694,10 +723,23 @@ public partial class RestBarContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("timestamp with time zone")
                 .HasColumnName("created_at");
+            entity.Property(e => e.IdempotencyKey)
+                .HasMaxLength(100)
+                .HasColumnName("idempotency_key");
+            entity.Property(e => e.TipAmount)
+                .HasPrecision(18, 2)
+                .HasDefaultValue(0m)
+                .HasColumnName("tip_amount");
+            entity.Property(e => e.ProcessedByUserId).HasColumnName("processed_by_user_id");
+            entity.Property(e => e.CompanyId).HasColumnName("CompanyId");
+            entity.Property(e => e.BranchId).HasColumnName("BranchId");
 
             entity.HasOne(d => d.Order).WithMany(p => p.Payments)
                 .HasForeignKey(d => d.OrderId)
                 .HasConstraintName("payments_order_id_fkey");
+            entity.HasOne(d => d.ProcessedByUser).WithMany()
+                .HasForeignKey(d => d.ProcessedByUserId)
+                .HasConstraintName("payments_processed_by_user_id_fkey");
         });
 
         modelBuilder.Entity<Product>(entity =>
@@ -1024,6 +1066,9 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
                 .HasColumnName("is_active");
+            entity.Property(e => e.PrinterName)
+                .HasMaxLength(200)
+                .HasColumnName("printer_name");
 
             // ✅ NUEVO: Propiedades multi-tenant
             entity.Property(e => e.CompanyId)
@@ -1236,10 +1281,23 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.UpdatedBy)
                 .HasMaxLength(255)
                 .HasColumnName("updated_by");
+            entity.Property(e => e.IdempotencyKey)
+                .HasMaxLength(100)
+                .HasColumnName("idempotency_key");
+            entity.Property(e => e.TipAmount)
+                .HasPrecision(18, 2)
+                .HasDefaultValue(0m)
+                .HasColumnName("tip_amount");
+            entity.Property(e => e.ProcessedByUserId).HasColumnName("processed_by_user_id");
+            entity.Property(e => e.CompanyId).HasColumnName("CompanyId");
+            entity.Property(e => e.BranchId).HasColumnName("BranchId");
 
             entity.HasOne(d => d.Order).WithMany(p => p.Payments)
                 .HasForeignKey(d => d.OrderId)
                 .HasConstraintName("payments_order_id_fkey");
+            entity.HasOne(d => d.ProcessedByUser).WithMany()
+                .HasForeignKey(d => d.ProcessedByUserId)
+                .HasConstraintName("payments_processed_by_user_id_fkey");
         });
 
         // Configuración para OrderItem
@@ -1282,6 +1340,8 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.IsShared)
                 .HasDefaultValue(false)
                 .HasColumnName("is_shared");
+            entity.Property(e => e.AddedByUserId).HasColumnName("added_by_user_id");
+            entity.Property(e => e.DeliveredByUserId).HasColumnName("delivered_by_user_id");
 
             // Campos de auditoría
             entity.Property(e => e.CreatedAt)
@@ -1306,6 +1366,12 @@ public partial class RestBarContext : DbContext
             entity.HasOne(d => d.PreparedByStation).WithMany()
                 .HasForeignKey(d => d.PreparedByStationId)
                 .HasConstraintName("order_items_prepared_by_station_id_fkey");
+            entity.HasOne(d => d.AddedByUser).WithMany()
+                .HasForeignKey(d => d.AddedByUserId)
+                .HasConstraintName("order_items_added_by_user_id_fkey");
+            entity.HasOne(d => d.DeliveredByUser).WithMany()
+                .HasForeignKey(d => d.DeliveredByUserId)
+                .HasConstraintName("order_items_delivered_by_user_id_fkey");
         });
 
         // Configuración para Invoice
@@ -1439,6 +1505,156 @@ public partial class RestBarContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.CompanyId)
                 .HasConstraintName("FK_email_templates_companies_company_id");
+        });
+
+        // Enterprise operations entities (manual migration 20260704194500)
+        modelBuilder.Entity<Recipe>(entity =>
+        {
+            entity.ToTable("recipes");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.Name).HasMaxLength(200).HasColumnName("name");
+            entity.Property(e => e.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+            entity.Property(e => e.CompanyId).HasColumnName("CompanyId");
+            entity.Property(e => e.BranchId).HasColumnName("BranchId");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.HasOne(e => e.Product).WithMany().HasForeignKey(e => e.ProductId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<RecipeLine>(entity =>
+        {
+            entity.ToTable("recipe_lines");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.RecipeId).HasColumnName("recipe_id");
+            entity.Property(e => e.IngredientProductId).HasColumnName("ingredient_product_id");
+            entity.Property(e => e.Quantity).HasColumnName("quantity").HasPrecision(18, 4);
+            entity.Property(e => e.StationId).HasColumnName("station_id");
+            entity.HasOne(e => e.Recipe).WithMany(r => r.Lines).HasForeignKey(e => e.RecipeId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.IngredientProduct).WithMany().HasForeignKey(e => e.IngredientProductId);
+            entity.HasOne(e => e.Station).WithMany().HasForeignKey(e => e.StationId);
+        });
+
+        modelBuilder.Entity<InventoryMovement>(entity =>
+        {
+            entity.ToTable("inventory_movements");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.StationId).HasColumnName("station_id");
+            entity.Property(e => e.BranchId).HasColumnName("BranchId");
+            entity.Property(e => e.CompanyId).HasColumnName("CompanyId");
+            entity.Property(e => e.MovementType).HasColumnName("movement_type").HasMaxLength(30).HasConversion<string>();
+            entity.Property(e => e.Quantity).HasColumnName("quantity").HasPrecision(18, 4);
+            entity.Property(e => e.StockBefore).HasColumnName("stock_before").HasPrecision(18, 4);
+            entity.Property(e => e.StockAfter).HasColumnName("stock_after").HasPrecision(18, 4);
+            entity.Property(e => e.Reason).HasMaxLength(500).HasColumnName("reason");
+            entity.Property(e => e.Reference).HasMaxLength(100).HasColumnName("reference");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.HasOne(e => e.Product).WithMany().HasForeignKey(e => e.ProductId);
+            entity.HasOne(e => e.Station).WithMany().HasForeignKey(e => e.StationId);
+            entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId);
+        });
+
+        modelBuilder.Entity<StockTransfer>(entity =>
+        {
+            entity.ToTable("stock_transfers");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.FromStationId).HasColumnName("from_station_id");
+            entity.Property(e => e.ToStationId).HasColumnName("to_station_id");
+            entity.Property(e => e.BranchId).HasColumnName("BranchId");
+            entity.Property(e => e.CompanyId).HasColumnName("CompanyId");
+            entity.Property(e => e.Quantity).HasColumnName("quantity").HasPrecision(18, 4);
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).HasConversion<string>();
+            entity.Property(e => e.RequestedByUserId).HasColumnName("requested_by_user_id");
+            entity.Property(e => e.ApprovedByUserId).HasColumnName("approved_by_user_id");
+            entity.Property(e => e.Notes).HasMaxLength(500).HasColumnName("notes");
+            entity.Property(e => e.RequestedAt).HasColumnName("requested_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.CompletedAt).HasColumnName("completed_at");
+            entity.HasOne(e => e.Product).WithMany().HasForeignKey(e => e.ProductId);
+            entity.HasOne(e => e.FromStation).WithMany().HasForeignKey(e => e.FromStationId);
+            entity.HasOne(e => e.ToStation).WithMany().HasForeignKey(e => e.ToStationId);
+        });
+
+        modelBuilder.Entity<Shift>(entity =>
+        {
+            entity.ToTable("shifts");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.BranchId).HasColumnName("BranchId");
+            entity.Property(e => e.CompanyId).HasColumnName("CompanyId");
+            entity.Property(e => e.StartedAt).HasColumnName("started_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.EndedAt).HasColumnName("ended_at");
+            entity.Property(e => e.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+            entity.Property(e => e.Notes).HasMaxLength(500).HasColumnName("notes");
+            entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId);
+        });
+
+        modelBuilder.Entity<ShiftTableHandoff>(entity =>
+        {
+            entity.ToTable("shift_table_handoffs");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.ShiftId).HasColumnName("shift_id");
+            entity.Property(e => e.TableId).HasColumnName("table_id");
+            entity.Property(e => e.FromUserId).HasColumnName("from_user_id");
+            entity.Property(e => e.ToUserId).HasColumnName("to_user_id");
+            entity.Property(e => e.HandedOffAt).HasColumnName("handed_off_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.HasOne(e => e.Shift).WithMany(s => s.TableHandoffs).HasForeignKey(e => e.ShiftId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Table).WithMany().HasForeignKey(e => e.TableId);
+        });
+
+        modelBuilder.Entity<PaymentRefund>(entity =>
+        {
+            entity.ToTable("payment_refunds");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.PaymentId).HasColumnName("payment_id");
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.Amount).HasColumnName("amount").HasPrecision(18, 2);
+            entity.Property(e => e.TipAmount).HasColumnName("tip_amount").HasPrecision(18, 2).HasDefaultValue(0m);
+            entity.Property(e => e.Reason).HasMaxLength(500).HasColumnName("reason");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).HasConversion<string>();
+            entity.Property(e => e.ProcessedByUserId).HasColumnName("processed_by_user_id");
+            entity.Property(e => e.ApprovedByUserId).HasColumnName("approved_by_user_id");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.HasOne(e => e.Payment).WithMany().HasForeignKey(e => e.PaymentId);
+            entity.HasOne(e => e.Order).WithMany().HasForeignKey(e => e.OrderId);
+        });
+
+        modelBuilder.Entity<CommissionRule>(entity =>
+        {
+            entity.ToTable("commission_rules");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.CompanyId).HasColumnName("CompanyId");
+            entity.Property(e => e.BranchId).HasColumnName("BranchId");
+            entity.Property(e => e.Role).HasColumnName("role").HasMaxLength(30).HasConversion<string>();
+            entity.Property(e => e.StationId).HasColumnName("station_id");
+            entity.Property(e => e.Rate).HasColumnName("rate").HasPrecision(8, 4).HasDefaultValue(0.05m);
+            entity.Property(e => e.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+            entity.Property(e => e.Description).HasMaxLength(200).HasColumnName("description");
+        });
+
+        modelBuilder.Entity<TipAllocation>(entity =>
+        {
+            entity.ToTable("tip_allocations");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.PaymentId).HasColumnName("payment_id");
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.Amount).HasColumnName("amount").HasPrecision(18, 2);
+            entity.Property(e => e.Percentage).HasColumnName("percentage").HasPrecision(8, 4);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.HasOne(e => e.Payment).WithMany().HasForeignKey(e => e.PaymentId);
+            entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId);
         });
 
         OnModelCreatingPartial(modelBuilder);

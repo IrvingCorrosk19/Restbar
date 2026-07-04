@@ -1,25 +1,28 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using RestBar.Interfaces;
 using RestBar.Models;
 using RestBar.ViewModels;
 
 namespace RestBar.Controllers
 {
-    [Authorize]
+    [Authorize(Policy = "ManagerOrAbove")]
     public class AuditController : Controller
     {
         private readonly IAuditLogService _auditLogService;
         private readonly IGlobalLoggingService _loggingService;
+        private readonly RestBarContext _context;
 
-        public AuditController(IAuditLogService auditLogService, IGlobalLoggingService loggingService)
+        public AuditController(IAuditLogService auditLogService, IGlobalLoggingService loggingService, RestBarContext context)
         {
             _auditLogService = auditLogService;
             _loggingService = loggingService;
+            _context = context;
         }
 
         // GET: Audit
-        public async Task<IActionResult> Index(string? module = null, string? action = null, string? logLevel = null, DateTime? startDate = null, DateTime? endDate = null)
+        public async Task<IActionResult> Index(string? module = null, [FromQuery(Name = "action")] string? actionFilter = null, string? logLevel = null, DateTime? startDate = null, DateTime? endDate = null)
         {
             try
             {
@@ -42,9 +45,9 @@ namespace RestBar.Controllers
                     logs = logs.Where(l => l.Module == module);
                 }
 
-                if (!string.IsNullOrEmpty(action))
+                if (!string.IsNullOrEmpty(actionFilter))
                 {
-                    logs = logs.Where(l => l.Action == action);
+                    logs = logs.Where(l => l.Action == actionFilter);
                 }
 
                 if (!string.IsNullOrEmpty(logLevel))
@@ -67,15 +70,16 @@ namespace RestBar.Controllers
 
                 var viewModel = new AuditLogViewModel
                 {
-                    Logs = logs.ToList(),
-                    Module = module,
-                    Action = action,
-                    LogLevel = logLevel,
+                    AuditLogs = logs.ToList(),
+                    ModuleFilter = module,
+                    ActionFilter = actionFilter,
+                    LogLevelFilter = logLevel,
                     StartDate = startDate,
                     EndDate = endDate,
                     AvailableModules = GetAvailableModules(),
                     AvailableActions = GetAvailableActions(),
-                    AvailableLogLevels = GetAvailableLogLevels()
+                    AvailableLogLevels = GetAvailableLogLevels(),
+                    TotalLogs = logs.Count()
                 };
 
                 // ✅ NUEVO: Logging de consulta de auditoría
@@ -83,7 +87,7 @@ namespace RestBar.Controllers
                     action: "AUDIT_VIEW",
                     description: "Consulta de logs de auditoría",
                     reportType: "AuditLog",
-                    parameters: new { module, action, logLevel, startDate, endDate, recordCount = logs.Count() }
+                    parameters: new { module, action = actionFilter, logLevel, startDate, endDate, recordCount = logs.Count() }
                 );
 
                 return View(viewModel);
@@ -120,8 +124,8 @@ namespace RestBar.Controllers
 
                 var viewModel = new AuditLogViewModel
                 {
-                    Logs = errors.Take(500).ToList(), // Limitar a 500 errores
-                    IsErrorView = true
+                    AuditLogs = errors.Take(500).ToList(),
+                    ShowErrorsOnly = true
                 };
 
                 return View("Index", viewModel);
@@ -192,8 +196,8 @@ namespace RestBar.Controllers
 
                 var viewModel = new AuditLogViewModel
                 {
-                    Logs = logs.Take(500).ToList(),
-                    Module = module
+                    AuditLogs = logs.Take(500).ToList(),
+                    ModuleFilter = module
                 };
 
                 return View("Index", viewModel);
@@ -212,7 +216,7 @@ namespace RestBar.Controllers
         }
 
         // GET: Audit/Export
-        public async Task<IActionResult> Export(string? module = null, string? action = null, DateTime? startDate = null, DateTime? endDate = null)
+        public async Task<IActionResult> Export(string? module = null, [FromQuery(Name = "action")] string? actionFilter = null, DateTime? startDate = null, DateTime? endDate = null)
         {
             try
             {
@@ -231,8 +235,8 @@ namespace RestBar.Controllers
                 // Aplicar filtros
                 if (!string.IsNullOrEmpty(module))
                     logs = logs.Where(l => l.Module == module);
-                if (!string.IsNullOrEmpty(action))
-                    logs = logs.Where(l => l.Action == action);
+                if (!string.IsNullOrEmpty(actionFilter))
+                    logs = logs.Where(l => l.Action == actionFilter);
                 if (startDate.HasValue)
                     logs = logs.Where(l => l.Timestamp >= startDate.Value);
                 if (endDate.HasValue)
@@ -243,7 +247,7 @@ namespace RestBar.Controllers
                     module: AuditModule.SYSTEM.ToString(),
                     description: "Exportación de logs de auditoría",
                     exportType: "CSV",
-                    parameters: new { module, action, startDate, endDate, recordCount = logs.Count() }
+                    parameters: new { module, action = actionFilter, startDate, endDate, recordCount = logs.Count() }
                 );
 
                 // Generar CSV
@@ -268,12 +272,14 @@ namespace RestBar.Controllers
         // Métodos auxiliares
         private async Task<User?> GetCurrentUserAsync()
         {
-            var userEmail = User?.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
-            if (string.IsNullOrEmpty(userEmail)) return null;
+            var userIdValue = User?.FindFirst("UserId")?.Value
+                ?? User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdValue) || !Guid.TryParse(userIdValue, out var userId))
+                return null;
 
-            // Aquí deberías obtener el usuario desde tu servicio de usuarios
-            // Por simplicidad, retornamos null
-            return null;
+            return await _context.Users
+                .Include(u => u.Branch)
+                .FirstOrDefaultAsync(u => u.Id == userId);
         }
 
         private List<string> GetAvailableModules()
@@ -303,20 +309,5 @@ namespace RestBar.Controllers
             
             return csv.ToString();
         }
-    }
-
-    // ✅ NUEVO: ViewModel para logs de auditoría
-    public class AuditLogViewModel
-    {
-        public List<AuditLog> Logs { get; set; } = new List<AuditLog>();
-        public string? Module { get; set; }
-        public string? Action { get; set; }
-        public string? LogLevel { get; set; }
-        public DateTime? StartDate { get; set; }
-        public DateTime? EndDate { get; set; }
-        public List<string> AvailableModules { get; set; } = new List<string>();
-        public List<string> AvailableActions { get; set; } = new List<string>();
-        public List<string> AvailableLogLevels { get; set; } = new List<string>();
-        public bool IsErrorView { get; set; } = false;
     }
 } 

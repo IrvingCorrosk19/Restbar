@@ -7,7 +7,7 @@ using System.Security.Claims;
 
 namespace RestBar.Controllers
 {
-    [Authorize]
+    [Authorize(Policy = "ManagerOrAbove")]
     public class AdvancedSettingsController : Controller
     {
         private readonly ISystemSettingsService _systemSettingsService;
@@ -406,6 +406,7 @@ namespace RestBar.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> ExecuteBackup(string backupType)
         {
             try

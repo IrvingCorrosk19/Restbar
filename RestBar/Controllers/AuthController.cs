@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using RestBar.Interfaces;
 using RestBar.Models;
@@ -16,13 +17,15 @@ namespace RestBar.Controllers
         private readonly IEmailService _emailService;
         private readonly RestBarContext _context;
         private readonly ILogger<AuthController> _logger;
+        private readonly IWebHostEnvironment _env;
 
-        public AuthController(IAuthService authService, IEmailService emailService, RestBarContext context, ILogger<AuthController> logger)
+        public AuthController(IAuthService authService, IEmailService emailService, RestBarContext context, ILogger<AuthController> logger, IWebHostEnvironment env)
         {
             _authService = authService;
             _emailService = emailService;
             _context = context;
             _logger = logger;
+            _env = env;
         }
 
         // GET: /Auth/Login
@@ -37,12 +40,13 @@ namespace RestBar.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth_endpoints")]
         public async Task<IActionResult> Login(string email, string password, string? returnUrl = null)
         {
             try
             {
-                Console.WriteLine($"🔍 [AuthController] Login() - Iniciando login para: {email}");
-                _logger.LogInformation($"[AuthController] Intento de login para: {email}");
+                _logger.LogInformation("[AuthController] Intento de login. Email: {Email}, IP: {IP}",
+                    email, HttpContext.Connection.RemoteIpAddress);
 
                 if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
                 {
@@ -54,30 +58,22 @@ namespace RestBar.Controllers
 
                 // Normalizar contraseña (eliminar espacios al inicio y final)
                 password = password?.Trim() ?? string.Empty;
-                Console.WriteLine($"🔍 [AuthController] Login() - Password length: {password.Length}, First char: {(password.Length > 0 ? ((int)password[0]).ToString() : "empty")}");
-
-                Console.WriteLine($"🔍 [AuthController] Login() - Llamando a _authService.LoginAsync()");
                 var user = await _authService.LoginAsync(email, password);
                 
                 if (user == null)
                 {
-                    Console.WriteLine($"❌ [AuthController] Login() - Usuario no encontrado o credenciales incorrectas");
+                    _logger.LogWarning("[AuthController] Login fallido. Email: {Email}, IP: {IP}",
+                        email, HttpContext.Connection.RemoteIpAddress);
                     ModelState.AddModelError("", "Email o contraseña incorrectos");
                     ViewData["ReturnUrl"] = returnUrl;
                     return View();
                 }
 
-                Console.WriteLine($"✅ [AuthController] Login() - Usuario encontrado: {user.Email}, Rol: {user.Role}, Activo: {user.IsActive}");
-
-                // Crear claims y autenticar
-                Console.WriteLine($"🔍 [AuthController] Login() - Creando claims principal");
                 var claimsPrincipal = await _authService.GetClaimsPrincipalAsync(user);
-                
-                Console.WriteLine($"🔍 [AuthController] Login() - Firmando cookie de autenticación");
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, claimsPrincipal);
 
-                Console.WriteLine($"✅ [AuthController] Login() - Login exitoso para: {email}, Rol: {user.Role}");
-                _logger.LogInformation($"[AuthController] Login exitoso para: {email}, Rol: {user.Role}");
+                _logger.LogInformation("[AuthController] Login exitoso. Email: {Email}, Rol: {Role}",
+                    email, user.Role);
 
                 // Redirigir según el rol
                 if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
@@ -85,6 +81,11 @@ namespace RestBar.Controllers
                     Console.WriteLine($"🔍 [AuthController] Login() - Redirigiendo a returnUrl: {returnUrl}");
                     return Redirect(returnUrl);
                 }
+
+                if (user.Role == UserRole.chef)
+                    return RedirectToAction("StationOrders", "Order", new { stationType = "kitchen" });
+                if (user.Role == UserRole.bartender)
+                    return RedirectToAction("StationOrders", "Order", new { stationType = "bar" });
 
                 var controllerName = GetControllerByRole(user.Role);
                 Console.WriteLine($"🔍 [AuthController] Login() - Redirigiendo a controller: {controllerName}");
@@ -211,6 +212,9 @@ namespace RestBar.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> CreateAdmin()
         {
+            if (!_env.IsDevelopment())
+                return NotFound();
+
             try
             {
                 // Solo permitir si no hay admins
@@ -246,6 +250,7 @@ namespace RestBar.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth_endpoints")]
         public async Task<IActionResult> ForgotPassword(string email)
         {
             try
@@ -395,13 +400,7 @@ namespace RestBar.Controllers
         }
 
         private string HashPassword(string password)
-        {
-            using (var sha256 = System.Security.Cryptography.SHA256.Create())
-            {
-                var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                return Convert.ToBase64String(hashedBytes);
-            }
-        }
+            => RestBar.Services.AuthService.HashPasswordBcrypt(password);
 
         private string GetControllerByRole(UserRole role)
         {
@@ -413,8 +412,8 @@ namespace RestBar.Controllers
                 UserRole.supervisor => "Order",
                 UserRole.waiter => "Order",
                 UserRole.cashier => "Order",
-                UserRole.chef => "StationOrders",
-                UserRole.bartender => "StationOrders",
+                UserRole.chef => "Order",
+                UserRole.bartender => "Order",
 
                 UserRole.accountant => "Home",
                 UserRole.support => "Home",

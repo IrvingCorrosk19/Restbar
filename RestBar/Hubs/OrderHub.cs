@@ -1,8 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using System.Threading.Tasks;
 
 namespace RestBar.Hubs
 {
+    [Authorize]
     public class OrderHub : Hub
     {
         // ─── GRUPOS POR TIPO DE ESTACIÓN ────────────────────────────────────────

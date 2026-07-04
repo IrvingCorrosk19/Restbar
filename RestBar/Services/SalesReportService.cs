@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using RestBar.Models;
 using RestBar.ViewModels;
 using RestBar.Interfaces;
@@ -9,11 +10,15 @@ namespace RestBar.Services
     {
         private readonly RestBarContext _context;
         private readonly ILogger<SalesReportService> _logger;
+        private readonly IConfiguration _configuration;
+        private readonly IInventoryOperationsService _inventoryOps;
 
-        public SalesReportService(RestBarContext context, ILogger<SalesReportService> logger)
+        public SalesReportService(RestBarContext context, ILogger<SalesReportService> logger, IConfiguration configuration, IInventoryOperationsService inventoryOps)
         {
             _context = context;
             _logger = logger;
+            _configuration = configuration;
+            _inventoryOps = inventoryOps;
         }
 
         // ✅ Métricas generales de ventas
@@ -228,40 +233,54 @@ namespace RestBar.Services
             }
         }
 
-        // ✅ Ventas por empleado
+        // ✅ Ventas por empleado — atribución por ítem (AddedByUserId), no solo quien abrió la orden
         public async Task<List<EmployeeSalesData>> GetEmployeeSalesAsync(ReportFilters filters)
         {
             try
             {
-                _logger.LogInformation("[SalesReportService] Generando ventas por empleado");
+                _logger.LogInformation("[SalesReportService] Generando ventas por empleado (atribución por ítem)");
 
-                var query = _context.Orders
-                    .Include(o => o.OrderItems)
-                    .Include(o => o.User)
-                    .Include(o => o.Table)
-                    .ThenInclude(t => t.Area)
-                    .AsQueryable();
+                var itemsQuery = _context.OrderItems
+                    .Include(oi => oi.Order)
+                        .ThenInclude(o => o.User)
+                    .Include(oi => oi.Order)
+                        .ThenInclude(o => o.Branch)
+                    .Include(oi => oi.AddedByUser)
+                    .Where(oi => oi.Order.Status == OrderStatus.Completed
+                        && oi.Status != OrderItemStatus.Cancelled);
 
-                query = ApplyFilters(query, filters);
+                if (filters.StartDate.HasValue)
+                    itemsQuery = itemsQuery.Where(oi => oi.Order.ClosedAt >= filters.StartDate.Value);
+                if (filters.EndDate.HasValue)
+                    itemsQuery = itemsQuery.Where(oi => oi.Order.ClosedAt <= filters.EndDate.Value);
+                if (filters.BranchId.HasValue)
+                    itemsQuery = itemsQuery.Where(oi => oi.Order.BranchId == filters.BranchId.Value);
 
-                var employeeSales = await query
-                    .Where(o => o.Status == OrderStatus.Completed && o.UserId.HasValue)
-                    .GroupBy(o => new { o.UserId, o.User.FullName, o.User.Role })
-                    .Select(g => new EmployeeSalesData
+                var items = await itemsQuery.ToListAsync();
+
+                var employeeSales = new List<EmployeeSalesData>();
+                foreach (var g in items.GroupBy(oi => oi.AddedByUserId ?? oi.Order.UserId).Where(g => g.Key.HasValue))
+                {
+                    var sample = g.First();
+                    var user = sample.AddedByUser ?? sample.Order.User;
+                    var revenue = g.Sum(oi => oi.Quantity * oi.UnitPrice - oi.Discount);
+                    var orderCount = g.Select(oi => oi.OrderId).Distinct().Count();
+                    var rate = await _inventoryOps.GetCommissionRateAsync(sample.Order.CompanyId, sample.Order.BranchId, user?.Role, sample.PreparedByStationId);
+                    employeeSales.Add(new EmployeeSalesData
                     {
-                        UserId = g.Key.UserId.Value,
-                        EmployeeName = g.Key.FullName ?? "Sin nombre",
-                        Role = g.Key.Role.ToString(),
-                        BranchName = "Sucursal Principal", // Por ahora hardcodeado
-                        OrdersHandled = g.Count(),
-                        Revenue = g.Sum(o => o.TotalAmount ?? 0),
-                        AverageTicket = g.Average(o => o.TotalAmount ?? 0),
-                        ItemsSold = g.SelectMany(o => o.OrderItems).Sum(oi => (int)oi.Quantity),
-                        Commission = g.Sum(o => o.TotalAmount ?? 0) * 0.05m, // 5% comisión ejemplo
-                        Performance = 100 // Se calculará vs meta
-                    })
-                    .OrderByDescending(e => e.Revenue)
-                    .ToListAsync();
+                        UserId = g.Key!.Value,
+                        EmployeeName = user?.FullName ?? "Sin nombre",
+                        Role = user?.Role.ToString() ?? "—",
+                        BranchName = sample.Order.Branch?.Name ?? "—",
+                        OrdersHandled = orderCount,
+                        Revenue = revenue,
+                        AverageTicket = orderCount > 0 ? revenue / orderCount : 0,
+                        ItemsSold = (int)g.Sum(oi => oi.Quantity),
+                        Commission = revenue * rate,
+                        Performance = 100
+                    });
+                }
+                employeeSales = employeeSales.OrderByDescending(e => e.Revenue).ToList();
 
                 _logger.LogInformation($"[SalesReportService] Ventas por empleado generadas - {employeeSales.Count} empleados");
                 return employeeSales;

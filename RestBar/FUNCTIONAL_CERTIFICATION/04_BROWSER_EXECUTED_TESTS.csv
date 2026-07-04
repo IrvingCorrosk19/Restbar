@@ -1,0 +1,11 @@
+Id,Category,Name,Status,Details,At,Method
+B-E2E-01,Login,Admin login via browser UI,PASS,Redirect Home/Index,2026-07-04T13:22,Browser
+B-E2E-02,Navigation,Admin dashboard loads,PASS,Acciones Rápidas visible,2026-07-04T13:22,Browser
+B-E2E-03,POS,Order/Index Tomar Pedido loads,PASS,12 mesas + categorías,2026-07-04T13:22,Browser
+B-E2E-04,POS,Select Mesa N-01 Disponible,PASS,Mesa cambió a Ocupada,2026-07-04T13:23,Browser
+B-E2E-05,POS,Select categoría Bebidas,PASS,Categoría activa en UI,2026-07-04T13:23,Browser
+B-E2E-06,Audit,Admin Audit/Index loads,PASS,Logs + filtros + Exportar CSV,2026-07-04T13:23,Browser
+B-E2E-07,Auth,Logout clears session,PASS,Redirect /Auth/Login,2026-07-04T13:24,Browser
+B-E2E-08,Login,Waiter login redirects to POS,PASS,URL /Order/Index,2026-07-04T13:24,Browser
+B-E2E-09,Security,Waiter denied Company/Index,PASS,AccessDenied page,2026-07-04T13:24,Browser
+B-E2E-10,KDS,Kitchen StationOrders loads,PASS,Órdenes mesas T-02..T-10,2026-07-04T13:25,Browser

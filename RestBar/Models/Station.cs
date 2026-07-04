@@ -28,6 +28,10 @@ namespace RestBar.Models
         [Display(Name = "Estado Activo")]
         public bool IsActive { get; set; } = true;
 
+        [StringLength(200)]
+        [Display(Name = "Impresora térmica")]
+        public string? PrinterName { get; set; }
+
         // ✅ NUEVO: Propiedades multi-tenant
         [Display(Name = "Compañía")]
         public Guid? CompanyId { get; set; }

@@ -6,18 +6,29 @@ namespace RestBar.ViewModel
     {
         [Required]
         public Guid OrderId { get; set; }
-        
+
         [Required]
         public decimal Amount { get; set; }
-        
+
         [Required]
         public string Method { get; set; } = string.Empty;
-        
+
         public bool IsShared { get; set; } = false;
-        
+
         public string? PayerName { get; set; }
-        
+
+        [Range(0, double.MaxValue, ErrorMessage = "La propina no puede ser negativa")]
+        public decimal TipAmount { get; set; } = 0;
+
         public List<SplitPaymentRequestDto>? SplitPayments { get; set; }
+
+        /// <summary>
+        /// UUID v4 único por intento de pago. Generado por el cliente antes de enviar.
+        /// Permite reintentos seguros sin duplicar pagos.
+        /// Formato: GUID string, ej: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+        /// </summary>
+        [StringLength(100)]
+        public string? IdempotencyKey { get; set; }
     }
 
     public class SplitPaymentRequestDto
@@ -42,6 +53,7 @@ namespace RestBar.ViewModel
         public bool IsVoided { get; set; }
         public bool IsShared { get; set; }
         public string? PayerName { get; set; }
+        public decimal TipAmount { get; set; }
         public List<SplitPaymentResponseDto> SplitPayments { get; set; } = new();
     }
 

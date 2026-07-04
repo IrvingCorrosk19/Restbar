@@ -91,14 +91,15 @@ namespace RestBar.Controllers
                 Console.WriteLine("🔍 [ProductController] GetProducts() - Iniciando carga de productos...");
                 
                 // Obtener el usuario actual para filtrar por multi-tenant
-                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-                if (userIdClaim == null)
+                var userIdValue = User.FindFirst("UserId")?.Value
+                    ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdValue) || !Guid.TryParse(userIdValue, out var userId))
                 {
                     Console.WriteLine("❌ [ProductController] GetProducts() - Usuario no autenticado");
                     return Json(new { success = false, message = "Usuario no autenticado" });
                 }
 
-                var currentUser = await _areaService.GetCurrentUserWithAssignmentsAsync(Guid.Parse(userIdClaim.Value));
+                var currentUser = await _areaService.GetCurrentUserWithAssignmentsAsync(userId);
                 if (currentUser == null || currentUser.Branch == null)
                 {
                     Console.WriteLine("❌ [ProductController] GetProducts() - Usuario o sucursal no encontrado");
@@ -110,10 +111,10 @@ namespace RestBar.Controllers
                     .OrderBy(p => p.Name)
                     .ToListAsync();
                 
-                // Filtrar productos por la sucursal del usuario actual
+                // Filtrar productos por la sucursal y compañía del usuario actual
                 var filteredProducts = allProducts.Where(p => 
-                    p.BranchId == currentUser.BranchId || 
-                    p.BranchId == null
+                    p.BranchId == currentUser.BranchId &&
+                    (p.CompanyId == null || p.CompanyId == currentUser.Branch.CompanyId)
                 ).ToList();
                 
                 Console.WriteLine($"✅ [ProductController] GetProducts() - Usuario: {currentUser.Email}");

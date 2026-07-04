@@ -4,6 +4,9 @@ namespace RestBar.ViewModel
     {
         public Guid OrderId { get; set; }
         public string TableNumber { get; set; }
+        public Guid? TableAreaId { get; set; }
+        public string? TableAreaName { get; set; }
+        public Guid? BranchId { get; set; }
         public DateTime? OpenedAt { get; set; }
         public List<KitchenOrderItemViewModel> Items { get; set; } = new();
         public string? Notes { get; set; }
@@ -43,6 +46,7 @@ namespace RestBar.ViewModel
         /// Usado por StationOrders() para filtrar por ID en lugar de strings mágicos.
         /// </summary>
         public Guid? StationId { get; set; }
+        public string? StationDisplayName { get; set; }
         public bool IsReady => Status == "Ready" || KitchenStatus == "Ready";
     }
 } 

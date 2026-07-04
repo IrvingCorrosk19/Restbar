@@ -22,6 +22,7 @@ namespace RestBar.Middleware
         {
             // Permitir acceso a rutas públicas esenciales
             if (context.Request.Path.StartsWithSegments("/Auth") || 
+                context.Request.Path.StartsWithSegments("/Seed") ||
                 context.Request.Path.StartsWithSegments("/Home/Error") ||
                 context.Request.Path.Value == "/" ||
                 context.Request.Path.StartsWithSegments("/css") ||
@@ -111,13 +112,17 @@ namespace RestBar.Middleware
                 _ when pathValue.StartsWith("/product") => "products",
                 
                 // Rutas de inventario
-    
+                _ when pathValue.StartsWith("/inventory") => "inventory",
+                _ when pathValue.StartsWith("/productstockassignment") => "products",
                 
                 // Rutas de usuarios
                 _ when pathValue.StartsWith("/user") => "users",
                 
                 // Rutas de reportes
                 _ when pathValue.StartsWith("/report") => "reports",
+
+                // Rutas de auditoría (admin/manager)
+                _ when pathValue.StartsWith("/audit") => "audit",
                 
                 // Rutas de configuración (company, branch, category, etc.)
                 _ when pathValue.StartsWith("/company") => "admin_only",

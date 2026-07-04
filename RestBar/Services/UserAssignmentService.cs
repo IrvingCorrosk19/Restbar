@@ -182,5 +182,34 @@ namespace RestBar.Services
                 .ThenBy(t => t.TableNumber)
                 .ToListAsync();
         }
+
+        public IEnumerable<Table> FilterTablesForWaiter(UserAssignment? assignment, IEnumerable<Table> tables)
+        {
+            if (assignment == null)
+                return tables;
+
+            return tables.Where(t => CanWaiterAccessTable(assignment, t));
+        }
+
+        public bool CanWaiterAccessTable(UserAssignment? assignment, Table table)
+        {
+            if (assignment == null)
+                return true;
+
+            // Área asignada: acceso a todas las mesas del área
+            if (assignment.AreaId.HasValue && table.AreaId == assignment.AreaId)
+                return true;
+
+            // Mesas específicas adicionales
+            if (assignment.AssignedTableIds != null && assignment.AssignedTableIds.Count > 0
+                && assignment.AssignedTableIds.Contains(table.Id))
+                return true;
+
+            // Sin área ni mesas específicas: acceso a toda la sucursal
+            if (!assignment.AreaId.HasValue && (assignment.AssignedTableIds == null || assignment.AssignedTableIds.Count == 0))
+                return true;
+
+            return false;
+        }
     }
 } 

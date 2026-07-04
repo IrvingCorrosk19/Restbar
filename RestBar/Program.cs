@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using RestBar.Interfaces;
 using RestBar.Models;
 using RestBar.Services;
+using System.Threading.RateLimiting;
 using RestBar.Hubs;
 using RestBar.Middleware;
 using RestBar.Helpers;
@@ -32,6 +34,30 @@ CultureInfo.DefaultThreadCurrentUICulture = panamaCulture;
 
 // Agregar SignalR
 builder.Services.AddSignalR();
+
+// ✅ SEGURIDAD: Rate limiting para endpoints de autenticación
+// Producción: 5 req/min. Desarrollo: límite alto para certificación/pruebas.
+var isDevelopment = builder.Environment.IsDevelopment();
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("auth_endpoints", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = isDevelopment ? 500 : 5;
+        limiterOptions.Window = TimeSpan.FromSeconds(60);
+        limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        limiterOptions.QueueLimit = 0;
+    });
+
+    // Respuesta cuando se supera el límite
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = 429; // Too Many Requests
+        context.HttpContext.Response.Headers.Append("Retry-After", "60");
+        await context.HttpContext.Response.WriteAsync(
+            "{\"success\":false,\"message\":\"Demasiados intentos. Espere 60 segundos.\"}",
+            cancellationToken);
+    };
+});
 
 // ✅ NUEVO: Configurar sesiones para el AuditLogService
 builder.Services.AddDistributedMemoryCache();
@@ -67,7 +93,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("SupervisorOrAbove", policy => policy.RequireRole("admin", "manager", "supervisor"));
     
     // Políticas para área de órdenes
-    options.AddPolicy("OrderAccess", policy => policy.RequireRole("admin", "manager", "supervisor", "waiter", "cashier"));
+    options.AddPolicy("OrderAccess", policy => policy.RequireRole("admin", "manager", "supervisor", "waiter", "cashier", "chef", "bartender"));
     
     // Políticas para área de cocina
     options.AddPolicy("KitchenAccess", policy => policy.RequireRole("admin", "manager", "supervisor", "chef", "bartender"));
@@ -75,7 +101,7 @@ builder.Services.AddAuthorization(options =>
     // Políticas para área de pagos
     options.AddPolicy("PaymentAccess", policy => policy.RequireRole("admin", "manager", "supervisor", "cashier", "accountant"));
     
-    // Políticas para área de inventario
+    // Políticas para área de inventario — "inventarista" ahora existe en UserRole enum
     options.AddPolicy("InventoryAccess", policy => policy.RequireRole("admin", "manager", "supervisor", "accountant", "inventarista"));
     
     // Políticas para área de productos
@@ -239,6 +265,7 @@ builder.Services.AddScoped<IBackupSettingsService, BackupSettingsService>();
 builder.Services.AddScoped<IAdvancedReportsService, AdvancedReportsService>();
 
 // Agregar servicio de SignalR
+builder.Services.AddScoped<IInventoryOperationsService, InventoryOperationsService>();
 builder.Services.AddScoped<IOrderHubService, OrderHubService>();
 
 // ✅ NUEVO: Agregar servicios de logging y auditoría
@@ -249,6 +276,22 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IEmailTemplateService, EmailTemplateService>();
 
 var app = builder.Build();
+
+// Aplicar migraciones pendientes al arranque (VPS/Docker)
+if (!args.Contains("--verify-db") && app.Environment.IsProduction())
+{
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<RestBarContext>();
+        db.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        var logger = app.Services.GetRequiredService<ILogger<Program>>();
+        logger.LogWarning(ex, "Migrate at startup failed (DB may not be ready). App will continue.");
+    }
+}
 
 // Verificación en DB (ejecutar: dotnet run -- --verify-db)
 if (args.Contains("--verify-db"))
@@ -324,6 +367,9 @@ else
 }
 
 app.UseRouting();
+
+// ✅ SEGURIDAD: Rate limiting (debe estar antes de UseAuthentication)
+app.UseRateLimiter();
 
 // ✅ NUEVO: Configurar sesiones (debe estar después de UseRouting)
 app.UseSession();

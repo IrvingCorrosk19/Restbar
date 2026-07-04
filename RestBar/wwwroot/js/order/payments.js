@@ -504,7 +504,7 @@ function showFullPaymentModal(totalAmount) {
 let paymentProcessing = false;
 
 // Función para procesar pago
-async function processPayment(amount, method, isShared = false, payerName = '', splitPayments = []) {
+async function processPayment(amount, method, isShared = false, payerName = '', splitPayments = [], tipAmount = 0) {
     if (paymentProcessing) {
         Swal.fire('Espere', 'Ya hay un pago en proceso', 'info');
         return;
@@ -536,10 +536,14 @@ async function processPayment(amount, method, isShared = false, payerName = '', 
             }
         }
 
+        const tipEl = document.getElementById('paymentTipAmount');
+        const resolvedTip = tipAmount > 0 ? tipAmount : (tipEl ? parseFloat(tipEl.value) || 0 : 0);
+
         // Preparar datos del pago
         const paymentData = {
             orderId: currentOrder.orderId,
             amount: Math.round(amount * 100) / 100,
+            tipAmount: Math.max(0, Math.round(resolvedTip * 100) / 100),
             method: method,
             isShared: isShared,
             payerName: payerName,
@@ -880,6 +884,40 @@ function displayPaymentHistory(payments) {
 }
 
 // Exportar funciones para uso global
+async function updatePaymentInfo() {
+    const totalPaidEl = document.getElementById('totalPaid');
+    const remainingEl = document.getElementById('remainingAmount');
+    if (!totalPaidEl || !remainingEl) return;
+
+    if (!currentOrder || !currentOrder.orderId) {
+        totalPaidEl.textContent = '$0.00';
+        remainingEl.textContent = '$0.00';
+        return;
+    }
+
+    try {
+        const resp = await fetch(`/api/Payment/order/${currentOrder.orderId}/summary`);
+        if (resp.ok) {
+            const s = await resp.json();
+            const paid = s.totalPaidAmount ?? s.TotalPaidAmount ?? 0;
+            const remaining = s.remainingAmount ?? s.RemainingAmount ?? 0;
+            totalPaidEl.textContent = `$${Number(paid).toFixed(2)}`;
+            remainingEl.textContent = `$${Number(remaining).toFixed(2)}`;
+            return;
+        }
+    } catch (_) {}
+
+    const total = currentOrder.items?.reduce((sum, item) => {
+        const unitPrice = item.unitPrice ?? item.price ?? 0;
+        const qty = item.quantity ?? 0;
+        const discount = item.discount ?? 0;
+        return sum + (qty * unitPrice) - discount;
+    }, 0) ?? 0;
+    totalPaidEl.textContent = '$0.00';
+    remainingEl.textContent = `$${total.toFixed(2)}`;
+}
+
+window.updatePaymentInfo = updatePaymentInfo;
 window.processPayment = processPayment;
 window.validateSplitPayments = validateSplitPayments;
 window.addSplitPayment = addSplitPayment;

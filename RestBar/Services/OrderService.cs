@@ -12,6 +12,8 @@ namespace RestBar.Services
         private readonly IProductService _productService;
         private readonly IOrderHubService _orderHubService;
         private readonly IUserAssignmentService _userAssignmentService;
+        private readonly IGlobalLoggingService _loggingService;
+        private readonly IInventoryOperationsService _inventoryOps;
         private readonly ILogger<OrderService> _logger;
 
         public OrderService(
@@ -19,6 +21,8 @@ namespace RestBar.Services
             IProductService productService,
             IOrderHubService orderHubService,
             IUserAssignmentService userAssignmentService,
+            IGlobalLoggingService loggingService,
+            IInventoryOperationsService inventoryOps,
             IHttpContextAccessor httpContextAccessor,
             ILogger<OrderService> logger)
             : base(context, httpContextAccessor)
@@ -26,6 +30,8 @@ namespace RestBar.Services
             _productService = productService;
             _orderHubService = orderHubService;
             _userAssignmentService = userAssignmentService;
+            _loggingService = loggingService;
+            _inventoryOps = inventoryOps;
             _logger = logger;
         }
 
@@ -209,6 +215,8 @@ namespace RestBar.Services
                     .Include(o => o.User)
                     .Include(o => o.OrderItems)
                         .ThenInclude(oi => oi.Product)
+                    .Include(o => o.OrderItems)
+                        .ThenInclude(oi => oi.PreparedByStation)
                     .FirstOrDefaultAsync(o => o.Id == id);
                 
                 Console.WriteLine($"[OrderService] GetOrderWithDetailsAsync resultado: {(order != null ? "SÍ" : "NO")}");
@@ -299,25 +307,46 @@ namespace RestBar.Services
             
             Console.WriteLine($"[OrderService] Estado final de orden: {finalOrder?.Status}");
             Console.WriteLine($"[OrderService] SendToKitchenAsync completado");
+
+            await _loggingService.LogOrderActivityAsync(
+                action: AuditAction.UPDATE.ToString(),
+                description: $"Pedido enviado a cocina - Mesa {table?.TableNumber ?? "N/A"}, Items: {dto.Items?.Count ?? 0}",
+                orderId: (finalOrder ?? order).Id,
+                newValues: new { dto.TableId, UserId = userId, ItemCount = dto.Items?.Count ?? 0 });
             
             return finalOrder ?? order;
         }
 
-        public async Task<List<KitchenOrderViewModel>> GetKitchenOrdersAsync()
+        public async Task<List<KitchenOrderViewModel>> GetKitchenOrdersAsync(Guid? branchId = null, Guid? companyId = null, int page = 1, int pageSize = 50)
         {
             try
             {
-                _logger.LogInformation("[KDS] GetKitchenOrdersAsync - iniciando consulta de órdenes activas");
+                if (page < 1) page = 1;
+                if (pageSize < 1) pageSize = 50;
+                if (pageSize > 200) pageSize = 200;
 
-                // ─── Consulta principal ──────────────────────────────────────────────────
-                // AsNoTracking: lectura pura, sin overhead de change-tracking (crítico en concurrencia)
-                var orders = await _context.Orders
+                _logger.LogInformation("[KDS] GetKitchenOrdersAsync - branchId={BranchId}, companyId={CompanyId}, page={Page}", branchId, companyId, page);
+
+                var ordersQuery = _context.Orders
                     .AsNoTracking()
                     .Where(o => o.Status == OrderStatus.SentToKitchen ||
                                o.Status == OrderStatus.Preparing      ||
                                o.Status == OrderStatus.Ready          ||
-                               o.Status == OrderStatus.ReadyToPay)
+                               o.Status == OrderStatus.ReadyToPay);
+
+                if (branchId.HasValue)
+                    ordersQuery = ordersQuery.Where(o => o.BranchId == branchId.Value);
+                if (companyId.HasValue)
+                    ordersQuery = ordersQuery.Where(o => o.CompanyId == companyId.Value);
+
+                var orders = await ordersQuery
+                    .OrderByDescending(o => o.Priority)
+                    .ThenBy(o => o.IsVip ? 0 : 1)
+                    .ThenBy(o => o.OpenedAt)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
                     .Include(o => o.Table)
+                        .ThenInclude(t => t!.Area)
                     .Include(o => o.OrderItems)
                         .ThenInclude(oi => oi.Product)
                     .Include(o => o.OrderItems)
@@ -354,9 +383,8 @@ namespace RestBar.Services
                                 KitchenStatus = oi.KitchenStatus.ToString(),
                                 // StationId permite filtrar por ID real (sin strings mágicos)
                                 StationId     = oi.PreparedByStationId,
-                                // StationName para compatibilidad con vista existente;
-                                // string.Empty cuando no hay estación (sin fallback a "kitchen")
-                                StationName   = oi.PreparedByStation?.Type ?? string.Empty
+                                StationName   = oi.PreparedByStation?.Type ?? string.Empty,
+                                StationDisplayName = oi.PreparedByStation?.Name ?? string.Empty
                             })
                             .ToList();
 
@@ -367,6 +395,9 @@ namespace RestBar.Services
                         {
                             OrderId        = order.Id,
                             TableNumber    = order.Table?.TableNumber ?? "Delivery",
+                            TableAreaId    = order.Table?.AreaId,
+                            TableAreaName  = order.Table?.Area?.Name,
+                            BranchId       = order.BranchId,
                             OpenedAt       = order.OpenedAt,
                             Items          = itemsToShow,
                             TotalItems     = activeItems.Count,
@@ -449,9 +480,12 @@ namespace RestBar.Services
                     .ThenInclude(oi => oi.Product)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.PreparedByStation)
-                .FirstOrDefaultAsync(o => o.TableId == tableId && 
-                    o.Status != OrderStatus.Cancelled && 
-                    o.Status != OrderStatus.Completed);
+                .Where(o => o.TableId == tableId &&
+                    o.Status != OrderStatus.Cancelled &&
+                    o.Status != OrderStatus.Completed &&
+                    o.OrderItems.Any(oi => oi.Status != OrderItemStatus.Cancelled))
+                .OrderByDescending(o => o.OpenedAt)
+                .FirstOrDefaultAsync();
 
             Console.WriteLine($"[OrderService] Orden activa encontrada: {(order != null ? "SÍ" : "NO")}");
             if (order != null)
@@ -471,8 +505,8 @@ namespace RestBar.Services
                 // Cada item mantiene su propia cantidad y estado
                 Console.WriteLine($"[OrderService] Items mantenidos individualmente: {order.OrderItems.Count}");
                 
-                // Recalcular el total de la orden con todos los items individuales
-                order.TotalAmount = order.OrderItems.Sum(oi => oi.Quantity * oi.UnitPrice);
+                // Recalcular el total de la orden con todos los items individuales (menos descuento global)
+                order.TotalAmount = order.OrderItems.Sum(oi => oi.Quantity * oi.UnitPrice - oi.Discount) - order.DiscountAmount;
             }
 
             return order;
@@ -1075,11 +1109,14 @@ namespace RestBar.Services
                 if (item.ProductId == null || item.ProductId == Guid.Empty) continue;
                 try
                 {
-                    await _productService.RestoreStockAsync(
+                    await _inventoryOps.RestoreInventoryForCancelAsync(
                         item.ProductId.Value,
                         item.Quantity,
                         item.PreparedByStationId,
-                        order.BranchId);
+                        order.BranchId,
+                        order.CompanyId,
+                        orderId,
+                        userId);
                 }
                 catch (Exception ex)
                 {
@@ -1091,6 +1128,18 @@ namespace RestBar.Services
             await _orderHubService.NotifyOrderStatusChanged(orderId, OrderStatus.Cancelled);
             if (order.Table != null)
                 await _orderHubService.NotifyTableStatusChanged(order.Table.Id, order.Table.Status.ToString());
+
+            await _loggingService.LogOrderActivityAsync(
+                action: AuditAction.DELETE.ToString(),
+                description: $"Orden cancelada: {reason ?? "Sin motivo"}",
+                orderId: orderId,
+                newValues: new
+                {
+                    userId,
+                    supervisorId,
+                    reason,
+                    Products = string.Join(", ", order.OrderItems.Select(oi => oi.Product?.Name ?? "Producto"))
+                });
         }
 
         // ✅ NUEVO: Método para marcar mesa como ocupada cuando se selecciona
@@ -1134,7 +1183,13 @@ namespace RestBar.Services
                 else
                 {
                     Console.WriteLine($"⚠️ [OrderService] SetTableOccupiedAsync() - Mesa {table.TableNumber} ya está en estado {table.Status}, no se cambió");
-                    return false;
+                    // Idempotente: estados operativos cuentan como éxito
+                    if (table.Status is TableStatus.Ocupada or TableStatus.EnPreparacion or TableStatus.ParaPago)
+                        return true;
+                    // Intentar liberar estados residuales y marcar ocupada
+                    table.Status = TableStatus.Ocupada;
+                    await _context.SaveChangesAsync();
+                    return true;
                 }
             }
             catch (Exception ex)
@@ -1143,6 +1198,106 @@ namespace RestBar.Services
                 Console.WriteLine($"🔍 [OrderService] SetTableOccupiedAsync() - StackTrace: {ex.StackTrace}");
                 return false;
             }
+        }
+
+        public async Task<Order> MoveOrderToTableAsync(Guid orderId, Guid targetTableId, Guid? userId)
+        {
+            var order = await _context.Orders
+                .Include(o => o.Table)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Product)
+                .FirstOrDefaultAsync(o => o.Id == orderId)
+                ?? throw new KeyNotFoundException($"No se encontró la orden con ID {orderId}");
+
+            if (order.Status == OrderStatus.Cancelled || order.Status == OrderStatus.Completed)
+                throw new InvalidOperationException("No se puede mover una orden cancelada o completada");
+
+            var oldTableId = order.TableId;
+            var targetTable = await _context.Tables.FirstOrDefaultAsync(t => t.Id == targetTableId)
+                ?? throw new KeyNotFoundException("Mesa destino no encontrada");
+
+            if (!targetTable.IsActive)
+                throw new InvalidOperationException("La mesa destino no está activa");
+
+            if (order.BranchId != null && targetTable.BranchId != order.BranchId)
+                throw new InvalidOperationException("La mesa destino pertenece a otra sucursal");
+
+            if (order.CompanyId != null && targetTable.CompanyId != order.CompanyId)
+                throw new InvalidOperationException("La mesa destino pertenece a otra empresa");
+
+            if (oldTableId != targetTableId)
+            {
+                var hasActiveOrder = await _context.Orders
+                    .Include(o => o.OrderItems)
+                    .AnyAsync(o => o.TableId == targetTableId
+                        && o.Id != orderId
+                        && o.Status != OrderStatus.Cancelled
+                        && o.Status != OrderStatus.Completed
+                        && o.OrderItems.Any(oi => oi.Status != OrderItemStatus.Cancelled));
+
+                if (hasActiveOrder)
+                    throw new InvalidOperationException("La mesa destino ya tiene una orden activa");
+
+                if (targetTable.Status != TableStatus.Disponible && targetTable.Status != TableStatus.Ocupada)
+                    throw new InvalidOperationException($"La mesa destino no está disponible (estado: {targetTable.Status})");
+            }
+
+            order.TableId = targetTableId;
+            targetTable.Status = TableStatus.Ocupada;
+            order.UpdatedAt = DateTime.UtcNow;
+            order.Version++;
+
+            // Re-enrutar ítems pendientes según área de mesa destino
+            var newAreaId = targetTable.AreaId;
+            foreach (var item in order.OrderItems.Where(oi => oi.Status != OrderItemStatus.Cancelled && oi.Status != OrderItemStatus.Served && oi.ProductId.HasValue))
+            {
+                var bestStation = await _productService.FindBestStationForProductAsync(
+                    item.ProductId!.Value, item.Quantity, order.BranchId, newAreaId);
+                if (bestStation.HasValue && bestStation != item.PreparedByStationId)
+                {
+                    var oldStation = item.PreparedByStationId;
+                    if (oldStation.HasValue && item.Product?.TrackInventory == true)
+                    {
+                        try
+                        {
+                            await _inventoryOps.TransferStockBetweenStationsAsync(
+                                item.ProductId.Value, oldStation.Value, bestStation.Value,
+                                item.Quantity, order.BranchId, order.CompanyId, userId, "MoveToTable");
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "[MoveToTable] No se pudo transferir stock ítem {ItemId}", item.Id);
+                        }
+                    }
+                    item.PreparedByStationId = bestStation;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            if (oldTableId.HasValue && oldTableId != targetTableId)
+            {
+                var oldTable = await _context.Tables.FindAsync(oldTableId.Value);
+                if (oldTable != null)
+                {
+                    var hasOtherOrders = await _context.Orders.AnyAsync(o =>
+                        o.TableId == oldTableId
+                        && o.Status != OrderStatus.Cancelled
+                        && o.Status != OrderStatus.Completed);
+
+                    if (!hasOtherOrders)
+                    {
+                        oldTable.Status = TableStatus.Disponible;
+                        await _context.SaveChangesAsync();
+                        await _orderHubService.NotifyTableStatusChanged(oldTable.Id, oldTable.Status.ToString());
+                    }
+                }
+            }
+
+            await _orderHubService.NotifyTableStatusChanged(targetTable.Id, targetTable.Status.ToString());
+            await _orderHubService.NotifyOrderStatusChanged(order.Id, order.Status);
+
+            return order;
         }
 
         // Método para verificar y actualizar el estado de la mesa cuando todos los items estén listos
@@ -1521,6 +1676,14 @@ namespace RestBar.Services
             }
 
             decimal total = 0;
+            Guid? tableAreaId = null;
+            if (dto.TableId != Guid.Empty)
+            {
+                var orderTable = await _context.Tables.AsNoTracking().FirstOrDefaultAsync(t => t.Id == dto.TableId);
+                tableAreaId = orderTable?.AreaId;
+                Console.WriteLine($"[OrderService] Área de mesa para enrutamiento: {tableAreaId}");
+            }
+
             // Procesar cada item individualmente
             Console.WriteLine($"[OrderService] Procesando {dto.Items.Count} items individualmente");
             // Verificar items duplicados en el DTO
@@ -1635,7 +1798,8 @@ namespace RestBar.Services
                             var bestStationId = await _productService.FindBestStationForProductAsync(
                                 product.Id, 
                                 itemDto.Quantity, 
-                                order.BranchId);
+                                order.BranchId,
+                                tableAreaId);
                             
                             // Si no se encontró estación con stock suficiente y no se permite stock negativo, lanzar error
                             if (!bestStationId.HasValue && product.TrackInventory && !product.AllowNegativeStock)
@@ -1652,9 +1816,15 @@ namespace RestBar.Services
                             }
                             else
                             {
-                                Console.WriteLine($"⚠️ [OrderService] No se asignó estación para {product.Name}, usará la estación predeterminada del producto");
+                                Console.WriteLine($"⚠️ [OrderService] No se asignó estación para {product.Name}");
                             }
                         }
+                    }
+
+                    if (!assignedStationId.HasValue)
+                    {
+                        throw new InvalidOperationException(
+                            $"El producto '{product.Name}' no tiene estación de preparación configurada para esta área/sucursal. Configure ProductStockAssignment.");
                     }
 
                     // Crear un OrderItem individual para cada item del DTO
@@ -1673,6 +1843,7 @@ namespace RestBar.Services
                             : OrderItemStatus.Pending,
                         // ✅ NUEVO: Asignar estación basada en stock disponible
                         PreparedByStationId = assignedStationId,
+                        AddedByUserId = userId,
                         // ✅ NUEVO: Establecer campos multi-tenant desde la orden
                         CompanyId = order.CompanyId,
                         BranchId = order.BranchId
@@ -1699,29 +1870,33 @@ namespace RestBar.Services
                     {
                         try
                         {
-                            await _productService.ReduceStockAsync(
-                                product.Id, 
-                                itemDto.Quantity, 
-                                assignedStationId.Value, 
-                                order.BranchId);
+                            await _inventoryOps.DeductInventoryForSaleAsync(
+                                product.Id,
+                                itemDto.Quantity,
+                                assignedStationId.Value,
+                                order.BranchId,
+                                order.CompanyId,
+                                order.Id,
+                                userId);
                             Console.WriteLine($"✅ [OrderService] Stock reducido para {product.Name}: -{itemDto.Quantity}");
                         }
                         catch (Exception stockEx)
                         {
                             Console.WriteLine($"❌ [OrderService] Error al reducir stock para {product.Name}: {stockEx.Message}");
-                            // No hacer rollback aquí, el item ya se agregó
-                            // El error de stock se manejará después con notificaciones
                         }
                     }
                     else if (product.TrackInventory)
                     {
                         try
                         {
-                            await _productService.ReduceStockAsync(
-                                product.Id, 
-                                itemDto.Quantity, 
-                                null, 
-                                order.BranchId);
+                            await _inventoryOps.DeductInventoryForSaleAsync(
+                                product.Id,
+                                itemDto.Quantity,
+                                null,
+                                order.BranchId,
+                                order.CompanyId,
+                                order.Id,
+                                userId);
                             Console.WriteLine($"✅ [OrderService] Stock global reducido para {product.Name}: -{itemDto.Quantity}");
                         }
                         catch (Exception stockEx)
@@ -1853,7 +2028,7 @@ namespace RestBar.Services
         }
 
         // NUEVO: Marcar ítem como listo
-        public async Task MarkItemAsReadyAsync(Guid orderId, Guid itemId)
+        public async Task MarkItemAsReadyAsync(Guid orderId, Guid itemId, Guid? deliveredByUserId = null)
         {
             try
             {
@@ -1888,6 +2063,8 @@ namespace RestBar.Services
                 item.KitchenStatus = KitchenStatus.Ready;
                 item.Status = OrderItemStatus.Ready;
                 item.PreparedAt = DateTime.UtcNow; // ✅ Fecha específica de preparación
+                if (deliveredByUserId.HasValue)
+                    item.DeliveredByUserId = deliveredByUserId.Value;
                 
                 Console.WriteLine($"[OrderService] Item marcado como listo: {item.Product?.Name}");
                 
@@ -1935,6 +2112,12 @@ namespace RestBar.Services
                 }
                 
                 Console.WriteLine($"[OrderService] MarkItemAsReadyAsync completado exitosamente");
+
+                await _loggingService.LogOrderActivityAsync(
+                    action: AuditAction.UPDATE.ToString(),
+                    description: $"Ítem entregado/listo: {item.Product?.Name}",
+                    orderId: orderId,
+                    newValues: new { itemId, DeliveredByUserId = deliveredByUserId, item.Status });
             }
             catch (Exception ex)
             {
@@ -1944,8 +2127,78 @@ namespace RestBar.Services
             }
         }
 
+        // Cambiar estación de un ítem (re-enrutamiento)
+        public async Task<OrderItem> UpdateItemStationAsync(Guid orderId, Guid itemId, Guid newStationId, Guid? userId = null)
+        {
+            var orderItem = await _context.OrderItems
+                .Include(oi => oi.Order)
+                .Include(oi => oi.Product)
+                .Include(oi => oi.PreparedByStation)
+                .FirstOrDefaultAsync(oi => oi.Id == itemId && oi.OrderId == orderId)
+                ?? throw new KeyNotFoundException($"Item {itemId} no encontrado en la orden {orderId}");
+
+            if (orderItem.Order?.Status is OrderStatus.Cancelled or OrderStatus.Completed)
+                throw new InvalidOperationException("No se puede cambiar estación en una orden cerrada");
+
+            if (orderItem.Status == OrderItemStatus.Cancelled)
+                throw new InvalidOperationException("No se puede cambiar estación de un ítem cancelado");
+
+            var newStation = await _context.Stations.AsNoTracking().FirstOrDefaultAsync(s => s.Id == newStationId && s.IsActive)
+                ?? throw new KeyNotFoundException("Estación destino no encontrada o inactiva");
+
+            if (orderItem.Order?.BranchId != null && newStation.BranchId != orderItem.Order.BranchId)
+                throw new InvalidOperationException("La estación destino pertenece a otra sucursal");
+
+            if (orderItem.ProductId.HasValue)
+            {
+                var canPrepare = await _context.ProductStockAssignments.AnyAsync(sa =>
+                    sa.ProductId == orderItem.ProductId.Value &&
+                    sa.StationId == newStationId &&
+                    sa.IsActive &&
+                    (orderItem.Order!.BranchId == null || sa.BranchId == orderItem.Order.BranchId));
+
+                if (!canPrepare)
+                    throw new InvalidOperationException($"El producto no está configurado para la estación '{newStation.Name}'");
+            }
+
+            var oldStationId = orderItem.PreparedByStationId;
+            orderItem.PreparedByStationId = newStationId;
+            orderItem.UpdatedAt = DateTime.UtcNow;
+            orderItem.Order!.Version++;
+
+            if (oldStationId.HasValue && oldStationId != newStationId && orderItem.ProductId.HasValue && orderItem.Product?.TrackInventory == true)
+            {
+                try
+                {
+                    await _inventoryOps.TransferStockBetweenStationsAsync(
+                        orderItem.ProductId.Value,
+                        oldStationId.Value,
+                        newStationId,
+                        orderItem.Quantity,
+                        orderItem.Order.BranchId,
+                        orderItem.Order.CompanyId,
+                        userId,
+                        "UpdateItemStation");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "[UpdateItemStation] Transferencia de stock falló para ítem {ItemId}", itemId);
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            await _orderHubService.NotifyOrderItemStatusChanged(orderId, itemId, orderItem.Status);
+            await _orderHubService.NotifyKitchenUpdate();
+
+            _logger.LogInformation("[OrderService] Item {ItemId} reasignado de estación {Old} a {New} por usuario {UserId}",
+                itemId, oldStationId, newStationId, userId);
+
+            return orderItem;
+        }
+
         // ✅ NUEVO: Cancelar item de orden
-        public async Task CancelOrderItemAsync(Guid orderId, Guid itemId)
+        public async Task CancelOrderItemAsync(Guid orderId, Guid itemId, Guid? userId = null, string? userRole = null, Guid? supervisorId = null)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -1959,13 +2212,17 @@ namespace RestBar.Services
                 if (orderItem == null)
                     throw new KeyNotFoundException($"Item {itemId} no encontrado en la orden {orderId}");
 
-                // FIX: Validar que el ítem no esté ya cancelado
                 if (orderItem.Status == OrderItemStatus.Cancelled)
                     throw new InvalidOperationException("El ítem ya está cancelado");
 
-                // FIX: No permitir cancelar ítems de órdenes completadas
                 if (orderItem.Order?.Status == OrderStatus.Completed)
                     throw new InvalidOperationException("No se puede cancelar un ítem de una orden ya completada y pagada");
+
+                var inKitchen = orderItem.KitchenStatus is KitchenStatus.Sent or KitchenStatus.Ready
+                    || orderItem.Status is OrderItemStatus.Preparing or OrderItemStatus.Ready or OrderItemStatus.Served;
+                var isSupervisor = userRole is "supervisor" or "manager" or "admin" or "superadmin";
+                if (inKitchen && !isSupervisor && !supervisorId.HasValue)
+                    throw new UnauthorizedAccessException("Se requiere autorización de supervisor para cancelar ítems ya enviados a cocina.");
 
                 orderItem.Status = OrderItemStatus.Cancelled;
                 orderItem.UpdatedAt = DateTime.UtcNow;
@@ -1973,24 +2230,30 @@ namespace RestBar.Services
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                // FIX: Restaurar stock FUERA de la transacción (best-effort, como en CancelOrderAsync)
                 if (orderItem.ProductId.HasValue && orderItem.ProductId != Guid.Empty)
                 {
                     try
                     {
-                        await _productService.RestoreStockAsync(
+                        await _inventoryOps.RestoreInventoryForCancelAsync(
                             orderItem.ProductId.Value,
                             orderItem.Quantity,
                             orderItem.PreparedByStationId,
-                            orderItem.Order?.BranchId);
-                        _logger.LogInformation("[OrderService] Stock restaurado para item {ItemId}, producto {ProductId}, qty {Qty}",
-                            itemId, orderItem.ProductId, orderItem.Quantity);
+                            orderItem.Order?.BranchId,
+                            orderItem.Order?.CompanyId,
+                            orderId,
+                            supervisorId ?? userId);
                     }
                     catch (Exception ex)
                     {
                         _logger.LogWarning(ex, "[OrderService] No se pudo restaurar stock para item {ItemId}", itemId);
                     }
                 }
+
+                await _loggingService.LogOrderActivityAsync(
+                    AuditAction.DELETE.ToString(),
+                    $"Ítem cancelado: {orderItem.Product?.Name}",
+                    orderId,
+                    newValues: new { itemId, supervisorId, userId, userRole });
             }
             catch
             {
@@ -2119,6 +2382,45 @@ namespace RestBar.Services
                 Console.WriteLine($"⚠️ [OrderService] GenerateOrderNumberAsync() - Usando número de fallback: {fallbackNumber}");
                 return fallbackNumber;
             }
+        }
+
+        public async Task<Order> ApplyOrderDiscountAsync(Guid orderId, string discountType, decimal discountValue, string? reason, Guid? userId)
+        {
+            var order = await _context.Orders
+                .Include(o => o.OrderItems)
+                .FirstOrDefaultAsync(o => o.Id == orderId)
+                ?? throw new KeyNotFoundException($"Orden {orderId} no encontrada");
+
+            if (order.Status is OrderStatus.Completed or OrderStatus.Cancelled)
+                throw new InvalidOperationException("No se puede aplicar descuento a una orden cerrada.");
+
+            var subtotal = order.OrderItems
+                .Where(oi => oi.Status != OrderItemStatus.Cancelled)
+                .Sum(oi => oi.Quantity * oi.UnitPrice - oi.Discount);
+
+            decimal discountAmount = discountType.Equals("percentage", StringComparison.OrdinalIgnoreCase)
+                ? Math.Round(subtotal * discountValue / 100m, 2)
+                : discountValue;
+
+            if (discountAmount < 0) discountAmount = 0;
+            if (discountAmount > subtotal) discountAmount = subtotal;
+
+            order.DiscountType = discountType;
+            order.DiscountAmount = discountAmount;
+            order.DiscountReason = reason;
+            order.TotalAmount = subtotal - discountAmount;
+            order.Version++;
+            SetUpdatedTracking(order);
+
+            await _context.SaveChangesAsync();
+
+            await _loggingService.LogOrderActivityAsync(
+                AuditAction.UPDATE.ToString(),
+                $"Descuento aplicado: ${discountAmount:F2}",
+                orderId,
+                newValues: new { discountType, discountValue, discountAmount, reason, userId });
+
+            return order;
         }
     }
 } 

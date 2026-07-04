@@ -29,12 +29,14 @@ namespace RestBar.Interfaces
         // NUEVOS: Métodos para la lógica de KitchenStatus
         Task<Order> AddOrUpdateOrderWithPendingItemsAsync(SendOrderDto dto, Guid? userId);
         Task<List<OrderItem>> SendPendingItemsToKitchenAsync(Guid orderId);
-        Task MarkItemAsReadyAsync(Guid orderId, Guid itemId);
-        Task CancelOrderItemAsync(Guid orderId, Guid itemId);
+        Task MarkItemAsReadyAsync(Guid orderId, Guid itemId, Guid? deliveredByUserId = null);
+        Task CancelOrderItemAsync(Guid orderId, Guid itemId, Guid? userId = null, string? userRole = null, Guid? supervisorId = null);
+        Task<Order> ApplyOrderDiscountAsync(Guid orderId, string discountType, decimal discountValue, string? reason, Guid? userId);
         Task MarkItemAsPreparingAsync(Guid orderId, Guid itemId);
         
         // Métodos para KitchenOrders y validación
-        Task<List<KitchenOrderViewModel>> GetKitchenOrdersAsync();
+        Task<List<KitchenOrderViewModel>> GetKitchenOrdersAsync(Guid? branchId = null, Guid? companyId = null, int page = 1, int pageSize = 50);
+        Task<OrderItem> UpdateItemStationAsync(Guid orderId, Guid itemId, Guid newStationId, Guid? userId = null);
         Task<bool> OrderExistsAsync(Guid id);
         
         // Métodos para manejar órdenes activas
@@ -49,6 +51,7 @@ namespace RestBar.Interfaces
         Task<Order> UpdateOrderCompleteAsync(Guid orderId, List<UpdateOrderItemDto> items);
         Task<List<OrderItem>> GetOrderItemsByOrderIdAsync(Guid orderId);
         Task<bool> SetTableOccupiedAsync(Guid tableId);
+        Task<Order> MoveOrderToTableAsync(Guid orderId, Guid targetTableId, Guid? userId);
         
         // Método para obtener órdenes con pagos pendientes
         Task<IEnumerable<Order>> GetPendingPaymentOrdersAsync();

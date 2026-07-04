@@ -22,5 +22,9 @@ namespace RestBar.Interfaces
         Task<IEnumerable<Station>> GetAvailableStationsAsync();
         Task<IEnumerable<Area>> GetAvailableAreasAsync();
         Task<IEnumerable<Table>> GetAvailableTablesAsync(Guid? areaId = null);
+        /// <summary>Filtra mesas según asignación activa del mesero (área o mesas específicas).</summary>
+        IEnumerable<Table> FilterTablesForWaiter(UserAssignment? assignment, IEnumerable<Table> tables);
+        /// <summary>Verifica si el mesero puede operar una mesa según su asignación.</summary>
+        bool CanWaiterAccessTable(UserAssignment? assignment, Table table);
     }
 } 

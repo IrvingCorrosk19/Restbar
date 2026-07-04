@@ -1,0 +1,11 @@
+.git
+.gitignore
+bin
+obj
+.vs
+.vscode
+*.user
+*.md
+Com
+docs
+*.ps1

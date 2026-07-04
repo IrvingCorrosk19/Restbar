@@ -17,6 +17,7 @@ namespace RestBar.Interfaces
         Task<Payment?> GetPaymentWithSplitsAsync(Guid id);
         Task<decimal> GetTotalPaymentsByOrderAsync(Guid orderId);
         Task VoidPaymentAsync(Guid id);
+        Task<PaymentRefund> RefundPaymentAsync(Guid paymentId, decimal? amount, string? reason, Guid? processedByUserId, Guid? approvedByUserId);
         Task<IEnumerable<Payment>> GetVoidedPaymentsAsync();
         
         // Métodos adicionales para la gestión de pagos

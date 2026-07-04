@@ -44,5 +44,6 @@ public enum UserRole
     bartender,      // Bartender
 
     accountant,     // Contador
-    support         // Soporte Técnico
+    support,        // Soporte Técnico
+    inventarista    // Encargado de Inventario
 }

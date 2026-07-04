@@ -2,10 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RestBar.Interfaces;
 using RestBar.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Security.Claims;
 
 namespace RestBar.Services
 {
@@ -143,9 +140,30 @@ namespace RestBar.Services
 
         public async Task<IEnumerable<Product>> GetByCategoryIdAsync(Guid categoryId)
         {
-            return await _context.Products
-                .Where(p => p.CategoryId == categoryId)
+            var userIdValue = _httpContextAccessor?.HttpContext?.User?.FindFirst("UserId")?.Value
+                ?? _httpContextAccessor?.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            var query = _context.Products
+                .Where(p => p.CategoryId == categoryId && p.IsActive);
+
+            if (!string.IsNullOrEmpty(userIdValue) && Guid.TryParse(userIdValue, out var userId))
+            {
+                var user = await _context.Users
+                    .AsNoTracking()
+                    .Include(u => u.Branch)
+                    .FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (user?.BranchId != null)
+                {
+                    query = query.Where(p =>
+                        p.BranchId == user.BranchId &&
+                        (p.CompanyId == null || p.CompanyId == user.Branch!.CompanyId));
+                }
+            }
+
+            return await query
                 .Include(p => p.Category)
+                .OrderBy(p => p.Name)
                 .ToListAsync();
         }
 
@@ -313,15 +331,16 @@ namespace RestBar.Services
         /// Retorna null si el producto no tiene ProductStockAssignment configurado — el operador debe
         /// configurar la asignación de estaciones para que el KDS pueda rutear el ítem correctamente.
         /// </summary>
-        public async Task<Guid?> FindBestStationForProductAsync(Guid productId, decimal requiredQuantity, Guid? branchId = null)
+        public async Task<Guid?> FindBestStationForProductAsync(Guid productId, decimal requiredQuantity, Guid? branchId = null, Guid? areaId = null)
         {
             try
             {
-                _logger.LogDebug("[ProductService] FindBestStationForProductAsync - ProductId: {ProductId}, Qty: {Qty}, BranchId: {BranchId}",
-                    productId, requiredQuantity, branchId);
+                _logger.LogDebug("[ProductService] FindBestStationForProductAsync - ProductId: {ProductId}, Qty: {Qty}, BranchId: {BranchId}, AreaId: {AreaId}",
+                    productId, requiredQuantity, branchId, areaId);
 
                 var product = await _context.Products
                     .Include(p => p.StockAssignments.Where(sa => sa.IsActive))
+                        .ThenInclude(sa => sa.Station)
                     .FirstOrDefaultAsync(p => p.Id == productId);
 
                 if (product == null)
@@ -330,75 +349,70 @@ namespace RestBar.Services
                     return null;
                 }
 
-                // Filtrar asignaciones por sucursal
                 var branchAssignments = product.StockAssignments
                     .Where(sa => sa.IsActive && (!branchId.HasValue || sa.BranchId == branchId.Value))
                     .ToList();
 
-                // ⚠️ ADVERTENCIA CRÍTICA: sin asignaciones el ítem quedará sin estación → no aparecerá en KDS
                 if (!branchAssignments.Any())
                 {
                     _logger.LogWarning(
-                        "[KDS] FindBestStationForProductAsync - PRODUCTO SIN ESTACIÓN CONFIGURADA: '{ProductName}' (ID: {ProductId}). " +
-                        "Configure una asignación en ProductStockAssignment para que los ítems aparezcan en el KDS.",
+                        "[KDS] FindBestStationForProductAsync - PRODUCTO SIN ESTACIÓN: '{ProductName}' (ID: {ProductId})",
                         product.Name, productId);
                     return null;
                 }
 
-                // Producto sin control de inventario → usar primera asignación por prioridad
-                if (!product.TrackInventory)
+                // Preferir estaciones del mismo área/piso que la mesa
+                if (areaId.HasValue)
                 {
-                    var best = branchAssignments
+                    var areaScoped = branchAssignments
+                        .Where(sa => sa.Station?.AreaId == areaId.Value)
+                        .ToList();
+                    if (areaScoped.Any())
+                    {
+                        branchAssignments = areaScoped;
+                        _logger.LogInformation("[ProductService] FindBestStationForProductAsync - '{ProductName}' filtrado por área {AreaId}: {Count} asignaciones",
+                            product.Name, areaId, areaScoped.Count);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("[ProductService] FindBestStationForProductAsync - '{ProductName}' sin estación en área {AreaId}, usando sucursal completa",
+                            product.Name, areaId);
+                    }
+                }
+
+                Guid? PickBest(IEnumerable<ProductStockAssignment> assignments)
+                {
+                    if (!product.TrackInventory)
+                    {
+                        var best = assignments.OrderByDescending(sa => sa.Priority).FirstOrDefault();
+                        return best?.StationId;
+                    }
+
+                    var withStock = assignments
+                        .Where(sa => sa.Stock >= requiredQuantity)
                         .OrderByDescending(sa => sa.Priority)
-                        .First();
+                        .ThenByDescending(sa => sa.Stock)
+                        .ToList();
 
-                    _logger.LogInformation("[ProductService] FindBestStationForProductAsync - '{ProductName}' sin control inventario → estación {StationId} (Prioridad: {Priority})",
-                        product.Name, best.StationId, best.Priority);
-                    return best.StationId;
+                    if (withStock.Any())
+                        return withStock.First().StationId;
+
+                    if (product.Stock.HasValue && product.Stock.Value >= requiredQuantity)
+                        return assignments.OrderByDescending(sa => sa.Priority).FirstOrDefault()?.StationId;
+
+                    if (product.AllowNegativeStock)
+                        return assignments.OrderByDescending(sa => sa.Priority).FirstOrDefault()?.StationId;
+
+                    return null;
                 }
 
-                // Buscar asignaciones con stock suficiente
-                var withStock = branchAssignments
-                    .Where(sa => sa.Stock >= requiredQuantity)
-                    .OrderByDescending(sa => sa.Priority)
-                    .ThenByDescending(sa => sa.Stock)
-                    .ToList();
-
-                if (withStock.Any())
+                var selected = PickBest(branchAssignments);
+                if (selected.HasValue)
                 {
-                    var best = withStock.First();
-                    _logger.LogInformation("[ProductService] FindBestStationForProductAsync - '{ProductName}' → estación {StationId} (Prioridad: {Priority}, Stock: {Stock})",
-                        product.Name, best.StationId, best.Priority, best.Stock);
-                    return best.StationId;
+                    _logger.LogInformation("[ProductService] FindBestStationForProductAsync - '{ProductName}' → estación {StationId}",
+                        product.Name, selected);
                 }
-
-                // Stock insuficiente por estación, pero stock global cubre la cantidad → primera asignación disponible
-                if (product.Stock.HasValue && product.Stock.Value >= requiredQuantity)
-                {
-                    var fallback = branchAssignments
-                        .OrderByDescending(sa => sa.Priority)
-                        .First();
-
-                    _logger.LogInformation("[ProductService] FindBestStationForProductAsync - '{ProductName}' stock global suficiente → estación fallback {StationId}",
-                        product.Name, fallback.StationId);
-                    return fallback.StationId;
-                }
-
-                // Stock global también insuficiente pero se permite negativo
-                if (product.AllowNegativeStock)
-                {
-                    var fallback = branchAssignments
-                        .OrderByDescending(sa => sa.Priority)
-                        .First();
-
-                    _logger.LogWarning("[ProductService] FindBestStationForProductAsync - '{ProductName}' stock insuficiente (permitido negativo) → estación {StationId}",
-                        product.Name, fallback.StationId);
-                    return fallback.StationId;
-                }
-
-                _logger.LogWarning("[ProductService] FindBestStationForProductAsync - '{ProductName}' sin stock suficiente en ninguna estación (Requerido: {Qty}). El ítem no se podrá rutear al KDS.",
-                    product.Name, requiredQuantity);
-                return null;
+                return selected;
             }
             catch (Exception ex)
             {

@@ -19,8 +19,8 @@ WORKDIR /app
 # Copiar los archivos publicados desde la etapa de build
 COPY --from=build /app/publish .
 
-# Puerto que se expone
-EXPOSE 80
+# Puerto que se expone (docker-compose mapea 8084:8080)
+EXPOSE 8080
 
 # Ejecutar la aplicación
 ENTRYPOINT ["dotnet", "RestBar.dll"]

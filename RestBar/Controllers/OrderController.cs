@@ -11,6 +11,7 @@ using RestBar.ViewModel;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Claims;
 
 // ✅ NUEVO: DTO para marcar mesa como ocupada
 public class SetTableOccupiedDto
@@ -31,6 +32,7 @@ namespace RestBar.Controllers
         private readonly IAreaService _areaService;
         private readonly ICustomerService _customerService;
         private readonly IUserService _userService;
+        private readonly IUserAssignmentService _userAssignmentService;
         private readonly IOrderHubService _orderHubService;
         private readonly IEmailService _emailService;
         private readonly RestBarContext _context;
@@ -45,6 +47,7 @@ namespace RestBar.Controllers
             IAreaService areaService,
             ICustomerService customerService,
             IUserService userService,
+            IUserAssignmentService userAssignmentService,
             IOrderHubService orderHubService,
             IEmailService emailService,
             RestBarContext context,
@@ -59,10 +62,66 @@ namespace RestBar.Controllers
             _areaService = areaService;
             _customerService = customerService;
             _userService = userService;
+            _userAssignmentService = userAssignmentService;
             _orderHubService = orderHubService;
             _emailService = emailService;
             _context = context;
             _logger = logger;
+        }
+
+        private Guid? GetUserBranchId()
+        {
+            var claim = User.FindFirst("BranchId")?.Value;
+            return Guid.TryParse(claim, out var id) ? id : null;
+        }
+
+        private Guid? GetUserCompanyId()
+        {
+            var claim = User.FindFirst("CompanyId")?.Value;
+            return Guid.TryParse(claim, out var id) ? id : null;
+        }
+
+        private bool HasGlobalTenantAccess()
+        {
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+            return role is "superadmin" or "admin" && GetUserBranchId() == null;
+        }
+
+        private async Task<bool> ValidateTableTenantAccessAsync(Guid tableId)
+        {
+            if (HasGlobalTenantAccess()) return true;
+
+            var userBranchId = GetUserBranchId();
+            var userCompanyId = GetUserCompanyId();
+            if (userBranchId == null || userCompanyId == null) return false;
+
+            var table = await _context.Tables.AsNoTracking().FirstOrDefaultAsync(t => t.Id == tableId);
+            if (table == null) return false;
+
+            if (table.BranchId != userBranchId || table.CompanyId != userCompanyId)
+                return false;
+
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole == "waiter" && Guid.TryParse(User.FindFirst("UserId")?.Value, out var waiterId))
+            {
+                var assignment = await _userAssignmentService.GetActiveByUserIdAsync(waiterId);
+                return _userAssignmentService.CanWaiterAccessTable(assignment, table);
+            }
+
+            return true;
+        }
+
+        private async Task<bool> OrderBelongsToUserBranchAsync(Guid orderId)
+        {
+            if (HasGlobalTenantAccess()) return true;
+
+            var userBranchId = GetUserBranchId();
+            if (userBranchId == null) return false;
+
+            var order = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == orderId);
+            if (order == null) return false;
+
+            return order.BranchId == userBranchId;
         }
 
         // GET: Order
@@ -386,16 +445,32 @@ namespace RestBar.Controllers
 
         // GET: Order/GetProductsByCategory/{categoryId}
         [HttpGet]
-        public async Task<IActionResult> GetProductsByCategory(Guid categoryId)
+        public async Task<IActionResult> GetProductsByCategory([FromRoute(Name = "id")] Guid categoryId)
         {
-            var products = await _productService.GetByCategoryIdAsync(categoryId);
-            var data = products.Select(p => new {
-                id = p.Id,
-                name = p.Name,
-                price = p.Price,
-                imageUrl = p.ImageUrl
-            });
-            return Json(new { success = true, data });
+            var userIdValue = User.FindFirst("UserId")?.Value
+                ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdValue) || !Guid.TryParse(userIdValue, out var userId))
+                return Json(new { success = false, message = "Usuario no autenticado" });
+
+            var user = await _context.Users
+                .AsNoTracking()
+                .Include(u => u.Branch)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user?.BranchId == null)
+                return Json(new { success = false, message = "Usuario sin sucursal asignada" });
+
+            var products = await _context.Products
+                .AsNoTracking()
+                .Where(p => p.CategoryId == categoryId
+                    && p.BranchId == user.BranchId
+                    && p.IsActive
+                    && (p.CompanyId == null || p.CompanyId == user.Branch!.CompanyId))
+                .OrderBy(p => p.Name)
+                .Select(p => new { id = p.Id, name = p.Name, price = p.Price, imageUrl = p.ImageUrl })
+                .ToListAsync();
+
+            return Json(new { success = true, data = products });
         }
 
         // GET: Order/GetActiveTables
@@ -420,8 +495,35 @@ namespace RestBar.Controllers
                     return Json(new { success = false, message = "Usuario no autenticado" });
                 }
 
-                Console.WriteLine("🔍 [OrderController] GetActiveTables() - Llamando a _tableService.GetActiveTablesAsync()...");
-                var tables = await _tableService.GetActiveTablesAsync();
+                var companyId = GetUserCompanyId();
+                var branchId = GetUserBranchId();
+                IEnumerable<Table> tables;
+
+                if (companyId.HasValue && branchId.HasValue)
+                {
+                    Console.WriteLine($"🔍 [OrderController] GetActiveTables() - Filtrando por CompanyId={companyId}, BranchId={branchId}");
+                    tables = await _tableService.GetActiveTablesByCompanyAndBranchAsync(companyId.Value, branchId.Value);
+                }
+                else if (HasGlobalTenantAccess())
+                {
+                    Console.WriteLine("🔍 [OrderController] GetActiveTables() - Acceso global, todas las mesas activas");
+                    tables = await _tableService.GetActiveTablesAsync();
+                }
+                else
+                {
+                    Console.WriteLine("❌ [OrderController] GetActiveTables() - Usuario sin sucursal asignada");
+                    return Json(new { success = false, message = "Usuario sin sucursal asignada" });
+                }
+
+                // Meseros: solo mesas de su asignación (área o mesas específicas)
+                var role = User.FindFirst(ClaimTypes.Role)?.Value;
+                if (role == "waiter" && Guid.TryParse(User.FindFirst("UserId")?.Value, out var waiterUserId))
+                {
+                    var assignment = await _userAssignmentService.GetActiveByUserIdAsync(waiterUserId);
+                    tables = _userAssignmentService.FilterTablesForWaiter(assignment, tables);
+                    Console.WriteLine($"🔒 [OrderController] GetActiveTables() - Mesero filtrado: {tables?.Count() ?? 0} mesas asignadas");
+                }
+
                 Console.WriteLine($"📊 [OrderController] GetActiveTables() - Mesas obtenidas del servicio: {tables?.Count() ?? 0}");
                 
                 // ✅ NUEVO: Log detallado de cada mesa
@@ -443,7 +545,7 @@ namespace RestBar.Controllers
                 {
                     id = t.Id,
                     tableNumber = t.TableNumber,
-                    status = t.Status,
+                    status = t.Status.ToString(),
                     areaName = t.Area?.Name,
                     capacity = t.Capacity,
                     isActive = t.IsActive,
@@ -481,6 +583,9 @@ namespace RestBar.Controllers
             {
                 Console.WriteLine($"🔍 [OrderController] SetTableOccupied() - Iniciando...");
                 Console.WriteLine($"📋 [OrderController] SetTableOccupied() - TableId: {dto.TableId}");
+
+                if (!await ValidateTableTenantAccessAsync(dto.TableId))
+                    return StatusCode(403, new { success = false, message = "No autorizado para esta mesa" });
                 
                 var result = await _orderService.SetTableOccupiedAsync(dto.TableId);
                 
@@ -564,6 +669,12 @@ namespace RestBar.Controllers
                     return BadRequest(new { error = "Debe seleccionar una mesa antes de enviar la orden." });
                 }
 
+                if (!await ValidateTableTenantAccessAsync(dto.TableId))
+                    return StatusCode(403, new { error = "No autorizado para esta mesa" });
+
+                if (dto.Items == null || !dto.Items.Any())
+                    return BadRequest(new { error = "Debe agregar al menos un producto antes de enviar la orden." });
+
                 // ✅ Obtener userId del usuario autenticado (usando claim estándar)
                 var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
@@ -637,7 +748,8 @@ namespace RestBar.Controllers
         {
             try
             {
-                await _orderService.MarkItemAsReadyAsync(dto.OrderId, dto.ItemId);
+                Guid? deliveredBy = Guid.TryParse(User.FindFirst("UserId")?.Value, out var uid) ? uid : null;
+                await _orderService.MarkItemAsReadyAsync(dto.OrderId, dto.ItemId, deliveredBy);
                 return Ok(new { success = true });
             }
             catch (Exception ex)
@@ -646,18 +758,27 @@ namespace RestBar.Controllers
             }
         }
 
-        // GET: Order/GetActiveOrder/{tableId}
+        // GET: Order/GetActiveOrder?tableId=
         [HttpGet]
-        public async Task<IActionResult> GetActiveOrder(Guid tableId)
+        public async Task<IActionResult> GetActiveOrder([FromQuery] Guid tableId)
         {
             try
             {
+                if (tableId == Guid.Empty)
+                    return BadRequest(new { hasActiveOrder = false, message = "TableId requerido" });
+
+                if (!await ValidateTableTenantAccessAsync(tableId))
+                    return StatusCode(403, new { hasActiveOrder = false, message = "No autorizado para esta mesa" });
+
                 _logger.LogInformation($"GetActiveOrder llamado con tableId: {tableId}");
                 
                 var order = await _orderService.GetActiveOrderByTableAsync(tableId);
                 
-                // Solo considerar activa la orden si tiene items
-                if (order == null || order.OrderItems == null || !order.OrderItems.Any())
+                // Solo considerar activa la orden si tiene items no cancelados
+                var activeItems = order?.OrderItems?
+                    .Where(oi => oi.Status != OrderItemStatus.Cancelled)
+                    .ToList() ?? new List<OrderItem>();
+                if (order == null || activeItems.Count == 0)
                 {
                     _logger.LogInformation($"No se encontró orden activa para tableId: {tableId}");
                     return Json(new { 
@@ -666,17 +787,17 @@ namespace RestBar.Controllers
                     });
                 }
 
-                _logger.LogInformation($"Orden encontrada - ID: {order.Id}, Items: {order.OrderItems.Count}");
+                _logger.LogInformation($"Orden encontrada - ID: {order.Id}, Items activos: {activeItems.Count}");
                 
                 // 🔍 LOG DETALLADO DE ITEMS ANTES DEL MAPEO
                 _logger.LogInformation("=== ITEMS ANTES DEL MAPEO ===");
-                foreach (var item in order.OrderItems)
+                foreach (var item in activeItems)
                 {
                     _logger.LogInformation($"Item: ID={item.Id}, ProductId={item.ProductId}, ProductName={item.Product?.Name}, Quantity={item.Quantity}, Status={item.Status}, KitchenStatus={item.KitchenStatus}");
                 }
                 _logger.LogInformation("=== FIN ITEMS ANTES DEL MAPEO ===");
 
-                var orderItems = order.OrderItems.Select(oi => new
+                var orderItems = activeItems.Select(oi => new
                 {
                     id = oi.Id,
                     productId = oi.ProductId,
@@ -759,6 +880,36 @@ namespace RestBar.Controllers
             }
         }
 
+        // POST: Order/ApplyDiscount
+        [HttpPost]
+        public async Task<IActionResult> ApplyDiscount([FromBody] ApplyDiscountDto dto)
+        {
+            if (dto.OrderId == Guid.Empty)
+                return BadRequest(new { success = false, message = "OrderId requerido" });
+
+            if (!await OrderBelongsToUserBranchAsync(dto.OrderId))
+                return StatusCode(403, new { success = false, message = "No autorizado" });
+
+            Guid? userId = Guid.TryParse(User.FindFirst("UserId")?.Value, out var uid) ? uid : null;
+            try
+            {
+                var order = await _orderService.ApplyOrderDiscountAsync(dto.OrderId, dto.DiscountType, dto.DiscountValue, dto.Reason, userId);
+                return Json(new { success = true, discountAmount = order.DiscountAmount, totalAmount = order.TotalAmount });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        public class ApplyDiscountDto
+        {
+            public Guid OrderId { get; set; }
+            public string DiscountType { get; set; } = "fixed";
+            public decimal DiscountValue { get; set; }
+            public string? Reason { get; set; }
+        }
+
         // POST: Order/Cancel
         [HttpPost]
         public async Task<IActionResult> Cancel([FromBody] CancelOrderDto dto)
@@ -767,6 +918,13 @@ namespace RestBar.Controllers
                 return BadRequest(new { success = false, message = "Datos de entrada inválidos" });
             if (dto.OrderId == Guid.Empty)
                 return BadRequest(new { success = false, message = "OrderId es requerido" });
+
+            var orderExists = await _context.Orders.AsNoTracking().AnyAsync(o => o.Id == dto.OrderId);
+            if (!orderExists)
+                return NotFound(new { success = false, message = "Orden no encontrada" });
+
+            if (!await OrderBelongsToUserBranchAsync(dto.OrderId))
+                return StatusCode(403, new { success = false, message = "No autorizado para esta orden" });
 
             Guid? userId = null;
             if (!string.IsNullOrEmpty(User.FindFirst("UserId")?.Value) && Guid.TryParse(User.FindFirst("UserId")?.Value, out var parsedUserId))
@@ -1142,6 +1300,7 @@ namespace RestBar.Controllers
                                 status = oi.Status.ToString(),
                                 kitchenStatus = oi.KitchenStatus.ToString(),
                                 preparedAt = oi.PreparedAt,
+                                preparedByStationId = oi.PreparedByStationId,
                                 preparedByStation = oi.PreparedByStation?.Name,
                                 notes = oi.Notes
                             }).ToList();
@@ -1174,6 +1333,7 @@ namespace RestBar.Controllers
                     status = oi.Status.ToString(),
                     kitchenStatus = oi.KitchenStatus.ToString(),
                     preparedAt = oi.PreparedAt,
+                    preparedByStationId = oi.PreparedByStationId,
                     preparedByStation = oi.PreparedByStation?.Name,
                     notes = oi.Notes
                 }).ToList();
@@ -1258,65 +1418,75 @@ namespace RestBar.Controllers
             }
         }
 
-        // GET: Order/StationOrders?stationType=kitchen  (o cualquier tipo definido en DB)
-        public async Task<IActionResult> StationOrders(string stationType = "kitchen")
+        // GET: Order/StationOrders?stationType=kitchen&stationId=&areaId=
+        [Authorize(Policy = "KitchenAccess")]
+        public async Task<IActionResult> StationOrders(string stationType = "kitchen", Guid? stationId = null, Guid? areaId = null)
         {
             try
             {
-                _logger.LogInformation("[KDS] StationOrders - stationType: '{StationType}'", stationType);
+                _logger.LogInformation("[KDS] StationOrders - type={Type}, stationId={StationId}, areaId={AreaId}", stationType, stationId, areaId);
 
-                // ─── 1. Obtener IDs reales de las estaciones de ese tipo desde DB ────────
-                // Sin strings mágicos: la comparación se hace sobre el campo Type de Station.
-                // Si mañana hay 10 estaciones del tipo "cocina", todas quedan incluidas
-                // automáticamente sin tocar una sola línea de código.
-                var matchingStationIds = await _context.Stations
-                    .AsNoTracking()
-                    .Where(s => s.IsActive &&
-                                s.Type.ToLower() == stationType.ToLower())
-                    .Select(s => s.Id)
-                    .ToListAsync();
+                var userBranchId = GetUserBranchId();
+                var userCompanyId = GetUserCompanyId();
 
-                // Nombre amigable para la vista (del primer resultado o el parámetro)
-                var stationDisplayName = await _context.Stations
-                    .AsNoTracking()
-                    .Where(s => s.IsActive && s.Type.ToLower() == stationType.ToLower())
-                    .Select(s => s.Type)
-                    .FirstOrDefaultAsync() ?? stationType;
+                List<Guid> matchingStationIds;
 
-                if (matchingStationIds.Count == 0)
+                if (stationId.HasValue)
                 {
-                    _logger.LogWarning("[KDS] StationOrders - no se encontraron estaciones activas de tipo '{StationType}' en DB", stationType);
+                    var single = await _context.Stations.AsNoTracking()
+                        .FirstOrDefaultAsync(s => s.Id == stationId.Value && s.IsActive);
+                    if (single == null)
+                    {
+                        TempData["ErrorMessage"] = "Estación no encontrada.";
+                        return View("StationOrders", new List<KitchenOrderViewModel>());
+                    }
+                    if (!HasGlobalTenantAccess() && userBranchId.HasValue && single.BranchId != userBranchId)
+                        return Forbid();
+                    matchingStationIds = new List<Guid> { single.Id };
+                    stationType = single.Type;
                 }
                 else
                 {
-                    _logger.LogInformation("[KDS] StationOrders - {Count} estación(es) activa(s) del tipo '{Type}'", matchingStationIds.Count, stationType);
+                    var stationQuery = _context.Stations.AsNoTracking()
+                        .Where(s => s.IsActive && s.Type.ToLower() == stationType.ToLower());
+
+                    if (!HasGlobalTenantAccess())
+                    {
+                        if (userBranchId.HasValue)
+                            stationQuery = stationQuery.Where(s => s.BranchId == userBranchId);
+                        if (userCompanyId.HasValue)
+                            stationQuery = stationQuery.Where(s => s.CompanyId == userCompanyId);
+                    }
+                    if (areaId.HasValue)
+                        stationQuery = stationQuery.Where(s => s.AreaId == areaId);
+
+                    matchingStationIds = await stationQuery.Select(s => s.Id).ToListAsync();
                 }
 
-                // ─── 2. Obtener todas las órdenes activas ────────────────────────────────
-                var allOrders = await _orderService.GetKitchenOrdersAsync();
-                _logger.LogInformation("[KDS] StationOrders - {Count} órdenes activas totales", allOrders.Count);
+                var stationDisplayName = stationId.HasValue
+                    ? (await _context.Stations.AsNoTracking().Where(s => s.Id == stationId).Select(s => s.Name).FirstOrDefaultAsync() ?? stationType)
+                    : stationType;
 
-                // ─── 3. Filtrar por estación usando StationId (no strings) ───────────────
-                // Regla: un ítem pertenece a esta vista si:
-                //   a) Su StationId coincide con una de las estaciones de este tipo, O
-                //   b) No tiene estación asignada (StationId == null), lo que significa
-                //      que el producto no está configurado → se muestra en TODAS las vistas
-                //      para garantizar visibilidad y forzar configuración correcta.
+                if (matchingStationIds.Count == 0)
+                    _logger.LogWarning("[KDS] StationOrders - sin estaciones para type={Type}, area={AreaId}", stationType, areaId);
+
+                var allOrders = await _orderService.GetKitchenOrdersAsync(
+                    HasGlobalTenantAccess() ? null : userBranchId,
+                    HasGlobalTenantAccess() ? null : userCompanyId);
+
+                // Solo ítems con estación asignada que coincida — sin fugas por StationId null
                 var filteredOrders = allOrders
-                    .Where(order => order.Items.Any(item =>
-                        item.StationId == null ||
-                        (item.StationId.HasValue && matchingStationIds.Contains(item.StationId.Value))
-                    ))
                     .Select(order => new KitchenOrderViewModel
                     {
                         OrderId        = order.OrderId,
                         TableNumber    = order.TableNumber,
+                        TableAreaId    = order.TableAreaId,
+                        TableAreaName  = order.TableAreaName,
+                        BranchId       = order.BranchId,
                         OpenedAt       = order.OpenedAt,
                         OrderStatus    = order.OrderStatus,
                         Items          = order.Items
-                            .Where(item =>
-                                item.StationId == null ||
-                                (item.StationId.HasValue && matchingStationIds.Contains(item.StationId.Value)))
+                            .Where(item => item.StationId.HasValue && matchingStationIds.Contains(item.StationId.Value))
                             .ToList(),
                         TotalItems     = order.TotalItems,
                         PendingItems   = order.PendingItems,
@@ -1324,31 +1494,35 @@ namespace RestBar.Controllers
                         PreparingItems = order.PreparingItems,
                         Notes          = order.Notes
                     })
-                    .Where(order => order.Items.Any()) // Solo órdenes con ítems para esta estación
+                    .Where(order => order.Items.Any())
                     .ToList();
 
-                _logger.LogInformation("[KDS] StationOrders - {Count} órdenes para tipo '{Type}'", filteredOrders.Count, stationType);
+                _logger.LogInformation("[KDS] StationOrders - {Count} órdenes para {Stations} estación(es)", filteredOrders.Count, matchingStationIds.Count);
 
                 ViewBag.StationType  = stationType;
-                ViewBag.StationTitle = $"Órdenes de {stationDisplayName}";
+                ViewBag.StationTitle = $"Órdenes — {stationDisplayName}";
+                ViewBag.StationId    = stationId;
+                ViewBag.AreaId       = areaId;
 
                 return View("StationOrders", filteredOrders);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[KDS] StationOrders - error cargando órdenes para tipo '{StationType}'", stationType);
+                _logger.LogError(ex, "[KDS] StationOrders - error");
                 TempData["ErrorMessage"] = "Error al cargar las órdenes. Intente nuevamente.";
                 return View("StationOrders", new List<KitchenOrderViewModel>());
             }
         }
 
         // ✅ MANTENER: GET: Order/KitchenOrders - Redirige a la vista unificada
+        [Authorize(Policy = "KitchenAccess")]
         public async Task<IActionResult> KitchenOrders()
         {
             return RedirectToAction("StationOrders", new { stationType = "kitchen" });
         }
 
         // ✅ MANTENER: GET: Order/BarOrders - Redirige a la vista unificada
+        [Authorize(Policy = "KitchenAccess")]
         public async Task<IActionResult> BarOrders()
         {
             return RedirectToAction("StationOrders", new { stationType = "bar" });
@@ -1357,6 +1531,52 @@ namespace RestBar.Controllers
         // GetStationTypesFromUrl eliminado: el filtrado por tipo ahora se hace directamente
         // en StationOrders() mediante una consulta a la tabla Stations de la base de datos,
         // sin depender de strings hard-coded ni mappings manuales.
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateItemStation([FromBody] UpdateItemStationDto dto)
+        {
+            if (dto == null || dto.OrderId == Guid.Empty || dto.ItemId == Guid.Empty || dto.NewStationId == Guid.Empty)
+                return BadRequest(new { success = false, message = "OrderId, ItemId y NewStationId son requeridos" });
+
+            if (!await OrderBelongsToUserBranchAsync(dto.OrderId))
+                return StatusCode(403, new { success = false, message = "No autorizado para esta orden" });
+
+            Guid? userId = null;
+            if (Guid.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var parsed))
+                userId = parsed;
+
+            try
+            {
+                var item = await _orderService.UpdateItemStationAsync(dto.OrderId, dto.ItemId, dto.NewStationId, userId);
+                return Ok(new
+                {
+                    success = true,
+                    message = "Estación actualizada",
+                    itemId = item.Id,
+                    stationId = item.PreparedByStationId
+                });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { success = false, message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al cambiar estación de ítem");
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+        public class UpdateItemStationDto
+        {
+            public Guid OrderId { get; set; }
+            public Guid ItemId { get; set; }
+            public Guid NewStationId { get; set; }
+        }
 
         // ✅ NUEVO: POST: Order/UpdateItemStatus - Para actualizar estado de items
         [HttpPost]
@@ -1377,7 +1597,9 @@ namespace RestBar.Controllers
                         break;
                         
                     case "cancelled":
-                        await _orderService.CancelOrderItemAsync(dto.OrderId, dto.ItemId);
+                        Guid? cancelUserId = Guid.TryParse(User.FindFirst("UserId")?.Value, out var cuid) ? cuid : null;
+                        var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+                        await _orderService.CancelOrderItemAsync(dto.OrderId, dto.ItemId, cancelUserId, userRole, dto.SupervisorId);
                         Console.WriteLine($"✅ [OrderController] UpdateItemStatus() - Item cancelado");
                         break;
                         
@@ -1399,6 +1621,10 @@ namespace RestBar.Controllers
                 Console.WriteLine($"✅ [OrderController] UpdateItemStatus() - Notificación SignalR enviada");
                 
                 return Json(new { success = true, message = "Item actualizado exitosamente" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { success = false, message = ex.Message });
             }
             catch (InvalidOperationException ex)
             {
@@ -1476,6 +1702,7 @@ namespace RestBar.Controllers
             public Guid ItemId { get; set; }
             public Guid OrderId { get; set; }
             public string Status { get; set; } = string.Empty;
+            public Guid? SupervisorId { get; set; }
         }
 
         public class CompleteOrderDto
@@ -1635,6 +1862,9 @@ namespace RestBar.Controllers
                 Console.WriteLine($"🔍 [OrderController] GetOrderItems() - Obteniendo items de orden...");
                 Console.WriteLine($"📋 [OrderController] GetOrderItems() - OrderId: {orderId}");
 
+                if (!await OrderBelongsToUserBranchAsync(orderId))
+                    return StatusCode(403, new { success = false, message = "No autorizado para esta orden" });
+
                 var order = await _orderService.GetOrderWithDetailsAsync(orderId);
                 if (order == null)
                 {
@@ -1670,6 +1900,54 @@ namespace RestBar.Controllers
                 Console.WriteLine($"❌ [OrderController] GetOrderItems() - Error: {ex.Message}");
                 Console.WriteLine($"🔍 [OrderController] GetOrderItems() - StackTrace: {ex.StackTrace}");
                 return Json(new { success = false, message = $"Error al obtener items de orden: {ex.Message}" });
+            }
+        }
+
+        public class MoveOrderToTableDto
+        {
+            public Guid OrderId { get; set; }
+            public Guid TargetTableId { get; set; }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> MoveToTable([FromBody] MoveOrderToTableDto dto)
+        {
+            if (dto == null || dto.OrderId == Guid.Empty || dto.TargetTableId == Guid.Empty)
+                return BadRequest(new { success = false, message = "OrderId y TargetTableId son requeridos" });
+
+            if (!await OrderBelongsToUserBranchAsync(dto.OrderId))
+                return StatusCode(403, new { success = false, message = "No autorizado para esta orden" });
+
+            if (!await ValidateTableTenantAccessAsync(dto.TargetTableId))
+                return StatusCode(403, new { success = false, message = "No autorizado para la mesa destino" });
+
+            Guid? userId = null;
+            if (Guid.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var parsedUserId))
+                userId = parsedUserId;
+
+            try
+            {
+                var order = await _orderService.MoveOrderToTableAsync(dto.OrderId, dto.TargetTableId, userId);
+                return Ok(new
+                {
+                    success = true,
+                    message = "Orden movida exitosamente",
+                    orderId = order.Id,
+                    tableId = order.TableId
+                });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { success = false, message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al mover orden de mesa");
+                return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
     }

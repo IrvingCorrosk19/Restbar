@@ -11,10 +11,12 @@ namespace RestBar.Controllers
     public class SeedController : Controller
     {
         private readonly RestBarContext _context;
+        private readonly IWebHostEnvironment _env;
 
-        public SeedController(RestBarContext context)
+        public SeedController(RestBarContext context, IWebHostEnvironment env)
         {
             _context = context;
+            _env = env;
         }
 
         public IActionResult Index()
@@ -28,6 +30,9 @@ namespace RestBar.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> SeedDemoData()
         {
+            if (_env.IsProduction())
+                return NotFound();
+
             try
             {
                 Console.WriteLine("🔍 [SeedController] SeedDemoData() - Iniciando siembra de datos de prueba...");
@@ -272,6 +277,7 @@ namespace RestBar.Controllers
                 await EnsureUserAsync("bartender@restbar.com", "Bartender Principal", UserRole.bartender);
                 await EnsureUserAsync("contador@restbar.com", "Contador", UserRole.accountant);
                 await EnsureUserAsync("soporte@restbar.com", "Soporte Técnico", UserRole.support);
+                await EnsureUserAsync("inventarista@restbar.com", "Encargado de Inventario", UserRole.inventarista);
 
                 // Plantillas de Email
                 async Task EnsureEmailTemplateAsync(string name, string subject, string body, string category, string placeholders)
@@ -470,6 +476,9 @@ namespace RestBar.Controllers
         [HttpGet]
         public IActionResult GeneratePasswordHash()
         {
+            if (_env.IsProduction())
+                return NotFound();
+
             string password = "123456";
             
             // Generar hash usando SHA256 (alternativa a BCrypt)
@@ -491,6 +500,9 @@ namespace RestBar.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> CreateAdminUser()
         {
+            if (_env.IsProduction())
+                return NotFound();
+
             try
             {
                 // Verificar si ya existe el usuario
@@ -575,6 +587,319 @@ namespace RestBar.Controllers
             {
                 var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
                 return Convert.ToBase64String(hashedBytes);
+            }
+        }
+
+        /// <summary>
+        /// Siembra datos para certificación multi-tenant: Empresa B, sucursal adicional A2, superadmin e inventarista.
+        /// </summary>
+        [HttpGet]
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<IActionResult> SeedCertificationMultiTenant()
+        {
+            if (_env.IsProduction())
+                return NotFound();
+
+            try
+            {
+                // Empresa A - segunda sucursal
+                var companyA = await _context.Companies.FirstOrDefaultAsync(c => c.Name == "RestBar Principal")
+                    ?? await _context.Companies.FirstAsync();
+                var branchA1 = await _context.Branches.FirstOrDefaultAsync(b => b.Name == "RestBar Centro" && b.CompanyId == companyA.Id);
+                if (branchA1 == null)
+                    return Json(new { success = false, message = "Ejecute SeedDemoData primero" });
+
+                var branchA2 = await _context.Branches.FirstOrDefaultAsync(b => b.Name == "RestBar Norte" && b.CompanyId == companyA.Id);
+                if (branchA2 == null)
+                {
+                    branchA2 = new Branch
+                    {
+                        Id = Guid.Parse("660e8400-e29b-41d4-a716-446655440002"),
+                        CompanyId = companyA.Id,
+                        Name = "RestBar Norte",
+                        Address = "Av. Norte #456",
+                        Phone = "+507 987-6543",
+                        IsActive = true,
+                        CreatedBy = "CertSeeder"
+                    };
+                    _context.Branches.Add(branchA2);
+                    await _context.SaveChangesAsync();
+                }
+
+                // Empresa B
+                var companyB = await _context.Companies.FirstOrDefaultAsync(c => c.Name == "RestBar Empresa B");
+                if (companyB == null)
+                {
+                    companyB = new Company
+                    {
+                        Id = Guid.Parse("770e8400-e29b-41d4-a716-446655440002"),
+                        Name = "RestBar Empresa B",
+                        LegalId = "987654321",
+                        IsActive = true,
+                        CreatedBy = "CertSeeder"
+                    };
+                    _context.Companies.Add(companyB);
+                    await _context.SaveChangesAsync();
+                }
+
+                var branchB1 = await _context.Branches.FirstOrDefaultAsync(b => b.Name == "Sucursal B Centro" && b.CompanyId == companyB.Id);
+                if (branchB1 == null)
+                {
+                    branchB1 = new Branch
+                    {
+                        Id = Guid.Parse("660e8400-e29b-41d4-a716-446655440003"),
+                        CompanyId = companyB.Id,
+                        Name = "Sucursal B Centro",
+                        Address = "Calle B #789",
+                        Phone = "+507 555-0001",
+                        IsActive = true,
+                        CreatedBy = "CertSeeder"
+                    };
+                    _context.Branches.Add(branchB1);
+                    await _context.SaveChangesAsync();
+                }
+
+                async Task EnsureAreaTableAsync(Branch br, Company co, string areaName, string tableNum)
+                {
+                    var area = await _context.Areas.FirstOrDefaultAsync(a => a.Name == areaName && a.BranchId == br.Id);
+                    if (area == null)
+                    {
+                        area = new Area { Id = Guid.NewGuid(), CompanyId = co.Id, BranchId = br.Id, Name = areaName, IsActive = true, CreatedBy = "CertSeeder" };
+                        _context.Areas.Add(area);
+                        await _context.SaveChangesAsync();
+                    }
+                    var table = await _context.Tables.FirstOrDefaultAsync(t => t.TableNumber == tableNum && t.BranchId == br.Id);
+                    if (table == null)
+                    {
+                        _context.Tables.Add(new Table
+                        {
+                            Id = Guid.NewGuid(), CompanyId = co.Id, BranchId = br.Id, AreaId = area.Id,
+                            TableNumber = tableNum, Capacity = 4, Status = TableStatus.Disponible, IsActive = true, CreatedBy = "CertSeeder"
+                        });
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
+                await EnsureAreaTableAsync(branchA2, companyA, "Terraza Norte", "N-01");
+                await EnsureAreaTableAsync(branchB1, companyB, "Salón B", "B-01");
+
+                async Task EnsureCertUserAsync(string email, string name, UserRole role, Guid branchId)
+                {
+                    if (!await _context.Users.AnyAsync(u => u.Email == email))
+                    {
+                        _context.Users.Add(new User
+                        {
+                            Id = Guid.NewGuid(), BranchId = branchId, FullName = name, Email = email,
+                            PasswordHash = HashPassword("123456"), Role = role, IsActive = true, CreatedBy = "CertSeeder"
+                        });
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
+                await EnsureCertUserAsync("admin.norte@restbar.com", "Admin Norte", UserRole.admin, branchA2.Id);
+                await EnsureCertUserAsync("admin.b@restbar.com", "Admin Empresa B", UserRole.admin, branchB1.Id);
+                await EnsureCertUserAsync("inventarista@restbar.com", "Encargado Inventario", UserRole.inventarista, branchA1.Id);
+
+                if (!await _context.Users.AnyAsync(u => u.Email == "superadmin@restbar.com"))
+                {
+                    _context.Users.Add(new User
+                    {
+                        Id = Guid.Parse("550e8400-e29b-41d4-a716-446655440099"),
+                        BranchId = branchA1.Id,
+                        FullName = "Super Administrador",
+                        Email = "superadmin@restbar.com",
+                        PasswordHash = HashPassword("123456"),
+                        Role = UserRole.superadmin,
+                        IsActive = true,
+                        CreatedBy = "CertSeeder"
+                    });
+                    await _context.SaveChangesAsync();
+                }
+
+                // Producto exclusivo Empresa B
+                var catB = await _context.Categories.FirstOrDefaultAsync(c => c.Name == "Menú B" && c.BranchId == branchB1.Id);
+                if (catB == null)
+                {
+                    catB = new Category { Id = Guid.NewGuid(), CompanyId = companyB.Id, BranchId = branchB1.Id, Name = "Menú B", IsActive = true, CreatedBy = "CertSeeder" };
+                    _context.Categories.Add(catB);
+                    await _context.SaveChangesAsync();
+                }
+                if (!await _context.Products.AnyAsync(p => p.Name == "Producto Exclusivo B" && p.BranchId == branchB1.Id))
+                {
+                    _context.Products.Add(new Product
+                    {
+                        Id = Guid.NewGuid(), CompanyId = companyB.Id, BranchId = branchB1.Id, CategoryId = catB.Id,
+                        Name = "Producto Exclusivo B", Price = 99.99m, Stock = 50, MinStock = 5, TrackInventory = true, IsActive = true, CreatedBy = "CertSeeder"
+                    });
+                    await _context.SaveChangesAsync();
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Datos multi-tenant de certificación creados",
+                    companyA = companyA.Name,
+                    branchA1 = branchA1.Name,
+                    branchA2 = branchA2.Name,
+                    companyB = companyB.Name,
+                    branchB1 = branchB1.Name
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Seed enterprise: multi-piso, multi-estación, asignaciones de producto por estación.
+        /// </summary>
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> SeedEnterpriseRouting()
+        {
+            if (_env.IsProduction()) return NotFound();
+            try
+            {
+                var company = await _context.Companies.FirstOrDefaultAsync(c => c.Name == "RestBar Principal")
+                    ?? throw new Exception("Ejecute SeedDemoData primero");
+
+                var branch = await _context.Branches.FirstOrDefaultAsync(b => b.Name == "RestBar Centro" && b.CompanyId == company.Id)
+                    ?? throw new Exception("Ejecute SeedDemoData primero");
+
+                async Task<Area> EnsureAreaAsync(string name)
+                {
+                    var a = await _context.Areas.FirstOrDefaultAsync(x => x.Name == name && x.BranchId == branch.Id);
+                    if (a == null)
+                    {
+                        a = new Area { Id = Guid.NewGuid(), CompanyId = company.Id, BranchId = branch.Id, Name = name, Description = name, IsActive = true, CreatedBy = "RoutingSeeder" };
+                        _context.Areas.Add(a);
+                        await _context.SaveChangesAsync();
+                    }
+                    return a;
+                }
+
+                async Task<Station> EnsureStationAsync(string name, string type, Area area)
+                {
+                    var s = await _context.Stations.FirstOrDefaultAsync(x => x.Name == name && x.BranchId == branch.Id);
+                    if (s == null)
+                    {
+                        s = new Station { Id = Guid.NewGuid(), CompanyId = company.Id, BranchId = branch.Id, AreaId = area.Id, Name = name, Type = type, IsActive = true, CreatedBy = "RoutingSeeder" };
+                        _context.Stations.Add(s);
+                        await _context.SaveChangesAsync();
+                    }
+                    return s;
+                }
+
+                async Task<Table> EnsureTableAsync(string num, Area area)
+                {
+                    var t = await _context.Tables.FirstOrDefaultAsync(x => x.TableNumber == num && x.BranchId == branch.Id);
+                    if (t == null)
+                    {
+                        t = new Table { Id = Guid.NewGuid(), CompanyId = company.Id, BranchId = branch.Id, AreaId = area.Id, TableNumber = num, Capacity = 4, Status = TableStatus.Disponible, IsActive = true, CreatedBy = "RoutingSeeder" };
+                        _context.Tables.Add(t);
+                        await _context.SaveChangesAsync();
+                    }
+                    return t;
+                }
+
+                async Task<Product> EnsureProductAsync(string name, decimal price, Category cat)
+                {
+                    var p = await _context.Products.FirstOrDefaultAsync(x => x.Name == name && x.BranchId == branch.Id);
+                    if (p == null)
+                    {
+                        p = new Product { Id = Guid.NewGuid(), CompanyId = company.Id, BranchId = branch.Id, CategoryId = cat.Id, Name = name, Price = price, TaxRate = 0.07m, Stock = 100, TrackInventory = false, IsActive = true, CreatedBy = "RoutingSeeder" };
+                        _context.Products.Add(p);
+                        await _context.SaveChangesAsync();
+                    }
+                    return p;
+                }
+
+                async Task AssignProductAsync(Product p, Station st, int priority = 10)
+                {
+                    if (!await _context.ProductStockAssignments.AnyAsync(a => a.ProductId == p.Id && a.StationId == st.Id))
+                    {
+                        _context.ProductStockAssignments.Add(new ProductStockAssignment
+                        {
+                            Id = Guid.NewGuid(), ProductId = p.Id, StationId = st.Id, Stock = 100, Priority = priority,
+                            CompanyId = company.Id, BranchId = branch.Id, IsActive = true, CreatedBy = "RoutingSeeder"
+                        });
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
+                var piso1 = await EnsureAreaAsync("Piso 1 - Salón");
+                var piso2 = await EnsureAreaAsync("Piso 2 - Salón");
+                var piso3 = await EnsureAreaAsync("Piso 3 - Salón");
+
+                var cocinaP1 = await EnsureStationAsync("Cocina Piso 1", "kitchen", piso1);
+                var barP1 = await EnsureStationAsync("Bar Principal", "bar", piso1);
+                var barVipP1 = await EnsureStationAsync("Bar VIP", "bar", piso1);
+                var parrillaP1 = await EnsureStationAsync("Parrilla", "grill", piso1);
+                var hornoP1 = await EnsureStationAsync("Horno", "oven", piso1);
+                var calienteP1 = await EnsureStationAsync("Cocina Caliente", "kitchen", piso1);
+                var friaP1 = await EnsureStationAsync("Cocina Fría", "kitchen", piso1);
+                var pasteleriaP1 = await EnsureStationAsync("Pastelería", "pastry", piso1);
+
+                var cocinaP2 = await EnsureStationAsync("Cocina Piso 2", "kitchen", piso2);
+                var barP2 = await EnsureStationAsync("Bar Piso 2", "bar", piso2);
+                var cocinaP3 = await EnsureStationAsync("Cocina Piso 3", "kitchen", piso3);
+                var barP3 = await EnsureStationAsync("Bar Piso 3", "bar", piso3);
+
+                var cocinaExpress = await EnsureStationAsync("Cocina Express", "kitchen", piso1);
+
+                await EnsureTableAsync("P1-01", piso1);
+                await EnsureTableAsync("P2-01", piso2);
+                await EnsureTableAsync("P3-01", piso3);
+
+                var catPlatos = await _context.Categories.FirstOrDefaultAsync(c => c.Name == "Platos" && c.BranchId == branch.Id);
+                var catBebidas = await _context.Categories.FirstOrDefaultAsync(c => c.Name == "Bebidas" && c.BranchId == branch.Id);
+                if (catPlatos == null || catBebidas == null) throw new Exception("Categorías no encontradas — ejecute SeedDemoData");
+
+                var hamburguesa = await EnsureProductAsync("Hamburguesa Enterprise", 12m, catPlatos);
+                var pizza = await EnsureProductAsync("Pizza Enterprise", 14m, catPlatos);
+                var sopa = await EnsureProductAsync("Sopa Enterprise", 8m, catPlatos);
+                var ensalada = await EnsureProductAsync("Ensalada Enterprise", 7m, catPlatos);
+                var cerveza = await EnsureProductAsync("Cerveza Enterprise", 4m, catBebidas);
+                var tragoVip = await EnsureProductAsync("Trago VIP", 15m, catBebidas);
+                var postre = await EnsureProductAsync("Postre Enterprise", 6m, catPlatos);
+
+                await AssignProductAsync(hamburguesa, parrillaP1, 20);
+                await AssignProductAsync(pizza, hornoP1, 20);
+                var hornoB = await EnsureStationAsync("Horno B", "oven", piso1);
+                await AssignProductAsync(pizza, hornoB, 10);
+                await AssignProductAsync(sopa, calienteP1, 20);
+                await AssignProductAsync(ensalada, friaP1, 20);
+                await AssignProductAsync(cerveza, barP1, 20);
+                await AssignProductAsync(tragoVip, barVipP1, 20);
+                await AssignProductAsync(postre, pasteleriaP1, 20);
+
+                // Productos demo existentes → asignar a estaciones Piso 1
+                var cafe = await _context.Products.FirstOrDefaultAsync(p => p.Name == "Café Americano" && p.BranchId == branch.Id);
+                if (cafe != null) await AssignProductAsync(cafe, barP1, 10);
+                var jugo = await _context.Products.FirstOrDefaultAsync(p => p.Name == "Jugo de Naranja" && p.BranchId == branch.Id);
+                if (jugo != null) await AssignProductAsync(jugo, barP1, 10);
+                var pasta = await _context.Products.FirstOrDefaultAsync(p => p.Name == "Pasta Alfredo" && p.BranchId == branch.Id);
+                if (pasta != null) await AssignProductAsync(pasta, cocinaExpress, 15);
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Enterprise routing seed completado",
+                    floors = new[] { piso1.Name, piso2.Name, piso3.Name },
+                    stations = new
+                    {
+                        piso1 = new[] { cocinaP1.Name, barP1.Name, barVipP1.Name, parrillaP1.Name, hornoP1.Name, calienteP1.Name, friaP1.Name, pasteleriaP1.Name, cocinaExpress.Name },
+                        piso2 = new[] { cocinaP2.Name, barP2.Name },
+                        piso3 = new[] { cocinaP3.Name, barP3.Name }
+                    },
+                    tables = new[] { "P1-01", "P2-01", "P3-01" }
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
             }
         }
     }

@@ -188,6 +188,14 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
+                                <label for="paymentTipAmount" class="form-label">Propina (Opcional)</label>
+                                <input type="number" class="form-control" id="paymentTipAmount" step="0.01" min="0" value="0" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
                                 <label for="paymentMethod" class="form-label">
                                     Método de Pago
                                     <span id="paymentMethodLockIcon" class="text-muted ms-1" style="display: none;">
@@ -294,24 +302,13 @@
     <script src="~/js/order/categories.js" asp-append-version="true"></script>
     <script src="~/js/order/signalr.js" asp-append-version="true"></script>
     <script src="~/js/order/payments.js" asp-append-version="true"></script>
+    <script src="~/js/order/separate-accounts.js" asp-append-version="true"></script>
     
-    <!-- ✅ NUEVO: Script para descuentos -->
+    <!-- Script para descuentos -->
     <script src="~/js/order/discounts.js" asp-append-version="true"></script>
     
-    <!-- Script de prueba para verificar carga -->
-    <script src="~/js/order/test-loading.js" asp-append-version="true"></script>
-    
-    <!-- Script de debug para SignalR -->
-    <script src="~/js/order/debug-signalr.js" asp-append-version="true"></script>
-    
-    <!-- Script de prueba para múltiples pantallas -->
-    <script src="~/js/order/test-multi-screen.js" asp-append-version="true"></script>
-    
-    <!-- ✅ NUEVO: Script para actualizaciones de stock en tiempo real -->
+    <!-- Actualizaciones de stock en tiempo real -->
     <script src="~/js/order/stock-updates.js" asp-append-version="true"></script>
-    
-    <!-- ✅ NUEVO: Script de prueba para descuentos -->
-    <script src="~/js/order/test-discount.js" asp-append-version="true"></script>
     
     <script>
         // Inicializar cuando se carga la página

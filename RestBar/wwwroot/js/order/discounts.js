@@ -148,53 +148,53 @@ function updateDiscountPreview() {
 }
 
 // ✅ Función para aplicar descuento
-function applyDiscount() {
+async function applyDiscount() {
     const discountType = document.getElementById('discountType').value;
     const discountValue = parseFloat(document.getElementById('discountValue').value) || 0;
     const discountReason = document.getElementById('discountReason').value;
-    
+
     if (discountValue <= 0) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'El valor del descuento debe ser mayor a 0'
-        });
+        Swal.fire({ icon: 'error', title: 'Error', text: 'El valor del descuento debe ser mayor a 0' });
         return;
     }
-    
-    const taxBreakdown = calculateOrderTaxBreakdown();
-    let discountAmount = 0;
-    
-    if (discountType === 'percentage') {
-        discountAmount = (taxBreakdown.totalWithTax * discountValue) / 100;
-    } else {
-        discountAmount = discountValue;
+
+    if (!currentOrder || !currentOrder.orderId) {
+        Swal.fire({ icon: 'error', title: 'Error', text: 'No hay orden activa' });
+        return;
     }
-    
-    // Guardar descuento
-    currentDiscount = {
-        type: discountType,
-        value: discountValue,
-        amount: discountAmount,
-        reason: discountReason,
-        applied: true
-    };
-    
-    // Actualizar UI
-    updateOrderUI();
-    
-    // Cerrar modal
-    const discountModal = bootstrap.Modal.getInstance(document.getElementById('discountModal'));
-    discountModal.hide();
-    
-    // Mostrar confirmación
-    Swal.fire({
-        icon: 'success',
-        title: 'Descuento Aplicado',
-        text: `Se aplicó un descuento de $${discountAmount.toFixed(2)}`,
-        timer: 2000,
-        showConfirmButton: false
-    });
+
+    try {
+        const response = await fetch('/Order/ApplyDiscount', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                orderId: currentOrder.orderId,
+                discountType: discountType,
+                discountValue: discountValue,
+                reason: discountReason
+            })
+        });
+        const result = await response.json();
+        if (!result.success) {
+            Swal.fire({ icon: 'error', title: 'Error', text: result.message || 'No se pudo aplicar el descuento' });
+            return;
+        }
+
+        currentDiscount = {
+            type: discountType,
+            value: discountValue,
+            amount: result.discountAmount,
+            reason: discountReason,
+            applied: true
+        };
+
+        updateOrderUI();
+        const discountModal = bootstrap.Modal.getInstance(document.getElementById('discountModal'));
+        discountModal.hide();
+        Swal.fire({ icon: 'success', title: 'Descuento Aplicado', text: `Se aplicó un descuento de $${result.discountAmount.toFixed(2)}`, timer: 2000, showConfirmButton: false });
+    } catch (e) {
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Error de conexión al aplicar descuento' });
+    }
 }
 
 // ✅ Función para quitar descuento

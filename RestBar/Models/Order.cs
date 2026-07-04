@@ -23,6 +23,19 @@ public partial class Order : ITrackableEntity
 
     public decimal? TotalAmount { get; set; }
 
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal DiscountAmount { get; set; } = 0;
+
+    [StringLength(20)]
+    public string? DiscountType { get; set; }
+
+    [StringLength(500)]
+    public string? DiscountReason { get; set; }
+
+    public bool IsVip { get; set; } = false;
+
+    public int Priority { get; set; } = 0;
+
     public DateTime? OpenedAt { get; set; }
 
     public DateTime? ClosedAt { get; set; }

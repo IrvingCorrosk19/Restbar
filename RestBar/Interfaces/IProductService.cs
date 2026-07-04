@@ -42,7 +42,7 @@ namespace RestBar.Interfaces
         /// <summary>
         /// Encuentra la mejor estación para asignar un producto basándose en stock disponible y prioridad
         /// </summary>
-        Task<Guid?> FindBestStationForProductAsync(Guid productId, decimal requiredQuantity, Guid? branchId = null);
+        Task<Guid?> FindBestStationForProductAsync(Guid productId, decimal requiredQuantity, Guid? branchId = null, Guid? areaId = null);
 
         /// <summary>
         /// Reduce el stock de un producto (global o por estación)

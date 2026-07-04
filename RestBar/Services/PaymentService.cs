@@ -210,6 +210,64 @@ namespace RestBar.Services
             }
         }
 
+        public async Task<PaymentRefund> RefundPaymentAsync(Guid paymentId, decimal? amount, string? reason, Guid? processedByUserId, Guid? approvedByUserId)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var payment = await _context.Payments
+                    .Include(p => p.Order)
+                        .ThenInclude(o => o!.OrderItems)
+                    .Include(p => p.Order)
+                        .ThenInclude(o => o!.Table)
+                    .FirstOrDefaultAsync(p => p.Id == paymentId)
+                    ?? throw new KeyNotFoundException("Pago no encontrado");
+
+                if (payment.IsVoided)
+                    throw new InvalidOperationException("No se puede reembolsar un pago anulado");
+
+                var refundAmount = amount ?? payment.Amount;
+                if (refundAmount <= 0 || refundAmount > payment.Amount)
+                    throw new InvalidOperationException("Monto de reembolso inválido");
+
+                var refund = new PaymentRefund
+                {
+                    Id = Guid.NewGuid(),
+                    PaymentId = paymentId,
+                    OrderId = payment.OrderId!.Value,
+                    Amount = refundAmount,
+                    TipAmount = payment.TipAmount > 0 ? Math.Round(payment.TipAmount * (refundAmount / payment.Amount), 2) : 0,
+                    Reason = reason,
+                    Status = RefundStatus.Completed,
+                    ProcessedByUserId = processedByUserId,
+                    ApprovedByUserId = approvedByUserId,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.PaymentRefunds.Add(refund);
+
+                if (refundAmount >= payment.Amount - 0.01m)
+                    payment.IsVoided = true;
+
+                var order = payment.Order!;
+                if (order.Status == OrderStatus.Completed)
+                {
+                    order.Status = OrderStatus.ReadyToPay;
+                    if (order.Table != null)
+                        order.Table.Status = TableStatus.ParaPago;
+                }
+
+                order.Version++;
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return refund;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
         public async Task<IEnumerable<Payment>> GetVoidedPaymentsAsync()
         {
             return await _context.Payments

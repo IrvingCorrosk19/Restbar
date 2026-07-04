@@ -19,6 +19,14 @@ public partial class Payment : ITrackableEntity
     [Range(0.01, double.MaxValue, ErrorMessage = "El monto debe ser mayor a 0")]
     public decimal Amount { get; set; }
 
+    /// <summary>Propina asociada a este pago (configurable por operación).</summary>
+    [Column(TypeName = "decimal(18,2)")]
+    [Range(0, double.MaxValue, ErrorMessage = "La propina no puede ser negativa")]
+    public decimal TipAmount { get; set; } = 0;
+
+    /// <summary>Usuario (cajero/mesero) que procesó el cobro.</summary>
+    public Guid? ProcessedByUserId { get; set; }
+
     public DateTime PaidAt { get; set; } = DateTime.UtcNow;
 
     public bool IsVoided { get; set; } = false;
@@ -30,6 +38,13 @@ public partial class Payment : ITrackableEntity
 
     [StringLength(20)]
     public string Status { get; set; } = "COMPLETED";
+
+    /// <summary>
+    /// Clave de idempotencia para prevenir pagos duplicados por reintento de red.
+    /// El cliente genera un UUID v4 único por intento de pago. Unique index en DB.
+    /// </summary>
+    [StringLength(100)]
+    public string? IdempotencyKey { get; set; }
 
     // ✅ CAMPOS MULTI-TENANT
     public Guid? CompanyId { get; set; }
@@ -47,6 +62,7 @@ public partial class Payment : ITrackableEntity
 
     // Propiedades de navegación
     public virtual Order? Order { get; set; }
+    public virtual User? ProcessedByUser { get; set; }
 
     public virtual ICollection<SplitPayment> SplitPayments { get; set; } = new List<SplitPayment>();
 }

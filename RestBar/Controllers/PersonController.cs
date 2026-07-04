@@ -1,185 +1,303 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using RestBar.Interfaces;
 using RestBar.Models;
+using System.Security.Claims;
 
 namespace RestBar.Controllers;
 
+[Authorize(Policy = "OrderAccess")]
 public class PersonController : Controller
 {
     private readonly IPersonService _personService;
     private readonly IOrderService _orderService;
+    private readonly RestBarContext _context;
+    private readonly ILogger<PersonController> _logger;
 
-    public PersonController(IPersonService personService, IOrderService orderService)
+    public PersonController(
+        IPersonService personService,
+        IOrderService orderService,
+        RestBarContext context,
+        ILogger<PersonController> logger)
     {
         _personService = personService;
         _orderService = orderService;
+        _context = context;
+        _logger = logger;
     }
 
-    // 🎯 MÉTODO ESTRATÉGICO: CREAR PERSONA PARA MESA
+    // --- HELPERS DE SEGURIDAD ---
+
+    /// <summary>Extrae el BranchId del claim del usuario autenticado.</summary>
+    private Guid? GetUserBranchId()
+    {
+        var claim = User.FindFirst("BranchId")?.Value;
+        return Guid.TryParse(claim, out var id) ? id : null;
+    }
+
+    /// <summary>
+    /// Verifica que la orden pertenezca a la misma branch del usuario.
+    /// Retorna false si la orden no existe o pertenece a otra branch.
+    /// </summary>
+    private async Task<bool> OrderBelongsToUserBranchAsync(Guid orderId)
+    {
+        var userBranchId = GetUserBranchId();
+
+        // SuperAdmin y admin sin branch asignada tienen acceso global
+        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+        if (role is "superadmin" or "admin" && userBranchId == null)
+            return true;
+
+        if (userBranchId == null)
+            return false;
+
+        var order = await _context.Orders
+            .AsNoTracking()
+            .FirstOrDefaultAsync(o => o.Id == orderId);
+
+        if (order == null) return false;
+
+        return order.BranchId == userBranchId;
+    }
+
+    /// <summary>
+    /// Verifica que la persona pertenezca a una orden de la branch del usuario.
+    /// </summary>
+    private async Task<bool> PersonBelongsToUserBranchAsync(Guid personId)
+    {
+        var userBranchId = GetUserBranchId();
+
+        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+        if (role is "superadmin" or "admin" && userBranchId == null)
+            return true;
+
+        if (userBranchId == null)
+            return false;
+
+        var person = await _context.Persons
+            .AsNoTracking()
+            .Include(p => p.Order)
+            .FirstOrDefaultAsync(p => p.Id == personId);
+
+        if (person?.Order == null) return false;
+
+        return person.Order.BranchId == userBranchId;
+    }
+
+    /// <summary>
+    /// Verifica que el OrderItem pertenezca a una orden de la branch del usuario.
+    /// </summary>
+    private async Task<bool> ItemBelongsToUserBranchAsync(Guid itemId)
+    {
+        var userBranchId = GetUserBranchId();
+
+        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+        if (role is "superadmin" or "admin" && userBranchId == null)
+            return true;
+
+        if (userBranchId == null)
+            return false;
+
+        var item = await _context.OrderItems
+            .AsNoTracking()
+            .Include(oi => oi.Order)
+            .FirstOrDefaultAsync(oi => oi.Id == itemId);
+
+        if (item?.Order == null) return false;
+
+        return item.Order.BranchId == userBranchId;
+    }
+
+    // --- ENDPOINTS ---
+
     [HttpPost]
     public async Task<IActionResult> CreatePerson([FromBody] CreatePersonRequest request)
     {
         try
         {
-            Console.WriteLine($"🔍 [PersonController] CreatePerson() - Iniciando creación de persona...");
-            Console.WriteLine($"📋 [PersonController] CreatePerson() - Nombre: {request.Name}, OrderId: {request.OrderId}");
+            if (request == null || request.OrderId == Guid.Empty)
+                return Json(new { success = false, message = "Datos de solicitud inválidos" });
+
+            // IDOR: validar que la orden pertenece a la branch del usuario
+            if (!await OrderBelongsToUserBranchAsync(request.OrderId))
+            {
+                _logger.LogWarning("[PersonController] CreatePerson: acceso denegado. UserId={UserId}, OrderId={OrderId}",
+                    User.FindFirst("UserId")?.Value, request.OrderId);
+                return Json(new { success = false, message = "No autorizado para esta orden" });
+            }
 
             var person = await _personService.CreatePersonAsync(request.Name, request.OrderId);
-            
-            Console.WriteLine($"✅ [PersonController] CreatePerson() - Persona creada exitosamente con ID: {person.Id}");
-            
-            return Json(new { 
-                success = true, 
-                data = new { 
-                    id = person.Id, 
-                    name = person.Name,
-                    orderId = person.OrderId
-                },
+
+            _logger.LogInformation("[PersonController] Persona creada. PersonId={PersonId}, OrderId={OrderId}",
+                person.Id, request.OrderId);
+
+            return Json(new
+            {
+                success = true,
+                data = new { id = person.Id, name = person.Name, orderId = person.OrderId },
                 message = "Persona creada exitosamente"
             });
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ [PersonController] CreatePerson() - Error: {ex.Message}");
-            Console.WriteLine($"🔍 [PersonController] CreatePerson() - StackTrace: {ex.StackTrace}");
-            return Json(new { success = false, message = $"Error al crear persona: {ex.Message}" });
+            _logger.LogError(ex, "[PersonController] Error en CreatePerson");
+            return Json(new { success = false, message = "Error al crear persona" });
         }
     }
 
-    // 🎯 MÉTODO ESTRATÉGICO: OBTENER PERSONAS DE UNA ORDEN
     [HttpGet]
     public async Task<IActionResult> GetPersonsByOrder(Guid orderId)
     {
         try
         {
-            Console.WriteLine($"🔍 [PersonController] GetPersonsByOrder() - Iniciando obtención de personas...");
-            Console.WriteLine($"📋 [PersonController] GetPersonsByOrder() - OrderId: {orderId}");
+            if (orderId == Guid.Empty)
+                return Json(new { success = false, message = "OrderId inválido" });
+
+            // IDOR: validar branch
+            if (!await OrderBelongsToUserBranchAsync(orderId))
+            {
+                _logger.LogWarning("[PersonController] GetPersonsByOrder: acceso denegado. UserId={UserId}, OrderId={OrderId}",
+                    User.FindFirst("UserId")?.Value, orderId);
+                return Json(new { success = false, message = "No autorizado para esta orden" });
+            }
 
             var persons = await _personService.GetPersonsByOrderAsync(orderId);
-            
+
             var personsData = persons.Select(p => new
             {
                 id = p.Id,
                 name = p.Name,
                 notes = p.Notes,
                 isActive = p.IsActive,
-                total = 0 // Se calculará en el frontend
+                total = 0
             }).ToList();
 
-            Console.WriteLine($"📊 [PersonController] GetPersonsByOrder() - Total personas encontradas: {personsData.Count}");
-            
-            return Json(new { 
-                success = true, 
-                data = personsData,
-                message = "Personas obtenidas exitosamente"
-            });
+            return Json(new { success = true, data = personsData, message = "Personas obtenidas exitosamente" });
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ [PersonController] GetPersonsByOrder() - Error: {ex.Message}");
-            Console.WriteLine($"🔍 [PersonController] GetPersonsByOrder() - StackTrace: {ex.StackTrace}");
-            return Json(new { success = false, message = $"Error al obtener personas: {ex.Message}" });
+            _logger.LogError(ex, "[PersonController] Error en GetPersonsByOrder");
+            return Json(new { success = false, message = "Error al obtener personas" });
         }
     }
 
-    // 🎯 MÉTODO ESTRATÉGICO: ASIGNAR ITEM A PERSONA
     [HttpPost]
     public async Task<IActionResult> AssignItemToPerson([FromBody] AssignItemRequest request)
     {
         try
         {
-            Console.WriteLine($"🔍 [PersonController] AssignItemToPerson() - Iniciando asignación...");
-            Console.WriteLine($"📋 [PersonController] AssignItemToPerson() - ItemId: {request.ItemId}, PersonId: {request.PersonId}, PersonName: {request.PersonName}");
+            if (request == null || request.ItemId == Guid.Empty || request.PersonId == Guid.Empty)
+                return Json(new { success = false, message = "Datos de solicitud inválidos" });
+
+            // IDOR: validar que el item pertenece a la branch del usuario
+            if (!await ItemBelongsToUserBranchAsync(request.ItemId))
+            {
+                _logger.LogWarning("[PersonController] AssignItemToPerson: acceso denegado. UserId={UserId}, ItemId={ItemId}",
+                    User.FindFirst("UserId")?.Value, request.ItemId);
+                return Json(new { success = false, message = "No autorizado para este item" });
+            }
+
+            // IDOR: validar que la persona pertenece a la branch del usuario
+            if (!await PersonBelongsToUserBranchAsync(request.PersonId))
+            {
+                _logger.LogWarning("[PersonController] AssignItemToPerson: persona no autorizada. UserId={UserId}, PersonId={PersonId}",
+                    User.FindFirst("UserId")?.Value, request.PersonId);
+                return Json(new { success = false, message = "No autorizado para esta persona" });
+            }
 
             var success = await _personService.AssignItemToPersonAsync(request.ItemId, request.PersonId, request.PersonName);
-            
+
             if (success)
             {
-                Console.WriteLine($"✅ [PersonController] AssignItemToPerson() - Item asignado exitosamente");
+                _logger.LogInformation("[PersonController] Item asignado. ItemId={ItemId}, PersonId={PersonId}",
+                    request.ItemId, request.PersonId);
                 return Json(new { success = true, message = "Item asignado exitosamente" });
             }
-            else
-            {
-                Console.WriteLine($"⚠️ [PersonController] AssignItemToPerson() - No se pudo asignar el item");
-                return Json(new { success = false, message = "No se pudo asignar el item" });
-            }
+
+            return Json(new { success = false, message = "No se pudo asignar el item" });
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ [PersonController] AssignItemToPerson() - Error: {ex.Message}");
-            Console.WriteLine($"🔍 [PersonController] AssignItemToPerson() - StackTrace: {ex.StackTrace}");
-            return Json(new { success = false, message = $"Error al asignar item: {ex.Message}" });
+            _logger.LogError(ex, "[PersonController] Error en AssignItemToPerson");
+            return Json(new { success = false, message = "Error al asignar item" });
         }
     }
 
-    // 🎯 MÉTODO ESTRATÉGICO: MARCAR ITEM COMO COMPARTIDO
     [HttpPost]
     public async Task<IActionResult> MarkItemAsShared([FromBody] MarkSharedRequest request)
     {
         try
         {
-            Console.WriteLine($"🔍 [PersonController] MarkItemAsShared() - Iniciando marcado como compartido...");
-            Console.WriteLine($"📋 [PersonController] MarkItemAsShared() - ItemId: {request.ItemId}");
+            if (request == null || request.ItemId == Guid.Empty)
+                return Json(new { success = false, message = "ItemId inválido" });
+
+            // IDOR: validar que el item pertenece a la branch del usuario
+            if (!await ItemBelongsToUserBranchAsync(request.ItemId))
+            {
+                _logger.LogWarning("[PersonController] MarkItemAsShared: acceso denegado. UserId={UserId}, ItemId={ItemId}",
+                    User.FindFirst("UserId")?.Value, request.ItemId);
+                return Json(new { success = false, message = "No autorizado para este item" });
+            }
 
             var success = await _personService.MarkItemAsSharedAsync(request.ItemId);
-            
-            if (success)
-            {
-                Console.WriteLine($"✅ [PersonController] MarkItemAsShared() - Item marcado como compartido exitosamente");
-                return Json(new { success = true, message = "Item marcado como compartido" });
-            }
-            else
-            {
-                Console.WriteLine($"⚠️ [PersonController] MarkItemAsShared() - No se pudo marcar el item como compartido");
-                return Json(new { success = false, message = "No se pudo marcar el item como compartido" });
-            }
+
+            return Json(success
+                ? new { success = true, message = "Item marcado como compartido" }
+                : new { success = false, message = "No se pudo marcar el item como compartido" });
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ [PersonController] MarkItemAsShared() - Error: {ex.Message}");
-            Console.WriteLine($"🔍 [PersonController] MarkItemAsShared() - StackTrace: {ex.StackTrace}");
-            return Json(new { success = false, message = $"Error al marcar item como compartido: {ex.Message}" });
+            _logger.LogError(ex, "[PersonController] Error en MarkItemAsShared");
+            return Json(new { success = false, message = "Error al marcar item" });
         }
     }
 
-    // 🎯 MÉTODO ESTRATÉGICO: CALCULAR TOTAL POR PERSONA
     [HttpGet]
     public async Task<IActionResult> GetTotalByPerson(Guid personId)
     {
         try
         {
-            Console.WriteLine($"🔍 [PersonController] GetTotalByPerson() - Iniciando cálculo...");
-            Console.WriteLine($"📋 [PersonController] GetTotalByPerson() - PersonId: {personId}");
+            if (personId == Guid.Empty)
+                return Json(new { success = false, message = "PersonId inválido" });
+
+            // IDOR: validar que la persona pertenece a la branch del usuario
+            if (!await PersonBelongsToUserBranchAsync(personId))
+            {
+                _logger.LogWarning("[PersonController] GetTotalByPerson: acceso denegado. UserId={UserId}, PersonId={PersonId}",
+                    User.FindFirst("UserId")?.Value, personId);
+                return Json(new { success = false, message = "No autorizado para esta persona" });
+            }
 
             var total = await _personService.CalculateTotalByPersonAsync(personId);
-            
-            Console.WriteLine($"📊 [PersonController] GetTotalByPerson() - Total calculado: ${total:F2}");
-            
-            return Json(new { 
-                success = true, 
-                data = new { total = total },
-                message = "Total calculado exitosamente"
-            });
+
+            return Json(new { success = true, data = new { total }, message = "Total calculado exitosamente" });
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ [PersonController] GetTotalByPerson() - Error: {ex.Message}");
-            Console.WriteLine($"🔍 [PersonController] GetTotalByPerson() - StackTrace: {ex.StackTrace}");
-            return Json(new { success = false, message = $"Error al calcular total: {ex.Message}" });
+            _logger.LogError(ex, "[PersonController] Error en GetTotalByPerson");
+            return Json(new { success = false, message = "Error al calcular total" });
         }
     }
 
-    // 🎯 MÉTODO ESTRATÉGICO: OBTENER ITEMS COMPARTIDOS
     [HttpGet]
     public async Task<IActionResult> GetSharedItems(Guid orderId)
     {
         try
         {
-            Console.WriteLine($"🔍 [PersonController] GetSharedItems() - Iniciando obtención de items compartidos...");
-            Console.WriteLine($"📋 [PersonController] GetSharedItems() - OrderId: {orderId}");
+            if (orderId == Guid.Empty)
+                return Json(new { success = false, message = "OrderId inválido" });
+
+            // IDOR: validar branch
+            if (!await OrderBelongsToUserBranchAsync(orderId))
+            {
+                _logger.LogWarning("[PersonController] GetSharedItems: acceso denegado. UserId={UserId}, OrderId={OrderId}",
+                    User.FindFirst("UserId")?.Value, orderId);
+                return Json(new { success = false, message = "No autorizado para esta orden" });
+            }
 
             var sharedItems = await _personService.GetSharedItemsAsync(orderId);
-            
+
             var itemsData = sharedItems.Select(item => new
             {
                 id = item.Id,
@@ -191,54 +309,50 @@ public class PersonController : Controller
                 notes = item.Notes
             }).ToList();
 
-            Console.WriteLine($"📊 [PersonController] GetSharedItems() - Total items compartidos: {itemsData.Count}");
-            
-            return Json(new { 
-                success = true, 
-                data = itemsData,
-                message = "Items compartidos obtenidos exitosamente"
-            });
+            return Json(new { success = true, data = itemsData, message = "Items compartidos obtenidos exitosamente" });
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ [PersonController] GetSharedItems() - Error: {ex.Message}");
-            Console.WriteLine($"🔍 [PersonController] GetSharedItems() - StackTrace: {ex.StackTrace}");
-            return Json(new { success = false, message = $"Error al obtener items compartidos: {ex.Message}" });
+            _logger.LogError(ex, "[PersonController] Error en GetSharedItems");
+            return Json(new { success = false, message = "Error al obtener items compartidos" });
         }
     }
 
-    // 🎯 MÉTODO ESTRATÉGICO: ELIMINAR PERSONA
     [HttpDelete]
     public async Task<IActionResult> DeletePerson(Guid personId)
     {
         try
         {
-            Console.WriteLine($"🔍 [PersonController] DeletePerson() - Iniciando eliminación...");
-            Console.WriteLine($"📋 [PersonController] DeletePerson() - PersonId: {personId}");
+            if (personId == Guid.Empty)
+                return Json(new { success = false, message = "PersonId inválido" });
+
+            // IDOR: validar que la persona pertenece a la branch del usuario
+            if (!await PersonBelongsToUserBranchAsync(personId))
+            {
+                _logger.LogWarning("[PersonController] DeletePerson: acceso denegado. UserId={UserId}, PersonId={PersonId}",
+                    User.FindFirst("UserId")?.Value, personId);
+                return Json(new { success = false, message = "No autorizado para esta persona" });
+            }
 
             var success = await _personService.DeletePersonAsync(personId);
-            
+
             if (success)
             {
-                Console.WriteLine($"✅ [PersonController] DeletePerson() - Persona eliminada exitosamente");
+                _logger.LogInformation("[PersonController] Persona eliminada. PersonId={PersonId}", personId);
                 return Json(new { success = true, message = "Persona eliminada exitosamente" });
             }
-            else
-            {
-                Console.WriteLine($"⚠️ [PersonController] DeletePerson() - No se pudo eliminar la persona");
-                return Json(new { success = false, message = "No se pudo eliminar la persona" });
-            }
+
+            return Json(new { success = false, message = "No se pudo eliminar la persona" });
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ [PersonController] DeletePerson() - Error: {ex.Message}");
-            Console.WriteLine($"🔍 [PersonController] DeletePerson() - StackTrace: {ex.StackTrace}");
-            return Json(new { success = false, message = $"Error al eliminar persona: {ex.Message}" });
+            _logger.LogError(ex, "[PersonController] Error en DeletePerson");
+            return Json(new { success = false, message = "Error al eliminar persona" });
         }
     }
 }
 
-// DTOs para las peticiones
+// DTOs
 public class CreatePersonRequest
 {
     public string Name { get; set; } = string.Empty;
