@@ -902,5 +902,35 @@ namespace RestBar.Controllers
                 return Json(new { success = false, message = ex.Message });
             }
         }
+
+        /// <summary>
+        /// Demo comercial vendible: 30 mesas, 100 productos, staff ampliado, historial de ventas.
+        /// Requiere SeedDemoData (y opcional SeedEnterpriseRouting).
+        /// </summary>
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> SeedCommercialDemo()
+        {
+            if (_env.IsProduction()) return NotFound();
+            try
+            {
+                var seeder = new CommercialDemoSeeder(_context);
+                var result = await seeder.SeedAsync();
+                return Json(new
+                {
+                    success = true,
+                    message = "Demo comercial creada",
+                    tables = result.Tables,
+                    products = result.Products,
+                    areas = result.Areas,
+                    staff = result.Staff,
+                    historicalOrders = result.HistoricalOrders
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
     }
 } 

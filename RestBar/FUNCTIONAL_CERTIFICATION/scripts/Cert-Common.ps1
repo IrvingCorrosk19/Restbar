@@ -22,7 +22,7 @@ function Get-CertJson {
             } catch { $raw = $_.Exception.Message }
         }
         $data = $null
-        try { $data = $raw | ConvertFrom-Json } catch {}
+        if ($raw) { try { $data = $raw | ConvertFrom-Json } catch {} }
         return @{ Ok=$false; Status=$code; Data=$data; Raw=$raw }
     }
 }

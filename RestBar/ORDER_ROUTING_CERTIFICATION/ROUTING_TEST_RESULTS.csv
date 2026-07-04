@@ -15,7 +15,7 @@
 "RT-S06-01","CambioEstacion","Pizza moved Horno to Horno B","PASS","{
   ""success"": true,
   ""message"": ""Estación actualizada"",
-  ""itemId"": ""fa6d0eae-71ae-44c3-8b9f-f32f1ce5e999"",
+  ""itemId"": ""69f2d57c-ea7f-4d1a-a706-c687fed12488"",
   ""stationId"": ""d743a57a-7801-416c-9079-2a79303bb337""
 }"
 "RT-S11-01","Reimpresion","KDS snapshot idempotent (no duplicate orders)","PASS","count=1/1"

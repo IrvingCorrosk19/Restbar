@@ -51,6 +51,20 @@ namespace RestBar.Services
                     return null;
                 }
 
+                if (user.Role != UserRole.superadmin)
+                {
+                    if (user.Branch?.Company != null && !user.Branch.Company.IsActive)
+                    {
+                        _logger.LogWarning("[AuthService] Empresa suspendida: {Email}", email);
+                        return null;
+                    }
+                    if (user.Branch != null && !user.Branch.IsActive)
+                    {
+                        _logger.LogWarning("[AuthService] Sucursal suspendida: {Email}", email);
+                        return null;
+                    }
+                }
+
                 // Token de reset activo — bloquear login normal
                 if (user.PasswordHash?.StartsWith("RESET_TOKEN:") == true)
                 {

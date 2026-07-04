@@ -385,6 +385,9 @@ app.UseErrorHandling();
 // Middleware personalizado para validación de permisos
 app.UsePermissionValidation();
 
+// Bloqueo operativo por suspensión SaaS (empresa/sucursal inactiva)
+app.UseMiddleware<TenantSubscriptionMiddleware>();
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Auth}/{action=Login}/{id?}"); // Cambiar página de inicio a Login

@@ -880,10 +880,14 @@ namespace RestBar.Controllers
             }
         }
 
-        // POST: Order/ApplyDiscount
+        // POST: Order/ApplyDiscount — solo manager o superior
         [HttpPost]
         public async Task<IActionResult> ApplyDiscount([FromBody] ApplyDiscountDto dto)
         {
+            var role = User.FindFirst(ClaimTypes.Role)?.Value?.ToLowerInvariant();
+            if (role is not ("admin" or "manager" or "supervisor"))
+                return StatusCode(403, new { success = false, message = "Solo supervisor o superior puede aplicar descuentos" });
+
             if (dto.OrderId == Guid.Empty)
                 return BadRequest(new { success = false, message = "OrderId requerido" });
 

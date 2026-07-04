@@ -9,7 +9,7 @@
 "ENT-TIP-02","Propinas","TipAllocation rows created","PASS","count=1"
 "ENT-REF-01","Reembolsos","Partial refund processed","PASS","{
   ""success"": true,
-  ""refundId"": ""08447124-5c69-4a33-9e0e-2e3ce461e0d8"",
+  ""refundId"": ""06f43133-3309-4396-9f75-e3c99081e688"",
   ""amount"": 0.5
 }"
 "ENT-COMM-01","Comisiones","Active commission rules exist","PASS","count=1"
