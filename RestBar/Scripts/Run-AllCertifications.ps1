@@ -5,7 +5,8 @@ $scripts = @(
     "FUNCTIONAL_CERTIFICATION\scripts\Run-FullCertification.ps1",
     "ORDER_FUNCTIONAL_CERTIFICATION\scripts\Run-OrderCertification.ps1",
     "ORDER_ROUTING_CERTIFICATION\scripts\Run-RoutingCertification.ps1",
-    "ENTERPRISE_OPERATION_CERTIFICATION\scripts\Run-EnterpriseCertification.ps1"
+    "ENTERPRISE_OPERATION_CERTIFICATION\scripts\Run-EnterpriseCertification.ps1",
+    "FUNCTIONAL_CERTIFICATION_3_COMPANIES\scripts\Run-ThreeCompaniesCertification.ps1"
 )
 
 $root = Split-Path $PSScriptRoot -Parent

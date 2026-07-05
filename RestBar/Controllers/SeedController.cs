@@ -904,6 +904,33 @@ namespace RestBar.Controllers
         }
 
         /// <summary>
+        /// Certificación 3 empresas: Costa, Norte Mall, Sur Hotel.
+        /// </summary>
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> SeedThreeCompaniesCertification()
+        {
+            if (_env.IsProduction()) return NotFound();
+            try
+            {
+                var seeder = new ThreeCompaniesCertSeeder(_context);
+                var result = await seeder.SeedAsync();
+                return Json(new
+                {
+                    success = true,
+                    message = "3 empresas de certificación creadas",
+                    costa = new { result.Costa.CompanyName, result.Costa.BranchName, tables = result.Costa.TableCount, admin = result.Costa.AdminEmail },
+                    norte = new { result.Norte.CompanyName, result.Norte.BranchName, tables = result.Norte.TableCount, admin = result.Norte.AdminEmail },
+                    sur = new { result.Sur.CompanyName, result.Sur.BranchName, tables = result.Sur.TableCount, admin = result.Sur.AdminEmail }
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Demo comercial vendible: 30 mesas, 100 productos, staff ampliado, historial de ventas.
         /// Requiere SeedDemoData (y opcional SeedEnterpriseRouting).
         /// </summary>
