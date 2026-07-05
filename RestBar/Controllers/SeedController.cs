@@ -850,6 +850,7 @@ namespace RestBar.Controllers
                 var cocinaExpress = await EnsureStationAsync("Cocina Express", "kitchen", piso1);
 
                 await EnsureTableAsync("P1-01", piso1);
+                await EnsureTableAsync("P1-02", piso1);
                 await EnsureTableAsync("P2-01", piso2);
                 await EnsureTableAsync("P3-01", piso3);
 
@@ -866,12 +867,15 @@ namespace RestBar.Controllers
                 var postre = await EnsureProductAsync("Postre Enterprise", 6m, catPlatos);
 
                 await AssignProductAsync(hamburguesa, parrillaP1, 20);
+                await AssignProductAsync(hamburguesa, calienteP1, 5);
+                await AssignProductAsync(hamburguesa, cocinaExpress, 1);
                 await AssignProductAsync(pizza, hornoP1, 20);
                 var hornoB = await EnsureStationAsync("Horno B", "oven", piso1);
                 await AssignProductAsync(pizza, hornoB, 10);
                 await AssignProductAsync(sopa, calienteP1, 20);
                 await AssignProductAsync(ensalada, friaP1, 20);
                 await AssignProductAsync(cerveza, barP1, 20);
+                await AssignProductAsync(cerveza, barP2, 5);
                 await AssignProductAsync(tragoVip, barVipP1, 20);
                 await AssignProductAsync(postre, pasteleriaP1, 20);
 
@@ -882,6 +886,103 @@ namespace RestBar.Controllers
                 if (jugo != null) await AssignProductAsync(jugo, barP1, 10);
                 var pasta = await _context.Products.FirstOrDefaultAsync(p => p.Name == "Pasta Alfredo" && p.BranchId == branch.Id);
                 if (pasta != null) await AssignProductAsync(pasta, cocinaExpress, 15);
+
+                // Inventario certificacion: sopa con stock=1 para prueba de concurrencia
+                sopa.TrackInventory = true;
+                sopa.Stock = 1;
+                sopa.AllowNegativeStock = false;
+                var sopaPsa = await _context.ProductStockAssignments
+                    .FirstOrDefaultAsync(a => a.ProductId == sopa.Id && a.StationId == calienteP1.Id);
+                if (sopaPsa != null) sopaPsa.Stock = 1;
+
+                // Modificador mitad/mitad para pizza
+                var halfMod = await _context.Modifiers.FirstOrDefaultAsync(m => m.Name == "Mitad y Mitad" && m.BranchId == branch.Id);
+                if (halfMod == null)
+                {
+                    halfMod = new Modifier
+                    {
+                        Id = Guid.NewGuid(), Name = "Mitad y Mitad", ExtraCost = 2m,
+                        CompanyId = company.Id, BranchId = branch.Id, IsActive = true, CreatedBy = "RoutingSeeder"
+                    };
+                    _context.Modifiers.Add(halfMod);
+                }
+                if (!pizza.Modifiers.Any(m => m.Id == halfMod.Id))
+                {
+                    var pizzaTracked = await _context.Products.Include(p => p.Modifiers).FirstAsync(p => p.Id == pizza.Id);
+                    pizzaTracked.Modifiers.Add(halfMod);
+                }
+
+                // --- Enterprise Features 100% ---
+                var armado = await EnsureStationAsync("Armado", "kitchen", piso1);
+                await AssignProductAsync(hamburguesa, armado, 15);
+
+                // Pipeline parrilla → armado (S71)
+                async Task EnsurePrepStepAsync(Product p, Station st, int order)
+                {
+                    var existing = await _context.ProductPreparationSteps
+                        .Where(s => s.ProductId == p.Id && s.StepOrder == order)
+                        .ToListAsync();
+                    if (existing.Count > 1)
+                        _context.ProductPreparationSteps.RemoveRange(existing.Skip(1));
+                    if (!existing.Any())
+                    {
+                        _context.ProductPreparationSteps.Add(new ProductPreparationStep
+                        {
+                            Id = Guid.NewGuid(), ProductId = p.Id, StationId = st.Id, StepOrder = order,
+                            IsActive = true, CompanyId = company.Id, BranchId = branch.Id
+                        });
+                    }
+                    else if (existing[0].StationId != st.Id)
+                    {
+                        existing[0].StationId = st.Id;
+                    }
+                }
+                await EnsurePrepStepAsync(hamburguesa, parrillaP1, 1);
+                await EnsurePrepStepAsync(hamburguesa, armado, 2);
+
+                // Happy hour 50% (S53) — ventana amplia para certificación
+                var happyHour = await _context.DiscountPolicies.FirstOrDefaultAsync(d => d.Name == "Happy Hour Enterprise");
+                if (happyHour == null)
+                {
+                    happyHour = new DiscountPolicy
+                    {
+                        Id = Guid.NewGuid(), Name = "Happy Hour Enterprise", Description = "50% bebidas",
+                        DiscountPercentage = 50m, IsActive = true, CompanyId = company.Id,
+                        ValidFromTime = TimeSpan.Zero, ValidUntilTime = new TimeSpan(23, 59, 59)
+                    };
+                    _context.DiscountPolicies.Add(happyHour);
+                }
+                else
+                {
+                    happyHour.DiscountPercentage = 50m;
+                    happyHour.IsActive = true;
+                    happyHour.ValidFromTime = TimeSpan.Zero;
+                    happyHour.ValidUntilTime = new TimeSpan(23, 59, 59);
+                }
+
+                // Jarra compartida (S73)
+                var jarra = await EnsureProductAsync("Jarra Cerveza Enterprise", 16m, catBebidas);
+                jarra.IsShareable = true;
+                jarra.SharePortions = 4;
+                await AssignProductAsync(jarra, barP1, 20);
+
+                // Ingredientes y alternativas (S75)
+                var tomate = await EnsureProductAsync("Tomate Enterprise", 1m, catPlatos);
+                tomate.TrackInventory = true;
+                tomate.Stock = 0;
+                var tomateCherry = await EnsureProductAsync("Tomate Cherry Enterprise", 1.5m, catPlatos);
+                tomateCherry.TrackInventory = true;
+                tomateCherry.Stock = 50;
+                if (!await _context.IngredientAlternatives.AnyAsync(a => a.IngredientProductId == tomate.Id))
+                {
+                    _context.IngredientAlternatives.Add(new IngredientAlternative
+                    {
+                        Id = Guid.NewGuid(), IngredientProductId = tomate.Id, AlternativeProductId = tomateCherry.Id,
+                        Priority = 1, IsActive = true, CompanyId = company.Id, BranchId = branch.Id
+                    });
+                }
+
+                await _context.SaveChangesAsync();
 
                 return Json(new
                 {
@@ -894,7 +995,8 @@ namespace RestBar.Controllers
                         piso2 = new[] { cocinaP2.Name, barP2.Name },
                         piso3 = new[] { cocinaP3.Name, barP3.Name }
                     },
-                    tables = new[] { "P1-01", "P2-01", "P3-01" }
+                    tables = new[] { "P1-01", "P1-02", "P2-01", "P3-01" },
+                    enterprise100 = new { happyHour = happyHour.Name, jarra = jarra.Name, pipeline = "Parrilla->Armado" }
                 });
             }
             catch (Exception ex)

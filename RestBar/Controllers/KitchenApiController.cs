@@ -128,4 +128,56 @@ public class KitchenApiController : ControllerBase
             return StatusCode(500, new { success = false, message = "Error al obtener órdenes de cocina" });
         }
     }
+
+    /// <summary>
+    /// Sugerencias de sustitutos cuando un ingrediente está agotado.
+    /// GET /api/kitchen/ingredient-alternatives?ingredientProductId=
+    /// </summary>
+    [HttpGet("ingredient-alternatives")]
+    public async Task<IActionResult> GetIngredientAlternatives([FromQuery] Guid ingredientProductId)
+    {
+        if (ingredientProductId == Guid.Empty)
+            return BadRequest(new { success = false, message = "ingredientProductId requerido" });
+
+        try
+        {
+            var ingredient = await _context.Products.AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == ingredientProductId);
+            if (ingredient == null)
+                return NotFound(new { success = false, message = "Ingrediente no encontrado" });
+
+            var alternatives = await (
+                from a in _context.IngredientAlternatives.AsNoTracking()
+                join alt in _context.Products.AsNoTracking() on a.AlternativeProductId equals alt.Id
+                where a.IngredientProductId == ingredientProductId && a.IsActive
+                orderby a.Priority
+                select new
+                {
+                    alternativeProductId = a.AlternativeProductId,
+                    alternativeName = alt.Name,
+                    priority = a.Priority,
+                    availableStock = alt.Stock,
+                    trackInventory = alt.TrackInventory
+                }).ToListAsync();
+
+            var outOfStock = ingredient.TrackInventory && (ingredient.Stock ?? 0) <= 0;
+
+            return Ok(new
+            {
+                success = true,
+                ingredientProductId,
+                ingredientName = ingredient.Name,
+                outOfStock,
+                alternatives,
+                suggestion = outOfStock && alternatives.Any()
+                    ? $"Sustituir {ingredient.Name} por {alternatives.First().alternativeName}"
+                    : null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[KitchenApi] Error en GetIngredientAlternatives");
+            return StatusCode(500, new { success = false, message = ex.Message });
+        }
+    }
 }

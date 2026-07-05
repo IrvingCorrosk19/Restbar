@@ -27,6 +27,12 @@ namespace RestBar.Models
         public bool RequiresApproval { get; set; } = false;
         
         public bool IsActive { get; set; } = true;
+
+        /// <summary>Inicio ventana horaria (ej. happy hour). Null = todo el día.</summary>
+        public TimeSpan? ValidFromTime { get; set; }
+
+        /// <summary>Fin ventana horaria.</summary>
+        public TimeSpan? ValidUntilTime { get; set; }
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         

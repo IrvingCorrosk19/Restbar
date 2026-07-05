@@ -347,10 +347,14 @@ namespace RestBar.Controllers
                     throw;
                 }
             }
+            catch (InvalidOperationException ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al editar producto");
-                return Json(new { success = false, message = "Error al editar el producto" });
+                return Json(new { success = false, message = ex.Message });
             }
         }
 

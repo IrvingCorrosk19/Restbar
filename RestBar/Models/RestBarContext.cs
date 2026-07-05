@@ -73,6 +73,10 @@ public partial class RestBarContext : DbContext
     public virtual DbSet<CommissionRule> CommissionRules { get; set; }
     public virtual DbSet<TipAllocation> TipAllocations { get; set; }
 
+    public virtual DbSet<TableMergeLink> TableMergeLinks { get; set; }
+    public virtual DbSet<ProductPreparationStep> ProductPreparationSteps { get; set; }
+    public virtual DbSet<IngredientAlternative> IngredientAlternatives { get; set; }
+
     public virtual DbSet<SystemSettings> SystemSettings { get; set; }
     
     public virtual DbSet<Currency> Currencies { get; set; }
@@ -815,6 +819,8 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.AllowNegativeStock)
                 .HasDefaultValue(false)
                 .HasColumnName("allow_negative_stock");
+            entity.Property(e => e.IsShareable).HasDefaultValue(false).HasColumnName("is_shareable");
+            entity.Property(e => e.SharePortions).HasColumnName("share_portions");
             
             // ✅ NUEVO: Relación con asignaciones de stock por estación
             entity.HasMany(p => p.StockAssignments)
@@ -991,6 +997,7 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.TableNumber)
                 .HasMaxLength(10)
                 .HasColumnName("table_number");
+            entity.Property(e => e.ParentTableId).HasColumnName("parent_table_id");
 
             entity.HasOne(d => d.Area).WithMany(p => p.Tables)
                 .HasForeignKey(d => d.AreaId)
@@ -1655,6 +1662,52 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.HasOne(e => e.Payment).WithMany().HasForeignKey(e => e.PaymentId);
             entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId);
+        });
+
+        modelBuilder.Entity<TableMergeLink>(entity =>
+        {
+            entity.ToTable("table_merge_links");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.PrimaryTableId).HasColumnName("primary_table_id");
+            entity.Property(e => e.SecondaryTableId).HasColumnName("secondary_table_id");
+            entity.Property(e => e.SecondaryCapacitySnapshot).HasColumnName("secondary_capacity_snapshot");
+            entity.Property(e => e.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+            entity.Property(e => e.MergedAt).HasColumnName("merged_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.CompanyId).HasColumnName("company_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.HasOne(e => e.PrimaryTable).WithMany().HasForeignKey(e => e.PrimaryTableId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.SecondaryTable).WithMany().HasForeignKey(e => e.SecondaryTableId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ProductPreparationStep>(entity =>
+        {
+            entity.ToTable("product_preparation_steps");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.StationId).HasColumnName("station_id");
+            entity.Property(e => e.StepOrder).HasColumnName("step_order");
+            entity.Property(e => e.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+            entity.Property(e => e.CompanyId).HasColumnName("company_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.HasOne(e => e.Product).WithMany().HasForeignKey(e => e.ProductId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Station).WithMany().HasForeignKey(e => e.StationId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<IngredientAlternative>(entity =>
+        {
+            entity.ToTable("ingredient_alternatives");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.IngredientProductId).HasColumnName("ingredient_product_id");
+            entity.Property(e => e.AlternativeProductId).HasColumnName("alternative_product_id");
+            entity.Property(e => e.Priority).HasColumnName("priority").HasDefaultValue(10);
+            entity.Property(e => e.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+            entity.Property(e => e.CompanyId).HasColumnName("company_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.HasOne(e => e.IngredientProduct).WithMany().HasForeignKey(e => e.IngredientProductId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.AlternativeProduct).WithMany().HasForeignKey(e => e.AlternativeProductId).OnDelete(DeleteBehavior.Cascade);
         });
 
         OnModelCreatingPartial(modelBuilder);

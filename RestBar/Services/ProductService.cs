@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RestBar.Interfaces;
 using RestBar.Models;
+using RestBar.Helpers;
 using System.Security.Claims;
 
 namespace RestBar.Services
@@ -95,6 +96,15 @@ namespace RestBar.Services
                 if (existing == null)
                     throw new KeyNotFoundException($"Producto con ID {id} no encontrado");
 
+                var wasActive = existing.IsActive;
+
+                if (wasActive && !product.IsActive &&
+                    await OperationalGuard.ProductInActiveOrdersAsync(_context, id))
+                {
+                    throw new InvalidOperationException(
+                        "No se puede desactivar un producto incluido en órdenes activas. Espere a que cierren o cancele los ítems.");
+                }
+
                 existing.Name = product.Name;
                 existing.Description = product.Description;
                 existing.Price = product.Price;
@@ -133,6 +143,15 @@ namespace RestBar.Services
             var product = await _context.Products.FindAsync(id);
             if (product == null)
                 return false;
+
+            if (await OperationalGuard.ProductInActiveOrdersAsync(_context, id))
+            {
+                product.IsActive = false;
+                SetUpdatedTracking(product);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+
             _context.Products.Remove(product);
             await _context.SaveChangesAsync();
             return true;
@@ -350,7 +369,7 @@ namespace RestBar.Services
                 }
 
                 var branchAssignments = product.StockAssignments
-                    .Where(sa => sa.IsActive && (!branchId.HasValue || sa.BranchId == branchId.Value))
+                    .Where(sa => sa.IsActive && sa.Station != null && sa.Station.IsActive && (!branchId.HasValue || sa.BranchId == branchId.Value))
                     .ToList();
 
                 if (!branchAssignments.Any())

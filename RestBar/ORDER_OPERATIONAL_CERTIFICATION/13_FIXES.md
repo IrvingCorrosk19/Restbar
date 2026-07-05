@@ -15,6 +15,21 @@
 **Problema:** Orden mixta en P1-01 bloqueaba OP-CAN-01.  
 **Corrección:** Cancel explícito de orden routing + `Reset-CertTableOrder` entre escenarios.
 
+## FIX-ADD-001 — MarkItemReady en orden cancelada (HIGH)
+
+**Archivo:** `Services/OrderService.cs`  
+**Problema:** Chef podía marcar listo ítem de orden cancelada (ENT-S23).  
+**Corrección:** Validar orden/ítem cancelado → HTTP 400.
+
+## FIX-ADD-002 — Routing a estación inactiva
+
+**Archivo:** `Services/ProductService.cs`  
+**Corrección:** Filtrar `Station.IsActive` en `FindBestStationForProductAsync` (ENT-S17).
+
+## FIX-ADD-003 — API prioridad VIP
+
+**Archivos:** `OrderController.SetOrderPriority`, `OrderService.SetOrderPriorityAsync` (ENT-S13/S14).
+
 ## Defectos Critical/High
 
 **Ninguno abierto** tras fixes.

@@ -464,5 +464,71 @@ namespace RestBar.Controllers
                 return Json(new { success = false, message = $"Error: {ex.Message}" });
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> MergeTables([FromBody] MergeTablesDto dto)
+        {
+            try
+            {
+                if (dto.PrimaryTableId == Guid.Empty || dto.SecondaryTableId == Guid.Empty)
+                    return Json(new { success = false, message = "IDs de mesa requeridos" });
+
+                var result = await _tableService.MergeTablesAsync(dto.PrimaryTableId, dto.SecondaryTableId);
+                return Json(new
+                {
+                    success = true,
+                    primaryTableId = result.PrimaryTableId,
+                    secondaryTableId = result.SecondaryTableId,
+                    combinedCapacity = result.CombinedCapacity,
+                    movedOrderId = result.MovedOrderId
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Error: {ex.Message}" });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SplitTables([FromBody] SplitTablesDto dto)
+        {
+            try
+            {
+                if (dto.PrimaryTableId == Guid.Empty)
+                    return Json(new { success = false, message = "ID de mesa principal requerido" });
+
+                var result = await _tableService.SplitTablesAsync(dto.PrimaryTableId);
+                return Json(new
+                {
+                    success = true,
+                    primaryTableId = result.PrimaryTableId,
+                    restoredTables = result.RestoredTables,
+                    primaryCapacity = result.PrimaryCapacity
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Error: {ex.Message}" });
+            }
+        }
+    }
+
+    public class MergeTablesDto
+    {
+        public Guid PrimaryTableId { get; set; }
+        public Guid SecondaryTableId { get; set; }
+    }
+
+    public class SplitTablesDto
+    {
+        public Guid PrimaryTableId { get; set; }
     }
 } 

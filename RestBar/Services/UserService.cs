@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RestBar.Interfaces;
 using RestBar.Models;
+using RestBar.Helpers;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -97,6 +98,13 @@ namespace RestBar.Services
                     existingEntity.State = EntityState.Detached;
                 }
 
+                if (oldUser != null && oldUser.IsActive && !user.IsActive &&
+                    await OperationalGuard.UserHasActiveOrdersAsync(_context, user.Id))
+                {
+                    throw new InvalidOperationException(
+                        "No se puede desactivar un usuario con órdenes activas. Reasigne las mesas u órdenes primero.");
+                }
+
                 // Solo hashear el password si no está vacío y no parece estar ya hasheado
                 if (!string.IsNullOrEmpty(user.PasswordHash) && 
                     !user.PasswordHash.Contains("=") && // Los hashes Base64 contienen "="
@@ -138,6 +146,10 @@ namespace RestBar.Services
 
         public async Task DeleteAsync(Guid id)
         {
+            if (await OperationalGuard.UserHasActiveOrdersAsync(_context, id))
+                throw new InvalidOperationException(
+                    "No se puede eliminar un usuario con órdenes activas. Reasigne las órdenes primero.");
+
             var user = await _context.Users.FindAsync(id);
             if (user != null)
             {

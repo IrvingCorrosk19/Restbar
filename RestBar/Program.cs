@@ -82,6 +82,31 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.HttpOnly = true;
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Events = new CookieAuthenticationEvents
+        {
+            OnRedirectToLogin = context =>
+            {
+                if (context.Request.Path.StartsWithSegments("/api"))
+                {
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    context.Response.ContentType = "application/json";
+                    return context.Response.WriteAsJsonAsync(new { success = false, message = "No autenticado" });
+                }
+                context.Response.Redirect(context.RedirectUri);
+                return Task.CompletedTask;
+            },
+            OnRedirectToAccessDenied = context =>
+            {
+                if (context.Request.Path.StartsWithSegments("/api"))
+                {
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    context.Response.ContentType = "application/json";
+                    return context.Response.WriteAsJsonAsync(new { success = false, message = "No autorizado" });
+                }
+                context.Response.Redirect(context.RedirectUri);
+                return Task.CompletedTask;
+            }
+        };
     });
 
 // Configurar autorización con políticas personalizadas
@@ -266,6 +291,7 @@ builder.Services.AddScoped<IAdvancedReportsService, AdvancedReportsService>();
 
 // Agregar servicio de SignalR
 builder.Services.AddScoped<IInventoryOperationsService, InventoryOperationsService>();
+builder.Services.AddScoped<IPriceScheduleService, PriceScheduleService>();
 builder.Services.AddScoped<IOrderHubService, OrderHubService>();
 
 // ✅ NUEVO: Agregar servicios de logging y auditoría

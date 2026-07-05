@@ -467,7 +467,7 @@ namespace RestBar.Controllers
                     && p.IsActive
                     && (p.CompanyId == null || p.CompanyId == user.Branch!.CompanyId))
                 .OrderBy(p => p.Name)
-                .Select(p => new { id = p.Id, name = p.Name, price = p.Price, imageUrl = p.ImageUrl })
+                .Select(p => new { id = p.Id, name = p.Name, price = p.Price, imageUrl = p.ImageUrl, isShareable = p.IsShareable, sharePortions = p.SharePortions })
                 .ToListAsync();
 
             return Json(new { success = true, data = products });
@@ -911,6 +911,106 @@ namespace RestBar.Controllers
             public Guid OrderId { get; set; }
             public string DiscountType { get; set; } = "fixed";
             public decimal DiscountValue { get; set; }
+            public string? Reason { get; set; }
+        }
+
+        // POST: Order/SetOrderPriority — manager marca VIP/urgente
+        [HttpPost]
+        public async Task<IActionResult> SetOrderPriority([FromBody] SetOrderPriorityDto dto)
+        {
+            var role = User.FindFirst(ClaimTypes.Role)?.Value?.ToLowerInvariant();
+            if (role is not ("admin" or "manager" or "supervisor"))
+                return StatusCode(403, new { success = false, message = "Solo supervisor o superior puede cambiar prioridad" });
+
+            if (dto.OrderId == Guid.Empty)
+                return BadRequest(new { success = false, message = "OrderId requerido" });
+
+            if (!await OrderBelongsToUserBranchAsync(dto.OrderId))
+                return StatusCode(403, new { success = false, message = "No autorizado" });
+
+            Guid? userId = Guid.TryParse(User.FindFirst("UserId")?.Value, out var uid) ? uid : null;
+            try
+            {
+                var order = await _orderService.SetOrderPriorityAsync(dto.OrderId, dto.Priority, dto.IsVip, userId);
+                return Json(new { success = true, priority = order.Priority, isVip = order.IsVip });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        public class SetOrderPriorityDto
+        {
+            public Guid OrderId { get; set; }
+            public int Priority { get; set; }
+            public bool IsVip { get; set; }
+        }
+
+        // POST: Order/SetOrderType — cambiar DineIn/TakeOut/Delivery en orden abierta
+        [HttpPost]
+        public async Task<IActionResult> SetOrderType([FromBody] SetOrderTypeDto dto)
+        {
+            var role = User.FindFirst(ClaimTypes.Role)?.Value?.ToLowerInvariant();
+            if (role is not ("admin" or "manager" or "supervisor" or "waiter"))
+                return StatusCode(403, new { success = false, message = "No autorizado" });
+
+            if (dto.OrderId == Guid.Empty || string.IsNullOrWhiteSpace(dto.OrderType))
+                return BadRequest(new { success = false, message = "OrderId y OrderType requeridos" });
+
+            if (!await OrderBelongsToUserBranchAsync(dto.OrderId))
+                return StatusCode(403, new { success = false, message = "No autorizado" });
+
+            if (!Enum.TryParse<OrderType>(dto.OrderType, true, out var orderType))
+                return BadRequest(new { success = false, message = "OrderType inválido" });
+
+            Guid? userId = Guid.TryParse(User.FindFirst("UserId")?.Value, out var uid) ? uid : null;
+            try
+            {
+                var order = await _orderService.SetOrderTypeAsync(dto.OrderId, orderType, userId);
+                return Json(new { success = true, orderType = order.OrderType.ToString() });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        public class SetOrderTypeDto
+        {
+            public Guid OrderId { get; set; }
+            public string OrderType { get; set; } = "DineIn";
+        }
+
+        // POST: Order/RegisterOutstandingDebt — supervisor registra saldo pendiente
+        [HttpPost]
+        public async Task<IActionResult> RegisterOutstandingDebt([FromBody] RegisterDebtDto dto)
+        {
+            var role = User.FindFirst(ClaimTypes.Role)?.Value?.ToLowerInvariant();
+            if (role is not ("admin" or "manager" or "supervisor"))
+                return StatusCode(403, new { success = false, message = "Solo supervisor o superior puede registrar deuda" });
+
+            if (dto.OrderId == Guid.Empty)
+                return BadRequest(new { success = false, message = "OrderId requerido" });
+
+            if (!await OrderBelongsToUserBranchAsync(dto.OrderId))
+                return StatusCode(403, new { success = false, message = "No autorizado" });
+
+            Guid? userId = Guid.TryParse(User.FindFirst("UserId")?.Value, out var uid) ? uid : null;
+            try
+            {
+                var order = await _orderService.RegisterOutstandingDebtAsync(dto.OrderId, dto.Reason ?? "Saldo pendiente", userId);
+                return Json(new { success = true, notes = order.Notes, status = order.Status.ToString() });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        public class RegisterDebtDto
+        {
+            public Guid OrderId { get; set; }
             public string? Reason { get; set; }
         }
 

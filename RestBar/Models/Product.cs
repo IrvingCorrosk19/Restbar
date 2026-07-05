@@ -77,6 +77,12 @@ public partial class Product : ITrackableEntity
     [Display(Name = "Permitir Stock Negativo")]
     public bool AllowNegativeStock { get; set; } = false;
 
+    /// <summary>Producto compartido (jarra, botella).</summary>
+    public bool IsShareable { get; set; } = false;
+
+    /// <summary>Porciones por unidad compartida (ej. 4 vasos por jarra).</summary>
+    public int? SharePortions { get; set; }
+
     // ✅ NUEVO: Navegación a asignaciones de stock por estación
     public virtual ICollection<ProductStockAssignment> StockAssignments { get; set; } = new List<ProductStockAssignment>();
 }

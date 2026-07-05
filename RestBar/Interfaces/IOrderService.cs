@@ -32,6 +32,9 @@ namespace RestBar.Interfaces
         Task MarkItemAsReadyAsync(Guid orderId, Guid itemId, Guid? deliveredByUserId = null);
         Task CancelOrderItemAsync(Guid orderId, Guid itemId, Guid? userId = null, string? userRole = null, Guid? supervisorId = null);
         Task<Order> ApplyOrderDiscountAsync(Guid orderId, string discountType, decimal discountValue, string? reason, Guid? userId);
+        Task<Order> SetOrderPriorityAsync(Guid orderId, int priority, bool isVip, Guid? userId);
+        Task<Order> SetOrderTypeAsync(Guid orderId, OrderType orderType, Guid? userId);
+        Task<Order> RegisterOutstandingDebtAsync(Guid orderId, string reason, Guid? userId);
         Task MarkItemAsPreparingAsync(Guid orderId, Guid itemId);
         
         // Métodos para KitchenOrders y validación

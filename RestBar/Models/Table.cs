@@ -25,6 +25,9 @@ public partial class Table : ITrackableEntity
 
     public bool IsActive { get; set; } = true;
 
+    /// <summary>Mesa principal si esta mesa fue unida a otra.</summary>
+    public Guid? ParentTableId { get; set; }
+
     // ✅ CAMPOS DE AUDITORÍA ESTANDARIZADOS
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

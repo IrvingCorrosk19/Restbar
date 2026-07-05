@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using RestBar.Models;
@@ -12,9 +13,11 @@ using RestBar.Models;
 namespace RestBar.Migrations
 {
     [DbContext(typeof(RestBarContext))]
-    partial class RestBarContextModelSnapshot : ModelSnapshot
+    [Migration("20260705132939_EnterpriseFeatures100")]
+    partial class EnterpriseFeatures100
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -26,5 +26,23 @@ namespace RestBar.Interfaces
         
         // ✅ NUEVO: Método para obtener el contexto (necesario para FixTableStatus)
         RestBarContext GetContext();
+
+        Task<TableMergeResult> MergeTablesAsync(Guid primaryTableId, Guid secondaryTableId);
+        Task<TableSplitResult> SplitTablesAsync(Guid primaryTableId);
+    }
+
+    public class TableMergeResult
+    {
+        public Guid PrimaryTableId { get; set; }
+        public Guid SecondaryTableId { get; set; }
+        public int CombinedCapacity { get; set; }
+        public Guid? MovedOrderId { get; set; }
+    }
+
+    public class TableSplitResult
+    {
+        public Guid PrimaryTableId { get; set; }
+        public int RestoredTables { get; set; }
+        public int PrimaryCapacity { get; set; }
     }
 } 

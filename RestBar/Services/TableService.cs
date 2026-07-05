@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RestBar.Interfaces;
 using RestBar.Models;
+using RestBar.Helpers;
 
 namespace RestBar.Services
 {
@@ -95,6 +96,17 @@ namespace RestBar.Services
                 Console.WriteLine("🔍 [TableService] UpdateAsync() - Iniciando actualización de mesa...");
                 Console.WriteLine($"🔍 [TableService] UpdateAsync() - Mesa ID: {table.Id}, TableNumber: {table.TableNumber}");
                 
+                var existing = await _context.Tables.AsNoTracking().FirstOrDefaultAsync(t => t.Id == table.Id);
+                if (existing != null)
+                {
+                    if (existing.IsActive && !table.IsActive &&
+                        await OperationalGuard.TableHasActiveOrderAsync(_context, table.Id))
+                    {
+                        throw new InvalidOperationException(
+                            "No se puede desactivar una mesa con una orden activa. Cierre o transfiera la orden primero.");
+                    }
+                }
+
                 // Buscar si hay una entidad con el mismo ID siendo rastreada
                 var existingEntity = _context.ChangeTracker.Entries<Table>()
                     .FirstOrDefault(e => e.Entity.Id == table.Id);
@@ -115,6 +127,10 @@ namespace RestBar.Services
                 
                 Console.WriteLine($"✅ [TableService] UpdateAsync() - Mesa actualizada exitosamente");
             }
+            catch (InvalidOperationException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ [TableService] UpdateAsync() - Error: {ex.Message}");
@@ -125,6 +141,10 @@ namespace RestBar.Services
 
         public async Task DeleteAsync(Guid id)
         {
+            if (await OperationalGuard.TableHasActiveOrderAsync(_context, id))
+                throw new InvalidOperationException(
+                    "No se puede eliminar una mesa con una orden activa. Cierre o transfiera la orden primero.");
+
             var table = await _context.Tables.FindAsync(id);
             if (table != null)
             {
@@ -288,6 +308,113 @@ namespace RestBar.Services
                 Console.WriteLine($"🔍 [TableService] GetActiveTablesByCompanyAndBranchAsync() - StackTrace: {ex.StackTrace}");
                 return new List<Table>();
             }
+        }
+
+        public async Task<TableMergeResult> MergeTablesAsync(Guid primaryTableId, Guid secondaryTableId)
+        {
+            if (primaryTableId == secondaryTableId)
+                throw new InvalidOperationException("No se puede unir una mesa consigo misma.");
+
+            var primary = await _context.Tables.FindAsync(primaryTableId)
+                ?? throw new InvalidOperationException("Mesa principal no encontrada.");
+            var secondary = await _context.Tables.FindAsync(secondaryTableId)
+                ?? throw new InvalidOperationException("Mesa secundaria no encontrada.");
+
+            if (primary.BranchId != secondary.BranchId)
+                throw new InvalidOperationException("Las mesas deben pertenecer a la misma sucursal.");
+
+            if (secondary.ParentTableId.HasValue)
+                throw new InvalidOperationException("La mesa secundaria ya está unida a otra mesa.");
+
+            var existingLink = await _context.TableMergeLinks
+                .AnyAsync(l => l.IsActive && (l.SecondaryTableId == secondaryTableId || l.PrimaryTableId == secondaryTableId));
+            if (existingLink)
+                throw new InvalidOperationException("La mesa secundaria ya tiene un vínculo de unión activo.");
+
+            var activeStatuses = new[]
+            {
+                OrderStatus.Pending, OrderStatus.SentToKitchen, OrderStatus.Preparing,
+                OrderStatus.Ready, OrderStatus.ReadyToPay, OrderStatus.Served
+            };
+
+            Guid? movedOrderId = null;
+            var secondaryOrder = await _context.Orders
+                .Where(o => o.TableId == secondaryTableId && activeStatuses.Contains(o.Status))
+                .OrderByDescending(o => o.OpenedAt)
+                .FirstOrDefaultAsync();
+            if (secondaryOrder != null)
+            {
+                secondaryOrder.TableId = primaryTableId;
+                movedOrderId = secondaryOrder.Id;
+                if (primary.Status == TableStatus.Disponible && secondary.Status != TableStatus.Disponible)
+                    primary.Status = secondary.Status;
+            }
+
+            var snapshot = secondary.Capacity;
+            primary.Capacity += snapshot;
+            secondary.ParentTableId = primaryTableId;
+            secondary.Status = TableStatus.Bloqueada;
+
+            _context.TableMergeLinks.Add(new TableMergeLink
+            {
+                Id = Guid.NewGuid(),
+                PrimaryTableId = primaryTableId,
+                SecondaryTableId = secondaryTableId,
+                SecondaryCapacitySnapshot = snapshot,
+                IsActive = true,
+                MergedAt = DateTime.UtcNow,
+                CompanyId = primary.CompanyId,
+                BranchId = primary.BranchId
+            });
+
+            SetUpdatedTracking(primary);
+            SetUpdatedTracking(secondary);
+            await _context.SaveChangesAsync();
+
+            return new TableMergeResult
+            {
+                PrimaryTableId = primaryTableId,
+                SecondaryTableId = secondaryTableId,
+                CombinedCapacity = primary.Capacity,
+                MovedOrderId = movedOrderId
+            };
+        }
+
+        public async Task<TableSplitResult> SplitTablesAsync(Guid primaryTableId)
+        {
+            var primary = await _context.Tables.FindAsync(primaryTableId)
+                ?? throw new InvalidOperationException("Mesa principal no encontrada.");
+
+            var links = await _context.TableMergeLinks
+                .Include(l => l.SecondaryTable)
+                .Where(l => l.PrimaryTableId == primaryTableId && l.IsActive)
+                .ToListAsync();
+
+            if (!links.Any())
+                throw new InvalidOperationException("La mesa no tiene mesas secundarias unidas.");
+
+            var restored = 0;
+            foreach (var link in links)
+            {
+                if (link.SecondaryTable == null) continue;
+                primary.Capacity = Math.Max(1, primary.Capacity - link.SecondaryCapacitySnapshot);
+                link.SecondaryTable.ParentTableId = null;
+                link.SecondaryTable.Status = TableStatus.Disponible;
+                link.SecondaryTable.Capacity = link.SecondaryCapacitySnapshot;
+                link.IsActive = false;
+                SetUpdatedTracking(link.SecondaryTable);
+                restored++;
+            }
+
+            SetUpdatedTracking(primary);
+            await _context.SaveChangesAsync();
+
+            return new TableSplitResult
+            {
+                PrimaryTableId = primaryTableId,
+                RestoredTables = restored,
+                PrimaryCapacity = primary.Capacity
+            };
         }
     }
 } 
