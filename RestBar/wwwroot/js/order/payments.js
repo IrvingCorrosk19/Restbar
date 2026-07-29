@@ -504,6 +504,36 @@ function showFullPaymentModal(totalAmount) {
 let paymentProcessing = false;
 
 // Función para procesar pago
+/** Submit del modal Bootstrap de pago (#paymentModal) — no llamar processPayment() sin args. */
+function submitBootstrapPaymentModal() {
+    try {
+        const amount = parseFloat(document.getElementById('paymentAmount')?.value || '0');
+        const method = document.getElementById('paymentMethod')?.value || '';
+        const payerName = document.getElementById('payerName')?.value || '';
+        const tipAmount = parseFloat(document.getElementById('paymentTipAmount')?.value || '0') || 0;
+        const isShared = method === 'Compartido';
+
+        if (!amount || amount <= 0 || Number.isNaN(amount)) {
+            Swal.fire('Error', 'Ingrese un monto válido mayor a 0', 'error');
+            return;
+        }
+        if (!method) {
+            Swal.fire('Error', 'Seleccione un método de pago', 'error');
+            return;
+        }
+
+        let splitPayments = [];
+        if (isShared && typeof collectSplitPaymentsFromDom === 'function') {
+            splitPayments = collectSplitPaymentsFromDom();
+        }
+
+        processPayment(amount, method, isShared, payerName, splitPayments, tipAmount);
+    } catch (error) {
+        console.error('❌ [Payments] submitBootstrapPaymentModal() - Error:', error);
+        Swal.fire('Error', 'No se pudo preparar el pago', 'error');
+    }
+}
+
 async function processPayment(amount, method, isShared = false, payerName = '', splitPayments = [], tipAmount = 0) {
     if (paymentProcessing) {
         Swal.fire('Espere', 'Ya hay un pago en proceso', 'info');
@@ -511,6 +541,14 @@ async function processPayment(amount, method, isShared = false, payerName = '', 
     }
     if (!currentOrder || !currentOrder.orderId) {
         Swal.fire('Error', 'No hay una orden activa para procesar el pago', 'error');
+        return;
+    }
+    if (amount === undefined || amount === null || Number.isNaN(Number(amount)) || Number(amount) <= 0) {
+        Swal.fire('Error', 'Monto de pago inválido. Use Pago Parcial o complete el formulario de pago.', 'error');
+        return;
+    }
+    if (!method) {
+        Swal.fire('Error', 'Método de pago requerido', 'error');
         return;
     }
 
@@ -547,7 +585,10 @@ async function processPayment(amount, method, isShared = false, payerName = '', 
             method: method,
             isShared: isShared,
             payerName: payerName,
-            splitPayments: splitPayments || []
+            splitPayments: splitPayments || [],
+            idempotencyKey: (typeof crypto !== 'undefined' && crypto.randomUUID)
+                ? crypto.randomUUID()
+                : (`pay-${Date.now()}-${Math.random().toString(36).slice(2)}`)
         };
 
         // Enviar pago al servidor
@@ -919,6 +960,7 @@ async function updatePaymentInfo() {
 
 window.updatePaymentInfo = updatePaymentInfo;
 window.processPayment = processPayment;
+window.submitBootstrapPaymentModal = submitBootstrapPaymentModal;
 window.validateSplitPayments = validateSplitPayments;
 window.addSplitPayment = addSplitPayment;
 window.removeSplitPayment = removeSplitPayment;

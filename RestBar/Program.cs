@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using RestBar.Interfaces;
 using RestBar.Models;
 using RestBar.Services;
+using RestBar.Extensions;
 using System.Threading.RateLimiting;
 using RestBar.Hubs;
 using RestBar.Middleware;
@@ -143,11 +144,14 @@ builder.Services.AddAuthorization(options =>
     
     // Políticas para área de configuración
     options.AddPolicy("SystemConfig", policy => policy.RequireRole("admin"));
+
+    // Enterprise Foundation — policies for upcoming modules (no behavior change today)
+    options.AddEnterpriseModulePolicies();
 });
 
 // Agregar HttpContextAccessor para el AuthService y tracking automático
 builder.Services.AddHttpContextAccessor();
-
+builder.Services.AddEnterpriseFoundation(builder.Configuration);
 // Habilitar Newtonsoft.Json para Npgsql 8+
 AppContext.SetSwitch("Npgsql.EnableLegacyJsonNet", true);
 

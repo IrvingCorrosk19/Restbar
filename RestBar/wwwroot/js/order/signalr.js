@@ -53,16 +53,20 @@ async function initializeSignalR() {
 
         // Configurar eventos de SignalR
         signalRConnection.on("OrderStatusChanged", (orderId, newStatus) => {
-            // 🎯 LOG ESTRATÉGICO: NOTIFICACIÓN DE CAMBIO DE ESTADO RECIBIDA
-            console.log('🚀 [SignalR] OrderStatusChanged() - NOTIFICACIÓN RECIBIDA - OrderId:', orderId, 'Nuevo estado:', newStatus);
-            
-            if (currentOrder.orderId === orderId) {
-                console.log('🔄 [SignalR] OrderStatusChanged() - Actualizando orden actual...');
-                // Refrescar el estado completo desde el servidor
-                refreshOrderStatus(orderId);
-            } else {
-                console.log('ℹ️ [SignalR] OrderStatusChanged() - Notificación para otra orden, ignorando...');
+            console.log('🚀 [SignalR] OrderStatusChanged() - OrderId:', orderId, 'Nuevo estado:', newStatus);
+
+            if (currentOrder.orderId !== orderId) {
+                return;
             }
+
+            if (typeof isTerminalOrderStatus === 'function' && isTerminalOrderStatus(newStatus)) {
+                if (typeof resetActiveOrderState === 'function') {
+                    resetActiveOrderState({ keepTableId: true });
+                }
+                return;
+            }
+
+            refreshOrderStatus(orderId);
         });
 
         signalRConnection.on("OrderItemStatusChanged", (data) => {
@@ -140,7 +144,11 @@ async function initializeSignalR() {
 
         signalRConnection.on("OrderCancelled", (orderId) => {
             if (currentOrder.orderId === orderId) {
-                handleOrderCancelled();
+                if (typeof resetActiveOrderState === 'function') {
+                    resetActiveOrderState({ keepTableId: true });
+                } else {
+                    handleOrderCancelled();
+                }
             }
         });
 

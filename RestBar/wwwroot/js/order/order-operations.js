@@ -379,25 +379,19 @@ async function cancelOrder() {
                         showConfirmButton: false
                     });
 
-                    // 🎯 LOG ESTRATÉGICO: ORDEN CANCELADA
-                    console.log('🚀 [OrderOperations] cancelOrder() - ORDEN CANCELADA - Limpiando orden actual');
-                    
-                    // Guardar información de la mesa antes de limpiar
                     const tableId = currentOrder.tableId;
-                    
-                    // Limpiar la orden actual
-                    currentOrder = { items: [], total: 0, tableId: null };
-                    updateOrderUI();
-                    clearOrderUI();
-                    
-                    // 🔄 ACTUALIZAR ESTADO DE LA MESA A DISPONIBLE usando método existente
+
+                    if (typeof resetActiveOrderState === 'function') {
+                        resetActiveOrderState({ keepTableId: true, tableId });
+                    } else {
+                        currentOrder = { items: [], total: 0, tableId: tableId, orderId: null, status: null };
+                        updateOrderUI();
+                        clearOrderUI();
+                    }
+
                     if (tableId && typeof updateTableStatus === 'function') {
-                        console.log('🔄 [OrderOperations] cancelOrder() - Actualizando mesa a Disponible:', tableId);
                         updateTableStatus(tableId, 'Disponible');
                     }
-                    
-                    // 📡 NOTIFICAR VIA SIGNALR (se maneja automáticamente en el backend)
-                    console.log('📡 [OrderOperations] cancelOrder() - Notificación SignalR enviada desde backend');
                 } else {
                     Swal.fire('Error', result.message || 'Error al cancelar la orden', 'error');
                 }

@@ -91,25 +91,14 @@ public partial class RestBarContext : DbContext
     
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
+        // Enterprise Foundation: never embed connection secrets in source.
+        // Connection must come from DI / configuration (Program.cs AddDbContext).
         if (!optionsBuilder.IsConfigured)
         {
-            optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=RestBar;Username=postgres;Password=Panama2020$");
+            throw new InvalidOperationException(
+                "RestBarContext is not configured. Register DbContext via DI with ConnectionStrings:DefaultConnection.");
         }
     }
-
-
-    //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    //    {
-    //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-    //        optionsBuilder.UseNpgsql("Host=dpg-d1pffq3uibrs73dna8cg-a;Port=5432;Database=restbar_omzm;Username=admin;Password=05i7r62GYkoupNL6Gmc8oFQVV8OotGjc;Ssl Mode=Require;Trust Server Certificate=true");
-    //    }
-
-
-    // optionsBuilder.UseNpgsql("Host=dpg-d1otd649c44c7380il7g-a;Port=5432;Database=restbar_92si;Username=admin;Password=KMTp5bPR7rlkSDizV1t5RlDJTEFIjAdr;Ssl Mode=Require;Trust Server Certificate=true");
-
-    // => optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=RestBar;Username=postgres;Password=Panama2020$");
-    //optionsBuilder.UseNpgsql("Host=dpg-d1o87hjipnbc73elplu0-a.oregon-postgres.render.com;Port=5432;Database=restbar;Username=admin;Password=eBX4yz9XMPYuxU30aCWrhpX8JzD10bFy;Ssl Mode=Require;Trust Server Certificate=true");
-    //optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=RestBar;Username=postgres;Password=Panama2020$");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -1708,6 +1697,49 @@ public partial class RestBarContext : DbContext
             entity.Property(e => e.BranchId).HasColumnName("branch_id");
             entity.HasOne(e => e.IngredientProduct).WithMany().HasForeignKey(e => e.IngredientProductId).OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(e => e.AlternativeProduct).WithMany().HasForeignKey(e => e.AlternativeProductId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Enterprise Foundation F0.5 — operational composite indexes (idempotent names)
+        modelBuilder.Entity<Order>(entity =>
+        {
+            entity.HasIndex(e => new { e.BranchId, e.Status, e.OpenedAt })
+                .HasDatabaseName("IX_orders_branch_status_opened");
+            entity.HasIndex(e => new { e.TableId, e.Status })
+                .HasDatabaseName("IX_orders_table_status");
+        });
+
+        modelBuilder.Entity<OrderItem>(entity =>
+        {
+            entity.HasIndex(e => new { e.OrderId, e.Status })
+                .HasDatabaseName("IX_order_items_order_status");
+            entity.HasIndex(e => new { e.PreparedByStationId, e.Status })
+                .HasDatabaseName("IX_order_items_station_status");
+        });
+
+        modelBuilder.Entity<Payment>(entity =>
+        {
+            entity.HasIndex(e => new { e.BranchId, e.PaidAt })
+                .HasDatabaseName("IX_payments_branch_paid_at");
+        });
+
+        modelBuilder.Entity<InventoryMovement>(entity =>
+        {
+            entity.HasIndex(e => new { e.ProductId, e.CreatedAt })
+                .HasDatabaseName("IX_inv_mov_product_created");
+            entity.HasIndex(e => new { e.CompanyId, e.CreatedAt })
+                .HasDatabaseName("IX_inv_mov_company_created");
+        });
+
+        modelBuilder.Entity<Shift>(entity =>
+        {
+            entity.HasIndex(e => new { e.UserId, e.IsActive })
+                .HasDatabaseName("IX_shifts_user_active");
+        });
+
+        modelBuilder.Entity<DiscountPolicy>(entity =>
+        {
+            entity.HasIndex(e => new { e.CompanyId, e.IsActive })
+                .HasDatabaseName("IX_discount_policies_company_active");
         });
 
         OnModelCreatingPartial(modelBuilder);

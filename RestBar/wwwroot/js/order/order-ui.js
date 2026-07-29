@@ -11,8 +11,10 @@ function calculateOrderTaxBreakdown() {
 
     currentOrder.items.forEach(item => {
         const itemSubtotal = item.price * item.quantity;
-        const taxRate = item.taxRate || 0;
-        const itemTax = itemSubtotal * (taxRate / 100);
+        // taxRate may be stored as fraction (0.07) or percent (7)
+        const rawTax = Number(item.taxRate) || 0;
+        const taxRate = rawTax > 0 && rawTax <= 1 ? rawTax : (rawTax / 100);
+        const itemTax = itemSubtotal * taxRate;
         
         subtotal += itemSubtotal;
         totalTax += itemTax;
@@ -100,8 +102,9 @@ function updateOrderUI() {
     const subtotal = activeItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const totalTax = activeItems.reduce((sum, item) => {
         const itemSubtotal = item.price * item.quantity;
-        const taxRate = item.taxRate || 0;
-        return sum + (itemSubtotal * (taxRate / 100));
+        const rawTax = Number(item.taxRate) || 0;
+        const taxRate = rawTax > 0 && rawTax <= 1 ? rawTax : (rawTax / 100);
+        return sum + (itemSubtotal * taxRate);
     }, 0);
     
     // Obtener descuento actual (si existe)
@@ -333,25 +336,33 @@ function disableConfirmButton() {
     }
 }
 
-// Función para limpiar la interfaz de orden
+// Función para limpiar la interfaz de orden (Resumen del Pedido)
 function clearOrderUI() {
     const orderItemsContainer = document.getElementById('orderItems');
     const orderTotalElement = document.getElementById('orderTotal');
     const itemCountElement = document.getElementById('itemCount');
-    
+    const orderSubtotalElement = document.getElementById('orderSubtotal');
+    const orderTaxElement = document.getElementById('orderTax');
+    const orderDiscountElement = document.getElementById('orderDiscount');
+    const totalPaidElement = document.getElementById('totalPaid');
+    const remainingAmountElement = document.getElementById('remainingAmount');
+    const paymentSummary = document.getElementById('paymentSummary');
+
     if (orderItemsContainer) {
         orderItemsContainer.innerHTML = '';
     }
-    
-    if (orderTotalElement) {
-        orderTotalElement.textContent = '$0.00';
-    }
-    
-    if (itemCountElement) {
-        itemCountElement.textContent = '0';
-    }
-    
+
+    if (orderSubtotalElement) orderSubtotalElement.textContent = '$0.00';
+    if (orderTaxElement) orderTaxElement.textContent = '$0.00';
+    if (orderDiscountElement) orderDiscountElement.textContent = '$0.00';
+    if (orderTotalElement) orderTotalElement.textContent = '$0.00';
+    if (itemCountElement) itemCountElement.textContent = '0 items';
+    if (totalPaidElement) totalPaidElement.textContent = '$0.00';
+    if (remainingAmountElement) remainingAmountElement.textContent = '$0.00';
+    if (paymentSummary) paymentSummary.innerHTML = '';
+
     disableConfirmButton();
+    updatePaymentButtons();
 }
 
 // 🎯 FUNCIÓN ESTRATÉGICA: ACTUALIZAR BOTONES DE PAGO SEGÚN ESTADO

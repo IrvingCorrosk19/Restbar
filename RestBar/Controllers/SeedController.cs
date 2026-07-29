@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using RestBar.Models;
 using RestBar.Services;
+using RestBar.Infrastructure.Foundation;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
@@ -30,7 +31,7 @@ namespace RestBar.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> SeedDemoData()
         {
-            if (_env.IsProduction())
+            if (!SeedEnvironmentGate.IsSeedAllowed(_env))
                 return NotFound();
 
             try
@@ -265,6 +266,15 @@ namespace RestBar.Controllers
                         await _context.SaveChangesAsync();
                         Console.WriteLine($"✅ [SeedController] Usuario {fullName} ({role}) creado");
                     }
+                    else if (user.IsActive != true)
+                    {
+                        // Certification / demo seeds must restore canonical users if deactivated mid-test
+                        user.IsActive = true;
+                        user.UpdatedAt = DateTime.UtcNow;
+                        user.UpdatedBy = "Seeder";
+                        await _context.SaveChangesAsync();
+                        Console.WriteLine($"✅ [SeedController] Usuario {email} reactivado (IsActive=true)");
+                    }
                     return user;
                 }
 
@@ -476,7 +486,7 @@ namespace RestBar.Controllers
         [HttpGet]
         public IActionResult GeneratePasswordHash()
         {
-            if (_env.IsProduction())
+            if (!SeedEnvironmentGate.IsSeedAllowed(_env))
                 return NotFound();
 
             string password = "123456";
@@ -500,7 +510,7 @@ namespace RestBar.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> CreateAdminUser()
         {
-            if (_env.IsProduction())
+            if (!SeedEnvironmentGate.IsSeedAllowed(_env))
                 return NotFound();
 
             try
@@ -598,7 +608,7 @@ namespace RestBar.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> SeedCertificationMultiTenant()
         {
-            if (_env.IsProduction())
+            if (!SeedEnvironmentGate.IsSeedAllowed(_env))
                 return NotFound();
 
             try
@@ -759,7 +769,7 @@ namespace RestBar.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> SeedEnterpriseRouting()
         {
-            if (_env.IsProduction()) return NotFound();
+            if (!SeedEnvironmentGate.IsSeedAllowed(_env)) return NotFound();
             try
             {
                 var company = await _context.Companies.FirstOrDefaultAsync(c => c.Name == "RestBar Principal")
@@ -1012,7 +1022,7 @@ namespace RestBar.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> SeedThreeCompaniesCertification()
         {
-            if (_env.IsProduction()) return NotFound();
+            if (!SeedEnvironmentGate.IsSeedAllowed(_env)) return NotFound();
             try
             {
                 var seeder = new ThreeCompaniesCertSeeder(_context);
@@ -1040,7 +1050,7 @@ namespace RestBar.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> SeedCommercialDemo()
         {
-            if (_env.IsProduction()) return NotFound();
+            if (!SeedEnvironmentGate.IsSeedAllowed(_env)) return NotFound();
             try
             {
                 var seeder = new CommercialDemoSeeder(_context);

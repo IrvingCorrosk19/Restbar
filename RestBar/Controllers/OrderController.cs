@@ -662,6 +662,12 @@ namespace RestBar.Controllers
         {
             try
             {
+                if (dto == null)
+                {
+                    _logger.LogWarning("SendToKitchen: body null");
+                    return BadRequest(new { error = "Solicitud inválida: body requerido." });
+                }
+
                 // Validar que TableId no sea Guid.Empty
                 if (dto.TableId == Guid.Empty)
                 {
@@ -1424,6 +1430,18 @@ namespace RestBar.Controllers
                     }
                     
                     return NotFound(new { success = false, error = "Orden no encontrada" }); // P2-FIX-06
+                }
+
+                if (order.Status == OrderStatus.Cancelled || order.Status == OrderStatus.Completed)
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        orderId = order.Id,
+                        status = order.Status.ToString(),
+                        totalAmount = 0m,
+                        items = Array.Empty<object>()
+                    });
                 }
 
                 var orderItems = order.OrderItems.Select(oi => new

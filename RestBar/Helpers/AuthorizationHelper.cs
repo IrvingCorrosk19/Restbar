@@ -299,7 +299,7 @@ namespace RestBar.Helpers
                     new MenuItem { Name = "Usuarios", Icon = "fas fa-users", Url = "/User/UserManagement" },
                     new MenuItem { Name = "Órdenes", Icon = "fas fa-shopping-cart", Url = "/Order/Index" },
                     new MenuItem { Name = "Productos", Icon = "fas fa-box", Url = "/Product/Index" },
-                    new MenuItem { Name = "Pagos", Icon = "fas fa-credit-card", Url = "/Payment/Index" },
+                    new MenuItem { Name = "Pagos", Icon = "fas fa-credit-card", Url = "/PaymentView/Index" },
                     new MenuItem { Name = "Reportes", Icon = "fas fa-chart-bar", Url = "/Reports/Index" }
                 });
             }
@@ -312,7 +312,7 @@ namespace RestBar.Helpers
                     new MenuItem { Name = "Usuarios", Icon = "fas fa-users", Url = "/User/UserManagement" },
                     new MenuItem { Name = "Órdenes", Icon = "fas fa-shopping-cart", Url = "/Order/Index" },
                     new MenuItem { Name = "Productos", Icon = "fas fa-box", Url = "/Product/Index" },
-                    new MenuItem { Name = "Pagos", Icon = "fas fa-credit-card", Url = "/Payment/Index" }
+                    new MenuItem { Name = "Pagos", Icon = "fas fa-credit-card", Url = "/PaymentView/Index" }
                 });
             }
             // Menú para Supervisor
@@ -322,7 +322,7 @@ namespace RestBar.Helpers
                 {
                     new MenuItem { Name = "Órdenes", Icon = "fas fa-shopping-cart", Url = "/Order/Index" },
                     new MenuItem { Name = "Cocina", Icon = "fas fa-utensils", Url = "/Order/StationOrders?stationType=kitchen" },
-                    new MenuItem { Name = "Pagos", Icon = "fas fa-credit-card", Url = "/Payment/Index" },
+                    new MenuItem { Name = "Pagos", Icon = "fas fa-credit-card", Url = "/PaymentView/Index" },
                     new MenuItem { Name = "Mesas", Icon = "fas fa-table", Url = "/Table/Index" }
                 });
             }
@@ -341,7 +341,7 @@ namespace RestBar.Helpers
                 menuItems.AddRange(new[]
                 {
                     new MenuItem { Name = "Órdenes", Icon = "fas fa-shopping-cart", Url = "/Order/Index" },
-                    new MenuItem { Name = "Pagos", Icon = "fas fa-credit-card", Url = "/Payment/Index" }
+                    new MenuItem { Name = "Pagos", Icon = "fas fa-credit-card", Url = "/PaymentView/Index" }
                 });
             }
             // Menú para Chef/Bartender
@@ -359,8 +359,8 @@ namespace RestBar.Helpers
             {
                 menuItems.AddRange(new[]
                 {
-                    new MenuItem { Name = "Pagos", Icon = "fas fa-credit-card", Url = "/Payment/Index" },
-                    new MenuItem { Name = "Reportes", Icon = "fas fa-chart-bar", Url = "/Report/Index" }
+                    new MenuItem { Name = "Pagos", Icon = "fas fa-credit-card", Url = "/PaymentView/Index" },
+                    new MenuItem { Name = "Reportes", Icon = "fas fa-chart-bar", Url = "/Reports/Index" }
                 });
             }
             // Menú para Support

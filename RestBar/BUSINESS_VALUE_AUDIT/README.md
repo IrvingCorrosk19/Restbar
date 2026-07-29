@@ -1,0 +1,19 @@
+# BUSINESS VALUE AUDIT — RestBar
+
+Auditoría estratégica de valor de negocio (2026-07-29).  
+**Solo capacidades verificadas** — certificaciones funcionales, no suposiciones.
+
+| # | Documento |
+|---|-----------|
+| 01 | [BUSINESS_VALUE_AUDIT](01_BUSINESS_VALUE_AUDIT.md) |
+| 02 | [OPERATIONAL_ANALYSIS](02_OPERATIONAL_ANALYSIS.md) |
+| 03 | [EXECUTIVE_REPORTS_AUDIT](03_EXECUTIVE_REPORTS_AUDIT.md) |
+| 04 | [KPI_COVERAGE](04_KPI_COVERAGE.md) |
+| 05 | [BUSINESS_GAPS](05_BUSINESS_GAPS.md) |
+| 06 | [ROI_ANALYSIS](06_ROI_ANALYSIS.md) |
+| 07 | [COMPETITIVE_ANALYSIS](07_COMPETITIVE_ANALYSIS.md) |
+| 08 | [STRATEGIC_RECOMMENDATIONS](08_STRATEGIC_RECOMMENDATIONS.md) |
+| 09 | [PRODUCT_ROADMAP](09_PRODUCT_ROADMAP.md) |
+| 10 | [EXECUTIVE_SUMMARY](10_EXECUTIVE_SUMMARY.md) |
+
+**Veredicto:** **LISTO PARA PILOTOS** · Madurez comercial **48/100**

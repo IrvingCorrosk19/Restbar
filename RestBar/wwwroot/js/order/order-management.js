@@ -1,6 +1,82 @@
 // Order Management
 
-let currentOrder = { items: [], total: 0, tableId: null };
+let currentOrder = { items: [], total: 0, tableId: null, orderId: null, status: null };
+
+// Incrementa en cada reset para ignorar refresh async obsoletos (race SignalR vs cancel)
+let orderSummaryGeneration = 0;
+
+/**
+ * Limpia por completo el Resumen del Pedido y el estado local de la orden activa.
+ * @param {{ keepTableId?: boolean, tableId?: string|null }} options
+ */
+function resetActiveOrderState(options = {}) {
+    orderSummaryGeneration++;
+
+    const keepTableId = options.keepTableId === true;
+    const preservedTableId = keepTableId
+        ? (options.tableId ?? currentOrder?.tableId ?? null)
+        : null;
+
+    currentOrder = {
+        items: [],
+        total: 0,
+        tableId: preservedTableId,
+        orderId: null,
+        status: null,
+        discount: 0
+    };
+
+    if (typeof initializeDiscount === 'function') {
+        initializeDiscount();
+    }
+
+    if (typeof clearPaymentSummary === 'function') {
+        clearPaymentSummary();
+    }
+
+    updateOrderUI();
+    clearOrderUI();
+
+    document.querySelectorAll('.product-card').forEach(card => {
+        card.classList.remove('selected-product');
+        card.style.backgroundColor = '';
+        card.style.border = '';
+        card.style.transform = '';
+        card.style.boxShadow = '';
+    });
+
+    document.querySelectorAll('.quantity').forEach(q => {
+        q.textContent = '0';
+        q.style.display = 'none';
+    });
+    document.querySelectorAll('[id^="decrease-"], [id^="increase-"]').forEach(btn => {
+        btn.style.display = 'none';
+    });
+
+    const sendButton = document.getElementById('sendToKitchen');
+    if (sendButton) {
+        sendButton.textContent = 'Confirmar Pedido';
+        sendButton.disabled = false;
+    }
+
+    const cancelOrderBtn = document.getElementById('cancelOrder');
+    if (cancelOrderBtn) cancelOrderBtn.style.display = 'none';
+
+    const separateAccountsBtn = document.getElementById('separateAccountsBtn');
+    if (separateAccountsBtn) separateAccountsBtn.style.display = 'none';
+
+    updatePaymentButtons();
+}
+
+function shouldApplyOrderRefresh(generationAtStart) {
+    return generationAtStart === orderSummaryGeneration;
+}
+
+function isTerminalOrderStatus(status) {
+    if (!status) return false;
+    const s = String(status).toLowerCase();
+    return s === 'cancelled' || s === 'completed';
+}
 
 // Variables para el CRUD
 let isEditMode = false;
@@ -317,19 +393,31 @@ async function forceRefreshOrder() {
 
 // Refrescar estado de la orden desde el servidor
 async function refreshOrderStatus(orderId) {
+    const generationAtStart = orderSummaryGeneration;
     try {
         const response = await fetch(`/Order/GetOrderStatus/${orderId}`);
-        
+
+        if (!shouldApplyOrderRefresh(generationAtStart)) {
+            return;
+        }
+
         if (response.ok) {
             const result = await response.json();
-            
+
+            if (!shouldApplyOrderRefresh(generationAtStart)) {
+                return;
+            }
+
             if (result.success) {
-                
-                // Actualizar la orden actual con los datos del servidor
+                if (isTerminalOrderStatus(result.status)) {
+                    resetActiveOrderState({ keepTableId: true });
+                    return;
+                }
+
                 currentOrder.orderId = result.orderId;
                 currentOrder.status = result.status;
                 currentOrder.total = result.totalAmount;
-                currentOrder.items = result.items.map(item => ({
+                currentOrder.items = (result.items || []).map(item => ({
                     id: item.id,
                     productId: item.productId,
                     productName: item.productName,
@@ -340,40 +428,23 @@ async function refreshOrderStatus(orderId) {
                     preparedAt: item.preparedAt,
                     preparedByStation: item.preparedByStation,
                     notes: item.notes || '',
-                    isFromBackend: true // ✅ PARÁMETRO PARA IDENTIFICAR ITEMS DEL BACKEND
+                    isFromBackend: true
                 }));
-                
-                // Actualizar la UI con los nuevos datos
+
                 updateOrderUI();
-                
-        // 🎯 LOG ESTRATÉGICO: ORDEN EXISTENTE CARGADA
-        console.log('🚀 [OrderManagement] loadExistingOrder() - ORDEN EXISTENTE CARGADA - Estado:', result.status, 'Items:', result.items?.length || 0);
-        
-        // ✅ NUEVO: Inicializar sistema de cuentas separadas
-        if (typeof initializeSeparateAccounts === 'function') {
-            initializeSeparateAccounts(result.orderId);
-        }
-                
-                // Actualizar información de pagos
+
+                if (typeof initializeSeparateAccounts === 'function') {
+                    initializeSeparateAccounts(result.orderId);
+                }
+
                 if (typeof updatePaymentInfo === 'function') {
                     await updatePaymentInfo();
                 }
-                
-                // Mostrar notificación de actualización
-                Swal.fire({
-                    title: 'Orden Actualizada',
-                    text: 'Se ha actualizado el estado de la orden desde el servidor',
-                    icon: 'success',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
             } else {
                 Swal.fire('Error', 'Error al obtener datos del servidor: ' + result.error, 'error');
             }
         } else if (response.status === 404) {
-            // Orden no existe, limpiar UI
-            currentOrder = { items: [], total: 0, tableId: null, orderId: null, status: null };
-            updateOrderUI();
+            resetActiveOrderState({ keepTableId: true });
             Swal.fire({
                 title: 'Orden eliminada',
                 text: 'La orden ha sido eliminada o cancelada',
@@ -431,16 +502,13 @@ function updateOrderItemStatus(itemId, newStatus) {
 
 // Manejar orden cancelada
 function handleOrderCancelled() {
+    resetActiveOrderState({ keepTableId: true });
     Swal.fire({
         title: 'Orden Cancelada',
         text: 'La orden ha sido cancelada',
         icon: 'warning',
-        confirmButtonText: 'OK'
-    }).then(() => {
-        // Limpiar la orden actual
-        currentOrder = { items: [], total: 0, tableId: null };
-        updateOrderUI();
-        clearOrderUI();
+        timer: 2000,
+        showConfirmButton: false
     });
 }
 
@@ -606,6 +674,9 @@ function limpiarUIYEstadoLocal() {
 }
 
 window.currentOrder = currentOrder;
+window.resetActiveOrderState = resetActiveOrderState;
+window.shouldApplyOrderRefresh = shouldApplyOrderRefresh;
+window.isTerminalOrderStatus = isTerminalOrderStatus;
 
 // ✅ LOG: Confirmar que el archivo se carga correctamente
 console.log('✅ [OrderManagement] order-management.js cargado correctamente');

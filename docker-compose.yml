@@ -1,0 +1,56 @@
+# RestBar - VPS: solo restbar_*, puerto 8084 (restbar.autonomousflow.lat)
+# NO afecta: CarnetQR (80), FixHub (8081), PanamaTravelHub (8082), n8n (8083)
+services:
+  restbar_postgres:
+    image: postgres:15-alpine
+    container_name: restbar_postgres
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-RestBar}
+      POSTGRES_USER: ${POSTGRES_USER:-restbaruser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - restbar_postgres_data:/var/lib/postgresql/data
+    networks:
+      - restbar_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-restbaruser} -d ${POSTGRES_DB:-RestBar}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  restbar_web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: restbar_web
+    restart: always
+    depends_on:
+      restbar_postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=restbar_postgres;Port=5432;Database=${POSTGRES_DB:-RestBar};Username=${POSTGRES_USER:-restbaruser};Password=${POSTGRES_PASSWORD}
+    volumes:
+      - restbar_dataprotection_keys:/app/dataprotection-keys
+    ports:
+      - "8084:8080"
+    networks:
+      - restbar_net
+
+volumes:
+  restbar_postgres_data:
+    name: restbar_postgres_data
+  restbar_dataprotection_keys:
+    name: restbar_dataprotection_keys
+
+networks:
+  restbar_net:
+    name: restbar_net
+    driver: bridge

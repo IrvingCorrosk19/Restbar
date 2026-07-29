@@ -1,0 +1,119 @@
+﻿"Id","Module","Name","Status","Severity","Details","At"
+"PKS-ENV-01","Setup","SeedEnterpriseRouting","PASS","Critical","Enterprise routing seed completado","2026-07-28T19:06:13"
+"PKS-ENV-02","Setup","Core role sessions","PASS","Critical","admin=True chef=True waiter=True cashier=True","2026-07-28T19:06:16"
+"PO-01","Purchasing","PurchaseOrder Index/API","BLOCKED","Critical","HTTP 404 - endpoint inexistente. Ciclo PO no implementado.","2026-07-28T19:06:18"
+"PO-02","Purchasing","PurchaseOrder Create","BLOCKED","Critical","HTTP 404 - endpoint inexistente. Ciclo PO no implementado.","2026-07-28T19:06:18"
+"PO-03","Purchasing","PurchaseOrder Approve","BLOCKED","Critical","HTTP 404 - endpoint inexistente. Ciclo PO no implementado.","2026-07-28T19:06:18"
+"PO-04","Purchasing","PurchaseOrder Reject","BLOCKED","Critical","HTTP 404 - endpoint inexistente. Ciclo PO no implementado.","2026-07-28T19:06:18"
+"PO-05","Purchasing","PurchaseOrder Cancel","BLOCKED","Critical","HTTP 404 - endpoint inexistente. Ciclo PO no implementado.","2026-07-28T19:06:18"
+"PO-06","Purchasing","PurchaseOrder Receive","BLOCKED","Critical","HTTP 404 - endpoint inexistente. Ciclo PO no implementado.","2026-07-28T19:06:18"
+"PO-07","Purchasing","PurchaseOrder Duplicate","BLOCKED","Critical","HTTP 404 - endpoint inexistente. Ciclo PO no implementado.","2026-07-28T19:06:18"
+"PO-08","Purchasing","PurchaseOrder Reopen","BLOCKED","Critical","HTTP 404 - endpoint inexistente. Ciclo PO no implementado.","2026-07-28T19:06:18"
+"PO-09","Purchasing","Supplier CRUD list","BLOCKED","Critical","HTTP 404 - endpoint inexistente. Ciclo PO no implementado.","2026-07-28T19:06:18"
+"PO-10","Purchasing","Supplier Create","BLOCKED","Critical","HTTP 404 - endpoint inexistente. Ciclo PO no implementado.","2026-07-28T19:06:18"
+"PO-11","Purchasing","Goods Receipt","BLOCKED","Critical","HTTP 404 - endpoint inexistente. Ciclo PO no implementado.","2026-07-28T19:06:18"
+"PO-12","Purchasing","Receiving against PO","BLOCKED","Critical","HTTP 404 - endpoint inexistente. Ciclo PO no implementado.","2026-07-28T19:06:18"
+"PO-SC-01","Purchasing","Crear orden de compra","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-02","Purchasing","Editar antes de aprobar","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-03","Purchasing","Aprobar","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-04","Purchasing","Rechazar","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-05","Purchasing","Cancelar","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-06","Purchasing","Eliminar","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-07","Purchasing","Reabrir","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-08","Purchasing","Duplicar","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-09","Purchasing","Orden parcial","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-10","Purchasing","Recepcion parcial","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-11","Purchasing","Recepcion total","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-12","Purchasing","Recepcion con diferencias","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-13","Purchasing","Producto faltante","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-14","Purchasing","Producto adicional","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-15","Purchasing","Precio diferente al pactado","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-16","Purchasing","Impuesto incorrecto","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-17","Purchasing","Moneda diferente","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-18","Purchasing","Descuento aplicado","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-19","Purchasing","Recepcion duplicada","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-20","Purchasing","Recepcion fuera de tiempo","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-21","Purchasing","Recepcion en sucursal incorrecta","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-22","Purchasing","Recepcion sin permisos","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:18"
+"PO-SC-23","Purchasing","Proveedor inactivo","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:19"
+"PO-SC-24","Purchasing","Producto inactivo","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:19"
+"PO-SC-25","Purchasing","Producto inexistente","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:19"
+"PO-SC-26","Purchasing","Producto duplicado","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:19"
+"PO-SC-27","Purchasing","Producto sin categoria","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:19"
+"PO-SC-28","Purchasing","Producto sin unidad","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:19"
+"PO-SC-29","Purchasing","Recepcion con inventario bloqueado","BLOCKED","Critical","Sin entidad PurchaseOrder/Supplier/GoodsReceipt - escenario no ejecutable","2026-07-28T19:06:19"
+"PO-SUB-01","Purchasing","Inventory CreatePurchase stock-in (substitute)","PASS","High","NOT a PO - immediate stock-in only. HTTP=200 success=True","2026-07-28T19:06:19"
+"PO-SUB-02","Purchasing","Purchase movements listed","PASS","Medium","HTTP=200","2026-07-28T19:06:19"
+"PO-SUB-03","Purchasing","SupplierAnalysis report (stub)","BLOCKED","High","Endpoint responds but PO data empty/stub (count=0). AdvancedReportsService returns zeros.","2026-07-28T19:06:19"
+"PO-SUB-04","Purchasing","StockTransfer Index exists (not PO)","PASS","Info","Closest approve workflow; Reject not wired. HTTP=200","2026-07-28T19:06:19"
+"KDS-SEC-01","Kitchen","Mesero 403 en mesa no asignada (P1)","PASS","High","HTTP=403 - ValidateTableTenantAccess","2026-07-28T19:06:21"
+"KDS-01","Kitchen","Stations configured","PASS","Critical","count=17","2026-07-28T19:06:21"
+"KDS-02","Kitchen","Chef KDS StationOrders access","PASS","Critical","HTTP=200","2026-07-28T19:06:22"
+"KDS-03","Kitchen","Kitchen snapshot API (reconnect)","PASS","High","HTTP=200","2026-07-28T19:06:22"
+"KDS-04","Kitchen","Orden normal enviada a cocina","PASS","Critical","HTTP=200 orderId=a092c44e-931c-4eab-a668-5c9df9af8dfc msg=Orden enviada a cocina exitosamente","2026-07-28T19:06:22"
+"KDS-05","Kitchen","Orden con observaciones persistidas","PASS","High","itemId=d2529d21-51f9-4f48-a7b3-fbc11b6197c3","2026-07-28T19:06:22"
+"KDS-06","Kitchen","Marcar preparando","PASS","High","HTTP=200","2026-07-28T19:06:22"
+"KDS-07","Kitchen","Marcar listo","PASS","Critical","HTTP=200 success=True","2026-07-28T19:06:22"
+"KDS-08","Kitchen","Doble MarkItemReady (idempotencia)","PASS","High","HTTP=200 - no debe corromper estado","2026-07-28T19:06:22"
+"KDS-09","Kitchen","Cancelacion despues de cocina","PASS","Critical","HTTP=200","2026-07-28T19:06:23"
+"KDS-10","Kitchen","Division cocina+bar misma orden","PASS","High","HTTP=200","2026-07-28T19:06:23"
+"KDS-11","Kitchen","Snapshot por estacion","PASS","High","kitchenOk=True barOk=True","2026-07-28T19:06:23"
+"KDS-12","Kitchen","Orden VIP / cambio prioridad","PASS","Medium","HTTP=200","2026-07-28T19:06:23"
+"KDS-13","Kitchen","Cambio de estacion","PASS","High","HTTP=200 msg=Estación actualizada","2026-07-28T19:06:23"
+"KDS-14","Kitchen","Mesero sin KitchenAccess (seguridad)","PASS","Medium","HTTP=0 - policy KitchenAccess enforced at action","2026-07-28T19:06:24"
+"KDS-15","Kitchen","Orden grande (8 lineas)","PASS","Medium","HTTP=200","2026-07-28T19:06:24"
+"KDS-16","Kitchen","Dos+ cocinas configuradas","PASS","High","kitchens=4","2026-07-28T19:06:25"
+"KDS-17","Kitchen","Dos+ bares configurados","PASS","High","bars=3","2026-07-28T19:06:25"
+"SALE-01","Sales","Venta normal (mesa→orden)","PASS","Critical","orderId=97388cd6-933a-4df9-a4ae-96b8d14a0638","2026-07-28T19:06:27"
+"SALE-02","Sales","Payment summary / totales","PASS","Critical","HTTP=200 total=12.0000","2026-07-28T19:06:27"
+"SALE-03","Sales","Pago parcial efectivo","PASS","Critical","HTTP=200 raw={
+  ""success"": true,
+  ""isFullyPaid"": false,
+  ""message"": ""Pago parcial registrado"",
+  ""payment"": {
+    ""id"": ""3f44c1e9-8e14-4b99-a9e4-ad991a496566"",
+    ""orderId"": ""97388cd6-933a-4df9-a4ae-96b8d14a0638"",
+    ""amount"": 6.00,
+    ""method"": ""Efectivo"",
+    ""paidAt"": ""2026-07-29T00:06:27.2049061Z"",
+    ""isVoided"": false,
+    ""isShared"": false,
+    ""payerName"": null,
+    ""tipAmount"": 0.00,
+    ""splitPayments"": []
+  }
+}","2026-07-28T19:06:27"
+"SALE-04","Sales","Pago mixto (resto tarjeta) + cierre","PASS","Critical","HTTP=200 raw={
+  ""success"": true,
+  ""isFullyPaid"": true,
+  ""message"": ""Pago completado"",
+  ""payment"": {
+    ""id"": ""5a2cc617-feaa-41bb-96f5-fcde7c63efed"",
+    ""orderId"": ""97388cd6-933a-4df9-a4ae-96b8d14a0638"",
+    ""amount"": 6.00,
+    ""method"": ""Tarjeta"",
+    ""paidAt"": ""2026-07-29T00:06:27.3424835Z"",
+    ""isVoided"": false,
+    ""isShared"": false,
+    ""payerName"": null,
+    ""tipAmount"": 0.00,
+    ""splitPayments"": []
+  }
+}","2026-07-28T19:06:27"
+"SALE-05","Sales","Cobro duplicado (idempotency)","PASS","Critical","HTTP=200 - debe rechazar o reutilizar clave","2026-07-28T19:06:27"
+"SALE-06","Sales","Venta para llevar (TakeOut)","PASS","High","HTTP=200","2026-07-28T19:06:27"
+"SALE-07","Sales","OrderType Delivery (sin UI delivery)","PASS","Medium","HTTP=200 - tipo existe; UI delivery es gap comercial","2026-07-28T19:06:28"
+"SALE-08","Sales","Descuento denegado a mesero","PASS","High","HTTP=403","2026-07-28T19:06:28"
+"SALE-09","Sales","Descuento autorizado supervisor+","PASS","High","HTTP=200","2026-07-28T19:06:28"
+"SALE-10","Sales","Cambio de mesa","PASS","High","HTTP=200 - nota: no re-enruta estaciones automaticamente","2026-07-28T19:06:28"
+"SALE-11","Sales","Refund API disponible","PASS","High","HTTP=400 - endpoint existe (rechazo por payload invalido OK)","2026-07-28T19:06:28"
+"SALE-12","Sales","POS Index accesible","PASS","Critical","HTTP=200","2026-07-28T19:06:28"
+"SALE-GAP-01","Sales","Happy Hour automatico","BLOCKED","High","Sin motor de precios por horario (SB-10)","2026-07-28T19:06:28"
+"SALE-GAP-02","Sales","Combos","BLOCKED","High","Sin entidad Combo (SB-09)","2026-07-28T19:06:28"
+"SALE-GAP-03","Sales","Cierre de caja / arqueo","BLOCKED","Critical","Sin modulo CashRegister (SB-02) - bloquea operacion continua de caja","2026-07-28T19:06:28"
+"SALE-GAP-04","Sales","Precuenta / factura fiscal","BLOCKED","Critical","Sin flujo pre-bill ni factura post-pago (SB-03/SB-04)","2026-07-28T19:06:28"
+"SALE-GAP-05","Sales","Cortesia estructurada","BLOCKED","Medium","Solo descuento/notas; sin tipo Cortesia dedicado","2026-07-28T19:06:28"
+"XCUT-01","Security","Second tenant admin session","PASS","High","OK","2026-07-28T19:06:29"
+"XCUT-02","Security","Inventarista sin PaymentAccess","PASS","High","HTTP=403","2026-07-28T19:06:29"
+"XCUT-03","Audit","Order Cancel writes closed state","PASS","Info","Verified via Cancel flows above + prior certifications","2026-07-28T19:06:29"
+"XCUT-04","SignalR","orderHub negotiate (anon expect 401)","PASS","High","HTTP=200","2026-07-28T19:06:29"

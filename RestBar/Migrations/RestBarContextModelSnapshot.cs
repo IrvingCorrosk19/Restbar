@@ -671,7 +671,8 @@ namespace RestBar.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CompanyId");
+                    b.HasIndex("CompanyId", "IsActive")
+                        .HasDatabaseName("IX_discount_policies_company_active");
 
                     b.ToTable("DiscountPolicies");
                 });
@@ -859,11 +860,15 @@ namespace RestBar.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProductId");
-
                     b.HasIndex("StationId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("CompanyId", "CreatedAt")
+                        .HasDatabaseName("IX_inv_mov_company_created");
+
+                    b.HasIndex("ProductId", "CreatedAt")
+                        .HasDatabaseName("IX_inv_mov_product_created");
 
                     b.ToTable("inventory_movements", (string)null);
                 });
@@ -1275,15 +1280,17 @@ namespace RestBar.Migrations
                     b.HasKey("Id")
                         .HasName("orders_pkey");
 
-                    b.HasIndex("BranchId");
-
                     b.HasIndex("CompanyId");
 
                     b.HasIndex("CustomerId");
 
-                    b.HasIndex("TableId");
-
                     b.HasIndex("UserId");
+
+                    b.HasIndex("TableId", "Status")
+                        .HasDatabaseName("IX_orders_table_status");
+
+                    b.HasIndex("BranchId", "Status", "OpenedAt")
+                        .HasDatabaseName("IX_orders_branch_status_opened");
 
                     b.ToTable("orders", (string)null);
                 });
@@ -1463,13 +1470,15 @@ namespace RestBar.Migrations
 
                     b.HasIndex("DeliveredByUserId");
 
-                    b.HasIndex("OrderId");
-
-                    b.HasIndex("PreparedByStationId");
-
                     b.HasIndex("ProductId");
 
                     b.HasIndex("StationId");
+
+                    b.HasIndex("OrderId", "Status")
+                        .HasDatabaseName("IX_order_items_order_status");
+
+                    b.HasIndex("PreparedByStationId", "Status")
+                        .HasDatabaseName("IX_order_items_station_status");
 
                     b.ToTable("order_items", (string)null);
                 });
@@ -1577,13 +1586,14 @@ namespace RestBar.Migrations
                     b.HasKey("Id")
                         .HasName("payments_pkey");
 
-                    b.HasIndex("BranchId");
-
                     b.HasIndex("CompanyId");
 
                     b.HasIndex("OrderId");
 
                     b.HasIndex("ProcessedByUserId");
+
+                    b.HasIndex("BranchId", "PaidAt")
+                        .HasDatabaseName("IX_payments_branch_paid_at");
 
                     b.ToTable("payments", (string)null);
                 });
@@ -2129,7 +2139,8 @@ namespace RestBar.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "IsActive")
+                        .HasDatabaseName("IX_shifts_user_active");
 
                     b.ToTable("shifts", (string)null);
                 });

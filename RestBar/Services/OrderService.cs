@@ -1077,6 +1077,9 @@ namespace RestBar.Services
                     order.ClosedAt = DateTime.UtcNow;
                     order.Version++;
 
+                    foreach (var item in order.OrderItems.Where(oi => oi.Status != OrderItemStatus.Cancelled))
+                        item.Status = OrderItemStatus.Cancelled;
+
                     var productNames = string.Join(", ", order.OrderItems.Select(oi => oi.Product?.Name ?? "Producto"));
                     _context.OrderCancellationLogs.Add(new OrderCancellationLog
                     {
