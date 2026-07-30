@@ -1,35 +1,34 @@
 const { test, expect } = require('@playwright/test');
 const { loginAsAdmin } = require('../helpers/auth');
-const { openCashIfNeeded, gotoPos, selectAvailableTable, addFirstProduct, sendToKitchen, dismissOverlays } = require('../helpers/pos');
+const {
+  getActiveCashSessionId,
+  gotoPos,
+  selectAvailableTable,
+  addFirstProduct,
+  sendToKitchen,
+  dismissOverlays,
+} = require('../helpers/pos');
 
 test.describe('Cash lifecycle — close / arqueo / movements', () => {
   test('CASH-L01 active session detail reachable', async ({ page }) => {
     await loginAsAdmin(page);
-    await openCashIfNeeded(page);
-    await page.goto('/CashSession/Dashboard', { waitUntil: 'domcontentloaded' });
-    const link = page.locator('a[href*="/CashSession/Detail"]').first();
-    if (!(await link.count())) {
-      // Maybe redirected to detail on open
-      if (/CashSession\/Detail/i.test(page.url())) {
-        expect(page.url()).toMatch(/Detail/i);
-        return;
-      }
-      test.skip(true, 'no active session detail link');
-    }
-    const res = await page.goto(await link.getAttribute('href'), { waitUntil: 'domcontentloaded' });
+    const id = await getActiveCashSessionId(page);
+    expect(id).toBeTruthy();
+    const res = await page.goto(`/CashSession/Detail/${id}`, { waitUntil: 'domcontentloaded' });
     expect(res.status()).toBeLessThan(500);
-    const text = await page.locator('body').innerText();
-    expect(/Stack Trace:/i.test(text)).toBeFalsy();
+    await expect(page.getByRole('heading', { name: /Sesión/i }).first()).toBeVisible();
   });
 
   test('CASH-L02 arqueo page for session no 500', async ({ page }) => {
     await loginAsAdmin(page);
-    await openCashIfNeeded(page);
-    await page.goto('/CashSession/Dashboard');
-    const href = await page.locator('a[href*="/CashSession/Detail"]').first().getAttribute('href').catch(() => null);
-    const idMatch = href && href.match(/Detail[\/\?](?:id=)?([0-9a-f-]{36})/i);
-    const id = idMatch?.[1] || (page.url().match(/([0-9a-f-]{36})/i) || [])[1];
-    if (!id) test.skip(true, 'no session id');
+    const id = await getActiveCashSessionId(page);
+    expect(id).toBeTruthy();
+    await page.goto(`/CashSession/Detail/${id}`);
+    const start = page.getByRole('button', { name: /Iniciar cierre/i });
+    if (await start.count()) {
+      await start.click();
+      await page.waitForLoadState('domcontentloaded');
+    }
     const res = await page.goto(`/CashSession/Arqueo/${id}`, { waitUntil: 'domcontentloaded' });
     expect(res.status()).toBeLessThan(500);
     const text = await page.locator('body').innerText();
@@ -38,40 +37,33 @@ test.describe('Cash lifecycle — close / arqueo / movements', () => {
 
   test('CASH-L03 start-close then abort preserves session', async ({ page }) => {
     await loginAsAdmin(page);
-    await openCashIfNeeded(page);
-    await page.goto('/CashSession/Dashboard');
-    const href = await page.locator('a[href*="/CashSession/Detail"]').first().getAttribute('href').catch(() => null);
-    const idMatch = href && href.match(/([0-9a-f-]{36})/i);
-    const id = idMatch?.[1];
-    if (!id) test.skip(true, 'no session id');
+    const id = await getActiveCashSessionId(page);
+    expect(id).toBeTruthy();
     await page.goto(`/CashSession/Detail/${id}`);
-    const start = page.locator('button, input[type=submit], a').filter({ hasText: /Iniciar cierre|Cerrar|Arqueo|Start/i }).first();
+    const start = page.getByRole('button', { name: /Iniciar cierre/i });
     if (await start.count()) {
-      await start.click().catch(() => null);
+      await start.click();
       await page.waitForLoadState('domcontentloaded');
     }
-    const abort = page.locator('button, input[type=submit]').filter({ hasText: /Abortar|Cancelar cierre|Abort/i }).first();
+    const countInput = page.locator('input[name="totalCounted"]');
+    if (await countInput.count()) {
+      await countInput.fill('100');
+      await page.getByRole('button', { name: /Enviar|Guardar|Continuar|Submit|Confirmar/i }).first().click().catch(() => null);
+      await page.waitForLoadState('domcontentloaded');
+    }
+    const abort = page.getByRole('button', { name: /Abortar|Cancelar cierre/i });
     if (await abort.count()) {
-      await abort.click().catch(() => null);
+      await abort.click();
       await page.waitForLoadState('domcontentloaded');
     }
     const text = await page.locator('body').innerText();
     expect(/Stack Trace:|at RestBar\.Controllers/i.test(text)).toBeFalsy();
   });
 
-  test('CASH-L04 paid-in API with real session if present', async ({ page }) => {
+  test('CASH-L04 paid-in API with real session', async ({ page }) => {
     await loginAsAdmin(page);
-    await openCashIfNeeded(page);
-    await page.goto('/CashSession/Dashboard');
-    const href = await page.locator('a[href*="/CashSession/Detail"]').first().getAttribute('href').catch(() => null);
-    const id = href && (href.match(/([0-9a-f-]{36})/i) || [])[1];
-    if (!id) {
-      const res = await page.request.post('/api/CashMovement/paid-in', {
-        data: { sessionId: '00000000-0000-0000-0000-000000000000', amount: 1, reason: 'cert' },
-      });
-      expect(res.status()).not.toBe(500);
-      return;
-    }
+    const id = await getActiveCashSessionId(page);
+    expect(id).toBeTruthy();
     const res = await page.request.post('/api/CashMovement/paid-in', {
       data: { sessionId: id, amount: 1.25, reason: 'cert-lifecycle' },
     });

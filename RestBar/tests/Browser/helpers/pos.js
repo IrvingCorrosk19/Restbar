@@ -166,6 +166,12 @@ async function openCashIfNeeded(page) {
   if (/módulo deshabilitado|ModuleDisabled|no está habilitado/i.test(body)) {
     return { opened: false, reason: 'module-disabled' };
   }
+  // Already have active session?
+  const existing = page.locator('a[href*="/CashSession/Detail"]').first();
+  if (await existing.count()) {
+    const href = await existing.getAttribute('href');
+    return { opened: true, reason: 'already-open', href };
+  }
   await page.goto('/CashSession/OpenWizard', { waitUntil: 'domcontentloaded' });
   const options = page.locator('select[name="registerId"] option');
   if ((await options.count()) === 0) {
@@ -174,7 +180,19 @@ async function openCashIfNeeded(page) {
   await page.locator('input[name="openingFloat"]').fill('100');
   await page.getByRole('button', { name: /Abrir sesión/i }).click();
   await page.waitForLoadState('domcontentloaded');
-  return { opened: true };
+  return { opened: true, href: page.url() };
+}
+
+async function getActiveCashSessionId(page) {
+  await page.goto('/CashSession/Dashboard', { waitUntil: 'domcontentloaded' });
+  const href = await page.locator('a[href*="/CashSession/Detail"]').first().getAttribute('href').catch(() => null);
+  if (href) {
+    const m = href.match(/([0-9a-f-]{36})/i);
+    if (m) return m[1];
+  }
+  const open = await openCashIfNeeded(page);
+  const fromOpen = (open.href || '').match(/([0-9a-f-]{36})/i);
+  return fromOpen?.[1] || null;
 }
 
 module.exports = {
@@ -185,4 +203,5 @@ module.exports = {
   sendToKitchen,
   markFirstReadyOnKds,
   openCashIfNeeded,
+  getActiveCashSessionId,
 };

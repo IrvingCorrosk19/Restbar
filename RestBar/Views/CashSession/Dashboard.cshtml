@@ -2,18 +2,23 @@
     ViewData["Title"] = "Dashboard de Caja";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var snapshot = ViewBag.Snapshot;
+    var active = snapshot?.ActiveSessions as System.Collections.IEnumerable;
 }
 <div class="container-fluid mt-3">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2><i class="fas fa-cash-register"></i> Caja — Command Center</h2>
         <a class="btn btn-primary" asp-action="OpenWizard">Abrir sesión</a>
     </div>
+    @if (TempData["Error"] is string err && !string.IsNullOrWhiteSpace(err))
+    {
+        <div class="alert alert-warning">@err</div>
+    }
     <div class="row g-3">
         <div class="col-md-3">
             <div class="card text-bg-primary">
                 <div class="card-body">
                     <h6>Sesiones activas</h6>
-                    <h3>@snapshot.ActiveSessions.Count</h3>
+                    <h3>@(snapshot?.ActiveSessions != null ? ((System.Collections.ICollection)snapshot.ActiveSessions).Count : 0)</h3>
                 </div>
             </div>
         </div>
@@ -21,7 +26,7 @@
             <div class="card text-bg-success">
                 <div class="card-body">
                     <h6>Efectivo esperado</h6>
-                    <h3>@(((decimal)snapshot.TotalExpectedCash).ToString("C"))</h3>
+                    <h3>@(((decimal)(snapshot?.TotalExpectedCash ?? 0m)).ToString("C"))</h3>
                 </div>
             </div>
         </div>
@@ -29,7 +34,7 @@
             <div class="card text-bg-info">
                 <div class="card-body">
                     <h6>Ventas activas</h6>
-                    <h3>@(((decimal)snapshot.TotalSalesActive).ToString("C"))</h3>
+                    <h3>@(((decimal)(snapshot?.TotalSalesActive ?? 0m)).ToString("C"))</h3>
                 </div>
             </div>
         </div>
@@ -37,9 +42,43 @@
             <div class="card text-bg-secondary">
                 <div class="card-body">
                     <h6>Cierres hoy</h6>
-                    <h3>@snapshot.ClosedSessionsToday</h3>
+                    <h3>@(snapshot?.ClosedSessionsToday ?? 0)</h3>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header"><strong>Sesiones activas</strong></div>
+        <div class="card-body p-0">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Estado</th>
+                        <th>Apertura</th>
+                        <th>Esperado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @if (active != null)
+                {
+                    foreach (dynamic s in active)
+                    {
+                        <tr>
+                            <td><code>@(((Guid)s.Id).ToString("N")[..8])…</code></td>
+                            <td>@s.Status</td>
+                            <td>@s.OpenedAt</td>
+                            <td>@(((decimal)s.ExpectedCash).ToString("C"))</td>
+                            <td>
+                                <a class="btn btn-sm btn-outline-primary" asp-action="Detail" asp-route-id="@s.Id">Detalle</a>
+                            </td>
+                        </tr>
+                    }
+                }
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
