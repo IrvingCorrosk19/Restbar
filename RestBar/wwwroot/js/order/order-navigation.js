@@ -71,36 +71,33 @@
     return { leave: false, save: false };
   }
 
-  async function confirmLeave(event, el) {
+  function confirmLeave(event, el) {
     var url = resolveExitUrl(el);
     if (!url) return true;
 
     if (!hasUnsavedDraft()) {
-      return true;
+      return true; // allow default <a href> navigation
     }
 
-    event.preventDefault();
-    var decision = await confirmIfDirty();
-    if (decision.leave) {
-      navigateTo(url);
-    }
+    if (event && event.preventDefault) event.preventDefault();
+    confirmIfDirty().then(function (decision) {
+      if (decision.leave) navigateTo(url);
+    });
     return false;
   }
 
-  async function goBack(el) {
+  function goBack(el) {
     var url = resolveExitUrl(el);
-    var decision = await confirmIfDirty();
-    if (!decision.leave) return;
-
-    // Prefer in-app safe exit over history.back (unreliable after refresh)
-    if (url) {
-      navigateTo(url);
-      return;
-    }
-
-    if (window.history.length > 1) {
-      window.history.back();
-    }
+    confirmIfDirty().then(function (decision) {
+      if (!decision.leave) return;
+      if (url) {
+        navigateTo(url);
+        return;
+      }
+      if (window.history.length > 1) {
+        window.history.back();
+      }
+    });
   }
 
   function onBeforeUnload(e) {
