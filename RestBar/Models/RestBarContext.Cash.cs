@@ -75,7 +75,10 @@ public partial class RestBarContext
             entity.Property(e => e.BlindCloseEnabled).HasColumnName("blind_close_enabled").HasDefaultValue(false);
             entity.Property(e => e.CloseNotes).HasMaxLength(1000).HasColumnName("close_notes");
             entity.Property(e => e.ReopenedFromSessionId).HasColumnName("reopened_from_session_id");
-            entity.Property(e => e.RowVersion).IsRowVersion().HasColumnName("row_version");
+            entity.Property(e => e.RowVersion)
+                .IsConcurrencyToken()
+                .HasColumnName("row_version")
+                .HasDefaultValueSql("gen_random_bytes(8)");
             entity.HasIndex(e => new { e.CashRegisterId, e.Status }).HasDatabaseName("IX_cash_sessions_register_status");
             entity.HasIndex(e => new { e.BranchId, e.OpenedAt }).HasDatabaseName("IX_cash_sessions_branch_opened");
             entity.HasOne(e => e.CashRegister).WithMany(r => r.Sessions).HasForeignKey(e => e.CashRegisterId);

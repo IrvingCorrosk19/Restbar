@@ -116,8 +116,7 @@ public class CashSession
     [StringLength(1000)]
     public string? CloseNotes { get; set; }
     public Guid? ReopenedFromSessionId { get; set; }
-    [Timestamp]
-    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
+    public byte[] RowVersion { get; set; } = Guid.NewGuid().ToByteArray();
     public virtual CashRegister? CashRegister { get; set; }
     public virtual Shift? Shift { get; set; }
     public virtual User? OpenedByUser { get; set; }

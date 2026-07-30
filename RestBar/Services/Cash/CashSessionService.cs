@@ -58,7 +58,8 @@ public class CashSessionService : ICashSessionService
             OpenedByUserId = userId,
             OpeningFloatDeclared = openingFloat,
             ExpectedCash = 0,
-            BlindCloseEnabled = register.RequiresBlindClose
+            BlindCloseEnabled = register.RequiresBlindClose,
+            RowVersion = Guid.NewGuid().ToByteArray()
         };
 
         _context.CashSessions.Add(session);
