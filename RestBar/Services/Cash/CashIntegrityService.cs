@@ -161,8 +161,13 @@ public class CashReportService : ICashReportService
 
     public async Task<object> GetDashboardSnapshotAsync(Guid branchId, CancellationToken ct = default)
     {
+        var registerIds = await _context.CashRegisters.AsNoTracking()
+            .Where(r => r.BranchId == branchId)
+            .Select(r => r.Id)
+            .ToListAsync(ct);
+
         var activeSessions = await _context.CashSessions.AsNoTracking()
-            .Where(s => s.BranchId == branchId &&
+            .Where(s => (s.BranchId == branchId || registerIds.Contains(s.CashRegisterId)) &&
                         s.Status != CashSessionStatus.Closed &&
                         s.Status != CashSessionStatus.Historical &&
                         s.Status != CashSessionStatus.Audited)
