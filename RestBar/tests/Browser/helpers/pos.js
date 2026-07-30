@@ -57,34 +57,35 @@ async function selectAvailableTable(page, preferredNumbers = ['C-14', 'C-15', 'T
 
 async function addFirstProduct(page) {
   await dismissOverlays(page);
-  const cat = page.locator('#categories button, .categoria-btn').first();
-  if (await cat.count()) {
-    await cat.click({ force: true });
-    await page.waitForTimeout(1200);
-    await dismissOverlays(page); // low-stock warning after loadProducts
-  }
+  // Ensure categories loaded
+  await page.waitForSelector('#categories button, .categoria-btn', { timeout: 25000 }).catch(() => null);
+  const cats = page.locator('#categories button, .categoria-btn');
+  const catCount = await cats.count();
+  for (let c = 0; c < Math.max(catCount, 1); c++) {
+    if (catCount > 0) {
+      await cats.nth(c).click({ force: true });
+      await page.waitForTimeout(1500);
+      await dismissOverlays(page);
+    }
+    const ready = await page.waitForSelector('#products .product-card button:not([disabled])', { timeout: 12000 }).catch(() => null);
+    if (!ready) continue;
 
-  await page.waitForSelector('#products .product-card button:not([disabled])', { timeout: 20000 });
-  const cards = page.locator('#products .product-card');
-  const count = await cards.count();
-  let chosenName = 'producto';
-  let clicked = false;
-  for (let i = 0; i < count; i++) {
-    const card = cards.nth(i);
-    const addBtn = card.locator('button').filter({ hasText: /\+ Agregar/i }).first();
-    if (!(await addBtn.count()) || !(await addBtn.isEnabled().catch(() => false))) continue;
-    chosenName = (await card.locator('h6, .card-title').first().textContent().catch(() => 'producto')) || 'producto';
-    await dismissOverlays(page);
-    await addBtn.click({ force: true });
-    await page.waitForTimeout(600);
-    await dismissOverlays(page);
-    clicked = true;
-    break;
+    const cards = page.locator('#products .product-card');
+    const count = await cards.count();
+    for (let i = 0; i < count; i++) {
+      const card = cards.nth(i);
+      const addBtn = card.locator('button').filter({ hasText: /\+ Agregar/i }).first();
+      if (!(await addBtn.count()) || !(await addBtn.isEnabled().catch(() => false))) continue;
+      const chosenName = (await card.locator('h6, .card-title').first().textContent().catch(() => 'producto')) || 'producto';
+      await dismissOverlays(page);
+      await addBtn.click({ force: true });
+      await page.waitForTimeout(600);
+      await dismissOverlays(page);
+      await expect.poll(async () => page.locator('#orderItems tr').count(), { timeout: 15000 }).toBeGreaterThan(0);
+      return chosenName.trim();
+    }
   }
-  expect(clicked, 'at least one in-stock product to add').toBeTruthy();
-
-  await expect.poll(async () => page.locator('#orderItems tr').count(), { timeout: 15000 }).toBeGreaterThan(0);
-  return chosenName.trim();
+  throw new Error('No in-stock product found across categories');
 }
 
 async function sendToKitchen(page) {

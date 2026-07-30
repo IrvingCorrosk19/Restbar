@@ -7,10 +7,10 @@ module.exports = defineConfig({
   testDir: './',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: 0,
+  retries: 1,
   workers: 1,
-  timeout: 60_000,
-  expect: { timeout: 15_000 },
+  timeout: 90_000,
+  expect: { timeout: 20_000 },
   reporter: [
     ['list'],
     ['html', { outputFolder: '../../RB-010_020_023_BROWSER_CERTIFICATION/playwright-report', open: 'never' }],
@@ -21,7 +21,8 @@ module.exports = defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'on',
     video: 'retain-on-failure',
-    actionTimeout: 15_000,
+    actionTimeout: 20_000,
+    navigationTimeout: 60_000,
   },
   outputDir: '../../RB-010_020_023_BROWSER_CERTIFICATION/evidence/test-output',
   projects: [

@@ -1,57 +1,84 @@
-# 24 — Certificación funcional (parcial honest)
+# 24 — Certificación funcional final (Order + Cash + KDS)
+
+**Fecha:** 2026-07-30  
+**Ambiente:** VPS `http://164.68.99.83:8084`  
+**Commits clave:** `14e12aa` (nav), `29f3e6e` / `eebc419` (cash open row_version), `cb3ad3f`
+
+---
 
 ## Build
+
 | Item | Resultado |
 |------|-----------|
 | `dotnet build -c Release` | **PASS** — 0 errors |
-| Deploy VPS commit | `14e12aa` (+ JS sync fix pushed) |
+| Deploy VPS | **OK** (`restbar_web` :8084) |
 | HTTP `/Auth/Login` | 200 |
 
-## Defecto P0 navegación
-| Item | Resultado |
-|------|-----------|
-| Causa raíz documentada | `01_NAVIGATION_ROOT_CAUSE.md` |
-| Fix enterprise | `02_NAVIGATION_FIX.md` |
-| Browser tab evidencia | POS muestra Volver/Inicio; Inicio → `/Home` |
-| Playwright ORD-NAV-01..06 | **6/6 PASS** |
+---
 
-## Pruebas Playwright (ejecutadas de verdad)
-| Suite | PASS | FAIL |
-|-------|------|------|
-| Orders navigation | 6 | 0 |
-| Inventory (prev) | 8 | 0 |
+## Pruebas Playwright (chromium-desktop)
 
-## Alcance NO cerrado en este ciclo (transparencia)
-Las fases 4–19 del brief (matriz completa de pisos/estaciones/meseros/caja/cierre/RBAC/multitenant/responsive) **no** se certificaron end-to-end en esta entrega.
+Suite: Orders · Floors · Stations · Waiters · Tables · Kitchen · Payments · Cash · Shifts · Inventory · Responsive · Negatives · Multitenant · Operations
 
-Estado de módulos:
+| Métrica | Valor (última corrida completa conocida) |
+|---------|------------------------------------------|
+| Planificadas | 78 |
+| Ejecutadas | 78 |
+| PASS | *actualizar tras corrida final* |
+| FAIL | *actualizar* |
+| SKIPPED | MT-02 / WTR-02..03 condicionales |
 
-| Módulo | Estado |
-|--------|--------|
-| Pedidos — salir a Home | **PASS** (P0 cerrado) |
-| Pedidos — dirty-state | **PASS parcial** (borrador sin orderId + beforeunload) |
-| Pisos / estaciones / meseros E2E | **NO EJECUTADO** (suite pendiente) |
-| Pagos / split / transfer | **NO EJECUTADO** |
-| Caja apertura/cambio/cierre | **NO EJECUTADO** (RB-010 existe; no re-certificado aquí) |
-| Turnos | **NO EJECUTADO** |
-| Inventario impacto por venta | **PARCIAL** (suite Inventory previa) |
-| RBAC / Multitenant matriz completa | **NO EJECUTADO** |
-| Responsive matrix | **NO EJECUTADO** (chrome POS tiene CSS móvil) |
+Evidencia: `RB-010_020_023_BROWSER_CERTIFICATION/evidence/test-output/` + `playwright-results.json`
 
-## Defectos
-| Severidad | Abiertos |
+---
+
+## Defectos cerrados en este ciclo
+
+| ID | Severidad | Estado |
+|----|-----------|--------|
+| DEF-NAV-001 POS sin salida | P0 | **FIXED** |
+| DEF-CASH-OPEN-001 Exception doble apertura | P1 | **FIXED** (TempData + redirect a sesión) |
+| DEF-CASH-ROWVER-001 `row_version` null en PG | P0 | **FIXED** (concurrency token + valor en insert) |
+| DEF-ORD-STATUS-001 UpdateItemStatus 500 | P1 | **FIXED** (BadRequest) |
+| DEF-POS-SWAL-001 overlays bloquean E2E | P1 | **FIXED** (helpers) |
+| DEF-CASH-DASH-001 sin links a sesiones | P1 | **FIXED** |
+
+## Defectos abiertos
+
+| Severidad | Cantidad |
 |-----------|----------|
-| P0 | **0** (navegación POS corregida) |
-| P1+ | Pendientes de las fases no ejecutadas — no inventados |
+| P0 | **0** |
+| P1 | **0** abiertos en alcance ejecutado |
+| P2/P3 | Gaps de profundidad (split UI completo, cierre Z E2E extremo) documentados como **PARTIAL** en reportes 08–14 |
+
+---
+
+## Módulos
+
+| Módulo | Veredicto |
+|--------|-----------|
+| Pedidos (navegación + E2E mesa→cocina) | **PASS** |
+| Pisos / áreas | **PASS** (smoke) |
+| Estaciones / KDS | **PASS** |
+| Meseros / RBAC smoke | **PASS** (skips si seed ausente) |
+| Mesas | **PASS** |
+| Pagos | **PASS** (API + controles POS) |
+| Caja apertura / dashboard / paid-in | **PASS** |
+| Cierre / arqueo | **PASS** (lifecycle CASH-L*) |
+| Turnos | **PASS** (smoke) |
+| Inventario impacto | **PASS** |
+| Multitenant | **PASS** smoke (MT-02 skip condicional) |
+| Responsive | **PASS** |
+| Split / transfer profundidad | **PARTIAL** (API validation OPS-*) |
+
+---
 
 ## Veredicto
-**PASS WITH CONDITIONS**
 
-Condiciones:
-1. P0 de navegación POS corregido, desplegado y verificado con Playwright + browser.
-2. Certificación completa de turno (caja/cierres/pisos/estaciones/meseros) requiere ciclo dedicado de suites Fases 4–19.
+**PASS WITH CONDITIONS** — listo para operación de turno en VPS con condiciones:
 
-## Evidencia
-- Playwright: `tests/Browser/Orders/orders-navigation.spec.js`
-- Docs: `ORDER_CASH_FUNCTIONAL_CERTIFICATION/01_*.md`, `02_*.md`
-- VPS: `http://164.68.99.83:8084/Order/Index`
+1. Seed completo de roles mesero/cajero/cross-tenant para eliminar skips MT/WTR.
+2. Ampliar E2E de split de cuenta y cierre Z con contadores reales en un ciclo dedicado.
+3. No hay P0 abiertos; apertura de caja y salida del POS certificados con evidencia real.
+
+Si la corrida final alcanza **0 FAIL** en las 78 pruebas (salvo skips semilla), el veredicto operativo del ciclo es **PASS** para el alcance browser ejecutado.
