@@ -442,34 +442,49 @@ async function loadLowStockAlerts() {
             const alertsDiv = document.getElementById('lowStockAlerts');
             
             if (alertsDiv) {
-                const alertsHtml = result.data.map(item => {
+                alertsDiv.replaceChildren();
+                result.data.forEach(item => {
                     const isCritical = item.stock <= (item.minStock * 0.5);
-                    const alertClass = isCritical ? 'stock-alert critical' : 'stock-alert';
-                    return `
-                        <div class="${alertClass}">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <strong><i class="fas fa-exclamation-triangle"></i> ${item.productName}</strong>
-                                    <br>
-                                    <small class="text-muted">${item.categoryName} - ${item.stationName}</small>
-                                </div>
-                                <div class="text-end">
-                                    <span class="badge ${isCritical ? 'bg-danger' : 'bg-warning'}">
-                                        Stock: ${item.stock.toFixed(2)}
-                                    </span>
-                                    <br>
-                                    <small class="text-muted">Mín: ${item.minStock.toFixed(2)}</small>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                
-                alertsDiv.innerHTML = alertsHtml;
+                    const card = document.createElement('div');
+                    card.className = isCritical ? 'stock-alert critical' : 'stock-alert';
+
+                    const row = document.createElement('div');
+                    row.className = 'd-flex justify-content-between align-items-center';
+
+                    const left = document.createElement('div');
+                    const title = document.createElement('strong');
+                    const icon = document.createElement('i');
+                    icon.className = 'fas fa-exclamation-triangle';
+                    title.appendChild(icon);
+                    title.appendChild(document.createTextNode(' ' + (item.productName || '')));
+                    left.appendChild(title);
+                    left.appendChild(document.createElement('br'));
+                    const meta = document.createElement('small');
+                    meta.className = 'text-muted';
+                    const stationLabel = item.stationName || (item.type === 'station' ? 'Sin estación' : 'Stock global');
+                    meta.textContent = `${item.categoryName || 'Sin categoría'} - ${stationLabel}`;
+                    left.appendChild(meta);
+
+                    const right = document.createElement('div');
+                    right.className = 'text-end';
+                    const badge = document.createElement('span');
+                    badge.className = `badge ${isCritical ? 'bg-danger' : 'bg-warning'}`;
+                    badge.textContent = `Stock: ${Number(item.stock).toFixed(2)}`;
+                    right.appendChild(badge);
+                    right.appendChild(document.createElement('br'));
+                    const min = document.createElement('small');
+                    min.className = 'text-muted';
+                    min.textContent = `Mín: ${Number(item.minStock).toFixed(2)}`;
+                    right.appendChild(min);
+
+                    row.appendChild(left);
+                    row.appendChild(right);
+                    card.appendChild(row);
+                    alertsDiv.appendChild(card);
+                });
                 console.log(`✅ [Inventory] loadLowStockAlerts() - ${result.data.length} alertas mostradas`);
             }
         } else {
-            // Mostrar mensaje si no hay alertas
             const alertsDiv = document.getElementById('lowStockAlerts');
             if (alertsDiv) {
                 alertsDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> No hay productos con stock bajo</div>';
@@ -477,8 +492,6 @@ async function loadLowStockAlerts() {
         }
         
     } catch (error) {
-        
-        // Ocultar alertas en caso de error
         const alertsDiv = document.getElementById('lowStockAlerts');
         if (alertsDiv) {
             alertsDiv.style.display = 'none';
@@ -1167,38 +1180,62 @@ function renderConsumptionReport(data, filters) {
         reportDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-info-circle"></i> No hay datos para el período seleccionado</div>';
         return;
     }
-    
-    const reportHtml = `
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Reporte de Consumo</h5>
-            </div>
-            <div class="card-body">
-                ${data.map(item => `
-                    <div class="consumption-card">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6><i class="fas fa-box"></i> ${item.productName}</h6>
-                                <p class="text-muted mb-0"><i class="fas fa-map-marker-alt"></i> ${item.stationName}</p>
-                            </div>
-                            <div class="col-md-6 text-end">
-                                <div class="mb-2">
-                                    <strong class="text-primary">Cantidad Total: ${item.totalQuantity.toFixed(2)}</strong>
-                                </div>
-                                <div class="small text-muted">
-                                    <div>Órdenes: ${item.totalOrders}</div>
-                                    <div>Promedio: ${item.averageQuantity.toFixed(2)}</div>
-                                    <div>Rango: ${item.minQuantity.toFixed(2)} - ${item.maxQuantity.toFixed(2)}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-    `;
-    
-    reportDiv.innerHTML = reportHtml;
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    const header = document.createElement('div');
+    header.className = 'card-header bg-primary text-white';
+    header.innerHTML = '<h5 class="mb-0"><i class="fas fa-chart-bar"></i> Reporte de Consumo</h5>';
+    const body = document.createElement('div');
+    body.className = 'card-body';
+
+    data.forEach(item => {
+        const itemCard = document.createElement('div');
+        itemCard.className = 'consumption-card';
+        const row = document.createElement('div');
+        row.className = 'row';
+
+        const left = document.createElement('div');
+        left.className = 'col-md-6';
+        const h6 = document.createElement('h6');
+        const boxIcon = document.createElement('i');
+        boxIcon.className = 'fas fa-box';
+        h6.appendChild(boxIcon);
+        h6.appendChild(document.createTextNode(' ' + (item.productName || '')));
+        const station = document.createElement('p');
+        station.className = 'text-muted mb-0';
+        const pin = document.createElement('i');
+        pin.className = 'fas fa-map-marker-alt';
+        station.appendChild(pin);
+        station.appendChild(document.createTextNode(' ' + (item.stationName || 'Sin estación')));
+        left.appendChild(h6);
+        left.appendChild(station);
+
+        const right = document.createElement('div');
+        right.className = 'col-md-6 text-end';
+        const total = document.createElement('div');
+        total.className = 'mb-2';
+        const strong = document.createElement('strong');
+        strong.className = 'text-primary';
+        strong.textContent = `Cantidad Total: ${Number(item.totalQuantity).toFixed(2)}`;
+        total.appendChild(strong);
+        const stats = document.createElement('div');
+        stats.className = 'small text-muted';
+        stats.appendChild(Object.assign(document.createElement('div'), { textContent: `Órdenes: ${item.totalOrders}` }));
+        stats.appendChild(Object.assign(document.createElement('div'), { textContent: `Promedio: ${Number(item.averageQuantity).toFixed(2)}` }));
+        stats.appendChild(Object.assign(document.createElement('div'), { textContent: `Rango: ${Number(item.minQuantity).toFixed(2)} - ${Number(item.maxQuantity).toFixed(2)}` }));
+        right.appendChild(total);
+        right.appendChild(stats);
+
+        row.appendChild(left);
+        row.appendChild(right);
+        itemCard.appendChild(row);
+        body.appendChild(itemCard);
+    });
+
+    card.appendChild(header);
+    card.appendChild(body);
+    reportDiv.replaceChildren(card);
     console.log(`✅ [Inventory] renderConsumptionReport() - ${data.length} registros renderizados`);
 }
 
@@ -1210,6 +1247,46 @@ function exportConsumptionReport() {
         title: 'Próximamente',
         text: 'La funcionalidad de exportación estará disponible pronto'
     });
+}
+
+async function loadConsumptionFilters() {
+    const productSelect = document.getElementById('productFilter');
+    const stationSelect = document.getElementById('stationFilter');
+    if (!productSelect && !stationSelect) return;
+
+    try {
+        if (productSelect) {
+            const productsResponse = await fetch('/Inventory/GetProducts');
+            if (productsResponse.ok) {
+                const productsData = await productsResponse.json();
+                const products = productsData.products || [];
+                productSelect.innerHTML = '<option value="">Todos los productos</option>';
+                products.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = p.name;
+                    productSelect.appendChild(opt);
+                });
+            }
+        }
+
+        if (stationSelect) {
+            const stationsResponse = await fetch('/Station/GetStations');
+            if (stationsResponse.ok) {
+                const stationsData = await stationsResponse.json();
+                const stations = stationsData.data || stationsData.stations || [];
+                stationSelect.innerHTML = '<option value="">Todas las estaciones</option>';
+                stations.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = s.name;
+                    stationSelect.appendChild(opt);
+                });
+            }
+        }
+    } catch (error) {
+        console.error('❌ [Inventory] loadConsumptionFilters() - Error:', error);
+    }
 }
 
 // Cargar alertas y reportes al cargar la página
@@ -1231,6 +1308,10 @@ document.addEventListener('DOMContentLoaded', function() {
         loadLowStockAlerts();
     } else {
         console.log('⚠️ [Inventory] DOMContentLoaded - Sección de alertas no encontrada');
+    }
+
+    if (document.getElementById('productFilter') || document.getElementById('stationFilter')) {
+        loadConsumptionFilters();
     }
 });
 

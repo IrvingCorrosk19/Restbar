@@ -264,7 +264,7 @@ namespace RestBar.Services
                 _logger.LogDebug("[ProductService] GetAvailableStockAsync - ProductId: {ProductId}, BranchId: {BranchId}",
                     productId, branchId);
 
-                var product = await _context.Products
+                var product = await _context.Products.AsNoTracking()
                     .Include(p => p.StockAssignments.Where(sa => sa.IsActive))
                     .FirstOrDefaultAsync(p => p.Id == productId);
 
@@ -319,7 +319,7 @@ namespace RestBar.Services
                 _logger.LogDebug("[ProductService] GetStockInStationAsync - ProductId: {ProductId}, StationId: {StationId}, BranchId: {BranchId}",
                     productId, stationId, branchId);
 
-                var assignment = await _context.ProductStockAssignments
+                var assignment = await _context.ProductStockAssignments.AsNoTracking()
                     .Where(sa => sa.ProductId == productId &&
                                  sa.StationId == stationId &&
                                  sa.IsActive &&

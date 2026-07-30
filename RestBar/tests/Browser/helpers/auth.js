@@ -6,11 +6,19 @@ const ADMIN = {
 };
 
 async function loginAsAdmin(page) {
-  await page.goto('/Auth/Login');
-  await page.locator('input[name="email"]').fill(ADMIN.email);
-  await page.locator('input[name="password"]').fill(ADMIN.password);
-  await page.locator('button.btn-login').click();
-  await page.waitForURL(url => !url.pathname.includes('/Auth/Login'), { timeout: 20000 });
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    await page.goto('/Auth/Login', { waitUntil: 'domcontentloaded' });
+    await page.locator('input[name="email"]').fill(ADMIN.email);
+    await page.locator('input[name="password"]').fill(ADMIN.password);
+    await page.locator('button.btn-login').click();
+    try {
+      await page.waitForURL(url => !url.pathname.includes('/Auth/Login'), { timeout: 20000 });
+      return;
+    } catch (err) {
+      if (attempt === 3) throw err;
+      await page.waitForTimeout(1500 * attempt);
+    }
+  }
 }
 
 async function collectConsoleErrors(page) {

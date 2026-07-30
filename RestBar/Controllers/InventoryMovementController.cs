@@ -23,40 +23,43 @@ public class InventoryMovementController : Controller
     [HttpGet]
     public async Task<IActionResult> GetMovementsByDateRange(DateTime? startDate, DateTime? endDate, Guid? branchId)
     {
-        var start = startDate ?? DateTime.UtcNow.AddMonths(-1);
-        var end = endDate ?? DateTime.UtcNow;
+        var start = DateTime.SpecifyKind((startDate ?? DateTime.UtcNow.AddMonths(-1)).ToUniversalTime(), DateTimeKind.Utc);
+        var endExclusive = DateTime.SpecifyKind(
+            (endDate ?? DateTime.UtcNow).Date.AddDays(1).ToUniversalTime(),
+            DateTimeKind.Utc);
+        if (endDate.HasValue && endDate.Value.Kind == DateTimeKind.Unspecified)
+            endExclusive = DateTime.SpecifyKind(endDate.Value.Date.AddDays(1), DateTimeKind.Utc);
+        if (startDate.HasValue && startDate.Value.Kind == DateTimeKind.Unspecified)
+            start = DateTime.SpecifyKind(startDate.Value.Date, DateTimeKind.Utc);
 
-        var query = _context.InventoryMovements
-            .Include(m => m.Product)
-            .Include(m => m.Station)
-            .Include(m => m.User)
-            .Where(m => m.CreatedAt >= start && m.CreatedAt <= end);
+        var query = _context.InventoryMovements.AsNoTracking()
+            .Where(m => m.CreatedAt >= start && m.CreatedAt < endExclusive);
 
         if (branchId.HasValue)
             query = query.Where(m => m.BranchId == branchId);
 
-        var movements = await query.OrderByDescending(m => m.CreatedAt).Take(500).ToListAsync();
-
-        return Json(new
-        {
-            success = true,
-            movements = movements.Select(m => new
+        var movements = await query
+            .OrderByDescending(m => m.CreatedAt)
+            .Take(500)
+            .Select(m => new
             {
                 m.Id,
                 m.ProductId,
-                productName = m.Product?.Name,
+                productName = m.Product != null ? m.Product.Name : null,
                 m.StationId,
-                stationName = m.Station?.Name,
+                stationName = m.Station != null ? m.Station.Name : null,
                 movementType = m.MovementType.ToString(),
                 m.Quantity,
                 m.StockBefore,
                 m.StockAfter,
                 m.Reason,
                 m.Reference,
-                userName = m.User?.FullName,
+                userName = m.User != null ? m.User.FullName : null,
                 m.CreatedAt
             })
-        });
+            .ToListAsync();
+
+        return Json(new { success = true, movements });
     }
 
     public class MovementDto

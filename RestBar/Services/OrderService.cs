@@ -824,17 +824,33 @@ namespace RestBar.Services
 
                 Console.WriteLine($"[OrderService] Item encontrado: {itemToUpdate.Product?.Name}, Cantidad actual: {itemToUpdate.Quantity}");
 
+                var previousQuantity = itemToUpdate.Quantity;
+                var productId = itemToUpdate.ProductId;
+                var stationId = itemToUpdate.PreparedByStationId;
+
                 if (newQuantity <= 0)
                 {
                     Console.WriteLine($"[OrderService] Cantidad <= 0, eliminando item...");
-                    // Si la cantidad es 0 o menor, eliminar el item
                     _context.OrderItems.Remove(itemToUpdate);
                     
                     await _context.SaveChangesAsync();
+
+                    if (productId != null && productId != Guid.Empty && previousQuantity > 0)
+                    {
+                        try
+                        {
+                            await _inventoryOps.RestoreInventoryForCancelAsync(
+                                productId.Value, previousQuantity, stationId,
+                                order.BranchId, order.CompanyId, orderId, null);
+                        }
+                        catch (Exception invEx)
+                        {
+                            Console.WriteLine($"[OrderService] RestoreStock al eliminar item falló: {invEx.Message}");
+                        }
+                    }
                     
                     Console.WriteLine($"[OrderService] Item eliminado, items restantes: {order.OrderItems.Count}");
                     
-                    // Verificar si la orden quedó vacía — OBS-1: Cancelar en lugar de borrar (auditoría)
                     if (order.OrderItems.Count == 0)
                     {
                         _logger.LogInformation("[OBS-1] Orden {OrderId} quedó vacía. Cancelando (no borrar).", order.Id);
@@ -853,17 +869,38 @@ namespace RestBar.Services
                 {
                     Console.WriteLine($"[OrderService] Actualizando cantidad de {itemToUpdate.Quantity} a {newQuantity}");
                     
-                    // ✅ NUEVO: Actualizar campos de auditoría del item
                     SetUpdatedTracking(itemToUpdate);
                     Console.WriteLine($"[OrderService] Campos de auditoría actualizados: UpdatedBy={itemToUpdate.UpdatedBy}, UpdatedAt={itemToUpdate.UpdatedAt}");
                     
-                    // Actualizar la cantidad
                     itemToUpdate.Quantity = newQuantity;
                     await _context.SaveChangesAsync();
+
+                    if (productId != null && productId != Guid.Empty && newQuantity != previousQuantity)
+                    {
+                        try
+                        {
+                            var delta = newQuantity - previousQuantity;
+                            if (delta > 0)
+                            {
+                                await _inventoryOps.DeductInventoryForSaleAsync(
+                                    productId.Value, delta, stationId,
+                                    order.BranchId, order.CompanyId, orderId, null);
+                            }
+                            else
+                            {
+                                await _inventoryOps.RestoreInventoryForCancelAsync(
+                                    productId.Value, Math.Abs(delta), stationId,
+                                    order.BranchId, order.CompanyId, orderId, null);
+                            }
+                        }
+                        catch (Exception invEx)
+                        {
+                            Console.WriteLine($"[OrderService] Ajuste de stock por cantidad falló: {invEx.Message}");
+                        }
+                    }
                     
                     Console.WriteLine($"[OrderService] ✅ Cantidad actualizada exitosamente");
                     
-                    // ✅ NUEVO: Recalcular TotalAmount de la orden después de actualizar cantidad
                     order.TotalAmount = order.OrderItems.Sum(oi => (oi.Quantity * oi.UnitPrice) - oi.Discount);
                     SetUpdatedTracking(order);
                     await _context.SaveChangesAsync();
@@ -1068,6 +1105,10 @@ namespace RestBar.Services
             if (order.Status == OrderStatus.Completed)
                 throw new InvalidOperationException("No se puede cancelar una orden ya completada y pagada.");
 
+            var itemsToRestore = order.OrderItems
+                .Where(oi => oi.Status != OrderItemStatus.Cancelled)
+                .ToList();
+
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
                 try
@@ -1082,7 +1123,7 @@ namespace RestBar.Services
                     order.ClosedAt = DateTime.UtcNow;
                     order.Version++;
 
-                    foreach (var item in order.OrderItems.Where(oi => oi.Status != OrderItemStatus.Cancelled))
+                    foreach (var item in itemsToRestore)
                         item.Status = OrderItemStatus.Cancelled;
 
                     var productNames = string.Join(", ", order.OrderItems.Select(oi => oi.Product?.Name ?? "Producto"));
@@ -1117,8 +1158,7 @@ namespace RestBar.Services
                 }
             }
 
-            // Restaurar inventario solo de ítems no cancelados (ítems ya cancelados no tienen stock a restaurar)
-            foreach (var item in order.OrderItems.Where(oi => oi.Status != OrderItemStatus.Cancelled))
+            foreach (var item in itemsToRestore)
             {
                 if (item.ProductId == null || item.ProductId == Guid.Empty) continue;
                 try

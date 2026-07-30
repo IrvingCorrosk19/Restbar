@@ -22,6 +22,7 @@ builder.Services.AddControllersWithViews()
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.MaxDepth = 64; // Aumentar la profundidad máxima
         options.JsonSerializerOptions.WriteIndented = true; // Para debugging
+        options.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
     });
 
 // ✅ Configurar cultura y formato de fechas para Panamá (es-PA)

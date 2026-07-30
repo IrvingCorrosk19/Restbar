@@ -28,7 +28,7 @@ public class InventoryOperationsService : IInventoryOperationsService
 
     public async Task DeductInventoryForSaleAsync(Guid productId, decimal quantity, Guid? stationId, Guid? branchId, Guid? companyId, Guid? orderId, Guid? userId)
     {
-        var recipe = await _context.Recipes
+        var recipe = await _context.Recipes.AsNoTracking()
             .Include(r => r.Lines)
             .FirstOrDefaultAsync(r => r.ProductId == productId && r.IsActive);
 
@@ -57,7 +57,7 @@ public class InventoryOperationsService : IInventoryOperationsService
 
     public async Task RestoreInventoryForCancelAsync(Guid productId, decimal quantity, Guid? stationId, Guid? branchId, Guid? companyId, Guid? orderId, Guid? userId)
     {
-        var recipe = await _context.Recipes
+        var recipe = await _context.Recipes.AsNoTracking()
             .Include(r => r.Lines)
             .FirstOrDefaultAsync(r => r.ProductId == productId && r.IsActive);
 
@@ -67,9 +67,9 @@ public class InventoryOperationsService : IInventoryOperationsService
             {
                 var ingredientQty = line.Quantity * quantity;
                 var ingredientStation = line.StationId ?? stationId;
-                var stockBefore = await _productService.GetAvailableStockAsync(line.IngredientProductId, branchId);
+                var stockBefore = await _productService.GetStockInStationAsync(line.IngredientProductId, ingredientStation ?? Guid.Empty, branchId);
                 await _productService.RestoreStockAsync(line.IngredientProductId, ingredientQty, ingredientStation, branchId);
-                var stockAfter = await _productService.GetAvailableStockAsync(line.IngredientProductId, branchId);
+                var stockAfter = await _productService.GetStockInStationAsync(line.IngredientProductId, ingredientStation ?? Guid.Empty, branchId);
                 await LogMovementAsync(line.IngredientProductId, InventoryMovementType.CancelRestore, ingredientQty, stockBefore, stockAfter, ingredientStation, branchId, companyId, userId, orderId, $"Cancel receta {recipe.Name}", productId.ToString());
                 await NotifyStock(line.IngredientProductId, ingredientStation, branchId, stockAfter, stockBefore, ingredientQty);
             }

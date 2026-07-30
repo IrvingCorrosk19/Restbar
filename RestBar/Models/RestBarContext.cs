@@ -1706,6 +1706,8 @@ public partial class RestBarContext : DbContext
                 .HasDatabaseName("IX_orders_branch_status_opened");
             entity.HasIndex(e => new { e.TableId, e.Status })
                 .HasDatabaseName("IX_orders_table_status");
+            entity.HasIndex(e => new { e.BranchId, e.CreatedAt })
+                .HasDatabaseName("IX_orders_branch_created");
         });
 
         modelBuilder.Entity<OrderItem>(entity =>
@@ -1714,6 +1716,20 @@ public partial class RestBarContext : DbContext
                 .HasDatabaseName("IX_order_items_order_status");
             entity.HasIndex(e => new { e.PreparedByStationId, e.Status })
                 .HasDatabaseName("IX_order_items_station_status");
+            entity.HasIndex(e => new { e.ProductId, e.OrderId })
+                .HasDatabaseName("IX_order_items_product_order");
+        });
+
+        modelBuilder.Entity<ProductStockAssignment>(entity =>
+        {
+            entity.HasIndex(e => new { e.BranchId, e.IsActive })
+                .HasDatabaseName("IX_psa_branch_active");
+        });
+
+        modelBuilder.Entity<Product>(entity =>
+        {
+            entity.HasIndex(e => new { e.CompanyId, e.IsActive, e.TrackInventory })
+                .HasDatabaseName("IX_products_company_active_track");
         });
 
         modelBuilder.Entity<Payment>(entity =>
