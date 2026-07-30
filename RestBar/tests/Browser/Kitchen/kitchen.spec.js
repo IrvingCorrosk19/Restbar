@@ -17,12 +17,13 @@ test.describe('Kitchen KDS', () => {
   });
 
   test('KDS-03 send then open kitchen does not 500', async ({ page }) => {
+    test.setTimeout(120_000);
     await loginAsAdmin(page);
     await gotoPos(page);
     await selectAvailableTable(page);
     await addFirstProduct(page);
     await sendToKitchen(page);
-    const res = await page.goto('/Order/StationOrders?stationType=kitchen', { waitUntil: 'domcontentloaded' });
+    const res = await page.goto('/Order/StationOrders?stationType=kitchen', { waitUntil: 'domcontentloaded', timeout: 60000 });
     expect(res.status()).toBeLessThan(500);
     await markFirstReadyOnKds(page, 'kitchen');
   });

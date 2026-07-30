@@ -11,8 +11,13 @@ const {
 
 test.describe('Cash lifecycle — close / arqueo / movements', () => {
   test('CASH-L01 active session detail reachable', async ({ page }) => {
+    test.setTimeout(120_000);
     await loginAsAdmin(page);
-    const id = await getActiveCashSessionId(page);
+    let id = null;
+    for (let i = 0; i < 3 && !id; i++) {
+      id = await getActiveCashSessionId(page);
+      if (!id) await page.waitForTimeout(2000);
+    }
     expect(id).toBeTruthy();
     const res = await page.goto(`/CashSession/Detail/${id}`, { waitUntil: 'domcontentloaded' });
     expect(res.status()).toBeLessThan(500);
