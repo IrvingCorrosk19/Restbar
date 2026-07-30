@@ -44,8 +44,13 @@ public class CashSessionController : Controller
         var snapshot = await _reports.GetDashboardSnapshotAsync(branchId);
         ViewBag.Snapshot = snapshot;
 
+        var registerIds = await _context.CashRegisters.AsNoTracking()
+            .Where(r => r.BranchId == branchId)
+            .Select(r => r.Id)
+            .ToListAsync();
+
         var activeSessions = await _context.CashSessions.AsNoTracking()
-            .Where(s => s.BranchId == branchId &&
+            .Where(s => (s.BranchId == branchId || registerIds.Contains(s.CashRegisterId)) &&
                         s.Status != CashSessionStatus.Closed &&
                         s.Status != CashSessionStatus.Historical &&
                         s.Status != CashSessionStatus.Audited)
@@ -113,6 +118,17 @@ public class CashSessionController : Controller
         }
         catch (InvalidOperationException ex)
         {
+            // If already open, jump to that session detail instead of dead-end wizard
+            var existing = await _context.CashSessions.AsNoTracking()
+                .Where(s => s.CashRegisterId == registerId &&
+                            s.Status != CashSessionStatus.Closed &&
+                            s.Status != CashSessionStatus.Historical &&
+                            s.Status != CashSessionStatus.Audited)
+                .OrderByDescending(s => s.OpenedAt)
+                .FirstOrDefaultAsync();
+            if (existing != null)
+                return RedirectToAction(nameof(Detail), new { id = existing.Id });
+
             TempData["Error"] = ex.Message;
             return RedirectToAction(nameof(OpenWizard));
         }
