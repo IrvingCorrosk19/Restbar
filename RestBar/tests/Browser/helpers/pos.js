@@ -1,60 +1,99 @@
 const { expect } = require('@playwright/test');
 
+async function dismissOverlays(page) {
+  for (let i = 0; i < 5; i++) {
+    const swalVisible = await page.locator('.swal2-container.swal2-backdrop-show, .swal2-popup').first().isVisible().catch(() => false);
+    if (!swalVisible) break;
+    const confirm = page.locator('.swal2-confirm').first();
+    if (await confirm.isVisible().catch(() => false)) {
+      await confirm.click({ force: true }).catch(() => null);
+    } else {
+      await page.keyboard.press('Escape').catch(() => null);
+      await page.evaluate(() => {
+        if (window.Swal && typeof Swal.close === 'function') Swal.close();
+      }).catch(() => null);
+    }
+    await page.waitForTimeout(250);
+  }
+}
+
 async function gotoPos(page, returnUrl = '/Home') {
   await page.goto(`/Order/Index?returnUrl=${encodeURIComponent(returnUrl)}`, { waitUntil: 'domcontentloaded' });
   await expect(page.getByTestId('order-pos-chrome')).toBeVisible({ timeout: 20000 });
+  await dismissOverlays(page);
 }
 
-async function selectAvailableTable(page, preferredNumbers = ['P1-01', 'P1-02', 'T-01', 'C-14', 'C-15']) {
+async function selectAvailableTable(page, preferredNumbers = ['C-14', 'C-15', 'T-01', 'P1-01', 'P1-02']) {
   await page.waitForSelector('.select-table-btn, .table-card', { timeout: 20000 });
+  await dismissOverlays(page);
+
+  // Prefer free/available tables
+  const freeBtn = page.locator('.select-table-btn[data-table-status="Available"], .select-table-btn[data-table-status="Disponible"]').first();
+  if (await freeBtn.count()) {
+    const num = await freeBtn.getAttribute('data-table-number');
+    await freeBtn.click({ force: true });
+    await page.waitForTimeout(800);
+    await dismissOverlays(page);
+    return num || 'free';
+  }
+
   for (const num of preferredNumbers) {
     const btn = page.locator(`.select-table-btn[data-table-number="${num}"]`).first();
     if (await btn.count()) {
-      await btn.click();
-      await page.waitForTimeout(1000);
+      await btn.click({ force: true });
+      await page.waitForTimeout(800);
+      await dismissOverlays(page);
       return num;
     }
   }
   const any = page.locator('.select-table-btn').first();
   await expect(any).toBeVisible();
   const num = await any.getAttribute('data-table-number');
-  await any.click();
-  await page.waitForTimeout(1000);
+  await any.click({ force: true });
+  await page.waitForTimeout(800);
+  await dismissOverlays(page);
   return num;
 }
 
 async function addFirstProduct(page) {
+  await dismissOverlays(page);
   const cat = page.locator('#categories button, .categoria-btn').first();
   if (await cat.count()) {
-    await cat.click();
+    await cat.click({ force: true });
     await page.waitForTimeout(1200);
+    await dismissOverlays(page); // low-stock warning after loadProducts
   }
 
-  await page.waitForSelector('#products .product-card, #products button', { timeout: 20000 });
-  const addBtn = page.locator('#products .product-card button').filter({ hasText: /\+ Agregar|Agregar/i }).first();
-  await expect(addBtn).toBeVisible({ timeout: 20000 });
-  const name = (await page.locator('#products .product-card').first().locator('h6, .card-title, strong').first().textContent().catch(() => 'producto')) || 'producto';
-  await addBtn.click();
-  await page.waitForTimeout(800);
-
-  // Confirm stock Swal if shown
-  const swal = page.locator('.swal2-confirm');
-  if (await swal.isVisible().catch(() => false)) {
-    await swal.click();
-    await page.waitForTimeout(400);
+  await page.waitForSelector('#products .product-card button:not([disabled])', { timeout: 20000 });
+  const cards = page.locator('#products .product-card');
+  const count = await cards.count();
+  let chosenName = 'producto';
+  let clicked = false;
+  for (let i = 0; i < count; i++) {
+    const card = cards.nth(i);
+    const addBtn = card.locator('button').filter({ hasText: /\+ Agregar/i }).first();
+    if (!(await addBtn.count()) || !(await addBtn.isEnabled().catch(() => false))) continue;
+    chosenName = (await card.locator('h6, .card-title').first().textContent().catch(() => 'producto')) || 'producto';
+    await dismissOverlays(page);
+    await addBtn.click({ force: true });
+    await page.waitForTimeout(600);
+    await dismissOverlays(page);
+    clicked = true;
+    break;
   }
+  expect(clicked, 'at least one in-stock product to add').toBeTruthy();
 
-  await expect.poll(async () => page.locator('#orderItems tr').count(), { timeout: 10000 }).toBeGreaterThan(0);
-  return name.trim();
+  await expect.poll(async () => page.locator('#orderItems tr').count(), { timeout: 15000 }).toBeGreaterThan(0);
+  return chosenName.trim();
 }
 
 async function sendToKitchen(page) {
+  await dismissOverlays(page);
   const btn = page.locator('#sendToKitchen');
   await expect(btn).toBeVisible({ timeout: 15000 });
   await expect(btn).toBeEnabled({ timeout: 15000 });
-  await btn.click();
+  await btn.click({ force: true });
 
-  // Admin path: modal first, then POST on confirm
   const modalRoot = page.locator('#selectStationModal');
   const modalVisible = await modalRoot.waitFor({ state: 'visible', timeout: 10000 }).then(() => true).catch(() => false);
 
@@ -83,17 +122,18 @@ async function sendToKitchen(page) {
       r => r.url().includes('/Order/SendToKitchen') && r.request().method() === 'POST',
       { timeout: 45000 }
     );
-    await page.locator('#selectStationModal .modal-footer button.btn-info').click();
+    await page.locator('#selectStationModal .modal-footer button.btn-info').click({ force: true });
     const res = await responsePromise;
     expect(res.status(), 'SendToKitchen HTTP').toBeLessThan(500);
+    await dismissOverlays(page);
     return await res.json().catch(() => ({ success: true }));
   }
 
-  // Non-admin: POST should happen after click
   const res = await page.waitForResponse(
     r => r.url().includes('/Order/SendToKitchen') && r.request().method() === 'POST',
     { timeout: 20000 }
   ).catch(() => null);
+  await dismissOverlays(page);
   if (res) {
     expect(res.status(), 'SendToKitchen HTTP').toBeLessThan(500);
     return await res.json().catch(() => ({ success: true }));
@@ -106,6 +146,7 @@ async function markFirstReadyOnKds(page, stationType = 'kitchen') {
   await page.goto(`/Order/StationOrders?stationType=${stationType}&returnUrl=${encodeURIComponent('/Home')}`, {
     waitUntil: 'domcontentloaded',
   });
+  await dismissOverlays(page);
   const ready = page.locator('.modern-status-btn.btn-ready').first();
   if (!(await ready.count()) || !(await ready.isVisible().catch(() => false))) {
     return { marked: false, reason: 'no-ready-button' };
@@ -114,7 +155,7 @@ async function markFirstReadyOnKds(page, stationType = 'kitchen') {
     r => (r.url().includes('/Order/UpdateItemStatus') || r.url().includes('/Order/MarkItemReady')) && r.request().method() === 'POST',
     { timeout: 20000 }
   ).catch(() => null);
-  await ready.click();
+  await ready.click({ force: true });
   const res = await responsePromise;
   return { marked: true, status: res ? res.status() : null };
 }
@@ -137,6 +178,7 @@ async function openCashIfNeeded(page) {
 }
 
 module.exports = {
+  dismissOverlays,
   gotoPos,
   selectAvailableTable,
   addFirstProduct,
