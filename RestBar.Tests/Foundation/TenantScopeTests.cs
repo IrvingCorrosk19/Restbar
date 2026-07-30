@@ -98,6 +98,7 @@ public class FeatureFlagsTests
         Assert.False(flags.EnableSupplierUi);
         Assert.False(flags.EnableCashModule);
         Assert.False(flags.EnablePurchasingModule);
+        Assert.False(flags.EnableFoodCostModule);
         Assert.False(flags.EnableCommandCenter);
         Assert.False(flags.EnableCopilot);
         Assert.False(flags.EnableReportExports);

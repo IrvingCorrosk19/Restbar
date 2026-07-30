@@ -25,6 +25,12 @@ public partial class OrderItem : ITrackableEntity
     [Range(0, double.MaxValue, ErrorMessage = "El descuento no puede ser negativo")]
     public decimal Discount { get; set; } = 0;
 
+    /// <summary>RB-023: costo teórico unitario congelado al agregar el ítem.</summary>
+    [Column(TypeName = "decimal(18,4)")]
+    public decimal? TheoreticalUnitCost { get; set; }
+
+    public DateTime? CostSnapshotAt { get; set; }
+
     [StringLength(500)]
     public string? Notes { get; set; }
 

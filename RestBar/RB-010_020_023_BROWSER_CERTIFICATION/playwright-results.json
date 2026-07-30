@@ -1,0 +1,2392 @@
+{
+  "config": {
+    "argv": [
+      "c:\\Program Files\\cursor\\resources\\app\\resources\\helpers\\node.exe",
+      "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--project=chromium-desktop"
+    ],
+    "configFile": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\playwright.config.js",
+    "rootDir": "C:/Proyectos/RestBar/RestBar/RestBar/tests/Browser",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Proyectos/RestBar/RestBar/RestBar/RB-010_020_023_BROWSER_CERTIFICATION/evidence/test-output",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-desktop",
+        "name": "chromium-desktop",
+        "testDir": "C:/Proyectos/RestBar/RestBar/RestBar/tests/Browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "C:/Proyectos/RestBar/RestBar/RestBar/RB-010_020_023_BROWSER_CERTIFICATION/evidence/test-output",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-tablet",
+        "name": "chromium-tablet",
+        "testDir": "C:/Proyectos/RestBar/RestBar/RestBar/tests/Browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "C:/Proyectos/RestBar/RestBar/RestBar/RB-010_020_023_BROWSER_CERTIFICATION/evidence/test-output",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-mobile",
+        "name": "chromium-mobile",
+        "testDir": "C:/Proyectos/RestBar/RestBar/RestBar/tests/Browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "../../RB-010_020_023_BROWSER_CERTIFICATION/playwright-report",
+          "open": "never"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "../../RB-010_020_023_BROWSER_CERTIFICATION/playwright-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "Cash\\cash.spec.js",
+      "file": "Cash/cash.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "RB-010 Cash Management",
+          "file": "Cash/cash.spec.js",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "CASH-01 Dashboard loads when module enabled",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 27020,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  getByText(/Sesiones activas|Efectivo|Command Center/i).first()\nExpected: visible\nReceived: hidden\nTimeout:  15000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/Sesiones activas|Efectivo|Command Center/i).first()\u001b[22m\n\u001b[2m    33 × locator resolved to <a class=\"dropdown-item\" href=\"/ExecutiveCommandCenter/Index\">…</a>\u001b[22m\n\u001b[2m       - unexpected value \"hidden\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  getByText(/Sesiones activas|Efectivo|Command Center/i).first()\nExpected: visible\nReceived: hidden\nTimeout:  15000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/Sesiones activas|Efectivo|Command Center/i).first()\u001b[22m\n\u001b[2m    33 × locator resolved to <a class=\"dropdown-item\" href=\"/ExecutiveCommandCenter/Index\">…</a>\u001b[22m\n\u001b[2m       - unexpected value \"hidden\"\u001b[22m\n\n    at C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Cash\\cash.spec.js:14:87",
+                        "location": {
+                          "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Cash\\cash.spec.js",
+                          "column": 87,
+                          "line": 14
+                        },
+                        "snippet": "  12 |     expect(res.status()).toBe(200);\n  13 |     await expect(page.getByRole('heading', { name: /Caja/i })).toBeVisible();\n> 14 |     await expect(page.getByText(/Sesiones activas|Efectivo|Command Center/i).first()).toBeVisible();\n     |                                                                                       ^\n  15 |     await page.screenshot({ path: '../../RB-010_020_023_BROWSER_CERTIFICATION/evidence/cash-01-dashboard.png', fullPage: true });\n  16 |     expect(errors.filter(e => !e.includes('favicon')).length).toBe(0);\n  17 |   });"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Cash\\cash.spec.js",
+                            "column": 87,
+                            "line": 14
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  getByText(/Sesiones activas|Efectivo|Command Center/i).first()\nExpected: visible\nReceived: hidden\nTimeout:  15000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/Sesiones activas|Efectivo|Command Center/i).first()\u001b[22m\n\u001b[2m    33 × locator resolved to <a class=\"dropdown-item\" href=\"/ExecutiveCommandCenter/Index\">…</a>\u001b[22m\n\u001b[2m       - unexpected value \"hidden\"\u001b[22m\n\n\n  12 |     expect(res.status()).toBe(200);\n  13 |     await expect(page.getByRole('heading', { name: /Caja/i })).toBeVisible();\n> 14 |     await expect(page.getByText(/Sesiones activas|Efectivo|Command Center/i).first()).toBeVisible();\n     |                                                                                       ^\n  15 |     await page.screenshot({ path: '../../RB-010_020_023_BROWSER_CERTIFICATION/evidence/cash-01-dashboard.png', fullPage: true });\n  16 |     expect(errors.filter(e => !e.includes('favicon')).length).toBe(0);\n  17 |   });\n    at C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Cash\\cash.spec.js:14:87"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:20:14.347Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Cash-cash-RB-010-Cash-Mana-0f13b-d-loads-when-module-enabled-chromium-desktop\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Cash-cash-RB-010-Cash-Mana-0f13b-d-loads-when-module-enabled-chromium-desktop\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Cash-cash-RB-010-Cash-Mana-0f13b-d-loads-when-module-enabled-chromium-desktop\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Cash-cash-RB-010-Cash-Mana-0f13b-d-loads-when-module-enabled-chromium-desktop\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Cash\\cash.spec.js",
+                        "column": 87,
+                        "line": 14
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "d1ce1db25ef81c4157ff-2c5cfc078945d1a9c354",
+              "file": "Cash/cash.spec.js",
+              "line": 9,
+              "column": 3
+            },
+            {
+              "title": "CASH-02 Open wizard shows register select",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3362,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:20:42.814Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Cash-cash-RB-010-Cash-Mana-89a48-izard-shows-register-select-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d1ce1db25ef81c4157ff-83fe5a8e5d29d3baf635",
+              "file": "Cash/cash.spec.js",
+              "line": 19,
+              "column": 3
+            },
+            {
+              "title": "CASH-03 Open session happy path or validation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "No cash registers seeded — create register first",
+                      "location": {
+                        "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Cash\\cash.spec.js",
+                        "line": 31,
+                        "column": 10
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 2444,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:20:46.350Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "No cash registers seeded — create register first",
+                          "location": {
+                            "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Cash\\cash.spec.js",
+                            "line": 31,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Cash-cash-RB-010-Cash-Mana-61c60-on-happy-path-or-validation-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d1ce1db25ef81c4157ff-3cc07e452980b7a5cc5e",
+              "file": "Cash/cash.spec.js",
+              "line": 27,
+              "column": 3
+            },
+            {
+              "title": "CASH-04 Cash registers index",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 2497,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m404\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m404\u001b[39m\n    at C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Cash\\cash.spec.js:43:26",
+                        "location": {
+                          "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Cash\\cash.spec.js",
+                          "column": 26,
+                          "line": 43
+                        },
+                        "snippet": "  41 |   test('CASH-04 Cash registers index', async ({ page }) => {\n  42 |     const res = await expectNoHttp500(page, '/CashRegister');\n> 43 |     expect(res.status()).toBe(200);\n     |                          ^\n  44 |     await expect(page.locator('body')).not.toContainText('Exception');\n  45 |     await page.screenshot({ path: '../../RB-010_020_023_BROWSER_CERTIFICATION/evidence/cash-04-registers.png', fullPage: true });\n  46 |   });"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Cash\\cash.spec.js",
+                            "column": 26,
+                            "line": 43
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m404\u001b[39m\n\n  41 |   test('CASH-04 Cash registers index', async ({ page }) => {\n  42 |     const res = await expectNoHttp500(page, '/CashRegister');\n> 43 |     expect(res.status()).toBe(200);\n     |                          ^\n  44 |     await expect(page.locator('body')).not.toContainText('Exception');\n  45 |     await page.screenshot({ path: '../../RB-010_020_023_BROWSER_CERTIFICATION/evidence/cash-04-registers.png', fullPage: true });\n  46 |   });\n    at C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Cash\\cash.spec.js:43:26"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:20:48.824Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Cash-cash-RB-010-Cash-Mana-56675-ASH-04-Cash-registers-index-chromium-desktop\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Cash-cash-RB-010-Cash-Mana-56675-ASH-04-Cash-registers-index-chromium-desktop\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Cash-cash-RB-010-Cash-Mana-56675-ASH-04-Cash-registers-index-chromium-desktop\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Cash-cash-RB-010-Cash-Mana-56675-ASH-04-Cash-registers-index-chromium-desktop\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Cash\\cash.spec.js",
+                        "column": 26,
+                        "line": 43
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "d1ce1db25ef81c4157ff-c0e0c844bcb40ee9b3bb",
+              "file": "Cash/cash.spec.js",
+              "line": 41,
+              "column": 3
+            },
+            {
+              "title": "CASH-05 Paid-in API requires session (negative)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3467,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:20:52.461Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Cash-cash-RB-010-Cash-Mana-ffc18--requires-session-negative--chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d1ce1db25ef81c4157ff-fa657f4f382870515f3c",
+              "file": "Cash/cash.spec.js",
+              "line": 48,
+              "column": 3
+            },
+            {
+              "title": "CASH-06 Verify chain endpoint no 500",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2777,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:20:56.154Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Cash-cash-RB-010-Cash-Mana-29cd8-erify-chain-endpoint-no-500-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d1ce1db25ef81c4157ff-79c362d7b73a23c3f8ad",
+              "file": "Cash/cash.spec.js",
+              "line": 56,
+              "column": 3
+            },
+            {
+              "title": "CASH-07 Responsive dashboard tablet/mobile viewport already covered by project",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3618,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:20:58.963Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Cash-cash-RB-010-Cash-Mana-656bb--already-covered-by-project-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d1ce1db25ef81c4157ff-721965ef35f7f8add40c",
+              "file": "Cash/cash.spec.js",
+              "line": 61,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "FoodCost\\foodcost.spec.js",
+      "file": "FoodCost/foodcost.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "RB-023 Food Cost",
+          "file": "FoodCost/foodcost.spec.js",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "FC-01 Food Cost dashboard",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 4660,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m404\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m404\u001b[39m\n    at C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\FoodCost\\foodcost.spec.js:12:26",
+                        "location": {
+                          "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\FoodCost\\foodcost.spec.js",
+                          "column": 26,
+                          "line": 12
+                        },
+                        "snippet": "  10 |     const errors = await collectConsoleErrors(page);\n  11 |     const res = await expectNoHttp500(page, '/FoodCostDashboard');\n> 12 |     expect(res.status()).toBe(200);\n     |                          ^\n  13 |     await expect(page.getByRole('heading', { name: /Food Cost/i })).toBeVisible();\n  14 |     await expect(page.getByText(/FC%|Variance|Waste|Teórico|Teorico/i).first()).toBeVisible();\n  15 |     await page.screenshot({ path: '../../RB-010_020_023_BROWSER_CERTIFICATION/evidence/fc-01-dashboard.png', fullPage: true });"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\FoodCost\\foodcost.spec.js",
+                            "column": 26,
+                            "line": 12
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m404\u001b[39m\n\n  10 |     const errors = await collectConsoleErrors(page);\n  11 |     const res = await expectNoHttp500(page, '/FoodCostDashboard');\n> 12 |     expect(res.status()).toBe(200);\n     |                          ^\n  13 |     await expect(page.getByRole('heading', { name: /Food Cost/i })).toBeVisible();\n  14 |     await expect(page.getByText(/FC%|Variance|Waste|Teórico|Teorico/i).first()).toBeVisible();\n  15 |     await page.screenshot({ path: '../../RB-010_020_023_BROWSER_CERTIFICATION/evidence/fc-01-dashboard.png', fullPage: true });\n    at C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\FoodCost\\foodcost.spec.js:12:26"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:21:02.619Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\FoodCost-foodcost-RB-023-Food-Cost-FC-01-Food-Cost-dashboard-chromium-desktop\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\FoodCost-foodcost-RB-023-Food-Cost-FC-01-Food-Cost-dashboard-chromium-desktop\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\FoodCost-foodcost-RB-023-Food-Cost-FC-01-Food-Cost-dashboard-chromium-desktop\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\FoodCost-foodcost-RB-023-Food-Cost-FC-01-Food-Cost-dashboard-chromium-desktop\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\FoodCost\\foodcost.spec.js",
+                        "column": 26,
+                        "line": 12
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "672ba55d929a70bb998b-aa237df6e35636015ea8",
+              "file": "FoodCost/foodcost.spec.js",
+              "line": 9,
+              "column": 3
+            },
+            {
+              "title": "FC-02 Menu Engineering page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3119,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:21:08.223Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\FoodCost-foodcost-RB-023-F-a32d3-FC-02-Menu-Engineering-page-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "672ba55d929a70bb998b-1a51fa25d6a7d617faef",
+              "file": "FoodCost/foodcost.spec.js",
+              "line": 19,
+              "column": 3
+            },
+            {
+              "title": "FC-03 Recipes index",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 18597,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /Recetas/i })\nExpected: visible\nTimeout: 15000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /Recetas/i })\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /Recetas/i })\nExpected: visible\nTimeout: 15000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /Recetas/i })\u001b[22m\n\n    at C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\FoodCost\\foodcost.spec.js:27:67",
+                        "location": {
+                          "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\FoodCost\\foodcost.spec.js",
+                          "column": 67,
+                          "line": 27
+                        },
+                        "snippet": "  25 |   test('FC-03 Recipes index', async ({ page }) => {\n  26 |     await expectNoHttp500(page, '/Recipe');\n> 27 |     await expect(page.getByRole('heading', { name: /Recetas/i })).toBeVisible();\n     |                                                                   ^\n  28 |     await page.screenshot({ path: '../../RB-010_020_023_BROWSER_CERTIFICATION/evidence/fc-03-recipes.png', fullPage: true });\n  29 |   });\n  30 |"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\FoodCost\\foodcost.spec.js",
+                            "column": 67,
+                            "line": 27
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /Recetas/i })\nExpected: visible\nTimeout: 15000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /Recetas/i })\u001b[22m\n\n\n  25 |   test('FC-03 Recipes index', async ({ page }) => {\n  26 |     await expectNoHttp500(page, '/Recipe');\n> 27 |     await expect(page.getByRole('heading', { name: /Recetas/i })).toBeVisible();\n     |                                                                   ^\n  28 |     await page.screenshot({ path: '../../RB-010_020_023_BROWSER_CERTIFICATION/evidence/fc-03-recipes.png', fullPage: true });\n  29 |   });\n  30 |\n    at C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\FoodCost\\foodcost.spec.js:27:67"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:21:11.520Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\FoodCost-foodcost-RB-023-Food-Cost-FC-03-Recipes-index-chromium-desktop\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\FoodCost-foodcost-RB-023-Food-Cost-FC-03-Recipes-index-chromium-desktop\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\FoodCost-foodcost-RB-023-Food-Cost-FC-03-Recipes-index-chromium-desktop\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\FoodCost-foodcost-RB-023-Food-Cost-FC-03-Recipes-index-chromium-desktop\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\FoodCost\\foodcost.spec.js",
+                        "column": 67,
+                        "line": 27
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "672ba55d929a70bb998b-403585d6b639355e3ce1",
+              "file": "FoodCost/foodcost.spec.js",
+              "line": 25,
+              "column": 3
+            },
+            {
+              "title": "FC-04 Recipe cost link if products exist",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "No recipe cost links",
+                      "location": {
+                        "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\FoodCost\\foodcost.spec.js",
+                        "line": 35,
+                        "column": 12
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 2388,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:21:31.131Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "No recipe cost links",
+                          "location": {
+                            "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\FoodCost\\foodcost.spec.js",
+                            "line": 35,
+                            "column": 12
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\FoodCost-foodcost-RB-023-F-af112-cost-link-if-products-exist-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "672ba55d929a70bb998b-018ed736886be34de968",
+              "file": "FoodCost/foodcost.spec.js",
+              "line": 31,
+              "column": 3
+            },
+            {
+              "title": "FC-05 PlateCost API no 500 for empty guid",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2667,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:21:33.665Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\FoodCost-foodcost-RB-023-F-302d6-t-API-no-500-for-empty-guid-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "672ba55d929a70bb998b-41239d644c3029db099b",
+              "file": "FoodCost/foodcost.spec.js",
+              "line": 44,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Multitenant\\multitenant.spec.js",
+      "file": "Multitenant/multitenant.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Multitenant · isolation smoke",
+          "file": "Multitenant/multitenant.spec.js",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "MT-01 Login binds company claim (admin session)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3154,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:21:36.368Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Multitenant-multitenant-Mu-1f038-ompany-claim-admin-session--chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "61ab18d362d210b93988-43ad58ffad3634bc918e",
+              "file": "Multitenant/multitenant.spec.js",
+              "line": 5,
+              "column": 3
+            },
+            {
+              "title": "MT-02 Cross-company admin login if seeded",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3661,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:21:39.543Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Multitenant-multitenant-Mu-53232-mpany-admin-login-if-seeded-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "61ab18d362d210b93988-d172f3ea62dd1b547711",
+              "file": "Multitenant/multitenant.spec.js",
+              "line": 15,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Performance\\performance.spec.js",
+      "file": "Performance/performance.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Performance · page load P95 budget",
+          "file": "Performance/performance.spec.js",
+          "line": 12,
+          "column": 6,
+          "specs": [
+            {
+              "title": "PERF-CashDashboard < 2000ms DOMContentLoaded",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "perf_ms",
+                      "description": "189"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2432,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "PERF CashDashboard: 189ms (target P95 < 2000)\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:21:43.227Z",
+                      "annotations": [
+                        {
+                          "type": "perf_ms",
+                          "description": "189"
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Performance-performance-Pe-4db6d-ard-2000ms-DOMContentLoaded-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "933520b0df21b60e4d17-02d7f8fc5bd43880c9af",
+              "file": "Performance/performance.spec.js",
+              "line": 18,
+              "column": 5
+            },
+            {
+              "title": "PERF-Procurement < 2000ms DOMContentLoaded",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "perf_ms",
+                      "description": "101"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2378,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "PERF Procurement: 101ms (target P95 < 2000)\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:21:45.681Z",
+                      "annotations": [
+                        {
+                          "type": "perf_ms",
+                          "description": "101"
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Performance-performance-Pe-00757-ent-2000ms-DOMContentLoaded-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "933520b0df21b60e4d17-cc87bfdc6dadd002a0a7",
+              "file": "Performance/performance.spec.js",
+              "line": 18,
+              "column": 5
+            },
+            {
+              "title": "PERF-FoodCost < 2000ms DOMContentLoaded",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "perf_ms",
+                      "description": "106"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2120,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "PERF FoodCost: 106ms (target P95 < 2000)\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:21:48.081Z",
+                      "annotations": [
+                        {
+                          "type": "perf_ms",
+                          "description": "106"
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Performance-performance-Pe-c3137-ost-2000ms-DOMContentLoaded-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "933520b0df21b60e4d17-0505ab91b687ba754812",
+              "file": "Performance/performance.spec.js",
+              "line": 18,
+              "column": 5
+            },
+            {
+              "title": "PERF-CommandCenter < 2000ms DOMContentLoaded",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "perf_ms",
+                      "description": "108"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2437,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "PERF CommandCenter: 108ms (target P95 < 2000)\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:21:50.221Z",
+                      "annotations": [
+                        {
+                          "type": "perf_ms",
+                          "description": "108"
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Performance-performance-Pe-dacde-ter-2000ms-DOMContentLoaded-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "933520b0df21b60e4d17-f28abd7968182fda1389",
+              "file": "Performance/performance.spec.js",
+              "line": 18,
+              "column": 5
+            },
+            {
+              "title": "PERF-Orders < 2000ms DOMContentLoaded",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "perf_ms",
+                      "description": "87"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2395,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "PERF Orders: 87ms (target P95 < 2000)\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:21:52.679Z",
+                      "annotations": [
+                        {
+                          "type": "perf_ms",
+                          "description": "87"
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Performance-performance-Pe-eaef3-ers-2000ms-DOMContentLoaded-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "933520b0df21b60e4d17-e72793148d971bbd4004",
+              "file": "Performance/performance.spec.js",
+              "line": 18,
+              "column": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Procurement\\procurement.spec.js",
+      "file": "Procurement/procurement.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "RB-020 Procurement",
+          "file": "Procurement/procurement.spec.js",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "PO-01 Supplier index loads",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 2352,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m404\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m404\u001b[39m\n    at C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Procurement\\procurement.spec.js:12:26",
+                        "location": {
+                          "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Procurement\\procurement.spec.js",
+                          "column": 26,
+                          "line": 12
+                        },
+                        "snippet": "  10 |     const errors = await collectConsoleErrors(page);\n  11 |     const res = await expectNoHttp500(page, '/Supplier');\n> 12 |     expect(res.status()).toBe(200);\n     |                          ^\n  13 |     await expect(page.getByRole('heading', { name: /Proveedores/i })).toBeVisible();\n  14 |     await page.screenshot({ path: '../../RB-010_020_023_BROWSER_CERTIFICATION/evidence/po-01-suppliers.png', fullPage: true });\n  15 |     expect(errors.filter(e => !e.includes('favicon')).length).toBe(0);"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Procurement\\procurement.spec.js",
+                            "column": 26,
+                            "line": 12
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m404\u001b[39m\n\n  10 |     const errors = await collectConsoleErrors(page);\n  11 |     const res = await expectNoHttp500(page, '/Supplier');\n> 12 |     expect(res.status()).toBe(200);\n     |                          ^\n  13 |     await expect(page.getByRole('heading', { name: /Proveedores/i })).toBeVisible();\n  14 |     await page.screenshot({ path: '../../RB-010_020_023_BROWSER_CERTIFICATION/evidence/po-01-suppliers.png', fullPage: true });\n  15 |     expect(errors.filter(e => !e.includes('favicon')).length).toBe(0);\n    at C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Procurement\\procurement.spec.js:12:26"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:21:55.103Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Procurement-procurement-RB-dc2cf--PO-01-Supplier-index-loads-chromium-desktop\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Procurement-procurement-RB-dc2cf--PO-01-Supplier-index-loads-chromium-desktop\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Procurement-procurement-RB-dc2cf--PO-01-Supplier-index-loads-chromium-desktop\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Procurement-procurement-RB-dc2cf--PO-01-Supplier-index-loads-chromium-desktop\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Procurement\\procurement.spec.js",
+                        "column": 26,
+                        "line": 12
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "7b809a9a8c9b4dc9804b-7688ec21c47e7856be67",
+              "file": "Procurement/procurement.spec.js",
+              "line": 9,
+              "column": 3
+            },
+            {
+              "title": "PO-02 Procurement dashboard",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2348,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:21:58.413Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Procurement-procurement-RB-e601d-PO-02-Procurement-dashboard-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7b809a9a8c9b4dc9804b-2eb6931fdd8de32da14f",
+              "file": "Procurement/procurement.spec.js",
+              "line": 18,
+              "column": 3
+            },
+            {
+              "title": "PO-03 Purchase order list",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 18520,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /Órdenes de compra|Ordenes de compra/i })\nExpected: visible\nTimeout: 15000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /Órdenes de compra|Ordenes de compra/i })\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /Órdenes de compra|Ordenes de compra/i })\nExpected: visible\nTimeout: 15000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /Órdenes de compra|Ordenes de compra/i })\u001b[22m\n\n    at C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Procurement\\procurement.spec.js:26:95",
+                        "location": {
+                          "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Procurement\\procurement.spec.js",
+                          "column": 95,
+                          "line": 26
+                        },
+                        "snippet": "  24 |   test('PO-03 Purchase order list', async ({ page }) => {\n  25 |     await expectNoHttp500(page, '/PurchaseOrder');\n> 26 |     await expect(page.getByRole('heading', { name: /Órdenes de compra|Ordenes de compra/i })).toBeVisible();\n     |                                                                                               ^\n  27 |     await expect(page.getByRole('link', { name: /Nueva PO/i })).toBeVisible();\n  28 |     await page.screenshot({ path: '../../RB-010_020_023_BROWSER_CERTIFICATION/evidence/po-03-po-list.png', fullPage: true });\n  29 |   });"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Procurement\\procurement.spec.js",
+                            "column": 95,
+                            "line": 26
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /Órdenes de compra|Ordenes de compra/i })\nExpected: visible\nTimeout: 15000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /Órdenes de compra|Ordenes de compra/i })\u001b[22m\n\n\n  24 |   test('PO-03 Purchase order list', async ({ page }) => {\n  25 |     await expectNoHttp500(page, '/PurchaseOrder');\n> 26 |     await expect(page.getByRole('heading', { name: /Órdenes de compra|Ordenes de compra/i })).toBeVisible();\n     |                                                                                               ^\n  27 |     await expect(page.getByRole('link', { name: /Nueva PO/i })).toBeVisible();\n  28 |     await page.screenshot({ path: '../../RB-010_020_023_BROWSER_CERTIFICATION/evidence/po-03-po-list.png', fullPage: true });\n  29 |   });\n    at C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Procurement\\procurement.spec.js:26:95"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:22:00.918Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Procurement-procurement-RB-89e05-t-PO-03-Purchase-order-list-chromium-desktop\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Procurement-procurement-RB-89e05-t-PO-03-Purchase-order-list-chromium-desktop\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Procurement-procurement-RB-89e05-t-PO-03-Purchase-order-list-chromium-desktop\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Procurement-procurement-RB-89e05-t-PO-03-Purchase-order-list-chromium-desktop\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Procurement\\procurement.spec.js",
+                        "column": 95,
+                        "line": 26
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "7b809a9a8c9b4dc9804b-a16e8353b6d991847c4c",
+              "file": "Procurement/procurement.spec.js",
+              "line": 24,
+              "column": 3
+            },
+            {
+              "title": "PO-04 Create PO wizard renders",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2993,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:22:20.849Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Procurement-procurement-RB-1a29c-04-Create-PO-wizard-renders-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7b809a9a8c9b4dc9804b-b97371abf0d47fecde22",
+              "file": "Procurement/procurement.spec.js",
+              "line": 31,
+              "column": 3
+            },
+            {
+              "title": "PO-05 Create PO rejects empty product (negative)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "No suppliers seeded",
+                      "location": {
+                        "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Procurement\\procurement.spec.js",
+                        "line": 42,
+                        "column": 10
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 5957,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:22:24.034Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "No suppliers seeded",
+                          "location": {
+                            "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Procurement\\procurement.spec.js",
+                            "line": 42,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Procurement-procurement-RB-ddafa-cts-empty-product-negative--chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7b809a9a8c9b4dc9804b-4551a2db40c2116442c6",
+              "file": "Procurement/procurement.spec.js",
+              "line": 39,
+              "column": 3
+            },
+            {
+              "title": "PO-06 GetSuppliers JSON when enabled",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2991,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:22:30.022Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Procurement-procurement-RB-05faf-Suppliers-JSON-when-enabled-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7b809a9a8c9b4dc9804b-ab32b7ae610c9a6855b1",
+              "file": "Procurement/procurement.spec.js",
+              "line": 53,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Regression\\regression.spec.js",
+      "file": "Regression/regression.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Regression · Core POS",
+          "file": "Regression/regression.spec.js",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "REG-01 Order index",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 2393,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: < \u001b[32m400\u001b[39m\nReceived:   \u001b[31m404\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: < \u001b[32m400\u001b[39m\nReceived:   \u001b[31m404\u001b[39m\n    at C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Regression\\regression.spec.js:11:26",
+                        "location": {
+                          "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Regression\\regression.spec.js",
+                          "column": 26,
+                          "line": 11
+                        },
+                        "snippet": "   9 |   test('REG-01 Order index', async ({ page }) => {\n  10 |     const res = await expectNoHttp500(page, '/Order');\n> 11 |     expect(res.status()).toBeLessThan(400);\n     |                          ^\n  12 |     await page.screenshot({ path: '../../RB-010_020_023_BROWSER_CERTIFICATION/evidence/reg-01-orders.png', fullPage: true });\n  13 |   });\n  14 |"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Regression\\regression.spec.js",
+                            "column": 26,
+                            "line": 11
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: < \u001b[32m400\u001b[39m\nReceived:   \u001b[31m404\u001b[39m\n\n   9 |   test('REG-01 Order index', async ({ page }) => {\n  10 |     const res = await expectNoHttp500(page, '/Order');\n> 11 |     expect(res.status()).toBeLessThan(400);\n     |                          ^\n  12 |     await page.screenshot({ path: '../../RB-010_020_023_BROWSER_CERTIFICATION/evidence/reg-01-orders.png', fullPage: true });\n  13 |   });\n  14 |\n    at C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Regression\\regression.spec.js:11:26"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:22:33.041Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Regression-regression-Regr-fc87a-Core-POS-REG-01-Order-index-chromium-desktop\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Regression-regression-Regr-fc87a-Core-POS-REG-01-Order-index-chromium-desktop\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Regression-regression-Regr-fc87a-Core-POS-REG-01-Order-index-chromium-desktop\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Regression-regression-Regr-fc87a-Core-POS-REG-01-Order-index-chromium-desktop\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Regression\\regression.spec.js",
+                        "column": 26,
+                        "line": 11
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "f3bcb12dccf9fe9d9f68-eca9ef38e60509a790ce",
+              "file": "Regression/regression.spec.js",
+              "line": 9,
+              "column": 3
+            },
+            {
+              "title": "REG-02 Kitchen station orders",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3787,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:22:36.358Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Regression-regression-Regr-48895-G-02-Kitchen-station-orders-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f3bcb12dccf9fe9d9f68-8f08cd9248df506cdf50",
+              "file": "Regression/regression.spec.js",
+              "line": 15,
+              "column": 3
+            },
+            {
+              "title": "REG-03 Product index",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2287,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:22:40.307Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Regression-regression-Regr-2bfcb-re-POS-REG-03-Product-index-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f3bcb12dccf9fe9d9f68-69a43b9daa41e56e815d",
+              "file": "Regression/regression.spec.js",
+              "line": 21,
+              "column": 3
+            },
+            {
+              "title": "REG-04 Inventory / Stock if available",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2420,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:22:42.617Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Regression-regression-Regr-f8a84-nventory-Stock-if-available-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f3bcb12dccf9fe9d9f68-0afa0fa31b5622198a2e",
+              "file": "Regression/regression.spec.js",
+              "line": 26,
+              "column": 3
+            },
+            {
+              "title": "REG-05 Command Center",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2200,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:22:45.060Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Regression-regression-Regr-7f076-e-POS-REG-05-Command-Center-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f3bcb12dccf9fe9d9f68-1dcbbe707344490d0e02",
+              "file": "Regression/regression.spec.js",
+              "line": 32,
+              "column": 3
+            },
+            {
+              "title": "REG-06 Logout path exists",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2202,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:22:47.288Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Regression-regression-Regr-9e33d-S-REG-06-Logout-path-exists-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f3bcb12dccf9fe9d9f68-3814ef3a69e672de8a2f",
+              "file": "Regression/regression.spec.js",
+              "line": 38,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Security\\security.spec.js",
+      "file": "Security/security.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Security · AuthZ gates",
+          "file": "Security/security.spec.js",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "SEC-01 Anonymous CashSession → login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1287,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:22:49.523Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Security-security-Security-fa228-onymous-CashSession-→-login-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "48bc20c2619e37004315-56fe0d1c75cde5819ac8",
+              "file": "Security/security.spec.js",
+              "line": 5,
+              "column": 3
+            },
+            {
+              "title": "SEC-02 Anonymous Supplier → login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1299,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:22:50.834Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Security-security-Security-d8661--Anonymous-Supplier-→-login-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "48bc20c2619e37004315-27f9222ea7a03f535ef7",
+              "file": "Security/security.spec.js",
+              "line": 10,
+              "column": 3
+            },
+            {
+              "title": "SEC-03 Anonymous FoodCost → login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3664,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:22:52.154Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Security-security-Security-1fdb2--Anonymous-FoodCost-→-login-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "48bc20c2619e37004315-ed95f1d5028c08e86cad",
+              "file": "Security/security.spec.js",
+              "line": 15,
+              "column": 3
+            },
+            {
+              "title": "SEC-04 Anonymous paid-out API not 500",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 281,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:22:55.839Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Security-security-Security-f263c-nymous-paid-out-API-not-500-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "48bc20c2619e37004315-7aac21d20adca3be8a7b",
+              "file": "Security/security.spec.js",
+              "line": 20,
+              "column": 3
+            },
+            {
+              "title": "SEC-05 Admin can open Cash after login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4299,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:22:56.136Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Security-security-Security-3eef4-n-can-open-Cash-after-login-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "48bc20c2619e37004315-c9978854bfb205822c21",
+              "file": "Security/security.spec.js",
+              "line": 28,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Smoke\\feature-flags.spec.js",
+      "file": "Smoke/feature-flags.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Feature Flags · modules enabled in Development",
+          "file": "Smoke/feature-flags.spec.js",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "FF-01 Cash not ModuleDisabled",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2595,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:23:00.462Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Smoke-feature-flags-Featur-a8f5b--01-Cash-not-ModuleDisabled-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7ff01b2a87b4ab565199-44ade677fa1df59872b5",
+              "file": "Smoke/feature-flags.spec.js",
+              "line": 9,
+              "column": 3
+            },
+            {
+              "title": "FF-02 Purchasing not ModuleDisabled",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2262,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:23:03.075Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Smoke-feature-flags-Featur-2989d-rchasing-not-ModuleDisabled-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7ff01b2a87b4ab565199-b2abb5bfcaf47722d443",
+              "file": "Smoke/feature-flags.spec.js",
+              "line": 14,
+              "column": 3
+            },
+            {
+              "title": "FF-03 FoodCost not ModuleDisabled",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2105,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:23:05.353Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Smoke-feature-flags-Featur-834e8-FoodCost-not-ModuleDisabled-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7ff01b2a87b4ab565199-5644208b66327d72bdf0",
+              "file": "Smoke/feature-flags.spec.js",
+              "line": 19,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Smoke\\smoke.spec.js",
+      "file": "Smoke/smoke.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Smoke · Auth + Shell",
+          "file": "Smoke/smoke.spec.js",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "SMK-01 Login admin succeeds",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4824,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:23:07.480Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Smoke-smoke-Smoke-·-Auth-Shell-SMK-01-Login-admin-succeeds-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e770d04db372f8e20363-7496b1fe6bcc567fccf8",
+              "file": "Smoke/smoke.spec.js",
+              "line": 5,
+              "column": 3
+            },
+            {
+              "title": "SMK-02 Unauthenticated protected route redirects to login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1376,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:23:12.321Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Smoke-smoke-Smoke-·-Auth-S-f2760-ed-route-redirects-to-login-chromium-desktop\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e770d04db372f8e20363-a7109317c21d255e8d7f",
+              "file": "Smoke/smoke.spec.js",
+              "line": 11,
+              "column": 3
+            },
+            {
+              "title": "SMK-03 Orders index loads after login (regression shell)",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-desktop",
+                  "projectName": "chromium-desktop",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 2568,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: < \u001b[32m400\u001b[39m\nReceived:   \u001b[31m404\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: < \u001b[32m400\u001b[39m\nReceived:   \u001b[31m404\u001b[39m\n    at C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Smoke\\smoke.spec.js:19:26",
+                        "location": {
+                          "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Smoke\\smoke.spec.js",
+                          "column": 26,
+                          "line": 19
+                        },
+                        "snippet": "  17 |     await loginAsAdmin(page);\n  18 |     const res = await expectNoHttp500(page, '/Order');\n> 19 |     expect(res.status()).toBeLessThan(400);\n     |                          ^\n  20 |   });\n  21 | });\n  22 |"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Smoke\\smoke.spec.js",
+                            "column": 26,
+                            "line": 19
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: < \u001b[32m400\u001b[39m\nReceived:   \u001b[31m404\u001b[39m\n\n  17 |     await loginAsAdmin(page);\n  18 |     const res = await expectNoHttp500(page, '/Order');\n> 19 |     expect(res.status()).toBeLessThan(400);\n     |                          ^\n  20 |   });\n  21 | });\n  22 |\n    at C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Smoke\\smoke.spec.js:19:26"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-30T01:23:13.715Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Smoke-smoke-Smoke-·-Auth-S-7e1f4-ter-login-regression-shell--chromium-desktop\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Smoke-smoke-Smoke-·-Auth-S-7e1f4-ter-login-regression-shell--chromium-desktop\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Smoke-smoke-Smoke-·-Auth-S-7e1f4-ter-login-regression-shell--chromium-desktop\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\RB-010_020_023_BROWSER_CERTIFICATION\\evidence\\test-output\\Smoke-smoke-Smoke-·-Auth-S-7e1f4-ter-login-regression-shell--chromium-desktop\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Proyectos\\RestBar\\RestBar\\RestBar\\tests\\Browser\\Smoke\\smoke.spec.js",
+                        "column": 26,
+                        "line": 19
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "e770d04db372f8e20363-a327abcf3ca88668e8d6",
+              "file": "Smoke/smoke.spec.js",
+              "line": 16,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-07-30T01:20:13.392Z",
+    "duration": 183248.24899999998,
+    "expected": 31,
+    "skipped": 3,
+    "unexpected": 8,
+    "flaky": 0
+  }
+}

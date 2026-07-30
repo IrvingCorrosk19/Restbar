@@ -10,6 +10,13 @@ public class Recipe
     public Guid ProductId { get; set; }
     public string Name { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
+    /// <summary>Rendimiento de receta % (100 = sin pérdida de yield).</summary>
+    [Column(TypeName = "decimal(8,4)")]
+    public decimal YieldPercent { get; set; } = 100m;
+    /// <summary>Food cost % objetivo del plato.</summary>
+    [Column(TypeName = "decimal(8,4)")]
+    public decimal? TargetFoodCostPercent { get; set; }
+    public int Version { get; set; } = 1;
     public Guid? CompanyId { get; set; }
     public Guid? BranchId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -25,6 +32,9 @@ public class RecipeLine
     public Guid IngredientProductId { get; set; }
     [Column(TypeName = "decimal(18,4)")]
     public decimal Quantity { get; set; }
+    /// <summary>Merma/desperdicio esperado en prep % sobre cantidad.</summary>
+    [Column(TypeName = "decimal(8,4)")]
+    public decimal WastePercent { get; set; }
     public Guid? StationId { get; set; }
     public virtual Recipe? Recipe { get; set; }
     public virtual Product? IngredientProduct { get; set; }
@@ -56,6 +66,12 @@ public class InventoryMovement
     public string? Reference { get; set; }
     public Guid? UserId { get; set; }
     public Guid? OrderId { get; set; }
+    /// <summary>RB-020: vínculo a recepción de compras.</summary>
+    public Guid? GoodsReceiptId { get; set; }
+    public Guid? PurchaseOrderId { get; set; }
+    public Guid? SupplierId { get; set; }
+    [Column(TypeName = "decimal(18,4)")]
+    public decimal? UnitCost { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public virtual Product? Product { get; set; }
     public virtual Station? Station { get; set; }
@@ -135,9 +151,11 @@ public class PaymentRefund
     public RefundStatus Status { get; set; } = RefundStatus.Completed;
     public Guid? ProcessedByUserId { get; set; }
     public Guid? ApprovedByUserId { get; set; }
+    public Guid? CashSessionId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public virtual Payment? Payment { get; set; }
     public virtual Order? Order { get; set; }
+    public virtual CashSession? CashSession { get; set; }
 }
 
 public class CommissionRule

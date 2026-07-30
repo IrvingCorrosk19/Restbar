@@ -1,0 +1,23 @@
+@model IEnumerable<RestBar.Models.Recipe>
+@{
+    ViewData["Title"] = "Recetas — Costo";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="container mt-3">
+    <h2>Recetas & Food Cost</h2>
+    <table class="table">
+        <thead><tr><th>Receta</th><th>Producto</th><th>Yield %</th><th>Target FC%</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var r in Model)
+        {
+            <tr>
+                <td>@r.Name</td>
+                <td>@r.Product?.Name</td>
+                <td>@r.YieldPercent.ToString("F1")</td>
+                <td>@(r.TargetFoodCostPercent?.ToString("F1") ?? "—")</td>
+                <td><a asp-action="Cost" asp-route-productId="@r.ProductId">Ver costo</a></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

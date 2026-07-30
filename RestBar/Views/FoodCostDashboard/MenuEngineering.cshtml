@@ -1,0 +1,24 @@
+@model IReadOnlyList<RestBar.Interfaces.MenuEngineeringItem>
+@{
+    ViewData["Title"] = "Menu Engineering";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="container mt-3">
+    <h2>Menu Engineering (30 días)</h2>
+    <table class="table table-sm table-striped">
+        <thead><tr><th>Producto</th><th>Qty</th><th>Ventas</th><th>Contribución</th><th>Cuadrante</th><th>Acción</th></tr></thead>
+        <tbody>
+        @foreach (var m in Model)
+        {
+            <tr>
+                <td>@m.Name</td>
+                <td>@m.QtySold.ToString("F0")</td>
+                <td>@m.Sales.ToString("C")</td>
+                <td>@m.Contribution.ToString("C")</td>
+                <td><span class="badge bg-@(m.Quadrant == RestBar.Models.MenuQuadrant.Star ? "success" : m.Quadrant == RestBar.Models.MenuQuadrant.Dog ? "danger" : "secondary")">@m.Quadrant</span></td>
+                <td>@m.Recommendation</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

@@ -243,5 +243,19 @@ namespace RestBar.Services
                     Timestamp = DateTime.UtcNow
                 });
         }
+
+        public async Task NotifyCashSessionChanged(Guid sessionId, Guid registerId, string status)
+        {
+            var payload = new { SessionId = sessionId, RegisterId = registerId, Status = status, Timestamp = DateTime.UtcNow };
+            await _hubContext.Clients.Group($"cash_register_{registerId}").SendAsync("CashSessionChanged", payload);
+            await _hubContext.Clients.Group("cash_dashboard").SendAsync("CashSessionChanged", payload);
+        }
+
+        public async Task NotifyCashMovement(Guid sessionId, Guid registerId, string movementType, decimal amount)
+        {
+            var payload = new { SessionId = sessionId, RegisterId = registerId, MovementType = movementType, Amount = amount, Timestamp = DateTime.UtcNow };
+            await _hubContext.Clients.Group($"cash_register_{registerId}").SendAsync("CashMovement", payload);
+            await _hubContext.Clients.Group("cash_dashboard").SendAsync("CashMovement", payload);
+        }
     }
 }

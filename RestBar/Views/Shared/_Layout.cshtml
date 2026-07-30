@@ -7,6 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>@ViewData["Title"] - RestBar</title>
+    <link rel="icon" href="~/favicon.ico" type="image/x-icon" />
     <link rel="icon" href="~/images/logo.png" type="image/png" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
@@ -64,8 +65,21 @@
                                     <i class="fas fa-clipboard-list"></i> <span>Operaciones</span>
                                 </a>
                                 <ul class="dropdown-menu dark-dropdown" aria-labelledby="operationsDropdown">
+                                    <li><a class="dropdown-item" asp-controller="ExecutiveCommandCenter" asp-action="Index"><i class="fas fa-brain"></i> Command Center</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Copilot" asp-action="Index"><i class="fas fa-user-tie"></i> Director Operativo</a></li>
+                                    <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" asp-controller="Order" asp-action="Index"><i class="fas fa-shopping-cart"></i> Órdenes</a></li>
                                     <li><a class="dropdown-item" asp-controller="Order" asp-action="StationOrders" asp-route-stationType="kitchen"><i class="fas fa-fire"></i> Cocina</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-controller="CashSession" asp-action="Dashboard"><i class="fas fa-cash-register"></i> Caja</a></li>
+                                    <li><a class="dropdown-item" asp-controller="CashRegister" asp-action="Index"><i class="fas fa-store-alt"></i> Cajas registradoras</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-controller="ProcurementDashboard" asp-action="Index"><i class="fas fa-truck"></i> Compras</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Supplier" asp-action="Index"><i class="fas fa-handshake"></i> Proveedores</a></li>
+                                    <li><a class="dropdown-item" asp-controller="PurchaseOrder" asp-action="Index"><i class="fas fa-file-invoice"></i> Órdenes de compra</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-controller="FoodCostDashboard" asp-action="Index"><i class="fas fa-chart-pie"></i> Food Cost</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Recipe" asp-action="Index"><i class="fas fa-utensils"></i> Recetas / Costo</a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" asp-controller="User" asp-action="Index"><i class="fas fa-users"></i> Usuarios</a></li>
                                 </ul>

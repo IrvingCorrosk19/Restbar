@@ -1,0 +1,45 @@
+@{
+    ViewData["Title"] = "Dashboard de Caja";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var snapshot = ViewBag.Snapshot;
+}
+<div class="container-fluid mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="fas fa-cash-register"></i> Caja — Command Center</h2>
+        <a class="btn btn-primary" asp-action="OpenWizard">Abrir sesión</a>
+    </div>
+    <div class="row g-3">
+        <div class="col-md-3">
+            <div class="card text-bg-primary">
+                <div class="card-body">
+                    <h6>Sesiones activas</h6>
+                    <h3>@snapshot.ActiveSessions.Count</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-success">
+                <div class="card-body">
+                    <h6>Efectivo esperado</h6>
+                    <h3>@(((decimal)snapshot.TotalExpectedCash).ToString("C"))</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-info">
+                <div class="card-body">
+                    <h6>Ventas activas</h6>
+                    <h3>@(((decimal)snapshot.TotalSalesActive).ToString("C"))</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-secondary">
+                <div class="card-body">
+                    <h6>Cierres hoy</h6>
+                    <h3>@snapshot.ClosedSessionsToday</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

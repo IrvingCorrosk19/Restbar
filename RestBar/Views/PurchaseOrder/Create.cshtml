@@ -1,0 +1,51 @@
+@{
+    ViewData["Title"] = "Nueva orden de compra";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var suppliers = ViewBag.Suppliers as IEnumerable<RestBar.Models.Supplier>;
+}
+<div class="container mt-3">
+    <h2>Wizard — Orden de compra</h2>
+    <div class="card p-4">
+        <div class="mb-3">
+            <label class="form-label">Proveedor</label>
+            <select id="supplierId" class="form-select">
+                @foreach (var s in suppliers ?? Enumerable.Empty<RestBar.Models.Supplier>())
+                {
+                    <option value="@s.Id">@s.Code — @s.Name (score @s.ScoreOverall.ToString("F0"))</option>
+                }
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">ProductId</label>
+            <input id="productId" class="form-control" placeholder="GUID producto" />
+        </div>
+        <div class="row mb-3">
+            <div class="col"><input id="qty" type="number" step="0.01" class="form-control" placeholder="Cantidad" value="1" /></div>
+            <div class="col"><input id="price" type="number" step="0.01" class="form-control" placeholder="Precio unitario" value="1" /></div>
+        </div>
+        <button type="button" class="btn btn-success" id="btnCreate">Crear PO</button>
+        <div id="msg" class="mt-2"></div>
+    </div>
+</div>
+@section Scripts {
+<script>
+document.getElementById('btnCreate').addEventListener('click', async () => {
+  const body = {
+    supplierId: document.getElementById('supplierId').value,
+    lines: [{
+      productId: document.getElementById('productId').value,
+      quantity: parseFloat(document.getElementById('qty').value),
+      unitPrice: parseFloat(document.getElementById('price').value)
+    }]
+  };
+  const res = await fetch('@Url.Action("Create")', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  document.getElementById('msg').textContent = data.success ? ('Creada ' + data.poNumber) : (data.message || 'Error');
+  if (data.success) location.href = '@Url.Action("Detail")/' + data.id;
+});
+</script>
+}

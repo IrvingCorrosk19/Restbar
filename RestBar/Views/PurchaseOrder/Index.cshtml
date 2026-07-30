@@ -1,0 +1,27 @@
+@model IEnumerable<RestBar.Models.PurchaseOrder>
+@{
+    ViewData["Title"] = "Órdenes de compra";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="container mt-3">
+    <div class="d-flex justify-content-between mb-3">
+        <h2>Órdenes de compra</h2>
+        <a class="btn btn-primary" asp-action="Create">Nueva PO</a>
+    </div>
+    <table class="table table-hover">
+        <thead><tr><th>Número</th><th>Proveedor</th><th>Estado</th><th>Total</th><th>Entrega</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var o in Model)
+        {
+            <tr>
+                <td>@o.PoNumber</td>
+                <td>@o.Supplier?.Name</td>
+                <td>@o.Status</td>
+                <td>@o.Total.ToString("C")</td>
+                <td>@(o.ExpectedDelivery?.ToLocalTime().ToString("g") ?? "—")</td>
+                <td><a asp-action="Detail" asp-route-id="@o.Id">Ver</a></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

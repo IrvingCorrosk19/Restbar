@@ -26,6 +26,7 @@ public sealed class FeatureFlags
     /// <summary>Future modules — reserved, default off.</summary>
     public bool EnableCashModule { get; set; }
     public bool EnablePurchasingModule { get; set; }
+    public bool EnableFoodCostModule { get; set; }
     public bool EnableCommandCenter { get; set; }
     public bool EnableCopilot { get; set; }
 }

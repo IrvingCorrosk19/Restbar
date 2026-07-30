@@ -1,0 +1,68 @@
+@model RestBar.Interfaces.ExecutiveCommandCenterDto
+@{
+    ViewData["Title"] = "Executive Command Center";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="container-fluid mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Executive Command Center</h2>
+        <span class="badge text-bg-dark fs-6">Enterprise Score @Model.EnterpriseScore.ToString("F0") / 100 · @Model.DurationMs ms</span>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-2"><div class="card p-3"><small>Ventas hoy</small><h4>@Model.RevenueToday.ToString("C")</h4><small class="text-muted">vs ayer @Model.RevenueYesterday.ToString("C") (@Model.SalesDropPercent.ToString("+0.0;-0.0;0")%)</small></div></div>
+        <div class="col-md-2"><div class="card p-3"><small>Órdenes / Ticket</small><h4>@Model.OrdersToday</h4><small>Ticket @Model.AverageTicket.ToString("C")</small></div></div>
+        <div class="col-md-2"><div class="card p-3"><small>FC% Actual</small><h4>@Model.ActualFoodCostPct.ToString("F1")%</h4><small>Theo @Model.TheoFoodCostPct.ToString("F1")% · var @Model.VariancePts.ToString("F1")</small></div></div>
+        <div class="col-md-2"><div class="card p-3"><small>Waste</small><h4>@Model.WasteToday.ToString("C")</h4></div></div>
+        <div class="col-md-2"><div class="card p-3"><small>Caja esperada</small><h4>@Model.ExpectedCash.ToString("C")</h4><small>@Model.ActiveCashSessions sesiones</small></div></div>
+        <div class="col-md-2"><div class="card p-3"><small>Compras</small><h4>@Model.OpenPurchaseOrders PO</h4><small>@Model.OverdueOrders atrasados · @Model.CriticalSuppliers críticos</small></div></div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-3"><div class="card text-bg-primary p-3"><small>Financial</small><h3>@Model.Scores.Financial.ToString("F0")</h3></div></div>
+        <div class="col-md-3"><div class="card text-bg-success p-3"><small>Operational</small><h3>@Model.Scores.Operational.ToString("F0")</h3></div></div>
+        <div class="col-md-3"><div class="card text-bg-warning p-3"><small>Food Cost Health</small><h3>@Model.Scores.FoodCost.ToString("F0")</h3></div></div>
+        <div class="col-md-3"><div class="card text-bg-info p-3"><small>Procurement Health</small><h3>@Model.Scores.Procurement.ToString("F0")</h3></div></div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <h5>¿Qué está pasando? · Insights</h5>
+            @foreach (var i in Model.Insights)
+            {
+                <div class="card mb-2 border-@(i.Severity >= RestBar.Models.BiSeverity.High ? "danger" : "secondary")">
+                    <div class="card-body py-2">
+                        <strong>@i.Title</strong>
+                        <p class="mb-1 small">@i.Explanation</p>
+                        <em class="small text-primary">→ @i.Action</em>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="col-md-6">
+            <h5>Acciones ahora</h5>
+            <ol>
+            @foreach (var a in Model.TopActions)
+            {
+                <li class="mb-2">@a</li>
+            }
+            </ol>
+            <h5 class="mt-3">Alertas</h5>
+            <ul class="list-group mb-3">
+            @foreach (var a in Model.Alerts)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>@a.Message</span>
+                    <span class="badge bg-secondary">@a.SourceModule</span>
+                </li>
+            }
+            </ul>
+            <div class="btn-group">
+                <a class="btn btn-sm btn-outline-primary" asp-controller="FoodCostDashboard" asp-action="Index">Food Cost</a>
+                <a class="btn btn-sm btn-outline-primary" asp-controller="ProcurementDashboard" asp-action="Index">Compras</a>
+                <a class="btn btn-sm btn-outline-primary" asp-controller="CashSession" asp-action="Dashboard">Caja</a>
+                <a class="btn btn-sm btn-outline-secondary" asp-controller="Order" asp-action="Index">Órdenes</a>
+            </div>
+        </div>
+    </div>
+</div>

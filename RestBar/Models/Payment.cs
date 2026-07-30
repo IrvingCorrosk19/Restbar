@@ -46,6 +46,9 @@ public partial class Payment : ITrackableEntity
     [StringLength(100)]
     public string? IdempotencyKey { get; set; }
 
+    /// <summary>Sesión de caja asociada (RB-010). Nullable para compatibilidad con pagos históricos.</summary>
+    public Guid? CashSessionId { get; set; }
+
     // ✅ CAMPOS MULTI-TENANT
     public Guid? CompanyId { get; set; }
     public Guid? BranchId { get; set; }
@@ -64,5 +67,6 @@ public partial class Payment : ITrackableEntity
     public virtual Order? Order { get; set; }
     public virtual User? ProcessedByUser { get; set; }
 
+    public virtual CashSession? CashSession { get; set; }
     public virtual ICollection<SplitPayment> SplitPayments { get; set; } = new List<SplitPayment>();
 }

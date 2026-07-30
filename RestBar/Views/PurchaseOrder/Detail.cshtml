@@ -1,0 +1,51 @@
+@model RestBar.Models.PurchaseOrder
+@{
+    ViewData["Title"] = Model.PoNumber;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="container mt-3">
+    <h2>@Model.PoNumber — @Model.Status</h2>
+    <p>Proveedor: <strong>@Model.Supplier?.Name</strong> · Total: <strong>@Model.Total.ToString("C")</strong></p>
+    <table class="table">
+        <thead><tr><th>Producto</th><th>Pedido</th><th>Recibido</th><th>Precio</th><th>Total</th></tr></thead>
+        <tbody>
+        @foreach (var l in Model.Lines)
+        {
+            <tr>
+                <td>@l.ProductId</td>
+                <td>@l.QuantityOrdered</td>
+                <td>@l.QuantityReceived</td>
+                <td>@l.UnitPrice.ToString("C")</td>
+                <td>@l.LineTotal.ToString("C")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    <div class="btn-group">
+        @if (Model.Status == RestBar.Models.PurchaseOrderStatus.Draft)
+        {
+            <form asp-action="Submit" method="post" class="me-1">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button class="btn btn-warning">Enviar a aprobación</button>
+            </form>
+        }
+        @if (Model.Status == RestBar.Models.PurchaseOrderStatus.PendingApproval)
+        {
+            <form asp-action="Approve" method="post" class="me-1">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button class="btn btn-success">Aprobar</button>
+            </form>
+        }
+        @if (Model.Status == RestBar.Models.PurchaseOrderStatus.Approved)
+        {
+            <form asp-action="Send" method="post" class="me-1">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button class="btn btn-primary">Marcar enviado</button>
+            </form>
+        }
+        @if (Model.Status is RestBar.Models.PurchaseOrderStatus.Sent or RestBar.Models.PurchaseOrderStatus.PartiallyReceived or RestBar.Models.PurchaseOrderStatus.Approved)
+        {
+            <a class="btn btn-outline-success" asp-action="Receive" asp-route-id="@Model.Id">Recibir mercancía</a>
+        }
+    </div>
+</div>

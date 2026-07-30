@@ -1,0 +1,105 @@
+@{
+    ViewData["Title"] = "Director Operativo";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="container-fluid py-3" style="max-width:1100px">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-0"><i class="fas fa-user-tie"></i> Director Operativo</h2>
+            <p class="text-muted mb-0">Pregunta. Decide. Actúa. — No es un chatbot genérico.</p>
+        </div>
+        <span class="badge bg-dark">RB-040 · Deterministic AI</span>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div id="copilot-thread" class="border rounded p-3 bg-light" style="min-height:420px;max-height:60vh;overflow:auto"></div>
+            <form id="copilot-form" class="mt-3 d-flex gap-2">
+                <input id="copilot-input" class="form-control" maxlength="2000" placeholder="¿Cómo está mi empresa? ¿Qué debería hacer hoy?" autocomplete="off" />
+                <button class="btn btn-primary" type="submit"><i class="fas fa-paper-plane"></i></button>
+            </form>
+        </div>
+        <div class="col-lg-4">
+            <div class="border rounded p-3 mb-3">
+                <h6>Preguntas sugeridas</h6>
+                <div class="d-grid gap-2" id="suggested">
+                    <button type="button" class="btn btn-outline-secondary btn-sm text-start q">¿Cómo está mi empresa?</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm text-start q">¿Qué debería hacer hoy?</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm text-start q">¿Por qué aumentó el Food Cost?</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm text-start q">¿Cómo está la caja?</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm text-start q">¿Qué compras debo hacer?</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm text-start q">¿Qué alertas tengo?</button>
+                </div>
+            </div>
+            <div class="border rounded p-3" id="action-cards">
+                <h6>Acciones rápidas</h6>
+                <p class="text-muted small mb-0">Aparecerán deep-links tras cada respuesta.</p>
+            </div>
+            <div class="border rounded p-3 mt-3" id="reco-cards">
+                <h6>Recomendaciones</h6>
+                <p class="text-muted small mb-0">Ordenadas por impacto económico.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    let conversationId = null;
+    const thread = document.getElementById('copilot-thread');
+    const form = document.getElementById('copilot-form');
+    const input = document.getElementById('copilot-input');
+    const actions = document.getElementById('action-cards');
+    const recos = document.getElementById('reco-cards');
+
+    function append(role, text) {
+        const div = document.createElement('div');
+        div.className = 'mb-3';
+        div.innerHTML = '<div class="small text-muted">' + role + '</div><div class="p-2 bg-white border rounded" style="white-space:pre-wrap"></div>';
+        div.querySelector('.p-2').textContent = text;
+        thread.appendChild(div);
+        thread.scrollTop = thread.scrollHeight;
+    }
+
+    async function ask(message) {
+        append('Tú', message);
+        input.value = '';
+        const res = await fetch('/Copilot/Ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ conversationId, message })
+        });
+        if (!res.ok) {
+            append('Sistema', 'Copilot no disponible o sin permiso.');
+            return;
+        }
+        const data = await res.json();
+        conversationId = data.conversationId;
+        append('Director (' + data.intent + ' · ' + data.durationMs + 'ms)', data.answerMarkdown);
+        actions.innerHTML = '<h6>Acciones rápidas</h6>';
+        (data.actions || []).forEach(a => {
+            const link = document.createElement('a');
+            link.className = 'btn btn-sm btn-outline-primary me-1 mb-1';
+            link.href = a.url;
+            link.textContent = a.label;
+            actions.appendChild(link);
+        });
+        recos.innerHTML = '<h6>Recomendaciones</h6>';
+        (data.recommendations || []).slice(0, 5).forEach(r => {
+            const p = document.createElement('div');
+            p.className = 'small mb-2 border-bottom pb-2';
+            p.textContent = '[' + r.severity + '] ' + r.title + ' · ~' + (r.estimatedImpact || 0).toFixed(0) + ' · ' + r.action;
+            recos.appendChild(p);
+        });
+    }
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const msg = input.value.trim();
+        if (msg) ask(msg);
+    });
+    document.querySelectorAll('#suggested .q').forEach(btn => {
+        btn.addEventListener('click', () => ask(btn.textContent));
+    });
+})();
+</script>

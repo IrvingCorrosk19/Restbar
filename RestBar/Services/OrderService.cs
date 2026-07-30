@@ -15,6 +15,7 @@ namespace RestBar.Services
         private readonly IGlobalLoggingService _loggingService;
         private readonly IInventoryOperationsService _inventoryOps;
         private readonly IPriceScheduleService _priceSchedule;
+        private readonly IOrderItemCostHook? _costHook;
         private readonly ILogger<OrderService> _logger;
 
         public OrderService(
@@ -26,7 +27,8 @@ namespace RestBar.Services
             IInventoryOperationsService inventoryOps,
             IPriceScheduleService priceSchedule,
             IHttpContextAccessor httpContextAccessor,
-            ILogger<OrderService> logger)
+            ILogger<OrderService> logger,
+            IOrderItemCostHook? costHook = null)
             : base(context, httpContextAccessor)
         {
             _productService = productService;
@@ -36,6 +38,7 @@ namespace RestBar.Services
             _inventoryOps = inventoryOps;
             _priceSchedule = priceSchedule;
             _logger = logger;
+            _costHook = costHook;
         }
 
 
@@ -600,6 +603,8 @@ namespace RestBar.Services
                 }
 
                 order.TotalAmount = order.OrderItems.Sum(oi => (oi.Quantity * oi.UnitPrice) - oi.Discount);
+
+                await ApplyFoodCostSnapshotsAsync(order.OrderItems);
 
                 // Notificar a cocina y a los clientes
                 await _orderHubService.NotifyOrderStatusChanged(order.Id, order.Status);
@@ -1476,6 +1481,8 @@ namespace RestBar.Services
                 // Actualizar el total de la orden
                 order.TotalAmount = totalAmount;
                 await _context.SaveChangesAsync();
+
+                await ApplyFoodCostSnapshotsAsync(order.OrderItems);
                 
                 Console.WriteLine($"[OrderService] Orden actualizada - Total: ${totalAmount}");
                 Console.WriteLine($"[OrderService] Nuevos items creados: {items.Count}");
@@ -1984,6 +1991,7 @@ namespace RestBar.Services
                 }
                 
                 // ✅ NUEVO: Notificar cambios de orden vía SignalR
+                await ApplyFoodCostSnapshotsAsync(order.OrderItems);
                 await _orderHubService.NotifyOrderStatusChanged(order.Id, order.Status);
                 await _orderHubService.NotifyKitchenUpdate();
                 
@@ -2567,6 +2575,16 @@ namespace RestBar.Services
                 newValues: new { remaining, reason, userId });
 
             return order;
+        }
+
+        private async Task ApplyFoodCostSnapshotsAsync(IEnumerable<OrderItem> items)
+        {
+            if (_costHook == null) return;
+            foreach (var item in items.Where(i => i.TheoreticalUnitCost == null && i.ProductId != null))
+            {
+                try { await _costHook.ApplyAsync(item); }
+                catch (Exception ex) { _logger.LogWarning(ex, "[FoodCost] Snapshot skipped for item {ItemId}", item.Id); }
+            }
         }
     }
 }

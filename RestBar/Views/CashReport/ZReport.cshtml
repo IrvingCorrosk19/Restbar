@@ -1,0 +1,10 @@
+@model RestBar.Models.CashZReport
+@{
+    ViewData["Title"] = "Z Report";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="container mt-3">
+    <h2>Z Report — @Model.GeneratedAtUtc.ToLocalTime()</h2>
+    <pre class="bg-light p-3">@ViewBag.ReportJson</pre>
+    <p class="text-muted">Integridad: @Model.IntegrityHash</p>
+</div>

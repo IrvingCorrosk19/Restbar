@@ -24,4 +24,13 @@
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Remove="tests\**\*" />
+    <None Remove="tests\**\*" />
+    <Content Remove="RB-010_020_023_BROWSER_CERTIFICATION\**\*" />
+    <None Remove="RB-010_020_023_BROWSER_CERTIFICATION\**\*" />
+    <Content Remove="**/node_modules/**" />
+    <None Remove="**/node_modules/**" />
+  </ItemGroup>
+
 </Project>

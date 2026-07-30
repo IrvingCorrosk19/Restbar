@@ -23,6 +23,7 @@ namespace RestBar.Controllers
         private readonly IEmailService _emailService;
         private readonly IGlobalLoggingService _loggingService;
         private readonly IInventoryOperationsService _inventoryOps;
+        private readonly ICashPaymentHook _cashPaymentHook;
         private readonly ILogger<PaymentController> _logger;
 
         public PaymentController(
@@ -35,6 +36,7 @@ namespace RestBar.Controllers
             IEmailService emailService,
             IGlobalLoggingService loggingService,
             IInventoryOperationsService inventoryOps,
+            ICashPaymentHook cashPaymentHook,
             ILogger<PaymentController> logger)
         {
             _paymentService = paymentService;
@@ -46,6 +48,7 @@ namespace RestBar.Controllers
             _emailService = emailService;
             _loggingService = loggingService;
             _inventoryOps = inventoryOps;
+            _cashPaymentHook = cashPaymentHook;
             _logger = logger;
         }
 
@@ -216,6 +219,8 @@ namespace RestBar.Controllers
                         }
 
                         await _context.SaveChangesAsync();
+
+                        await _cashPaymentHook.OnPaymentCompletedAsync(payment, order, HttpContext.RequestAborted);
 
                         var totalPaidAfterPayment = totalPaid + request.Amount;
                         var orderTotalForComparison = Math.Max(0, payableItems.Sum(i => i.Quantity * i.UnitPrice - i.Discount) - order.DiscountAmount);

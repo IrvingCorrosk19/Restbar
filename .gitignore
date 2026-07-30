@@ -63,6 +63,31 @@ app.publish/
 secrets.json
 .env
 .env.*
+**/CREDENCIALES.md
+**/Com/Documentacion/CREDENCIALES.md
+
+## Backups / dumps DB
+*.dump
+**/backups/*.dump
+**/FUNCTIONAL_CERTIFICATION/backups/
+**/FUNCTIONAL_CERTIFICATION_3_COMPANIES/backups/
+**/ORDER_FUNCTIONAL_CERTIFICATION/backups/
+**/ORDER_ROUTING_CERTIFICATION/backups/
+
+## Node / Playwright
+**/node_modules/
+**/tests/Browser/node_modules/
+**/playwright-report/
+**/test-output/
+**/*.webm
+**/trace.zip
+RestBar/RB-010_020_023_BROWSER_CERTIFICATION/evidence/test-output/
+RestBar/RB-010_020_023_BROWSER_CERTIFICATION/playwright-report/
+RestBar/RB-010_020_023_BROWSER_CERTIFICATION/*.log
+
+## SQL deploy locales (no versionar)
+RestBar_deploy.sql
+RestBar_deploy_pg15.sql
 
 ## Archivos globales de configuración de Visual Studio
 global.json

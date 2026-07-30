@@ -1,0 +1,44 @@
+@{
+    ViewData["Title"] = "Food Cost Command Center";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    dynamic snap = ViewBag.Snapshot;
+    dynamic today = snap.Today;
+}
+<div class="container-fluid mt-3">
+    <h2>Food Cost & Profitability</h2>
+    <div class="row g-3 mb-3">
+        <div class="col-md-3"><div class="card text-bg-primary p-3"><small>FC% Teórico hoy</small><h3>@(((decimal)today.TheoFoodCostPercent).ToString("F1"))%</h3></div></div>
+        <div class="col-md-3"><div class="card text-bg-danger p-3"><small>FC% Actual hoy</small><h3>@(((decimal)today.ActualFoodCostPercent).ToString("F1"))%</h3></div></div>
+        <div class="col-md-3"><div class="card text-bg-warning p-3"><small>Variance</small><h3>@(((decimal)today.VariancePoints).ToString("F2")) pts</h3></div></div>
+        <div class="col-md-3"><div class="card text-bg-secondary p-3"><small>Waste hoy</small><h3>@(((decimal)snap.WasteToday).ToString("C"))</h3></div></div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <h5>Stars</h5>
+            <ul class="list-group mb-3">
+            @foreach (var s in snap.Stars)
+            {
+                <li class="list-group-item d-flex justify-content-between"><span>@s.Name</span><span>@(((decimal)s.Contribution).ToString("C"))</span></li>
+            }
+            </ul>
+            <h5>Dogs</h5>
+            <ul class="list-group">
+            @foreach (var d in snap.Dogs)
+            {
+                <li class="list-group-item">@d.Name — @d.Recommendation</li>
+            }
+            </ul>
+        </div>
+        <div class="col-md-6">
+            <h5>Alertas variance</h5>
+            <ul class="list-group mb-3">
+            @foreach (var a in snap.Alerts)
+            {
+                <li class="list-group-item">@a.Severity: @a.Message</li>
+            }
+            </ul>
+            <a class="btn btn-outline-primary" asp-action="MenuEngineering">Menu Engineering</a>
+            <a class="btn btn-outline-secondary" asp-controller="Recipe" asp-action="Index">Recetas / Costo</a>
+        </div>
+    </div>
+</div>

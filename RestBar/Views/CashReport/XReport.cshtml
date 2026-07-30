@@ -1,0 +1,8 @@
+@{
+    ViewData["Title"] = "X Report";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="container mt-3">
+    <h2>X Report — lectura intermedia</h2>
+    <pre class="bg-light p-3">@System.Text.Json.JsonSerializer.Serialize(ViewBag.Report)</pre>
+</div>

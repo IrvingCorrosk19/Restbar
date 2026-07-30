@@ -23,5 +23,8 @@ namespace RestBar.Services
         // Métodos para notificar cambios de stock
         Task NotifyStockUpdated(Guid productId, string productName, decimal newStock);
         Task NotifyStockReduced(Guid productId, string productName, decimal oldStock, decimal newStock, decimal quantityReduced);
+
+        Task NotifyCashSessionChanged(Guid sessionId, Guid registerId, string status);
+        Task NotifyCashMovement(Guid sessionId, Guid registerId, string movementType, decimal amount);
     }
 } 

@@ -1,0 +1,24 @@
+@model RestBar.Models.CashSession
+@{
+    ViewData["Title"] = "Conciliación";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="container mt-3">
+    <h2>Conciliación — Sesión #@Model.SessionNumber</h2>
+    <dl class="row">
+        <dt class="col-sm-4">Esperado</dt><dd class="col-sm-8">@Model.ExpectedCash.ToString("C")</dd>
+        <dt class="col-sm-4">Contado</dt><dd class="col-sm-8">@Model.CountedCash.ToString("C")</dd>
+        <dt class="col-sm-4">Varianza</dt><dd class="col-sm-8"><span class="@(Model.Variance != 0 ? "text-danger" : "text-success")">@Model.Variance.ToString("C")</span></dd>
+    </dl>
+    <form asp-action="ApproveClose" method="post" class="d-inline">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.Id" />
+        <input name="notes" class="form-control mb-2" placeholder="Notas de cierre" />
+        <button class="btn btn-success">Aprobar cierre</button>
+    </form>
+    <form asp-action="AbortClose" method="post" class="d-inline ms-2">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.Id" />
+        <button class="btn btn-outline-secondary">Abortar cierre</button>
+    </form>
+</div>

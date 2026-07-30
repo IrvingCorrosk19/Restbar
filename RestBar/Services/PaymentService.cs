@@ -8,9 +8,12 @@ namespace RestBar.Services
     {
 
 
-        public PaymentService(RestBarContext context, IHttpContextAccessor httpContextAccessor)
+        private readonly ICashPaymentHook? _cashPaymentHook;
+
+        public PaymentService(RestBarContext context, IHttpContextAccessor httpContextAccessor, ICashPaymentHook? cashPaymentHook = null)
             : base(context, httpContextAccessor)
         {
+            _cashPaymentHook = cashPaymentHook;
         }
 
         public async Task<IEnumerable<Payment>> GetAllAsync()
@@ -258,6 +261,10 @@ namespace RestBar.Services
 
                 order.Version++;
                 await _context.SaveChangesAsync();
+
+                if (_cashPaymentHook != null)
+                    await _cashPaymentHook.OnRefundCompletedAsync(refund, payment, CancellationToken.None);
+
                 await transaction.CommitAsync();
                 return refund;
             }

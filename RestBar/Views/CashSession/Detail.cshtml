@@ -1,0 +1,26 @@
+@model RestBar.Models.CashSession
+@{
+    ViewData["Title"] = $"Sesión #{Model.SessionNumber}";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var expected = (decimal)ViewBag.ExpectedCash;
+}
+<div class="container mt-3">
+    <h2>Sesión #@Model.SessionNumber — @Model.Status</h2>
+    <div class="row g-3 mb-3">
+        <div class="col-md-4"><div class="card p-3"><small>Efectivo esperado</small><h4>@expected.ToString("C")</h4></div></div>
+        <div class="col-md-4"><div class="card p-3"><small>Ventas</small><h4>@Model.TotalSales.ToString("C")</h4></div></div>
+        <div class="col-md-4"><div class="card p-3"><small>Propinas</small><h4>@Model.TotalTips.ToString("C")</h4></div></div>
+    </div>
+    @if (Model.Status is RestBar.Models.CashSessionStatus.Open or RestBar.Models.CashSessionStatus.Operating or RestBar.Models.CashSessionStatus.Suspended)
+    {
+        <form asp-action="StartClose" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <button class="btn btn-warning">Iniciar cierre / arqueo</button>
+        </form>
+    }
+    @if (Model.Status == RestBar.Models.CashSessionStatus.Closed)
+    {
+        <a class="btn btn-outline-primary" asp-controller="CashReport" asp-action="ZReport" asp-route-sessionId="@Model.Id">Ver Z Report</a>
+    }
+</div>

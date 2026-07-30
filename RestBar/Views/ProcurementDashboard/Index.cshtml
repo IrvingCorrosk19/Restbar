@@ -1,0 +1,39 @@
+@{
+    ViewData["Title"] = "Procurement Command Center";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    dynamic snap = ViewBag.Snapshot;
+}
+<div class="container-fluid mt-3">
+    <h2><i class="fas fa-truck-loading"></i> Procurement Command Center</h2>
+    <div class="row g-3 mb-3">
+        <div class="col-md-3"><div class="card text-bg-primary p-3"><small>POs abiertos</small><h3>@snap.OpenPurchaseOrders</h3></div></div>
+        <div class="col-md-3"><div class="card text-bg-danger p-3"><small>Atrasados</small><h3>@snap.OverdueOrders</h3></div></div>
+        <div class="col-md-3"><div class="card text-bg-success p-3"><small>Spend hoy</small><h3>@(((decimal)snap.SpendToday).ToString("C"))</h3></div></div>
+        <div class="col-md-3"><div class="card text-bg-warning p-3"><small>Stock bajo</small><h3>@snap.LowStockItems.Count</h3></div></div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <h5>Qué comprar hoy (stock ≤ mínimo)</h5>
+            <ul class="list-group">
+            @foreach (var p in snap.LowStockItems)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>@p.Name</span>
+                    <span>@p.Stock / min @p.MinStock</span>
+                </li>
+            }
+            </ul>
+        </div>
+        <div class="col-md-6">
+            <h5>Proveedores críticos</h5>
+            <ul class="list-group">
+            @foreach (var s in snap.CriticalSuppliers)
+            {
+                <li class="list-group-item">@s.Name — score @s.ScoreOverall (@s.Status)</li>
+            }
+            </ul>
+            <a class="btn btn-sm btn-outline-primary mt-2" asp-controller="PurchaseOrder" asp-action="Index">Ver órdenes</a>
+            <a class="btn btn-sm btn-outline-secondary mt-2" asp-controller="Supplier" asp-action="Index">Proveedores</a>
+        </div>
+    </div>
+</div>

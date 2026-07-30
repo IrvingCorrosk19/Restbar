@@ -1,4 +1,4 @@
-# 10 — ROADMAP 24 MONTHS
+﻿# 10 — ROADMAP 24 MONTHS
 
 De **41/100 → 90+/100** madurez comercial/empresarial.
 
@@ -34,7 +34,7 @@ Ordenado por ROI × impacto × dependencia (no por “nice to have”).
 
 | # | Epic | Gana | Ahorra | Controla | Decide | Semanas |
 |---|------|------|--------|----------|--------|---------|
-| E1 | Cash Management + arqueo | | ● | ●●● | ● | 6–8 |
+| E1 | Cash Management + arqueo | | ● | ●●● | ● | 6–8 | **✅ v1 implementado Jul 2026** |
 | E2 | Precuenta + print térmica | ●● | | ● | | 4–6 |
 | E3 | Export PDF/Excel real | | ● | | ●● | 3–4 |
 | E4 | Cierre día / Z-report | | ● | ●● | ● | 3–4 |
@@ -45,6 +45,8 @@ Ordenado por ROI × impacto × dependencia (no por “nice to have”).
 ---
 
 # FASE 2 — Cost Control (Mes 5–9) · 62→74
+
+**RB-020 Procurement v1 implementado Jul 2026** (EnablePurchasingModule=false hasta UAT).
 
 | # | Epic | Semanas |
 |---|------|---------|
@@ -139,3 +141,4 @@ Hotel · Casino · Payroll nativo · ML deep · App marketplace · Reescritura S
 | Post F3 | 82 |
 | Post F4 | 88 |
 | Post F5 | 92+ |
+

@@ -1,0 +1,24 @@
+@model IEnumerable<RestBar.Models.CashRegister>
+@{
+    ViewData["Title"] = "Cajas registradoras";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="container mt-3">
+    <h2>Cajas registradoras</h2>
+    <table class="table table-striped">
+        <thead><tr><th>Código</th><th>Nombre</th><th>Fondo default</th></tr></thead>
+        <tbody>
+        @foreach (var r in Model)
+        {
+            <tr><td>@r.Code</td><td>@r.Name</td><td>@r.DefaultOpeningFloat.ToString("C")</td></tr>
+        }
+        </tbody>
+    </table>
+    <form asp-action="Create" method="post" class="row g-2">
+        @Html.AntiForgeryToken()
+        <div class="col-auto"><input name="code" class="form-control" placeholder="Código" required /></div>
+        <div class="col-auto"><input name="name" class="form-control" placeholder="Nombre" required /></div>
+        <div class="col-auto"><input name="defaultFloat" type="number" step="0.01" class="form-control" value="100" /></div>
+        <div class="col-auto"><button type="submit" class="btn btn-primary">Crear</button></div>
+    </form>
+</div>

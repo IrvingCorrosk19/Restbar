@@ -152,6 +152,11 @@ builder.Services.AddAuthorization(options =>
 // Agregar HttpContextAccessor para el AuthService y tracking automático
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddEnterpriseFoundation(builder.Configuration);
+builder.Services.AddEnterpriseCashModule();
+builder.Services.AddEnterpriseProcurementModule();
+builder.Services.AddEnterpriseFoodCostModule();
+builder.Services.AddEnterpriseIntelligenceModule();
+builder.Services.AddEnterpriseCopilotModule();
 // Habilitar Newtonsoft.Json para Npgsql 8+
 AppContext.SetSwitch("Npgsql.EnableLegacyJsonNet", true);
 
@@ -236,7 +241,8 @@ builder.Services.AddScoped<IPaymentService>(provider =>
 {
     var context = provider.GetRequiredService<RestBarContext>();
     var httpContextAccessor = provider.GetRequiredService<IHttpContextAccessor>();
-    return new PaymentService(context, httpContextAccessor);
+    var cashHook = provider.GetService<ICashPaymentHook>();
+    return new PaymentService(context, httpContextAccessor, cashHook);
 });
 // Registrar InvoiceService con IHttpContextAccessor
 builder.Services.AddScoped<IInvoiceService>(provider =>
@@ -418,9 +424,11 @@ app.UsePermissionValidation();
 // Bloqueo operativo por suspensión SaaS (empresa/sucursal inactiva)
 app.UseMiddleware<TenantSubscriptionMiddleware>();
 
+// Raíz → login; resto usa Index por defecto (evita /Supplier → Supplier/Login 404)
+app.MapGet("/", () => Results.Redirect("/Auth/Login"));
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Auth}/{action=Login}/{id?}"); // Cambiar página de inicio a Login
+    pattern: "{controller}/{action=Index}/{id?}");
 
 // Mapear el hub de SignalR
 app.MapHub<OrderHub>("/orderHub");

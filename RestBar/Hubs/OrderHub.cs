@@ -99,5 +99,16 @@ namespace RestBar.Hubs
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, "stock_updates");
         }
 
+        public async Task JoinCashRegisterGroup(string registerId)
+        {
+            if (!string.IsNullOrWhiteSpace(registerId))
+                await Groups.AddToGroupAsync(Context.ConnectionId, $"cash_register_{registerId}");
+        }
+
+        public async Task JoinCashDashboardGroup()
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, "cash_dashboard");
+        }
+
     }
 } 

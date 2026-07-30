@@ -22,6 +22,16 @@ public partial class Product : ITrackableEntity
     [Column(TypeName = "decimal(18,2)")]
     public decimal? Cost { get; set; }
 
+    /// <summary>Último costo de compra (RB-020 Cost Engine).</summary>
+    [Column(TypeName = "decimal(18,4)")]
+    public decimal? LastPurchaseCost { get; set; }
+
+    /// <summary>Costo promedio ponderado (WAC).</summary>
+    [Column(TypeName = "decimal(18,4)")]
+    public decimal? AverageCost { get; set; }
+
+    public DateTime? LastPurchaseAt { get; set; }
+
     [Column(TypeName = "decimal(5,2)")]
     public decimal? TaxRate { get; set; }
 
