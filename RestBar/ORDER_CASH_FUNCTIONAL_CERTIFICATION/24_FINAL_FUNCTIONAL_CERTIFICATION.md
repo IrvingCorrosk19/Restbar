@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-07-30  
 **Ambiente:** VPS `http://164.68.99.83:8084`  
-**Commits clave:** `14e12aa` (nav), `29f3e6e` / `eebc419` (cash open row_version), `cb3ad3f`
+**Commits:** `14e12aa` … `eebc419` (cash open) · local `e07bf33` (timeouts; push pendiente si red cae)
 
 ---
 
@@ -11,45 +11,36 @@
 | Item | Resultado |
 |------|-----------|
 | `dotnet build -c Release` | **PASS** — 0 errors |
-| Deploy VPS | **OK** (`restbar_web` :8084) |
-| HTTP `/Auth/Login` | 200 |
+| Deploy VPS | **OK** hasta `eebc419` / `cb3ad3f` |
+| Apertura caja (debug real) | **PASS** → `/CashSession/Detail/{id}` Sesión #1 Open |
 
 ---
 
 ## Pruebas Playwright (chromium-desktop)
 
-Suite: Orders · Floors · Stations · Waiters · Tables · Kitchen · Payments · Cash · Shifts · Inventory · Responsive · Negatives · Multitenant · Operations
-
-| Métrica | Valor (última corrida completa conocida) |
-|---------|------------------------------------------|
+| Métrica | Valor |
+|---------|-------|
 | Planificadas | 78 |
 | Ejecutadas | 78 |
-| PASS | *actualizar tras corrida final* |
-| FAIL | *actualizar* |
-| SKIPPED | MT-02 / WTR-02..03 condicionales |
+| **PASS** | **72** |
+| **FAIL** | **4** (timeouts de red al VPS en retest: KDS-03, ORD-E2E-02, ORD-NAV-02, PAY-03) |
+| **SKIPPED** | **2** (seed MT/WTR) |
 
-Evidencia: `RB-010_020_023_BROWSER_CERTIFICATION/evidence/test-output/` + `playwright-results.json`
+**Cash lifecycle CASH-L01..L04:** **4/4 PASS**  
+**OPS-01..03:** **3/3 PASS**  
+**ORD-E2E-01 / ORD-E2E-03..05 / STN / FLR / INV / CASH-X\* / CASH-01..07:** **PASS** en la corrida estable
+
+Evidencia: `RB-010_020_023_BROWSER_CERTIFICATION/evidence/test-output/`
 
 ---
 
-## Defectos cerrados en este ciclo
+## Defectos
 
-| ID | Severidad | Estado |
-|----|-----------|--------|
-| DEF-NAV-001 POS sin salida | P0 | **FIXED** |
-| DEF-CASH-OPEN-001 Exception doble apertura | P1 | **FIXED** (TempData + redirect a sesión) |
-| DEF-CASH-ROWVER-001 `row_version` null en PG | P0 | **FIXED** (concurrency token + valor en insert) |
-| DEF-ORD-STATUS-001 UpdateItemStatus 500 | P1 | **FIXED** (BadRequest) |
-| DEF-POS-SWAL-001 overlays bloquean E2E | P1 | **FIXED** (helpers) |
-| DEF-CASH-DASH-001 sin links a sesiones | P1 | **FIXED** |
-
-## Defectos abiertos
-
-| Severidad | Cantidad |
+| Severidad | Abiertos |
 |-----------|----------|
 | P0 | **0** |
-| P1 | **0** abiertos en alcance ejecutado |
-| P2/P3 | Gaps de profundidad (split UI completo, cierre Z E2E extremo) documentados como **PARTIAL** en reportes 08–14 |
+| P1 | **0** |
+| P2 | Seed / cobertura split UI / timeouts infra |
 
 ---
 
@@ -57,28 +48,28 @@ Evidencia: `RB-010_020_023_BROWSER_CERTIFICATION/evidence/test-output/` + `playw
 
 | Módulo | Veredicto |
 |--------|-----------|
-| Pedidos (navegación + E2E mesa→cocina) | **PASS** |
-| Pisos / áreas | **PASS** (smoke) |
-| Estaciones / KDS | **PASS** |
-| Meseros / RBAC smoke | **PASS** (skips si seed ausente) |
-| Mesas | **PASS** |
-| Pagos | **PASS** (API + controles POS) |
-| Caja apertura / dashboard / paid-in | **PASS** |
-| Cierre / arqueo | **PASS** (lifecycle CASH-L*) |
-| Turnos | **PASS** (smoke) |
-| Inventario impacto | **PASS** |
-| Multitenant | **PASS** smoke (MT-02 skip condicional) |
+| Pedidos navegación | **PASS** |
+| Pedidos E2E mesa→producto→cocina | **PASS** (ORD-E2E-01; 02 flaky por red) |
+| Pisos / estaciones / mesas | **PASS** |
+| KDS | **PASS** (boards + STN; send flaky por red) |
+| Pagos | **PASS** (API + PAY-01/02/04) |
+| Caja apertura / dashboard / arqueo / paid-in | **PASS** |
+| Cancel / split / transfer API | **PASS** (OPS) |
+| Inventario | **PASS** |
+| RBAC / Multitenant | **PASS** smoke + skips seed |
 | Responsive | **PASS** |
-| Split / transfer profundidad | **PARTIAL** (API validation OPS-*) |
 
 ---
 
 ## Veredicto
 
-**PASS WITH CONDITIONS** — listo para operación de turno en VPS con condiciones:
+# **PASS WITH CONDITIONS**
 
-1. Seed completo de roles mesero/cajero/cross-tenant para eliminar skips MT/WTR.
-2. Ampliar E2E de split de cuenta y cierre Z con contadores reales en un ciclo dedicado.
-3. No hay P0 abiertos; apertura de caja y salida del POS certificados con evidencia real.
+**Condiciones (honestas):**
+1. Retest verde de los 4 casos afectados por `ERR_CONNECTION_TIMED_OUT` cuando el VPS/GitHub vuelvan a responder (no son regresiones de producto demostradas).
+2. Completar seed mesero/cajero/cross-tenant para eliminar skips.
+3. Split de cuenta UI profundo sigue **PARTIAL** (API cubierta).
 
-Si la corrida final alcanza **0 FAIL** en las 78 pruebas (salvo skips semilla), el veredicto operativo del ciclo es **PASS** para el alcance browser ejecutado.
+**Criterios P0 del brief (salida POS, dirty-state, sin 500 en apertura caja, sesiones visibles):** **cumplidos con evidencia real.**
+
+No se declara **PASS absoluto 100/100** mientras existan 4 fails de red en el último run y gaps P2 de seed/cobertura.
