@@ -38,9 +38,14 @@ test.describe('Cash operations extended', () => {
     await page.locator('input[name="openingFloat"]').fill('50');
     await page.getByRole('button', { name: /Abrir sesión/i }).click();
     await page.waitForLoadState('domcontentloaded');
+    expect(page.url()).not.toMatch(/error\/500/i);
     const text = await page.locator('body').innerText();
-    // Either success detail or validation about already open — not 500
-    expect(/Exception|Stack Trace/i.test(text)).toBeFalsy();
+    // Controlled validation (TempData) or existing session detail — never raw crash
+    expect(/Stack Trace:|at RestBar\.Controllers/i.test(text)).toBeFalsy();
+    const handled =
+      /already has an active session|sesión activa|Wizard|Detalle|Detail|alert-warning/i.test(text) ||
+      /CashSession\/Detail/i.test(page.url());
+    expect(handled).toBeTruthy();
   });
 
   test('CASH-X05 paid-in negative still not 500', async ({ page }) => {

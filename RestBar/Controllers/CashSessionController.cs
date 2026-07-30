@@ -76,11 +76,19 @@ public class CashSessionController : Controller
     {
         if (Disabled() is { } d) return d;
         var userId = Guid.Parse(User.FindFirst("UserId")!.Value);
-        var shift = await _context.Shifts.AsNoTracking()
-            .FirstOrDefaultAsync(s => s.UserId == userId && s.IsActive);
+        try
+        {
+            var shift = await _context.Shifts.AsNoTracking()
+                .FirstOrDefaultAsync(s => s.UserId == userId && s.IsActive);
 
-        var session = await _sessions.OpenSessionAsync(registerId, userId, openingFloat, shift?.Id);
-        return RedirectToAction(nameof(Detail), new { id = session.Id });
+            var session = await _sessions.OpenSessionAsync(registerId, userId, openingFloat, shift?.Id);
+            return RedirectToAction(nameof(Detail), new { id = session.Id });
+        }
+        catch (InvalidOperationException ex)
+        {
+            TempData["Error"] = ex.Message;
+            return RedirectToAction(nameof(OpenWizard));
+        }
     }
 
     public async Task<IActionResult> Detail(Guid id)

@@ -1710,6 +1710,9 @@ namespace RestBar.Controllers
             Console.WriteLine($"🔍 ENTRADA: UpdateItemStatus() - ItemId: {dto?.ItemId}, OrderId: {dto?.OrderId}, Status: {dto?.Status}");
             try
             {
+                if (dto == null || dto.ItemId == Guid.Empty || dto.OrderId == Guid.Empty || string.IsNullOrWhiteSpace(dto.Status))
+                    return BadRequest(new { success = false, message = "ItemId, OrderId y Status son requeridos" });
+
                 Console.WriteLine($"🔍 [OrderController] UpdateItemStatus() - Iniciando...");
                 Console.WriteLine($"📋 [OrderController] UpdateItemStatus() - ItemId: {dto.ItemId}, OrderId: {dto.OrderId}, Status: {dto.Status}");
                 

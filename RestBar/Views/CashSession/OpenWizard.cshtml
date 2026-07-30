@@ -5,6 +5,10 @@
 }
 <div class="container mt-3">
     <h2>Wizard — Apertura de sesión</h2>
+    @if (TempData["Error"] is string err && !string.IsNullOrWhiteSpace(err))
+    {
+        <div class="alert alert-warning" role="alert">@err</div>
+    }
     <form asp-action="Open" method="post" class="card p-4">
         @Html.AntiForgeryToken()
         <div class="mb-3">
