@@ -28,7 +28,7 @@ async function selectAvailableTable(page, preferredNumbers = ['C-14', 'C-15', 'T
   await dismissOverlays(page);
 
   // Prefer free/available tables
-  const freeBtn = page.locator('.select-table-btn[data-table-status="Available"], .select-table-btn[data-table-status="Disponible"]').first();
+  const freeBtn = page.locator('.select-table-btn[data-table-status="Disponible"]').first();
   if (await freeBtn.count()) {
     const num = await freeBtn.getAttribute('data-table-number');
     await freeBtn.click({ force: true });
