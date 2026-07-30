@@ -78,7 +78,7 @@ public partial class RestBarContext
             entity.Property(e => e.RowVersion)
                 .IsConcurrencyToken()
                 .HasColumnName("row_version")
-                .HasDefaultValueSql("gen_random_bytes(8)");
+                .HasDefaultValueSql("decode(md5(random()::text || clock_timestamp()::text), 'hex')");
             entity.HasIndex(e => new { e.CashRegisterId, e.Status }).HasDatabaseName("IX_cash_sessions_register_status");
             entity.HasIndex(e => new { e.BranchId, e.OpenedAt }).HasDatabaseName("IX_cash_sessions_branch_opened");
             entity.HasOne(e => e.CashRegister).WithMany(r => r.Sessions).HasForeignKey(e => e.CashRegisterId);
