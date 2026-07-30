@@ -18,6 +18,7 @@
         "bar" => "bar-theme",
         _ => "kitchen-theme"
     };
+    var exitUrl = ViewBag.SafeReturnUrl as string ?? Url.Action("Index", "Home");
 }
 
 <link href="~/css/modern-kitchen.css" rel="stylesheet" asp-append-version="true" />
@@ -37,7 +38,7 @@
             <button class="modern-kitchen-btn btn-primary" onclick="refreshOrdersList()">
                 <i class="fas fa-sync-alt"></i> Actualizar
             </button>
-            <a href="/Home/Index" class="modern-kitchen-btn btn-secondary">
+            <a href="@exitUrl" class="modern-kitchen-btn btn-secondary" data-testid="kds-nav-home" aria-label="Pantalla principal">
                 <i class="fas fa-home"></i> Dashboard
             </a>
         </div>

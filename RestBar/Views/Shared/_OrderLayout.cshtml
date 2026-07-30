@@ -1203,15 +1203,122 @@
                 margin-bottom: 1rem;
             }
         }
+
+        /* POS chrome — exit navigation (sticky, always visible) */
+        .order-pos-chrome {
+            position: sticky;
+            top: 0;
+            z-index: 1040;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.96));
+            border-bottom: 1px solid rgba(245, 158, 11, 0.35);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(8px);
+        }
+        .order-pos-chrome-inner {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1.25rem;
+            max-width: 100%;
+        }
+        .order-pos-nav {
+            display: flex;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+        .order-chrome-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.55rem 0.9rem;
+            border-radius: 10px;
+            border: 1px solid rgba(245, 158, 11, 0.45);
+            background: rgba(30, 64, 175, 0.35);
+            color: #f8fafc;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            min-height: 44px;
+        }
+        .order-chrome-btn:hover,
+        .order-chrome-btn:focus {
+            background: rgba(245, 158, 11, 0.25);
+            color: #fff;
+            border-color: #f59e0b;
+        }
+        .order-chrome-btn-back {
+            background: transparent;
+        }
+        .order-pos-chrome-title {
+            flex: 1;
+            min-width: 0;
+        }
+        .order-pos-heading {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #f8fafc;
+        }
+        .order-pos-subtitle {
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+        .order-pos-body {
+            padding-top: 1rem !important;
+        }
+        @@media (max-width: 576px) {
+            .order-pos-chrome-inner {
+                flex-wrap: wrap;
+            }
+            .order-chrome-btn span {
+                display: none;
+            }
+            .order-pos-heading {
+                font-size: 1.05rem;
+            }
+            .order-pos-subtitle {
+                display: none;
+            }
+        }
     </style>
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="order-theme">
-    <div class="container-fluid py-4">
-        <div class="page-title">
-            <h2 class="fw-bold mb-4">@ViewData["Title"]</h2>
-            <p class="subtitle">Gestiona los pedidos de manera eficiente y elegante</p>
+    @{
+        var exitUrl = ViewBag.SafeReturnUrl as string ?? Url.Action("Index", "Home") ?? "/";
+    }
+    <header class="order-pos-chrome" data-testid="order-pos-chrome" role="banner">
+        <div class="order-pos-chrome-inner">
+            <nav class="order-pos-nav" aria-label="Navegación de pedidos">
+                <button type="button"
+                        class="order-chrome-btn order-chrome-btn-back"
+                        data-testid="order-nav-back"
+                        data-exit-url="@exitUrl"
+                        onclick="window.RestBarOrderNav && window.RestBarOrderNav.goBack(this)"
+                        aria-label="Volver">
+                    <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                    <span>Volver</span>
+                </button>
+                <a class="order-chrome-btn order-chrome-btn-home"
+                   data-testid="order-nav-home"
+                   data-exit-url="@exitUrl"
+                   href="@exitUrl"
+                   onclick="return window.RestBarOrderNav ? window.RestBarOrderNav.confirmLeave(event, this) : true"
+                   aria-label="Pantalla principal">
+                    <i class="fas fa-home" aria-hidden="true"></i>
+                    <span>Inicio</span>
+                </a>
+            </nav>
+            <div class="order-pos-chrome-title">
+                <h1 class="order-pos-heading">@ViewData["Title"]</h1>
+                <p class="order-pos-subtitle mb-0">Gestiona los pedidos de manera eficiente y elegante</p>
+            </div>
+            <div class="order-pos-chrome-meta" aria-hidden="true"></div>
         </div>
+    </header>
+
+    <div class="container-fluid py-4 order-pos-body">
         @RenderBody()
     </div>
 
@@ -1221,6 +1328,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Responsive Notifications -->
     <script src="~/js/responsive-notifications.js" asp-append-version="true"></script>
+    <script src="~/js/order/order-navigation.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html> 

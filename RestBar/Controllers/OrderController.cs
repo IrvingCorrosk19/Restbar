@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using RestBar.Helpers;
 using RestBar.Interfaces;
 using RestBar.Models;
 using RestBar.Services;
@@ -125,17 +126,18 @@ namespace RestBar.Controllers
         }
 
         // GET: Order
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? returnUrl = null)
         {
             try
             {
                 Console.WriteLine("🔍 [OrderController] Index() - Iniciando carga de órdenes...");
-                
+
                 var orders = await _orderService.GetAllAsync();
                 ViewBag.Tables = await _tableService.GetTablesForViewBagAsync();
                 ViewBag.Customers = await _customerService.GetAllAsync();
                 ViewBag.Products = await _productService.GetActiveProductsForViewBagAsync();
-                
+                ViewBag.SafeReturnUrl = NavigationHelper.ResolveSafeReturnUrl(Request, Url, returnUrl);
+
                 Console.WriteLine($"✅ [OrderController] Index() - Órdenes cargadas: {orders?.Count() ?? 0}");
                 return View(orders);
             }
@@ -1542,7 +1544,7 @@ namespace RestBar.Controllers
 
         // GET: Order/StationOrders?stationType=kitchen&stationId=&areaId=
         [Authorize(Policy = "KitchenAccess")]
-        public async Task<IActionResult> StationOrders(string stationType = "kitchen", Guid? stationId = null, Guid? areaId = null)
+        public async Task<IActionResult> StationOrders(string stationType = "kitchen", Guid? stationId = null, Guid? areaId = null, string? returnUrl = null)
         {
             try
             {
@@ -1550,6 +1552,7 @@ namespace RestBar.Controllers
 
                 var userBranchId = GetUserBranchId();
                 var userCompanyId = GetUserCompanyId();
+                ViewBag.SafeReturnUrl = NavigationHelper.ResolveSafeReturnUrl(Request, Url, returnUrl);
 
                 List<Guid> matchingStationIds;
 

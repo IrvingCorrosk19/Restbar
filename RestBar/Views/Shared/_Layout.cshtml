@@ -68,8 +68,8 @@
                                     <li><a class="dropdown-item" asp-controller="ExecutiveCommandCenter" asp-action="Index"><i class="fas fa-brain"></i> Command Center</a></li>
                                     <li><a class="dropdown-item" asp-controller="Copilot" asp-action="Index"><i class="fas fa-user-tie"></i> Director Operativo</a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" asp-controller="Order" asp-action="Index"><i class="fas fa-shopping-cart"></i> Órdenes</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Order" asp-action="StationOrders" asp-route-stationType="kitchen"><i class="fas fa-fire"></i> Cocina</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Order" asp-action="Index" asp-route-returnUrl="@Url.Action("Index", "Home")"><i class="fas fa-shopping-cart"></i> Órdenes</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Order" asp-action="StationOrders" asp-route-stationType="kitchen" asp-route-returnUrl="@Url.Action("Index", "Home")"><i class="fas fa-fire"></i> Cocina</a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" asp-controller="CashSession" asp-action="Dashboard"><i class="fas fa-cash-register"></i> Caja</a></li>
                                     <li><a class="dropdown-item" asp-controller="CashRegister" asp-action="Index"><i class="fas fa-store-alt"></i> Cajas registradoras</a></li>

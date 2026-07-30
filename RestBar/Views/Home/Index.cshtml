@@ -19,7 +19,7 @@
             @if (Model.VisibleCards.Orders)
             {
                 <div class="col-lg-3 col-md-6">
-                    <a href="@Url.Action("Index", "Order")" class="dashboard-card card-orders">
+                    <a href="@Url.Action("Index", "Order", new { returnUrl = Url.Action("Index", "Home") })" class="dashboard-card card-orders" data-testid="home-card-orders">
                         <div class="card-icon">
                             <i class="fas fa-shopping-cart"></i>
                         </div>
@@ -499,7 +499,7 @@
                     var cardClass = $"card-station-{stationName.ToLower().Replace(" ", "-").Replace("á", "a").Replace("é", "e").Replace("í", "i").Replace("ó", "o").Replace("ú", "u")}";
 
                     <div class="col-lg-4 col-md-6">
-                        <a href="@Url.Action("StationOrders", "Order", new { stationType = stationName })" class="dashboard-card @cardClass">
+                        <a href="@Url.Action("StationOrders", "Order", new { stationType = stationName, returnUrl = Url.Action("Index", "Home") })" class="dashboard-card @cardClass">
                             <div class="card-icon">
                                 <i class="@stationIcon"></i>
                             </div>
