@@ -108,9 +108,17 @@ public class CashSessionController : Controller
     public async Task<IActionResult> StartClose(Guid id)
     {
         if (Disabled() is { } d) return d;
-        var userId = Guid.Parse(User.FindFirst("UserId")!.Value);
-        await _sessions.StartCloseAsync(id, userId);
-        return RedirectToAction(nameof(Arqueo), new { id });
+        try
+        {
+            var userId = Guid.Parse(User.FindFirst("UserId")!.Value);
+            await _sessions.StartCloseAsync(id, userId);
+            return RedirectToAction(nameof(Arqueo), new { id });
+        }
+        catch (InvalidOperationException ex)
+        {
+            TempData["Error"] = ex.Message;
+            return RedirectToAction(nameof(Detail), new { id });
+        }
     }
 
     [HttpGet]
@@ -161,8 +169,16 @@ public class CashSessionController : Controller
     public async Task<IActionResult> AbortClose(Guid id)
     {
         if (Disabled() is { } d) return d;
-        var userId = Guid.Parse(User.FindFirst("UserId")!.Value);
-        await _reconciliation.AbortCloseAsync(id, userId);
-        return RedirectToAction(nameof(Detail), new { id });
+        try
+        {
+            var userId = Guid.Parse(User.FindFirst("UserId")!.Value);
+            await _reconciliation.AbortCloseAsync(id, userId);
+            return RedirectToAction(nameof(Detail), new { id });
+        }
+        catch (InvalidOperationException ex)
+        {
+            TempData["Error"] = ex.Message;
+            return RedirectToAction(nameof(Detail), new { id });
+        }
     }
 }

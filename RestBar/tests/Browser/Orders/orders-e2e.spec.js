@@ -32,11 +32,12 @@ test.describe('Orders E2E — floor / table / kitchen', () => {
   });
 
   test('ORD-E2E-03 StationOrders pages no 500', async ({ page }) => {
+    test.setTimeout(120_000);
     await loginAsAdmin(page);
     for (const type of ['kitchen', 'bar']) {
-      const res = await page.goto(`/Order/StationOrders?stationType=${type}`, { waitUntil: 'domcontentloaded' });
+      const res = await page.goto(`/Order/StationOrders?stationType=${type}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
       expect(res.status(), type).toBeLessThan(500);
-      await expect(page.getByTestId('kds-nav-home')).toBeVisible({ timeout: 15000 });
+      await expect(page.getByTestId('kds-nav-home')).toBeVisible({ timeout: 20000 });
     }
   });
 

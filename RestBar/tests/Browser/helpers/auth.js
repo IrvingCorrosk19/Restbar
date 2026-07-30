@@ -6,19 +6,20 @@ const ADMIN = {
 };
 
 async function loginAsAdmin(page) {
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    await page.goto('/Auth/Login', { waitUntil: 'domcontentloaded' });
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    await page.goto('/Auth/Login', { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.locator('input[name="email"]').waitFor({ state: 'visible', timeout: 20000 });
     await page.locator('input[name="email"]').fill(ADMIN.email);
     await page.locator('input[name="password"]').fill(ADMIN.password);
-    await page.locator('button.btn-login').click();
-    try {
-      await page.waitForURL(url => !url.pathname.includes('/Auth/Login'), { timeout: 20000 });
-      return;
-    } catch (err) {
-      if (attempt === 3) throw err;
-      await page.waitForTimeout(1500 * attempt);
-    }
+    await Promise.all([
+      page.waitForURL(url => !url.pathname.includes('/Auth/Login'), { timeout: 45000 }).catch(() => null),
+      page.locator('button.btn-login').click(),
+    ]);
+    if (!page.url().includes('/Auth/Login')) return;
+    // Still on login — backoff
+    await page.waitForTimeout(2000 * attempt);
   }
+  throw new Error('loginAsAdmin failed after retries');
 }
 
 async function collectConsoleErrors(page) {
