@@ -2,7 +2,9 @@
     ViewData["Title"] = "Dashboard de Caja";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var snapshot = ViewBag.Snapshot;
-    var active = snapshot?.ActiveSessions as System.Collections.IEnumerable;
+    var activeSessions = ViewBag.ActiveSessions as IEnumerable<RestBar.Controllers.CashSessionController.CashSessionListItem>
+        ?? Enumerable.Empty<RestBar.Controllers.CashSessionController.CashSessionListItem>();
+    var activeCount = activeSessions.Count();
 }
 <div class="container-fluid mt-3">
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -18,7 +20,7 @@
             <div class="card text-bg-primary">
                 <div class="card-body">
                     <h6>Sesiones activas</h6>
-                    <h3>@(snapshot?.ActiveSessions != null ? ((System.Collections.ICollection)snapshot.ActiveSessions).Count : 0)</h3>
+                    <h3>@activeCount</h3>
                 </div>
             </div>
         </div>
@@ -51,10 +53,10 @@
     <div class="card mt-4">
         <div class="card-header"><strong>Sesiones activas</strong></div>
         <div class="card-body p-0">
-            <table class="table mb-0">
+            <table class="table mb-0" data-testid="cash-active-sessions">
                 <thead>
                     <tr>
-                        <th>Id</th>
+                        <th>#</th>
                         <th>Estado</th>
                         <th>Apertura</th>
                         <th>Esperado</th>
@@ -62,20 +64,24 @@
                     </tr>
                 </thead>
                 <tbody>
-                @if (active != null)
+                @foreach (var s in activeSessions)
                 {
-                    foreach (dynamic s in active)
-                    {
-                        <tr>
-                            <td><code>@(((Guid)s.Id).ToString("N")[..8])…</code></td>
-                            <td>@s.Status</td>
-                            <td>@s.OpenedAt</td>
-                            <td>@(((decimal)s.ExpectedCash).ToString("C"))</td>
-                            <td>
-                                <a class="btn btn-sm btn-outline-primary" asp-action="Detail" asp-route-id="@s.Id">Detalle</a>
-                            </td>
-                        </tr>
-                    }
+                    <tr>
+                        <td>@s.SessionNumber</td>
+                        <td>@s.Status</td>
+                        <td>@s.OpenedAt.ToString("g")</td>
+                        <td>@s.ExpectedCash.ToString("C")</td>
+                        <td>
+                            <a class="btn btn-sm btn-outline-primary"
+                               asp-action="Detail"
+                               asp-route-id="@s.Id"
+                               data-testid="cash-session-detail-link">Detalle</a>
+                        </td>
+                    </tr>
+                }
+                @if (activeCount == 0)
+                {
+                    <tr><td colspan="5" class="text-muted p-3">No hay sesiones activas. Abre una desde el wizard.</td></tr>
                 }
                 </tbody>
             </table>

@@ -41,8 +41,35 @@ public class CashSessionController : Controller
     {
         if (Disabled() is { } d) return d;
         var branchId = Guid.Parse(User.FindFirst("BranchId")!.Value);
-        ViewBag.Snapshot = await _reports.GetDashboardSnapshotAsync(branchId);
+        var snapshot = await _reports.GetDashboardSnapshotAsync(branchId);
+        ViewBag.Snapshot = snapshot;
+
+        var activeSessions = await _context.CashSessions.AsNoTracking()
+            .Where(s => s.BranchId == branchId &&
+                        s.Status != CashSessionStatus.Closed &&
+                        s.Status != CashSessionStatus.Historical &&
+                        s.Status != CashSessionStatus.Audited)
+            .OrderByDescending(s => s.OpenedAt)
+            .Select(s => new CashSessionListItem
+            {
+                Id = s.Id,
+                Status = s.Status.ToString(),
+                ExpectedCash = s.ExpectedCash,
+                OpenedAt = s.OpenedAt,
+                SessionNumber = s.SessionNumber
+            })
+            .ToListAsync();
+        ViewBag.ActiveSessions = activeSessions;
         return View();
+    }
+
+    public class CashSessionListItem
+    {
+        public Guid Id { get; set; }
+        public string Status { get; set; } = "";
+        public decimal ExpectedCash { get; set; }
+        public DateTime OpenedAt { get; set; }
+        public int SessionNumber { get; set; }
     }
 
     [HttpGet]

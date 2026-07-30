@@ -185,14 +185,31 @@ async function openCashIfNeeded(page) {
 
 async function getActiveCashSessionId(page) {
   await page.goto('/CashSession/Dashboard', { waitUntil: 'domcontentloaded' });
-  const href = await page.locator('a[href*="/CashSession/Detail"]').first().getAttribute('href').catch(() => null);
+  let href = await page.getByTestId('cash-session-detail-link').first().getAttribute('href').catch(() => null);
+  if (!href) {
+    href = await page.locator('a[href*="/CashSession/Detail"]').first().getAttribute('href').catch(() => null);
+  }
   if (href) {
     const m = href.match(/([0-9a-f-]{36})/i);
     if (m) return m[1];
   }
-  const open = await openCashIfNeeded(page);
-  const fromOpen = (open.href || '').match(/([0-9a-f-]{36})/i);
-  return fromOpen?.[1] || null;
+
+  await page.goto('/CashSession/OpenWizard', { waitUntil: 'domcontentloaded' });
+  const options = page.locator('select[name="registerId"] option');
+  if ((await options.count()) === 0) return null;
+  await page.locator('input[name="openingFloat"]').fill('100');
+  await page.getByRole('button', { name: /Abrir sesión/i }).click();
+  await page.waitForLoadState('domcontentloaded');
+  const fromUrl = page.url().match(/([0-9a-f-]{36})/i);
+  if (fromUrl) return fromUrl[1];
+
+  await page.goto('/CashSession/Dashboard', { waitUntil: 'domcontentloaded' });
+  href = await page.getByTestId('cash-session-detail-link').first().getAttribute('href').catch(() => null);
+  if (!href) {
+    href = await page.locator('a[href*="/CashSession/Detail"]').first().getAttribute('href').catch(() => null);
+  }
+  const m2 = href && href.match(/([0-9a-f-]{36})/i);
+  return m2?.[1] || null;
 }
 
 module.exports = {
