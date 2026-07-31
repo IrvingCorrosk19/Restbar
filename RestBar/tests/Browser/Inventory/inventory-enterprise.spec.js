@@ -31,7 +31,10 @@ test.describe('Inventory enterprise — RB-024', () => {
         unitCost: 1,
       },
     });
-    expect(res.status()).not.toBe(500);
+    const status = res.status();
+    const body = await res.json().catch(() => ({}));
+    expect(status, JSON.stringify(body)).toBe(400);
+    expect(body.success === false || !!body.message).toBeTruthy();
   });
 
   test('INV-E04 adjustment invalid product soft', async ({ page }) => {
@@ -43,6 +46,7 @@ test.describe('Inventory enterprise — RB-024', () => {
         reason: 'cert-neg',
       },
     });
+    expect([400, 404]).toContain(res.status());
     expect(res.status()).not.toBe(500);
   });
 

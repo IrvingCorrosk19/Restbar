@@ -1,5 +1,7 @@
 # RestBar PostgreSQL backup (pg_dump custom format)
 # Does NOT modify other VPS apps. Requires PuTTY plink/pscp OR local docker.
+# Hard rule: RestBar Postgres role on VPS/Docker is restbaruser (NOT postgres).
+# See Com/psql-restbar-vps.ps1
 param(
     [string]$OutputDir = "",
     [string]$RemoteHost = "root@164.68.99.83",
