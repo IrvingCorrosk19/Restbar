@@ -204,13 +204,23 @@ namespace RestBar.Middleware
                     _ => StatusCodes.Status500InternalServerError
                 };
 
+                // Production: never leak exception.Message to clients (OWASP info disclosure).
+                var isDev = string.Equals(
+                    Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"),
+                    "Development",
+                    StringComparison.OrdinalIgnoreCase);
+                var correlationId = context.Items[CorrelationIdMiddleware.ItemKey]?.ToString()
+                    ?? context.TraceIdentifier;
                 var errorResponse = new
                 {
-                    Error = exception.Message,
+                    Error = isDev
+                        ? exception.Message
+                        : "Ocurrió un error interno. Contacte soporte con el CorrelationId.",
                     StatusCode = context.Response.StatusCode,
                     Timestamp = DateTime.UtcNow,
-                    Path = context.Request.Path,
-                    Method = context.Request.Method
+                    Path = context.Request.Path.Value,
+                    Method = context.Request.Method,
+                    CorrelationId = correlationId
                 };
 
                 // Log del error de forma segura

@@ -16,6 +16,11 @@ RUN dotnet publish -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 
+# curl for Docker HEALTHCHECK against /health/live
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copiar los archivos publicados desde la etapa de build
 COPY --from=build /app/publish .
 

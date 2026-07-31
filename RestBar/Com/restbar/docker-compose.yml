@@ -53,6 +53,12 @@ services:
       - "8084:8080"
     networks:
       - restbar_net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/health/live || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
 
 volumes:
   restbar_postgres_data:

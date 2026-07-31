@@ -1,6 +1,10 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using RestBar.Interfaces;
 using RestBar.Models;
 using RestBar.Services;
@@ -9,6 +13,7 @@ using System.Threading.RateLimiting;
 using RestBar.Hubs;
 using RestBar.Middleware;
 using RestBar.Helpers;
+using RestBar.Infrastructure.Health;
 using Npgsql;
 using System.Globalization;
 
@@ -68,6 +73,8 @@ builder.Services.AddSession(options =>
     options.IdleTimeout = TimeSpan.FromMinutes(30);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
 // Configurar autenticación por cookies
@@ -82,7 +89,11 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.SlidingExpiration = true; // Renovar automáticamente
         options.Cookie.Name = "RestBarAuth";
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        // SameAsRequest: Secure when request is HTTPS (incl. via X-Forwarded-Proto behind nginx).
+        // Set Security:RequireSecureCookies=true only when the sole entrypoint is HTTPS.
+        options.Cookie.SecurePolicy = builder.Configuration.GetValue("Security:RequireSecureCookies", false)
+            ? CookieSecurePolicy.Always
+            : CookieSecurePolicy.SameAsRequest;
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.Events = new CookieAuthenticationEvents
         {
@@ -170,8 +181,36 @@ NpgsqlConnection.GlobalTypeMapper.EnableDynamicJson();
 // Configurar el RestBarContext con HttpContextAccessor
 builder.Services.AddDbContext<RestBarContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
-        o => o.MapEnum<UserRole>("user_role_enum"))
+        o =>
+        {
+            o.MapEnum<UserRole>("user_role_enum");
+            o.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(10), errorCodesToAdd: null);
+            o.CommandTimeout(30);
+        })
 );
+
+// Data Protection keys persistidos (requerido detrás de Docker/nginx para cookies/antiforgery estables)
+var dpPath = builder.Configuration["ASPNETCORE_DATAPROTECTION_PATH"]
+    ?? Environment.GetEnvironmentVariable("ASPNETCORE_DATAPROTECTION_PATH")
+    ?? Path.Combine(builder.Environment.ContentRootPath, "dataprotection-keys");
+Directory.CreateDirectory(dpPath);
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(dpPath))
+    .SetApplicationName("RestBar");
+
+// Forwarded headers (nginx / reverse proxy TLS termination)
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // Trusted proxy network is the docker/nginx edge; clear defaults for container deployments.
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+builder.Services.AddHealthChecks()
+    .AddCheck("self", () => HealthCheckResult.Healthy("alive"), tags: new[] { "live" })
+    .AddCheck<PostgresReadyHealthCheck>("postgres", failureStatus: HealthStatus.Unhealthy, tags: new[] { "ready" });
+
 
 // Configurar el RestBarContext con HttpContextAccessor para tracking automático
 builder.Services.AddScoped<RestBarContext>(provider =>
@@ -356,6 +395,11 @@ if (args.Contains("--verify-db"))
 }
 
 // Configure the HTTP request pipeline.
+// Must run first when behind nginx TLS termination.
+app.UseForwardedHeaders();
+app.UseCorrelationId();
+app.UseSecurityHeaders();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -436,6 +480,17 @@ app.MapControllerRoute(
 
 // Mapear el hub de SignalR
 app.MapHub<OrderHub>("/orderHub");
+
+// Observability: liveness (process) + readiness (DB)
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = r => r.Tags.Contains("live")
+});
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = r => r.Tags.Contains("ready")
+});
+app.MapHealthChecks("/health");
 
 
 

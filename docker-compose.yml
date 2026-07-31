@@ -36,6 +36,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_DATAPROTECTION_PATH: /app/dataprotection-keys
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
       ConnectionStrings__DefaultConnection: Host=restbar_postgres;Port=5432;Database=${POSTGRES_DB:-RestBar};Username=${POSTGRES_USER:-restbaruser};Password=${POSTGRES_PASSWORD}
     volumes:
       - restbar_dataprotection_keys:/app/dataprotection-keys
@@ -43,6 +45,12 @@ services:
       - "8084:8080"
     networks:
       - restbar_net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/health/live || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
 
 volumes:
   restbar_postgres_data:
