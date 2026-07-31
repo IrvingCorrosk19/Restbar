@@ -24,6 +24,7 @@ namespace RestBar.Middleware
             if (context.Request.Path.StartsWithSegments("/Auth") || 
                 context.Request.Path.StartsWithSegments("/Seed") ||
                 context.Request.Path.StartsWithSegments("/Home/Error") ||
+                context.Request.Path.StartsWithSegments("/health") ||
                 context.Request.Path.Value == "/" ||
                 context.Request.Path.StartsWithSegments("/css") ||
                 context.Request.Path.StartsWithSegments("/js") ||
