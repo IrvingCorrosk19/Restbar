@@ -1,0 +1,8 @@
+# FULL BROWSER CERTIFICATION — README
+
+Fuente oficial: **`00_MASTER_BROWSER_FUNCTIONAL_TEST_PLAN.md`**
+
+Veredicto: ver **`30_FINAL_FULL_SYSTEM_CERTIFICATION.md`** → **PASS WITH CONDITIONS**.
+
+Inventario: `01_SYSTEM_MODULE_INVENTORY.md`  
+Ejecución: Playwright `RestBar/tests/Browser` → `RESTBAR_BASE_URL=http://164.68.99.83:8084`
