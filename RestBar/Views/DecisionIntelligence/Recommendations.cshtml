@@ -1,0 +1,34 @@
+@model IReadOnlyList<RestBar.Domain.DecisionIntelligence.DiRecommendationDto>
+@{
+    ViewData["Title"] = "Recomendaciones";
+}
+<div class="container-fluid py-3">
+    <h1 class="h3">Recommendation Engine</h1>
+    <p class="text-muted">Cada ítem incluye observación, evidencia, acción e impacto. No son acusaciones de fraude.</p>
+    @foreach (var r in Model)
+    {
+        <div class="border rounded p-3 mb-3">
+            <div class="d-flex justify-content-between">
+                <strong>@r.Code · @r.Category · @r.Severity</strong>
+                <span>Confianza: @r.Confidence</span>
+            </div>
+            <p class="mb-1"><strong>Observación:</strong> @r.Observation</p>
+            <p class="mb-1"><strong>Evidencia:</strong> @r.Evidence</p>
+            <p class="mb-1"><strong>Acción:</strong> @r.RecommendedAction</p>
+            <p class="mb-2"><strong>Impacto esperado:</strong> @r.ExpectedImpact</p>
+            <form asp-action="AcceptRecommendation" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="code" value="@r.Code" />
+                <input type="hidden" name="category" value="@r.Category" />
+                <input type="hidden" name="observation" value="@r.Observation" />
+                <input type="hidden" name="evidence" value="@r.Evidence" />
+                <input type="hidden" name="action" value="@r.RecommendedAction" />
+                <input type="hidden" name="expectedImpact" value="@r.ExpectedImpact" />
+                <input type="hidden" name="confidence" value="@r.Confidence" />
+                <input type="hidden" name="severity" value="@r.Severity" />
+                <button type="submit" class="btn btn-sm btn-primary">Aceptar y seguir</button>
+            </form>
+        </div>
+    }
+    <a class="btn btn-outline-light btn-sm" asp-action="Cockpit">← Cockpit</a>
+</div>

@@ -1,0 +1,19 @@
+@model RestBar.Interfaces.DiForecastDto
+@{
+    ViewData["Title"] = "Forecast Center";
+}
+<div class="container-fluid py-3">
+    <h1 class="h3">Forecast Center — Ventas diarias</h1>
+    <p class="text-muted">Modelo: <strong>@Model.SelectedModel</strong> · Confianza: <strong>@Model.Confidence</strong> · Beat naive: @(Model.BeatsNaive ? "Sí" : "No")</p>
+    <div class="alert alert-secondary">@Model.Limitations</div>
+    <table class="table table-sm table-dark">
+        <thead><tr><th>Día</th><th>Punto</th><th>Inferior</th><th>Superior</th></tr></thead>
+        <tbody>
+        @foreach (var p in Model.Points)
+        {
+            <tr><td>D+@p.DayOffset</td><td>@p.Point.ToString("N2")</td><td>@p.Lower.ToString("N2")</td><td>@p.Upper.ToString("N2")</td></tr>
+        }
+        </tbody>
+    </table>
+    <a class="btn btn-outline-light btn-sm" asp-action="Cockpit">← Cockpit</a>
+</div>

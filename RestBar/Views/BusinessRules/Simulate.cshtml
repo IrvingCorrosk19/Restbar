@@ -1,0 +1,23 @@
+@model RestBar.Services.BusinessRules.RuleRunResult
+@{
+    ViewData["Title"] = "Simulador";
+    var rule = ViewBag.Rule as RestBar.Models.BrRule;
+    var facts = ViewBag.Facts as Dictionary<string, object?>;
+}
+<div class="container-fluid py-3">
+    <h1 class="h3">Simulador — @(rule?.Name)</h1>
+    <p>Resultado: <strong>@Model.Result</strong> · @Model.DurationMs ms · No modifica datos de negocio (solo log de simulación).</p>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <h2 class="h5">Trace</h2>
+            <ul>@foreach (var t in Model.Trace) { <li class="small">@t</li> }</ul>
+            <h2 class="h5">Acciones</h2>
+            <ul>@foreach (var a in Model.ActionsPlannedOrExecuted) { <li class="small">@a</li> }</ul>
+        </div>
+        <div class="col-md-6">
+            <h2 class="h5">Facts evaluados</h2>
+            <pre class="small">@System.Text.Json.JsonSerializer.Serialize(facts, new System.Text.Json.JsonSerializerOptions { WriteIndented = true })</pre>
+        </div>
+    </div>
+    <a class="btn btn-outline-light btn-sm" asp-action="Edit" asp-route-id="@Model.RuleId">← Editar</a>
+</div>

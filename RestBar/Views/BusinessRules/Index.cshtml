@@ -1,0 +1,63 @@
+@model IReadOnlyList<RestBar.Models.BrRule>
+@{
+    ViewData["Title"] = "Business Rules";
+    var templates = ViewBag.Templates as IReadOnlyList<RestBar.Domain.BusinessRules.BusinessRuleTemplates.TemplateDef>;
+}
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="h3 mb-0">Business Rules Engine</h1>
+            <p class="text-muted mb-0">Automatización configurable · versionada · auditable</p>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-outline-light btn-sm" asp-action="Templates">Plantillas</a>
+            <a class="btn btn-outline-light btn-sm" asp-action="Executions">Auditoría</a>
+            <form asp-action="RunLive" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Guid.Empty" />
+                <button class="btn btn-primary btn-sm" type="submit">Evaluar publicadas (live)</button>
+            </form>
+        </div>
+    </div>
+    @if (TempData["Ok"] != null) { <div class="alert alert-success">@TempData["Ok"]</div> }
+    @if (TempData["Err"] != null) { <div class="alert alert-danger">@TempData["Err"]</div> }
+
+    <table class="table table-sm table-dark">
+        <thead><tr><th>Prioridad</th><th>Nombre</th><th>Categoría</th><th>Estado</th><th>Ver</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var r in Model)
+        {
+            <tr>
+                <td>@r.Priority</td>
+                <td>@r.Name</td>
+                <td>@r.Category</td>
+                <td>@r.Status</td>
+                <td>v@r.CurrentVersionNumber</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@r.Id">Editar</a> |
+                    <a asp-action="Simulate" asp-route-id="@r.Id">Simular</a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+
+    <h2 class="h5 mt-4">Crear desde plantilla</h2>
+    <div class="row g-2">
+    @if (templates != null)
+    {
+        foreach (var t in templates.Take(8))
+        {
+            <div class="col-md-3">
+                <form asp-action="CreateFromTemplate" method="post" class="border rounded p-2 h-100">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="templateCode" value="@t.Code" />
+                    <div class="fw-semibold">@t.Name</div>
+                    <div class="small text-muted">@t.Category</div>
+                    <button class="btn btn-sm btn-outline-primary mt-2" type="submit">Usar</button>
+                </form>
+            </div>
+        }
+    }
+    </div>
+</div>

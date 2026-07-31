@@ -16,6 +16,8 @@ public static class EnterpriseIntelligenceExtensions
         services.AddScoped<IAnalyticsScopeService, AnalyticsScopeService>();
         services.AddScoped<IAnalyticsQueryService, AnalyticsQueryService>();
         services.AddScoped<IAnalyticsExportService, AnalyticsExportService>();
+        services.AddScoped<IDecisionIntelligenceService, RestBar.Services.DecisionIntelligence.DecisionIntelligenceService>();
+        services.AddScoped<RestBar.Services.BusinessRules.IBusinessRulesEngine, RestBar.Services.BusinessRules.BusinessRulesEngine>();
         return services;
     }
 }

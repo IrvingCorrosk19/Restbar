@@ -1,0 +1,78 @@
+@model RestBar.Models.BrRule
+@{
+    ViewData["Title"] = "Editar regla";
+    var latest = Model.Versions.OrderByDescending(v => v.VersionNumber).FirstOrDefault();
+    var flow = latest?.FlowJson ?? "{}";
+}
+<div class="container-fluid py-3">
+    <h1 class="h3">@Model.Name <span class="badge bg-secondary">@Model.Status</span></h1>
+    <p class="text-muted">@Model.Description</p>
+    @if (TempData["Ok"] != null) { <div class="alert alert-success">@TempData["Ok"]</div> }
+    @if (TempData["Err"] != null) { <div class="alert alert-danger">@TempData["Err"]</div> }
+
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <h2 class="h5">Flow Builder (JSON)</h2>
+            <p class="small">Nodos: Evento implícito → Condiciones (AND/OR) → Acciones → Fin. Validado al publicar.</p>
+            <form asp-action="SaveDraft" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <label class="form-label">FlowJson</label>
+                <textarea name="flowJson" id="flowJson" class="form-control font-monospace" rows="18">@flow</textarea>
+                <label class="form-label mt-2">Notas de versión</label>
+                <input name="notes" class="form-control" />
+                <div class="mt-2 btn-group">
+                    <button class="btn btn-primary" type="submit">Guardar borrador (nueva versión)</button>
+                </div>
+            </form>
+            <div class="mt-3">
+                <button type="button" class="btn btn-sm btn-outline-light" id="btnAddCond">+ Condición</button>
+                <button type="button" class="btn btn-sm btn-outline-light" id="btnAddAct">+ Acción alerta</button>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <h2 class="h5">Acciones</h2>
+            <form asp-action="Publish" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button class="btn btn-success btn-sm" type="submit">Publicar</button>
+            </form>
+            <form asp-action="Disable" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button class="btn btn-warning btn-sm" type="submit">Desactivar</button>
+            </form>
+            <a class="btn btn-outline-light btn-sm" asp-action="Simulate" asp-route-id="@Model.Id">Simular</a>
+            <a class="btn btn-outline-light btn-sm" asp-action="Index">← Lista</a>
+
+            <h2 class="h5 mt-4">Versiones</h2>
+            <ul class="list-group list-group-flush">
+            @foreach (var v in Model.Versions.OrderByDescending(x => x.VersionNumber))
+            {
+                <li class="list-group-item bg-transparent">
+                    v@v.VersionNumber @(v.IsPublished ? "(publicada)" : "") — @v.CreatedAtUtc.ToString("u")
+                    <div class="small text-muted">@v.Notes</div>
+                </li>
+            }
+            </ul>
+            <p class="small mt-3">Acciones permitidas v1: CreateAlert, CreateNotification, CreateRecommendation, CreateTask, WriteAudit. Sin acciones destructivas.</p>
+        </div>
+    </div>
+</div>
+<script>
+(() => {
+  const ta = document.getElementById('flowJson');
+  function parse() { try { return JSON.parse(ta.value || '{}'); } catch { return { logic:'AND', conditions:[], actions:[] }; } }
+  function write(o) { ta.value = JSON.stringify(o, null, 2); }
+  document.getElementById('btnAddCond')?.addEventListener('click', () => {
+    const o = parse(); o.conditions = o.conditions || [];
+    o.conditions.push({ field: 'inventory.lowStockCount', op: 'gt', value: 0 });
+    write(o);
+  });
+  document.getElementById('btnAddAct')?.addEventListener('click', () => {
+    const o = parse(); o.actions = o.actions || [];
+    o.actions.push({ type: 'CreateAlert', params: { severity: 'Medium', code: 'BR', message: 'Alerta' } });
+    write(o);
+  });
+})();
+</script>

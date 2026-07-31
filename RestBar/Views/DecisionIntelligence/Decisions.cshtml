@@ -1,0 +1,24 @@
+@model IReadOnlyList<RestBar.Models.DiDecisionRecord>
+@{
+    ViewData["Title"] = "Decision Tracking";
+}
+<div class="container-fluid py-3">
+    <h1 class="h3">Decision Tracking</h1>
+    <table class="table table-sm table-dark">
+        <thead><tr><th>Fecha</th><th>Código</th><th>Estado</th><th>Acción</th><th>Impacto esp.</th><th>Impacto real</th></tr></thead>
+        <tbody>
+        @foreach (var d in Model)
+        {
+            <tr>
+                <td>@d.CreatedAtUtc.ToString("u")</td>
+                <td>@d.RecommendationCode</td>
+                <td>@d.Status</td>
+                <td>@d.RecommendedAction</td>
+                <td>@(d.ExpectedImpactValue?.ToString("N2") ?? "—")</td>
+                <td>@(d.ActualImpactValue?.ToString("N2") ?? "—")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    <a class="btn btn-outline-light btn-sm" asp-action="Cockpit">← Cockpit</a>
+</div>

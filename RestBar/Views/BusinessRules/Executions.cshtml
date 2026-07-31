@@ -1,0 +1,22 @@
+@model IReadOnlyList<RestBar.Models.BrRuleExecution>
+@{ ViewData["Title"] = "Auditoría de reglas"; }
+<div class="container-fluid py-3">
+    <h1 class="h3">Auditoría de ejecuciones</h1>
+    <table class="table table-sm table-dark">
+        <thead><tr><th>Fecha</th><th>Modo</th><th>Resultado</th><th>ms</th><th>Dedupe</th><th>Logs</th></tr></thead>
+        <tbody>
+        @foreach (var e in Model)
+        {
+            <tr>
+                <td>@e.CreatedAtUtc.ToString("u")</td>
+                <td>@e.Mode</td>
+                <td>@e.Result</td>
+                <td>@e.DurationMs</td>
+                <td class="small text-truncate" style="max-width:8rem">@e.DedupeKey</td>
+                <td>@e.Logs.Count</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    <a asp-action="Index">← Lista</a>
+</div>

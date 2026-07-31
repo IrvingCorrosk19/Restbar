@@ -1,0 +1,27 @@
+@model IReadOnlyList<RestBar.Domain.BusinessRules.BusinessRuleTemplates.TemplateDef>
+@{ ViewData["Title"] = "Plantillas"; }
+<div class="container-fluid py-3">
+    <h1 class="h3">Plantillas del sistema</h1>
+    <table class="table table-sm table-dark">
+        <thead><tr><th>Código</th><th>Nombre</th><th>Categoría</th><th>Descripción</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var t in Model)
+        {
+            <tr>
+                <td>@t.Code</td>
+                <td>@t.Name</td>
+                <td>@t.Category</td>
+                <td>@t.Description</td>
+                <td>
+                    <form asp-action="CreateFromTemplate" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="templateCode" value="@t.Code" />
+                        <button class="btn btn-sm btn-primary" type="submit">Crear</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    <a asp-action="Index">← Lista</a>
+</div>

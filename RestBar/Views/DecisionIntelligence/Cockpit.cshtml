@@ -1,0 +1,90 @@
+@model RestBar.Interfaces.DiCockpitDto
+@{
+    ViewData["Title"] = "Decision Intelligence — Cockpit";
+    var f = Model.Forecast;
+}
+<div class="container-fluid py-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <h1 class="h3 mb-0">Executive Decision Cockpit</h1>
+            <p class="text-muted mb-0">Qué pasó · qué pasa · qué pasará · qué hacer</p>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-outline-light btn-sm" asp-action="Forecast">Forecast</a>
+            <a class="btn btn-outline-light btn-sm" asp-action="Recommendations">Recomendaciones</a>
+            <a class="btn btn-outline-light btn-sm" asp-action="Decisions">Seguimiento</a>
+            <a class="btn btn-outline-light btn-sm" asp-action="Simulations">Simulaciones</a>
+            <a class="btn btn-outline-light btn-sm" asp-action="DataQuality">Data Quality</a>
+        </div>
+    </div>
+
+    <div class="alert @(Model.Quality.GlobalScore >= 80 ? "alert-success" : Model.Quality.GlobalScore >= 60 ? "alert-warning" : "alert-danger")" role="status">
+        <strong>Data Quality @Model.Quality.GlobalScore/100 (@Model.Quality.Level).</strong>
+        @Model.Quality.Message
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <div class="p-3 border rounded">
+                <div class="text-muted small">Forecast 7d · modelo @f.SelectedModel</div>
+                <div class="fs-4">Confianza: <strong>@f.Confidence</strong></div>
+                <div class="small">Beat naive: @(f.BeatsNaive ? "Sí" : "No") · Histórico: @f.HistoryPoints días</div>
+                @if (f.Points.Count > 0)
+                {
+                    <div class="mt-2">D+1: <strong>@f.Points[0].Point.ToString("N2")</strong> [@f.Points[0].Lower.ToString("N0") – @f.Points[0].Upper.ToString("N0")]</div>
+                }
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 border rounded">
+                <div class="text-muted small">Backtest MAE / MAPE</div>
+                <div>MAE: @(f.Backtest.Mae?.ToString("N2") ?? "—")</div>
+                <div>MAPE: @(f.Backtest.Mape?.ToString("N1") ?? "—")%</div>
+                <div class="small text-muted">Baseline naive MAE: @(f.NaiveBaseline.Mae?.ToString("N2") ?? "—")</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 border rounded">
+                <div class="text-muted small">Recomendaciones abiertas</div>
+                <div class="fs-3">@Model.Recommendations.Count</div>
+                <a asp-action="Recommendations">Ver evidencia →</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <h2 class="h5">Recomendaciones prioritarias</h2>
+            <ul class="list-group list-group-flush">
+            @foreach (var r in Model.Recommendations.Take(8))
+            {
+                <li class="list-group-item bg-transparent">
+                    <div class="fw-semibold">[@r.Severity] @r.Code — @r.Category</div>
+                    <div>@r.Observation</div>
+                    <div class="small text-muted">Evidencia: @r.Evidence</div>
+                    <div class="small"><strong>Acción:</strong> @r.RecommendedAction</div>
+                </li>
+            }
+            @if (Model.Recommendations.Count == 0)
+            {
+                <li class="list-group-item bg-transparent text-muted">Sin recomendaciones generadas para el filtro actual.</li>
+            }
+            </ul>
+        </div>
+        <div class="col-lg-6">
+            <h2 class="h5">Alertas BI</h2>
+            <ul class="list-group list-group-flush">
+            @foreach (dynamic a in Model.Alerts.Take(10))
+            {
+                <li class="list-group-item bg-transparent">@a.AlertCode — @a.Message</li>
+            }
+            @if (Model.Alerts.Count == 0)
+            {
+                <li class="list-group-item bg-transparent text-muted">Sin alertas abiertas.</li>
+            }
+            </ul>
+            <p class="small text-muted mt-3">@f.Limitations</p>
+            <p class="small text-muted">Generado UTC: @Model.GeneratedAtUtc</p>
+        </div>
+    </div>
+</div>

@@ -29,4 +29,8 @@ public sealed class FeatureFlags
     public bool EnableFoodCostModule { get; set; }
     public bool EnableCommandCenter { get; set; }
     public bool EnableCopilot { get; set; }
+    /// <summary>RB-028 Decision Intelligence Center (forecast + recommendations). Default off until enabled per env.</summary>
+    public bool EnableDecisionIntelligence { get; set; }
+    /// <summary>RB-029 Business Rules & Automation Engine.</summary>
+    public bool EnableBusinessRules { get; set; }
 }

@@ -1,0 +1,12 @@
+@model RestBar.Interfaces.DiDataQualityBanner
+@{
+    ViewData["Title"] = "Data Quality";
+}
+<div class="container-fluid py-3">
+    <h1 class="h3">Data Quality</h1>
+    <div class="display-6">@Model.GlobalScore / 100</div>
+    <p><strong>@Model.Level</strong></p>
+    <p>@Model.Message</p>
+    <p class="small">Detalle por dominio: <code>DECISION_INTELLIGENCE/02_DATA_QUALITY_REPORT.md</code></p>
+    <a class="btn btn-outline-light btn-sm" asp-action="Cockpit">← Cockpit</a>
+</div>

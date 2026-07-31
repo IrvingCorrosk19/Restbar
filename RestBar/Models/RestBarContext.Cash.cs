@@ -241,10 +241,14 @@ public partial class RestBarContext
         ConfigureFoodCostModel(modelBuilder);
         ConfigureIntelligenceModel(modelBuilder);
         ConfigureCopilotModel(modelBuilder);
+        ConfigureDecisionIntelligenceModel(modelBuilder);
+        ConfigureBusinessRulesModel(modelBuilder);
     }
 
     partial void ConfigureProcurementModel(ModelBuilder modelBuilder);
     partial void ConfigureFoodCostModel(ModelBuilder modelBuilder);
     partial void ConfigureIntelligenceModel(ModelBuilder modelBuilder);
     partial void ConfigureCopilotModel(ModelBuilder modelBuilder);
+    partial void ConfigureDecisionIntelligenceModel(ModelBuilder modelBuilder);
+    partial void ConfigureBusinessRulesModel(ModelBuilder modelBuilder);
 }

@@ -40,7 +40,7 @@
 - Security headers + CSP baseline  
 - Correlation ID  
 - ForwardedHeaders + DataProtection persistence  
-- Health `/health`, `/health/live`, `/health/ready`  
+- Health `/health`, `/health/live`, `/health/ready` (anonymous allowlist in Permission/Tenant middleware)  
 - EF `EnableRetryOnFailure`  
 - Error responses without exception text in Production  
 - Docker web healthcheck + curl in runtime image  
@@ -48,6 +48,8 @@
 - GitHub Actions CI build/test  
 - `.env.example`  
 - Full guide pack  
+
+**VPS evidence post-deploy:** `GET /health/live|ready|health` → `200 Healthy`; headers `X-Frame-Options=DENY`, `X-Content-Type-Options=nosniff`, CSP present.
 
 ## Verdict
 
