@@ -43,6 +43,8 @@ function significantConsoleErrors(errors) {
     'failed to load resource',
     'status of 404',
     'net::err_',
+    'aspnetcore-browser-refresh',
+    'cdn.datatables.net',
   ];
   return errors.filter(e => {
     const lower = String(e).toLowerCase();

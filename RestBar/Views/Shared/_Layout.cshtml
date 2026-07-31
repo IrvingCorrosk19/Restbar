@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment HostEnv
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
@@ -170,10 +171,11 @@
     <!-- ✅ NUEVO: CSS para cuentas separadas -->
     <link href="~/css/separate-accounts.css" rel="stylesheet" asp-append-version="true" />
     
-    <script src="~/js/dev-cache-buster.js" asp-append-version="true"></script>
- 
-    
-    <script src="~/_framework/aspnetcore-browser-refresh.js"></script>
+    @if (HostEnv.IsDevelopment())
+    {
+        <script src="~/js/dev-cache-buster.js" asp-append-version="true"></script>
+        <script src="~/_framework/aspnetcore-browser-refresh.js"></script>
+    }
     
     <!-- ✅ NUEVO: JS para cuentas separadas - Cargado al final -->
     <script src="~/js/order/separate-accounts-simple.js" asp-append-version="true"></script>
