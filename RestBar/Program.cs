@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using RestBar.Interfaces;
 using RestBar.Models;
@@ -181,14 +182,18 @@ NpgsqlConnection.GlobalTypeMapper.EnableDynamicJson();
 
 // Configurar el RestBarContext con HttpContextAccessor
 builder.Services.AddDbContext<RestBarContext>(options =>
+{
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
         o =>
         {
             o.MapEnum<UserRole>("user_role_enum");
             o.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(10), errorCodesToAdd: null);
             o.CommandTimeout(30);
-        })
-);
+        });
+    // SQL-only enterprise migrations (DI/BR/etc.) can leave the snapshot behind the mapped entities;
+    // do not block Production startup Migrate on PendingModelChangesWarning.
+    options.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
+});
 
 // Data Protection keys persistidos (requerido detrás de Docker/nginx para cookies/antiforgery estables)
 var dpPath = builder.Configuration["ASPNETCORE_DATAPROTECTION_PATH"]
