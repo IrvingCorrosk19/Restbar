@@ -518,7 +518,7 @@ namespace RestBar.Services
             return order;
         }
 
-        // ✅ MEJORADO: Agregar items a una orden existente con reducción de inventario
+        // Agregar items a orden existente. Stock se descuenta en SendToKitchen / AddOrUpdateOrderWithPendingItemsAsync.
         public async Task<Order> AddItemsToOrderAsync(Guid orderId, List<OrderItemDto> items)
         {
             var order = await _context.Orders

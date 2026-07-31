@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using RestBar.Domain.FoodCost;
 using RestBar.Interfaces;
 using RestBar.Models;
 
@@ -26,6 +27,18 @@ public class InventoryOperationsService : IInventoryOperationsService
         _logger = logger;
     }
 
+    /// <summary>
+    /// Physical qty for one recipe line: base × portions × (1 + waste%) × (100 / yield%).
+    /// Aligns POS consumption with FoodCost EffectiveIngredientQty + yield factor.
+    /// </summary>
+    public static decimal ComputeRecipeIngredientQty(decimal lineQty, decimal portions, decimal wastePercent, decimal yieldPercent)
+    {
+        var withWaste = FoodCostMath.EffectiveIngredientQty(lineQty * portions, wastePercent);
+        if (yieldPercent <= 0m || yieldPercent == 100m)
+            return Math.Round(withWaste, 4);
+        return Math.Round(withWaste * (100m / yieldPercent), 4);
+    }
+
     public async Task DeductInventoryForSaleAsync(Guid productId, decimal quantity, Guid? stationId, Guid? branchId, Guid? companyId, Guid? orderId, Guid? userId)
     {
         var recipe = await _context.Recipes.AsNoTracking()
@@ -36,15 +49,15 @@ public class InventoryOperationsService : IInventoryOperationsService
         {
             foreach (var line in recipe.Lines)
             {
-                var ingredientQty = line.Quantity * quantity;
+                var ingredientQty = ComputeRecipeIngredientQty(line.Quantity, quantity, line.WastePercent, recipe.YieldPercent);
                 var ingredientStation = line.StationId ?? stationId;
                 var stockBefore = await _productService.GetStockInStationAsync(line.IngredientProductId, ingredientStation ?? Guid.Empty, branchId);
                 await _productService.ReduceStockAsync(line.IngredientProductId, ingredientQty, ingredientStation, branchId);
                 var stockAfter = await _productService.GetStockInStationAsync(line.IngredientProductId, ingredientStation ?? Guid.Empty, branchId);
-                await LogMovementAsync(line.IngredientProductId, InventoryMovementType.Sale, -ingredientQty, stockBefore, stockAfter, ingredientStation, branchId, companyId, userId, orderId, $"Receta {recipe.Name}", productId.ToString());
+                await LogMovementAsync(line.IngredientProductId, InventoryMovementType.Sale, -ingredientQty, stockBefore, stockAfter, ingredientStation, branchId, companyId, userId, orderId, $"Consumo receta {recipe.Name} (waste/yield)", productId.ToString());
                 await NotifyStock(line.IngredientProductId, ingredientStation, branchId, stockAfter, stockBefore, ingredientQty);
             }
-            _logger.LogInformation("[InventoryOps] Receta aplicada para producto {ProductId}, {LineCount} ingredientes", productId, recipe.Lines.Count);
+            _logger.LogInformation("[InventoryOps] Receta aplicada para producto {ProductId}, {LineCount} ingredientes (waste/yield)", productId, recipe.Lines.Count);
             return;
         }
 
@@ -65,12 +78,12 @@ public class InventoryOperationsService : IInventoryOperationsService
         {
             foreach (var line in recipe.Lines)
             {
-                var ingredientQty = line.Quantity * quantity;
+                var ingredientQty = ComputeRecipeIngredientQty(line.Quantity, quantity, line.WastePercent, recipe.YieldPercent);
                 var ingredientStation = line.StationId ?? stationId;
                 var stockBefore = await _productService.GetStockInStationAsync(line.IngredientProductId, ingredientStation ?? Guid.Empty, branchId);
                 await _productService.RestoreStockAsync(line.IngredientProductId, ingredientQty, ingredientStation, branchId);
                 var stockAfter = await _productService.GetStockInStationAsync(line.IngredientProductId, ingredientStation ?? Guid.Empty, branchId);
-                await LogMovementAsync(line.IngredientProductId, InventoryMovementType.CancelRestore, ingredientQty, stockBefore, stockAfter, ingredientStation, branchId, companyId, userId, orderId, $"Cancel receta {recipe.Name}", productId.ToString());
+                await LogMovementAsync(line.IngredientProductId, InventoryMovementType.CancelRestore, ingredientQty, stockBefore, stockAfter, ingredientStation, branchId, companyId, userId, orderId, $"Cancel consumo receta {recipe.Name}", productId.ToString());
                 await NotifyStock(line.IngredientProductId, ingredientStation, branchId, stockAfter, stockBefore, ingredientQty);
             }
             return;

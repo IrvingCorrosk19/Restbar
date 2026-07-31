@@ -88,4 +88,28 @@ public class StockTransferController : Controller
 
         return Json(new { success = true });
     }
+
+    [HttpPost]
+    public async Task<IActionResult> Reject(Guid id, [FromBody] RejectDto? dto)
+    {
+        var transfer = await _context.StockTransfers.FindAsync(id);
+        if (transfer == null)
+            return NotFound(new { success = false, message = "Transferencia no encontrada" });
+
+        if (transfer.Status != StockTransferStatus.Pending)
+            return BadRequest(new { success = false, message = "Solo se pueden rechazar transferencias pendientes" });
+
+        transfer.Status = StockTransferStatus.Rejected;
+        if (!string.IsNullOrWhiteSpace(dto?.Reason))
+            transfer.Notes = string.IsNullOrWhiteSpace(transfer.Notes)
+                ? $"Rechazado: {dto.Reason}"
+                : $"{transfer.Notes} | Rechazado: {dto.Reason}";
+        await _context.SaveChangesAsync();
+        return Json(new { success = true });
+    }
+
+    public class RejectDto
+    {
+        public string? Reason { get; set; }
+    }
 }

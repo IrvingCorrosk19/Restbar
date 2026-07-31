@@ -292,6 +292,79 @@ namespace RestBar.Controllers
             }
         }
 
+        /// <summary>
+        /// Enterprise inventory snapshot for dashboard / BI: value, critical stock, recent movements, waste.
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetEnterpriseSnapshot()
+        {
+            try
+            {
+                var currentUser = await GetCurrentUserAsync();
+                if (currentUser == null)
+                    return Json(new { success = false, message = "Usuario o sucursal no encontrado" });
+
+                var branchId = currentUser.BranchId;
+                var companyId = currentUser.Branch!.CompanyId;
+                var since = DateTime.UtcNow.AddDays(-7);
+
+                var products = await _context.Products.AsNoTracking()
+                    .Where(p => p.IsActive && p.CompanyId == companyId && (p.BranchId == branchId || p.BranchId == null) && p.TrackInventory)
+                    .Select(p => new { p.Id, p.Stock, p.MinStock, Cost = p.AverageCost ?? p.Cost ?? 0m })
+                    .ToListAsync();
+
+                var inventoryValue = products.Sum(p => (p.Stock ?? 0m) * p.Cost);
+                var criticalCount = products.Count(p => p.MinStock != null && p.Stock != null && p.Stock <= p.MinStock);
+                var negativeCount = products.Count(p => (p.Stock ?? 0m) < 0m);
+
+                var recentMovements = await _context.InventoryMovements.AsNoTracking()
+                    .Where(m => m.CompanyId == companyId && (m.BranchId == null || m.BranchId == branchId) && m.CreatedAt >= since)
+                    .OrderByDescending(m => m.CreatedAt)
+                    .Take(20)
+                    .Select(m => new
+                    {
+                        m.Id,
+                        m.ProductId,
+                        m.MovementType,
+                        m.Quantity,
+                        m.StockBefore,
+                        m.StockAfter,
+                        m.CreatedAt,
+                        m.Reason
+                    })
+                    .ToListAsync();
+
+                var wasteQty = await _context.InventoryMovements.AsNoTracking()
+                    .Where(m => m.CompanyId == companyId && (m.BranchId == null || m.BranchId == branchId)
+                                && m.CreatedAt >= since && m.MovementType == InventoryMovementType.Waste)
+                    .SumAsync(m => Math.Abs(m.Quantity));
+
+                var saleQty = await _context.InventoryMovements.AsNoTracking()
+                    .Where(m => m.CompanyId == companyId && (m.BranchId == null || m.BranchId == branchId)
+                                && m.CreatedAt >= since && m.MovementType == InventoryMovementType.Sale)
+                    .SumAsync(m => Math.Abs(m.Quantity));
+
+                return Json(new
+                {
+                    success = true,
+                    data = new
+                    {
+                        inventoryValue,
+                        trackedProducts = products.Count,
+                        criticalStockCount = criticalCount,
+                        negativeStockCount = negativeCount,
+                        wasteQuantity7d = wasteQty,
+                        saleConsumptionQty7d = saleQty,
+                        recentMovements
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
         private async Task<User?> GetCurrentUserAsync()
         {
             var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
