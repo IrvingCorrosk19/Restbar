@@ -497,18 +497,20 @@ namespace RestBar.Controllers
 
         // ===== EXPORTACIÓN =====
         [HttpGet]
-        public async Task<IActionResult> ExportToPdf(string reportType, DateTime? startDate, DateTime? endDate)
+        public async Task<IActionResult> ExportToPdf(string reportType, DateTime? startDate, DateTime? endDate, Guid? branchId)
         {
             try
             {
                 var filters = new ReportFilters
                 {
                     StartDate = startDate ?? DateTime.Today.AddDays(-30),
-                    EndDate = endDate ?? DateTime.Today
+                    EndDate = endDate ?? DateTime.Today,
+                    BranchId = branchId
                 };
 
-                var pdfBytes = await _advancedReportsService.ExportAdvancedReportToPdfAsync(reportType, filters);
-                return File(pdfBytes, "application/pdf", $"reporte_{reportType}_{DateTime.Now:yyyyMMdd}.pdf");
+                // HTML imprimible (guardar como PDF desde el navegador) — mismo enfoque que Executive Analytics.
+                var htmlBytes = await _advancedReportsService.ExportAdvancedReportToPdfAsync(reportType, filters);
+                return File(htmlBytes, "text/html; charset=utf-8", $"reporte_{reportType}_{DateTime.Now:yyyyMMdd}_print.html");
             }
             catch (Exception ex)
             {
@@ -518,14 +520,15 @@ namespace RestBar.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> ExportToExcel(string reportType, DateTime? startDate, DateTime? endDate)
+        public async Task<IActionResult> ExportToExcel(string reportType, DateTime? startDate, DateTime? endDate, Guid? branchId)
         {
             try
             {
                 var filters = new ReportFilters
                 {
                     StartDate = startDate ?? DateTime.Today.AddDays(-30),
-                    EndDate = endDate ?? DateTime.Today
+                    EndDate = endDate ?? DateTime.Today,
+                    BranchId = branchId
                 };
 
                 var excelBytes = await _advancedReportsService.ExportAdvancedReportToExcelAsync(reportType, filters);

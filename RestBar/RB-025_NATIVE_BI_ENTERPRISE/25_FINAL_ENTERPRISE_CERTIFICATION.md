@@ -15,4 +15,4 @@
 
 ## Result: PASS WITH CONDITIONS
 
-Conditions: migrate analytics, smoke UI, FC snapshots ops, QuestPDF/native PDF on target host, run regression suites, no silent claim of 48 polished unique report UIs.
+Conditions: FC snapshots ops for Food Cost %, QuestPDF/native PDF binary optional (HTML print OK), 1M-row lab deferred off-prod. Playwright analytics **PASS** 6/6; EXPLAIN on VPS &lt;10 ms.

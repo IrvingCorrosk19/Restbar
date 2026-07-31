@@ -1,3 +1,7 @@
+using System.Collections;
+using System.Reflection;
+using System.Text;
+using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 using RestBar.Interfaces;
 using RestBar.Models;
@@ -1196,20 +1200,13 @@ namespace RestBar.Services
         {
             try
             {
-                Console.WriteLine($"🔍 [AdvancedReportsService] ExportAdvancedReportToPdfAsync({reportType}) - Iniciando exportación...");
-                
-                // Implementación básica - retornar array vacío por ahora
-                // TODO: Implementar generación de PDF usando una librería como iTextSharp o QuestPDF
-                Console.WriteLine($"⚠️ [AdvancedReportsService] ExportAdvancedReportToPdfAsync({reportType}) - Exportación a PDF no implementada aún");
-                
-                return new byte[0];
+                var payload = await LoadExportPayloadAsync(reportType, filters);
+                return Encoding.UTF8.GetBytes(BuildPrintableHtml(reportType, filters, payload));
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ [AdvancedReportsService] ExportAdvancedReportToPdfAsync({reportType}) - Error: {ex.Message}");
-                Console.WriteLine($"🔍 [AdvancedReportsService] ExportAdvancedReportToPdfAsync({reportType}) - StackTrace: {ex.StackTrace}");
-                _logger.LogError(ex, "[AdvancedReportsService] Error exportando reporte a PDF");
-                return new byte[0];
+                _logger.LogError(ex, "[AdvancedReportsService] Error exportando reporte a PDF/HTML");
+                return Encoding.UTF8.GetBytes("<html><body><p>Error generando reporte</p></body></html>");
             }
         }
 
@@ -1217,21 +1214,155 @@ namespace RestBar.Services
         {
             try
             {
-                Console.WriteLine($"🔍 [AdvancedReportsService] ExportAdvancedReportToExcelAsync({reportType}) - Iniciando exportación...");
-                
-                // Implementación básica - retornar array vacío por ahora
-                // TODO: Implementar generación de Excel usando una librería como EPPlus o ClosedXML
-                Console.WriteLine($"⚠️ [AdvancedReportsService] ExportAdvancedReportToExcelAsync({reportType}) - Exportación a Excel no implementada aún");
-                
-                return new byte[0];
+                var payload = await LoadExportPayloadAsync(reportType, filters);
+                using var wb = new XLWorkbook();
+                var summary = wb.Worksheets.Add("Resumen");
+                summary.Cell(1, 1).Value = $"Advanced Report: {reportType}";
+                summary.Cell(2, 1).Value = "Periodo";
+                summary.Cell(2, 2).Value = $"{filters.StartDate:u} — {filters.EndDate:u}";
+                summary.Cell(3, 1).Value = "BranchId";
+                summary.Cell(3, 2).Value = filters.BranchId?.ToString() ?? "(all)";
+                summary.Cell(4, 1).Value = "Generado UTC";
+                summary.Cell(4, 2).Value = DateTime.UtcNow;
+                WriteObjectSheets(wb, payload);
+                using var ms = new MemoryStream();
+                wb.SaveAs(ms);
+                return ms.ToArray();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ [AdvancedReportsService] ExportAdvancedReportToExcelAsync({reportType}) - Error: {ex.Message}");
-                Console.WriteLine($"🔍 [AdvancedReportsService] ExportAdvancedReportToExcelAsync({reportType}) - StackTrace: {ex.StackTrace}");
                 _logger.LogError(ex, "[AdvancedReportsService] Error exportando reporte a Excel");
-                return new byte[0];
+                using var wb = new XLWorkbook();
+                wb.Worksheets.Add("Error").Cell(1, 1).Value = ex.Message;
+                using var ms = new MemoryStream();
+                wb.SaveAs(ms);
+                return ms.ToArray();
             }
+        }
+
+        private async Task<object> LoadExportPayloadAsync(string reportType, ReportFilters filters)
+        {
+            var key = (reportType ?? "").Trim().ToLowerInvariant();
+            return key switch
+            {
+                "profitability" or "productprofitability" => await GetProfitabilityAnalysisAsync(filters),
+                "sales" or "topsellingproducts" => await GetSalesAnalysisAsync(filters),
+                "customers" or "topcustomers" => await GetCustomerAnalysisAsync(filters),
+                "operational" or "stationperformance" => await GetOperationalAnalysisAsync(filters),
+                "inventory" or "inventoryanalysis" => await GetInventoryAnalysisAsync(filters),
+                "suppliers" or "supplieranalysis" => await GetSupplierAnalysisAsync(filters),
+                "trends" or "trendanalysis" => await GetTrendAnalysisAsync(filters),
+                "audit" or "auditreport" => await GetAuditReportAsync(filters),
+                "health" or "systemhealth" => await GetSystemHealthAsync(),
+                _ => throw new ArgumentException($"Tipo de reporte no soportado: {reportType}")
+            };
+        }
+
+        private static void WriteObjectSheets(XLWorkbook wb, object payload)
+        {
+            foreach (var prop in payload.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public))
+            {
+                var value = prop.GetValue(payload);
+                if (value is null) continue;
+                if (value is IEnumerable enumerable and not string)
+                {
+                    var rows = enumerable.Cast<object?>().Where(x => x is not null).Cast<object>().ToList();
+                    if (rows.Count == 0) continue;
+                    var sheetName = SanitizeSheetName(prop.Name);
+                    var ws = wb.Worksheets.Add(sheetName);
+                    var cols = rows[0].GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
+                    for (var c = 0; c < cols.Length; c++)
+                        ws.Cell(1, c + 1).Value = cols[c].Name;
+                    for (var r = 0; r < rows.Count; r++)
+                    {
+                        for (var c = 0; c < cols.Length; c++)
+                        {
+                            var cellVal = cols[c].GetValue(rows[r]);
+                            SetCell(ws.Cell(r + 2, c + 1), cellVal);
+                        }
+                    }
+                    ws.SheetView.FreezeRows(1);
+                    ws.Columns().AdjustToContents();
+                }
+                else if (!IsComplex(value))
+                {
+                    var summary = wb.Worksheet(1);
+                    var next = summary.LastRowUsed()?.RowNumber() + 1 ?? 6;
+                    summary.Cell(next, 1).Value = prop.Name;
+                    SetCell(summary.Cell(next, 2), value);
+                }
+            }
+        }
+
+        private static bool IsComplex(object value)
+            => value is not (string or decimal or double or float or int or long or short or byte or bool or Guid or DateTime or Enum)
+               && value.GetType() is { IsPrimitive: false };
+
+        private static void SetCell(IXLCell cell, object? value)
+        {
+            switch (value)
+            {
+                case null: cell.Value = ""; break;
+                case DateTime dt: cell.Value = dt; break;
+                case decimal d: cell.Value = d; break;
+                case double dbl: cell.Value = dbl; break;
+                case float f: cell.Value = f; break;
+                case int i: cell.Value = i; break;
+                case long l: cell.Value = l; break;
+                case bool b: cell.Value = b; break;
+                case Guid g: cell.Value = g.ToString(); break;
+                default: cell.Value = Convert.ToString(value) ?? ""; break;
+            }
+        }
+
+        private static string SanitizeSheetName(string name)
+        {
+            var clean = new string(name.Where(ch => char.IsLetterOrDigit(ch) || ch is '_' or '-').ToArray());
+            if (string.IsNullOrWhiteSpace(clean)) clean = "Datos";
+            return clean.Length <= 31 ? clean : clean[..31];
+        }
+
+        private static string BuildPrintableHtml(string reportType, ReportFilters filters, object payload)
+        {
+            var sb = new StringBuilder();
+            sb.Append("<!doctype html><html><head><meta charset='utf-8'><title>")
+              .Append(System.Net.WebUtility.HtmlEncode(reportType))
+              .Append("</title><style>body{font-family:Segoe UI,Arial,sans-serif;font-size:12px;margin:24px}table{border-collapse:collapse;width:100%;margin-bottom:16px}th,td{border:1px solid #ccc;padding:4px}th{background:#eee}@media print{.no-print{display:none}}</style></head><body>");
+            sb.Append("<h1>").Append(System.Net.WebUtility.HtmlEncode(reportType)).Append("</h1>");
+            sb.Append("<p>Periodo ").Append(filters.StartDate).Append(" — ").Append(filters.EndDate)
+              .Append("<br>Branch ").Append(filters.BranchId).Append("<br>UTC ").Append(DateTime.UtcNow.ToString("u")).Append("</p>");
+            sb.Append("<p class='no-print'><button onclick='window.print()'>Imprimir / Guardar como PDF</button></p>");
+
+            foreach (var prop in payload.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public))
+            {
+                var value = prop.GetValue(payload);
+                if (value is null) continue;
+                if (value is IEnumerable enumerable and not string)
+                {
+                    var rows = enumerable.Cast<object?>().Where(x => x is not null).Cast<object>().ToList();
+                    if (rows.Count == 0) continue;
+                    var cols = rows[0].GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
+                    sb.Append("<h2>").Append(System.Net.WebUtility.HtmlEncode(prop.Name)).Append("</h2><table><thead><tr>");
+                    foreach (var c in cols) sb.Append("<th>").Append(System.Net.WebUtility.HtmlEncode(c.Name)).Append("</th>");
+                    sb.Append("</tr></thead><tbody>");
+                    foreach (var row in rows)
+                    {
+                        sb.Append("<tr>");
+                        foreach (var c in cols)
+                            sb.Append("<td>").Append(System.Net.WebUtility.HtmlEncode(Convert.ToString(c.GetValue(row)) ?? "")).Append("</td>");
+                        sb.Append("</tr>");
+                    }
+                    sb.Append("</tbody></table>");
+                }
+                else if (!IsComplex(value))
+                {
+                    sb.Append("<p><strong>").Append(System.Net.WebUtility.HtmlEncode(prop.Name)).Append(":</strong> ")
+                      .Append(System.Net.WebUtility.HtmlEncode(Convert.ToString(value) ?? "")).Append("</p>");
+                }
+            }
+
+            sb.Append("</body></html>");
+            return sb.ToString();
         }
 
         // ===== MÉTODOS PRIVADOS =====
