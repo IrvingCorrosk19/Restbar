@@ -19,6 +19,8 @@ namespace RestBar.Services
         public async Task<IEnumerable<Payment>> GetAllAsync()
         {
             return await _context.Payments
+                .AsNoTracking()
+                .AsSplitQuery()
                 .Include(p => p.Order)
                 .Include(p => p.SplitPayments)
                 .ToListAsync();
@@ -27,6 +29,8 @@ namespace RestBar.Services
         public async Task<Payment?> GetByIdAsync(Guid id)
         {
             return await _context.Payments
+                .AsNoTracking()
+                .AsSplitQuery()
                 .Include(p => p.Order)
                 .Include(p => p.SplitPayments)
                 .FirstOrDefaultAsync(p => p.Id == id);

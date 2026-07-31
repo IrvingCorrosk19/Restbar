@@ -169,6 +169,8 @@ namespace RestBar.Services
         public async Task<IEnumerable<AuditLog>> GetByCompanyAsync(Guid companyId)
         {
             return await _context.AuditLogs
+                .AsNoTracking()
+                .AsSplitQuery()
                 .Include(al => al.User)
                 .Include(al => al.Company)
                 .Include(al => al.Branch)
@@ -180,6 +182,8 @@ namespace RestBar.Services
         public async Task<IEnumerable<AuditLog>> GetByBranchAsync(Guid branchId)
         {
             return await _context.AuditLogs
+                .AsNoTracking()
+                .AsSplitQuery()
                 .Include(al => al.User)
                 .Include(al => al.Company)
                 .Include(al => al.Branch)
@@ -191,6 +195,8 @@ namespace RestBar.Services
         public async Task<IEnumerable<AuditLog>> GetErrorsAsync(Guid? companyId = null, Guid? branchId = null)
         {
             var query = _context.AuditLogs
+                .AsNoTracking()
+                .AsSplitQuery()
                 .Include(al => al.User)
                 .Include(al => al.Company)
                 .Include(al => al.Branch)
@@ -210,6 +216,8 @@ namespace RestBar.Services
         public async Task<IEnumerable<AuditLog>> GetByModuleAsync(string module, Guid? companyId = null)
         {
             var query = _context.AuditLogs
+                .AsNoTracking()
+                .AsSplitQuery()
                 .Include(al => al.User)
                 .Include(al => al.Company)
                 .Include(al => al.Branch)
@@ -226,6 +234,8 @@ namespace RestBar.Services
         public async Task<IEnumerable<AuditLog>> GetByLogLevelAsync(string logLevel, Guid? companyId = null)
         {
             var query = _context.AuditLogs
+                .AsNoTracking()
+                .AsSplitQuery()
                 .Include(al => al.User)
                 .Include(al => al.Company)
                 .Include(al => al.Branch)
@@ -243,6 +253,8 @@ namespace RestBar.Services
         public async Task<IEnumerable<AuditLog>> GetAllAsync()
         {
             return await _context.AuditLogs
+                .AsNoTracking()
+                .AsSplitQuery()
                 .Include(al => al.User)
                 .Include(al => al.Company)
                 .Include(al => al.Branch)
@@ -253,6 +265,7 @@ namespace RestBar.Services
         public async Task<AuditLog?> GetByIdAsync(Guid id)
         {
             return await _context.AuditLogs
+                .AsNoTracking()
                 .Include(al => al.User)
                 .Include(al => al.Company)
                 .Include(al => al.Branch)

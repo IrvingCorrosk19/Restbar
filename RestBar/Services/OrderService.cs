@@ -47,7 +47,10 @@ namespace RestBar.Services
 
         public async Task<IEnumerable<Order>> GetAllAsync()
         {
+            // RB-1002: read path — no tracking + split to avoid cartesian Include explosion
             return await _context.Orders
+                .AsNoTracking()
+                .AsSplitQuery()
                 .Include(o => o.Table)
                 .Include(o => o.Customer)
                 .Include(o => o.User)
@@ -59,6 +62,7 @@ namespace RestBar.Services
         public async Task<Order?> GetByIdAsync(Guid id)
         {
             return await _context.Orders
+                .AsNoTracking()
                 .Include(o => o.Table)
                 .Include(o => o.Customer)
                 .Include(o => o.User)

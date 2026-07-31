@@ -25,9 +25,9 @@ namespace RestBar.Services
             return Guid.TryParse(claim, out var id) ? id : null;
         }
 
-        private IQueryable<Customer> ScopedCustomers()
+        private IQueryable<Customer> ScopedCustomers(bool tracking = true)
         {
-            var q = _context.Customers.AsQueryable();
+            var q = tracking ? _context.Customers.AsQueryable() : _context.Customers.AsNoTracking();
             if (IsSuperAdmin()) return q;
             var companyId = CurrentCompanyId();
             if (companyId is null) return q.Where(_ => false);
@@ -35,10 +35,10 @@ namespace RestBar.Services
         }
 
         public async Task<IEnumerable<Customer>> GetAllAsync()
-            => await ScopedCustomers().ToListAsync();
+            => await ScopedCustomers(tracking: false).ToListAsync();
 
         public async Task<Customer?> GetByIdAsync(Guid id)
-            => await ScopedCustomers().FirstOrDefaultAsync(c => c.Id == id);
+            => await ScopedCustomers(tracking: false).FirstOrDefaultAsync(c => c.Id == id);
 
         public async Task<Customer> CreateAsync(Customer customer)
         {
@@ -100,29 +100,30 @@ namespace RestBar.Services
         }
 
         public async Task<Customer?> GetByEmailAsync(string email)
-            => await ScopedCustomers().FirstOrDefaultAsync(c => c.Email == email);
+            => await ScopedCustomers(tracking: false).FirstOrDefaultAsync(c => c.Email == email);
 
         public async Task<Customer?> GetByPhoneAsync(string phone)
-            => await ScopedCustomers().FirstOrDefaultAsync(c => c.Phone == phone);
+            => await ScopedCustomers(tracking: false).FirstOrDefaultAsync(c => c.Phone == phone);
 
         public async Task<IEnumerable<Customer>> GetByLoyaltyPointsRangeAsync(int minPoints, int maxPoints)
-            => await ScopedCustomers()
+            => await ScopedCustomers(tracking: false)
                 .Where(c => c.LoyaltyPoints >= minPoints && c.LoyaltyPoints <= maxPoints)
                 .ToListAsync();
 
         public async Task<Customer?> GetCustomerWithOrdersAsync(Guid id)
-            => await ScopedCustomers()
+            => await ScopedCustomers(tracking: false)
+                .AsSplitQuery()
                 .Include(c => c.Orders).ThenInclude(o => o.OrderItems)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
         public async Task<Customer?> GetCustomerWithInvoicesAsync(Guid id)
-            => await ScopedCustomers()
+            => await ScopedCustomers(tracking: false)
                 .Include(c => c.Invoices)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
         public async Task UpdateLoyaltyPointsAsync(Guid id, int points)
         {
-            var customer = await GetByIdAsync(id);
+            var customer = await ScopedCustomers(tracking: true).FirstOrDefaultAsync(c => c.Id == id);
             if (customer != null)
             {
                 customer.LoyaltyPoints = points;
@@ -131,7 +132,7 @@ namespace RestBar.Services
         }
 
         public async Task<IEnumerable<Customer>> SearchCustomersAsync(string searchTerm)
-            => await ScopedCustomers()
+            => await ScopedCustomers(tracking: false)
                 .Where(c => (c.FullName != null && c.FullName.Contains(searchTerm)) ||
                            (c.Email != null && c.Email.Contains(searchTerm)) ||
                            (c.Phone != null && c.Phone.Contains(searchTerm)))

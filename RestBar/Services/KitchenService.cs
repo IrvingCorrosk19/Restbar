@@ -17,10 +17,9 @@ namespace RestBar.Services
 
         public async Task<List<KitchenOrderViewModel>> GetPendingOrdersAsync()
         {
+            // RB-1002: AsNoTracking + project — read board; Includes redundant with Select
             return await _context.Orders
-                .Include(o => o.Table)
-                .Include(o => o.OrderItems)
-                    .ThenInclude(oi => oi.Product)
+                .AsNoTracking()
                 .Where(o => o.Status == OrderStatus.SentToKitchen)
                 .OrderBy(o => o.OpenedAt)
                 .Select(o => new KitchenOrderViewModel
@@ -32,7 +31,7 @@ namespace RestBar.Services
                     Notes = o.Notes,
                     Items = o.OrderItems.Select(i => new KitchenOrderItemViewModel
                     {
-                        ProductName = i.Product.Name,
+                        ProductName = i.Product!.Name,
                         Quantity = i.Quantity,
                         Notes = i.Notes
                     }).ToList()
@@ -47,13 +46,15 @@ namespace RestBar.Services
                 return new List<KitchenOrderViewModel>();
             }
 
+            // RB-1002: AsNoTracking + project; station filter pushed into SQL via Select Where
+            var station = stationType.ToLowerInvariant();
             return await _context.Orders
-                .Include(o => o.Table)
-                .Include(o => o.OrderItems)
-                    .ThenInclude(oi => oi.Product)
-                .Include(o => o.OrderItems)
-                    .ThenInclude(oi => oi.PreparedByStation)
+                .AsNoTracking()
                 .Where(o => o.Status == OrderStatus.SentToKitchen || o.Status == OrderStatus.Preparing)
+                .Where(o => o.OrderItems.Any(i =>
+                    i.Product != null && i.PreparedByStation != null &&
+                    i.PreparedByStation.Type.ToLower() == station &&
+                    (i.KitchenStatus == KitchenStatus.Pending || i.KitchenStatus == KitchenStatus.Sent)))
                 .OrderBy(o => o.OpenedAt)
                 .Select(o => new KitchenOrderViewModel
                 {
@@ -64,18 +65,18 @@ namespace RestBar.Services
                     Notes = o.Notes,
                     OrderStatus = o.Status.ToString(),
                     Items = o.OrderItems
-                        .Where(i => i.Product != null && i.PreparedByStation != null && 
-                                   i.PreparedByStation.Type.ToLower() == stationType.ToLower() &&
+                        .Where(i => i.Product != null && i.PreparedByStation != null &&
+                                   i.PreparedByStation.Type.ToLower() == station &&
                                    (i.KitchenStatus == KitchenStatus.Pending || i.KitchenStatus == KitchenStatus.Sent))
                         .Select(i => new KitchenOrderItemViewModel
                         {
                             ItemId = i.Id,
-                            ProductName = i.Product.Name,
+                            ProductName = i.Product!.Name,
                             Quantity = i.Quantity,
                             Notes = i.Notes,
                             Status = i.Status.ToString(),
                             KitchenStatus = i.KitchenStatus.ToString(),
-                            StationName = i.PreparedByStation.Name ?? "Sin estación"
+                            StationName = i.PreparedByStation!.Name ?? "Sin estación"
                         }).ToList(),
                     ReadyItemsCount = o.OrderItems.Count(oi => oi.KitchenStatus == KitchenStatus.Ready),
                     TotalItemsCount = o.OrderItems.Count,
@@ -84,7 +85,6 @@ namespace RestBar.Services
                     ReadyItems = o.OrderItems.Count(oi => oi.KitchenStatus == KitchenStatus.Ready),
                     PreparingItems = o.OrderItems.Count(oi => oi.KitchenStatus == KitchenStatus.Sent)
                 })
-                .Where(vm => vm.Items.Any())
                 .ToListAsync();
         }
 
