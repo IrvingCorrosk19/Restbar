@@ -21,7 +21,7 @@ public class TenantSubscriptionMiddleware
 
     private static readonly string[] PublicPrefixes =
     {
-        "/Auth", "/Seed", "/Home/Error", "/css", "/js", "/images", "/lib", "/favicon.ico"
+        "/Auth", "/Seed", "/Home/Error", "/health", "/css", "/js", "/images", "/lib", "/favicon.ico"
     };
 
     public TenantSubscriptionMiddleware(RequestDelegate next, ILogger<TenantSubscriptionMiddleware> logger)
