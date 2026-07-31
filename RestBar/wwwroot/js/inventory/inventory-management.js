@@ -1241,12 +1241,35 @@ function renderConsumptionReport(data, filters) {
 
 // ✅ NUEVO: Función para exportar reporte de consumo
 function exportConsumptionReport() {
-    // TODO: Implementar exportación a Excel/PDF
-    Swal.fire({
-        icon: 'info',
-        title: 'Próximamente',
-        text: 'La funcionalidad de exportación estará disponible pronto'
+    const reportDiv = document.getElementById('consumptionReport');
+    if (!reportDiv) {
+        Swal.fire({ icon: 'warning', title: 'Sin datos', text: 'Genere el reporte antes de exportar' });
+        return;
+    }
+    const rows = [];
+    reportDiv.querySelectorAll('.card .card-body > div, .list-group-item, .card-body > .mb-2, .card-body > .border').forEach(el => {
+        const text = (el.innerText || el.textContent || '').trim().replace(/\s+/g, ' ');
+        if (text) rows.push(text);
     });
+    if (rows.length === 0) {
+        const all = (reportDiv.innerText || '').trim();
+        if (!all) {
+            Swal.fire({ icon: 'warning', title: 'Sin datos', text: 'No hay contenido para exportar' });
+            return;
+        }
+        rows.push(...all.split('\n').map(l => l.trim()).filter(Boolean));
+    }
+    const csv = '\uFEFF' + ['Línea', 'Contenido'].join(',') + '\n' +
+        rows.map((r, i) => `${i + 1},"${String(r).replace(/"/g, '""')}"`).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `consumo_inventario_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(url);
+    a.remove();
 }
 
 async function loadConsumptionFilters() {

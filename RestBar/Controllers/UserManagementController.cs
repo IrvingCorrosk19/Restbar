@@ -247,6 +247,39 @@ namespace RestBar.Controllers
             }
         }
 
+        public class ToggleUserDto
+        {
+            public Guid Id { get; set; }
+            public bool IsActive { get; set; }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ToggleUser([FromBody] ToggleUserDto dto)
+        {
+            try
+            {
+                var user = await _context.Users.FindAsync(dto.Id);
+                if (user == null || user.Role == UserRole.superadmin)
+                    return Json(new { success = false, message = "Usuario no encontrado" });
+
+                var currentUserRole = User.FindFirst("UserRole")?.Value;
+                var currentUserBranchId = User.FindFirst("BranchId")?.Value;
+                if (currentUserRole == "admin" && Guid.TryParse(currentUserBranchId, out var branchId)
+                    && user.BranchId != branchId)
+                    return Json(new { success = false, message = "No autorizado" });
+
+                user.IsActive = dto.IsActive;
+                user.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, message = $"Usuario {(dto.IsActive ? "activado" : "desactivado")}" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[UserManagementController] ToggleUser");
+                return Json(new { success = false, message = "Error al cambiar estado" });
+            }
+        }
+
         private string HashPassword(string password)
         {
             using (var sha256 = SHA256.Create())

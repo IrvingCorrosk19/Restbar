@@ -1,114 +1,116 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using System.Threading.Tasks;
+using RestBar.Infrastructure.Foundation;
+using System.Security.Claims;
 
-namespace RestBar.Hubs
+namespace RestBar.Hubs;
+
+[Authorize]
+public class OrderHub : Hub
 {
-    [Authorize]
-    public class OrderHub : Hub
+    private Guid? CompanyId =>
+        Guid.TryParse(Context.User?.FindFirst("CompanyId")?.Value, out var id) ? id : null;
+
+    private Guid? BranchId =>
+        Guid.TryParse(Context.User?.FindFirst("BranchId")?.Value, out var id) ? id : null;
+
+    private bool IsSuperAdmin =>
+        string.Equals(Context.User?.FindFirst("UserRole")?.Value, "superadmin", StringComparison.OrdinalIgnoreCase)
+        || Context.User?.IsInRole("superadmin") == true;
+
+    public async Task JoinStationTypeGroup(string stationType)
     {
-        // ─── GRUPOS POR TIPO DE ESTACIÓN ────────────────────────────────────────
-        // Cada vista de estación se une a "station_{stationType}" (ej. "station_kitchen", "station_bar").
-        // Esto permite notificaciones dirigidas sin que la cocina reciba eventos del bar y viceversa.
-        // Las vistas también siguen unidas a "kitchen" para recibir eventos de difusión general.
-
-        /// <summary>
-        /// Une la conexión al grupo específico de la estación indicada.
-        /// El nombre del grupo sigue el patrón: station_{stationType} (minúsculas).
-        /// </summary>
-        public async Task JoinStationTypeGroup(string stationType)
-        {
-            if (string.IsNullOrWhiteSpace(stationType))
-                return;
-
-            var groupName = $"station_{stationType.ToLower().Trim()}";
-            await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
-        }
-
-        /// <summary>
-        /// Saca la conexión del grupo específico de la estación indicada.
-        /// </summary>
-        public async Task LeaveStationTypeGroup(string stationType)
-        {
-            if (string.IsNullOrWhiteSpace(stationType))
-                return;
-
-            var groupName = $"station_{stationType.ToLower().Trim()}";
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
-        }
-
-
-        public async Task JoinOrderGroup(string orderId)
-        {
-            await Groups.AddToGroupAsync(Context.ConnectionId, $"order_{orderId}");
-        }
-
-        public async Task LeaveOrderGroup(string orderId)
-        {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"order_{orderId}");
-        }
-
-        public async Task JoinTableGroup(string tableId)
-        {
-            await Groups.AddToGroupAsync(Context.ConnectionId, $"table_{tableId}");
-        }
-
-        public async Task LeaveTableGroup(string tableId)
-        {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"table_{tableId}");
-        }
-
-        public async Task JoinAllTablesGroup()
-        {
-            await Groups.AddToGroupAsync(Context.ConnectionId, "table_all");
-        }
-
-        public async Task LeaveAllTablesGroup()
-        {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, "table_all");
-        }
-
-        public async Task JoinKitchenGroup()
-        {
-            await Groups.AddToGroupAsync(Context.ConnectionId, "kitchen");
-        }
-
-        public async Task LeaveKitchenGroup()
-        {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, "kitchen");
-        }
-
-        public async Task JoinOrdersGroup()
-        {
-            await Groups.AddToGroupAsync(Context.ConnectionId, "orders");
-        }
-
-        public async Task LeaveOrdersGroup()
-        {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, "orders");
-        }
-
-        // ✅ NUEVO: Métodos para notificar cambios de stock
-        public async Task JoinStockUpdatesGroup()
-        {
-            await Groups.AddToGroupAsync(Context.ConnectionId, "stock_updates");
-        }
-
-        public async Task LeaveStockUpdatesGroup()
-        {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, "stock_updates");
-        }
-
-        public async Task JoinCashRegisterGroup(string registerId)
-        {
-            if (!string.IsNullOrWhiteSpace(registerId))
-                await Groups.AddToGroupAsync(Context.ConnectionId, $"cash_register_{registerId}");
-        }
-
-        public async Task JoinCashDashboardGroup()
-        {
-            await Groups.AddToGroupAsync(Context.ConnectionId, "cash_dashboard");
-        }
-
+        if (string.IsNullOrWhiteSpace(stationType) || CompanyId is null) return;
+        await Groups.AddToGroupAsync(Context.ConnectionId, SignalRTenantGroups.Station(CompanyId.Value, stationType));
     }
-} 
+
+    public async Task LeaveStationTypeGroup(string stationType)
+    {
+        if (string.IsNullOrWhiteSpace(stationType) || CompanyId is null) return;
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, SignalRTenantGroups.Station(CompanyId.Value, stationType));
+    }
+
+    public async Task JoinOrderGroup(string orderId)
+    {
+        if (!string.IsNullOrWhiteSpace(orderId))
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"order_{orderId}");
+    }
+
+    public async Task LeaveOrderGroup(string orderId)
+    {
+        if (!string.IsNullOrWhiteSpace(orderId))
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"order_{orderId}");
+    }
+
+    public async Task JoinTableGroup(string tableId)
+    {
+        if (!string.IsNullOrWhiteSpace(tableId))
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"table_{tableId}");
+    }
+
+    public async Task LeaveTableGroup(string tableId)
+    {
+        if (!string.IsNullOrWhiteSpace(tableId))
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"table_{tableId}");
+    }
+
+    public async Task JoinAllTablesGroup()
+    {
+        if (CompanyId is null) return;
+        await Groups.AddToGroupAsync(Context.ConnectionId, SignalRTenantGroups.TableAll(CompanyId.Value));
+    }
+
+    public async Task LeaveAllTablesGroup()
+    {
+        if (CompanyId is null) return;
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, SignalRTenantGroups.TableAll(CompanyId.Value));
+    }
+
+    public async Task JoinKitchenGroup()
+    {
+        if (CompanyId is null) return;
+        await Groups.AddToGroupAsync(Context.ConnectionId, SignalRTenantGroups.Kitchen(CompanyId.Value));
+    }
+
+    public async Task LeaveKitchenGroup()
+    {
+        if (CompanyId is null) return;
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, SignalRTenantGroups.Kitchen(CompanyId.Value));
+    }
+
+    public async Task JoinOrdersGroup()
+    {
+        if (CompanyId is null) return;
+        await Groups.AddToGroupAsync(Context.ConnectionId, SignalRTenantGroups.Orders(CompanyId.Value));
+    }
+
+    public async Task LeaveOrdersGroup()
+    {
+        if (CompanyId is null) return;
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, SignalRTenantGroups.Orders(CompanyId.Value));
+    }
+
+    public async Task JoinStockUpdatesGroup()
+    {
+        if (CompanyId is null) return;
+        await Groups.AddToGroupAsync(Context.ConnectionId, SignalRTenantGroups.Stock(CompanyId.Value));
+    }
+
+    public async Task LeaveStockUpdatesGroup()
+    {
+        if (CompanyId is null) return;
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, SignalRTenantGroups.Stock(CompanyId.Value));
+    }
+
+    public async Task JoinCashRegisterGroup(string registerId)
+    {
+        if (!string.IsNullOrWhiteSpace(registerId))
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"cash_register_{registerId}");
+    }
+
+    public async Task JoinCashDashboardGroup()
+    {
+        if (CompanyId is null) return;
+        await Groups.AddToGroupAsync(Context.ConnectionId, SignalRTenantGroups.CashDashboard(CompanyId.Value));
+    }
+}

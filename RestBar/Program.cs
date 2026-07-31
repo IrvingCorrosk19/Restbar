@@ -68,6 +68,7 @@ builder.Services.AddRateLimiter(options =>
 
 // ✅ NUEVO: Configurar sesiones para el AuditLogService
 builder.Services.AddDistributedMemoryCache();
+builder.Services.AddMemoryCache();
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
@@ -127,7 +128,7 @@ builder.Services.AddAuthorization(options =>
 {
     // Políticas por roles específicos
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("admin"));
-    options.AddPolicy("ManagerOrAbove", policy => policy.RequireRole("admin", "manager"));
+    options.AddPolicy("ManagerOrAbove", policy => policy.RequireRole("superadmin", "admin", "manager"));
     options.AddPolicy("SupervisorOrAbove", policy => policy.RequireRole("admin", "manager", "supervisor"));
     
     // Políticas para área de órdenes

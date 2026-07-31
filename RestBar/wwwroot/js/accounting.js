@@ -423,25 +423,25 @@ class AccountingManager {
         }
     }
 
-    // View methods
+    // View methods — redirigir a reportes reales (no stubs)
     viewIncomeDetails() {
-        this.showInfoMessage('Funcionalidad de detalles de ingresos en desarrollo');
+        window.location.href = '/Reports/SalesReport';
     }
 
     viewExpenseDetails() {
-        this.showInfoMessage('Funcionalidad de detalles de gastos en desarrollo');
+        window.location.href = '/AdvancedReports/ProfitabilityAnalysis';
     }
 
     viewProfitDetails() {
-        this.showInfoMessage('Funcionalidad de detalles de beneficios en desarrollo');
+        window.location.href = '/AdvancedReports/ProfitabilityAnalysis';
     }
 
     viewTaxDetails() {
-        this.showInfoMessage('Funcionalidad de detalles de impuestos en desarrollo');
+        window.location.href = '/AdvancedSettings/TaxRates';
     }
 
     viewReports() {
-        this.showInfoMessage('Funcionalidad de reportes en desarrollo');
+        window.location.href = '/AdvancedReports';
     }
 
     // Utility methods

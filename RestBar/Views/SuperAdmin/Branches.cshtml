@@ -215,8 +215,7 @@
 @section Scripts {
     <script>
         function viewBranch(branchId) {
-            console.log('Ver sucursal:', branchId);
-            alert('Función de ver detalles en desarrollo');
+            window.location.href = '@Url.Action("EditBranch", "SuperAdmin")' + '?id=' + branchId;
         }
 
         function editBranch(branchId) {

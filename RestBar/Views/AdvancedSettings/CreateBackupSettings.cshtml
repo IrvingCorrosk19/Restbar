@@ -1,0 +1,56 @@
+@model RestBar.Models.BackupSettings
+@{
+    ViewData["Title"] = "Nuevo Respaldo";
+    Layout = "_Layout";
+}
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between mb-3">
+        <h2>Nueva Configuración de Respaldo</h2>
+        <a class="btn btn-secondary" asp-action="BackupSettings">Volver</a>
+    </div>
+
+    <form asp-action="CreateBackupSettings" method="post" class="card card-body">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="BackupType" class="form-label">Tipo de respaldo</label>
+            <select asp-for="BackupType" class="form-select" required>
+                <option value="">Seleccione...</option>
+                <option value="Database">Base de datos</option>
+                <option value="Files">Archivos</option>
+                <option value="Full">Completo</option>
+            </select>
+            <span asp-validation-for="BackupType" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Description" class="form-label">Descripción</label>
+            <textarea asp-for="Description" class="form-control" rows="2" maxlength="200"></textarea>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="BackupPath" class="form-label">Ruta de respaldo</label>
+            <input asp-for="BackupPath" class="form-control" maxlength="500" placeholder="C:\Backups\RestBar" />
+        </div>
+
+        <div class="form-check mb-3">
+            <input asp-for="IsEnabled" class="form-check-input" type="checkbox" checked />
+            <label asp-for="IsEnabled" class="form-check-label">Habilitado</label>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="RetentionDays" class="form-label">Días de retención</label>
+            <input asp-for="RetentionDays" class="form-control" type="number" min="1" />
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Schedule" class="form-label">Programación (cron)</label>
+            <input asp-for="Schedule" class="form-control" placeholder="0 2 * * *" />
+            <div class="form-text">Expresión cron o descripción del horario.</div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Guardar</button>
+    </form>
+</div>

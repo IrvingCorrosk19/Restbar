@@ -559,20 +559,22 @@
 
         function exportToPdf() {
             const filters = getFilters();
-            $.get('/Reports/ExportPdf', filters, function(response) {
-                if (response.success) {
-                    alert('Exportación a PDF en desarrollo');
-                }
+            const q = new URLSearchParams({
+                startDate: filters.startDate || '',
+                endDate: filters.endDate || '',
+                branchId: filters.branchId || ''
             });
+            window.location.href = '/Reports/ExportPdf?' + q.toString();
         }
 
         function exportToExcel() {
             const filters = getFilters();
-            $.get('/Reports/ExportExcel', filters, function(response) {
-                if (response.success) {
-                    alert('Exportación a Excel en desarrollo');
-                }
+            const q = new URLSearchParams({
+                startDate: filters.startDate || '',
+                endDate: filters.endDate || '',
+                branchId: filters.branchId || ''
             });
+            window.location.href = '/Reports/ExportExcel?' + q.toString();
         }
     </script>
 } 

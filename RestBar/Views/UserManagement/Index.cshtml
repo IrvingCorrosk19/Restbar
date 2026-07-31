@@ -80,7 +80,7 @@
                         <tbody>
                             @foreach (var user in Model)
                             {
-                                <tr>
+                                <tr data-user-id="@user.Id">
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="flex-shrink-0">
@@ -215,20 +215,33 @@
 @section Scripts {
     <script>
         function viewUser(userId) {
-            console.log('Ver usuario:', userId);
-            alert('Función de ver detalles en desarrollo');
+            // Sin vista Edit dedicada: el listado ya muestra el detalle; editar = toggle/estado desde acciones
+            const row = document.querySelector(`[data-user-id="${userId}"]`);
+            if (row) {
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                row.classList.add('table-warning');
+                setTimeout(() => row.classList.remove('table-warning'), 2000);
+            }
         }
 
         function editUser(userId) {
-            window.location.href = '@Url.Action("Edit", "UserManagement")' + '?id=' + userId;
+            viewUser(userId);
         }
 
         function toggleUser(userId, activate) {
             const action = activate ? 'activar' : 'desactivar';
-            if (confirm(`¿Estás seguro de que quieres ${action} este usuario?`)) {
-                console.log('Cambiar estado de usuario:', userId, activate);
-                alert('Función de cambio de estado en desarrollo');
-            }
+            if (!confirm(`¿Estás seguro de que quieres ${action} este usuario?`)) return;
+            fetch('@Url.Action("ToggleUser", "UserManagement")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: userId, isActive: activate })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) location.reload();
+                else alert(data.message || 'No se pudo cambiar el estado');
+            })
+            .catch(() => alert('Error de conexión'));
         }
 
         // Auto-hide alerts después de 5 segundos

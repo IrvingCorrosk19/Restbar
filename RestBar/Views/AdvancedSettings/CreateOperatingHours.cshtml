@@ -1,0 +1,55 @@
+@model RestBar.Models.OperatingHours
+@{
+    ViewData["Title"] = "Nuevo Horario";
+    Layout = "_Layout";
+}
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between mb-3">
+        <h2>Nuevo Horario</h2>
+        <a class="btn btn-secondary" asp-action="OperatingHours">Volver</a>
+    </div>
+
+    <form asp-action="CreateOperatingHours" method="post" class="card card-body">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="DayOfWeek" class="form-label">Día de la semana</label>
+            <select asp-for="DayOfWeek" class="form-select" required>
+                <option value="">Seleccione...</option>
+                <option value="Monday">Lunes</option>
+                <option value="Tuesday">Martes</option>
+                <option value="Wednesday">Miércoles</option>
+                <option value="Thursday">Jueves</option>
+                <option value="Friday">Viernes</option>
+                <option value="Saturday">Sábado</option>
+                <option value="Sunday">Domingo</option>
+            </select>
+            <span asp-validation-for="DayOfWeek" class="text-danger"></span>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label asp-for="OpenTime" class="form-label">Hora de apertura (hh:mm)</label>
+                <input asp-for="OpenTime" class="form-control" placeholder="08:00" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label asp-for="CloseTime" class="form-label">Hora de cierre (hh:mm)</label>
+                <input asp-for="CloseTime" class="form-control" placeholder="22:00" />
+            </div>
+        </div>
+
+        <div class="form-check mb-3">
+            <input asp-for="IsOpen" class="form-check-input" type="checkbox" checked />
+            <label asp-for="IsOpen" class="form-check-label">Abierto</label>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Notes" class="form-label">Notas</label>
+            <textarea asp-for="Notes" class="form-control" rows="2"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Guardar</button>
+    </form>
+</div>

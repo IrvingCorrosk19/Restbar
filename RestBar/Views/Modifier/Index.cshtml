@@ -1,0 +1,62 @@
+@model IEnumerable<RestBar.Models.Modifier>
+@{
+    ViewData["Title"] = "Modificadores";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-3">
+    <h2 class="mb-3">Modificadores</h2>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <div class="card mb-4">
+        <div class="card-header">Nuevo modificador</div>
+        <div class="card-body">
+            <form asp-action="Create" method="post" class="row g-3">
+                @Html.AntiForgeryToken()
+                <div class="col-md-4">
+                    <label class="form-label">Nombre</label>
+                    <input type="text" name="Name" class="form-control" required maxlength="100" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Descripción</label>
+                    <input type="text" name="Description" class="form-control" maxlength="500" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Costo extra</label>
+                    <input type="number" name="ExtraCost" class="form-control" step="0.01" min="0" value="0" />
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Crear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Costo extra</th>
+                <th>Activo</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var m in Model)
+        {
+            <tr>
+                <td>@m.Name</td>
+                <td>@m.ExtraCost.ToString("F2")</td>
+                <td>@(m.IsActive ? "Sí" : "No")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

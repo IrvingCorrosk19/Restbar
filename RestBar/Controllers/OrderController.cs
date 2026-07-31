@@ -84,8 +84,13 @@ namespace RestBar.Controllers
 
         private bool HasGlobalTenantAccess()
         {
-            var role = User.FindFirst(ClaimTypes.Role)?.Value;
-            return role is "superadmin" or "admin" && GetUserBranchId() == null;
+            var role = User.FindFirst(ClaimTypes.Role)?.Value
+                       ?? User.FindFirst("UserRole")?.Value;
+            if (string.Equals(role, "superadmin", StringComparison.OrdinalIgnoreCase))
+                return true;
+            // Admin sin BranchId = acceso global de plataforma; admin con sucursal = aislado
+            return string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase)
+                   && GetUserBranchId() == null;
         }
 
         private async Task<bool> ValidateTableTenantAccessAsync(Guid tableId)
@@ -117,12 +122,16 @@ namespace RestBar.Controllers
             if (HasGlobalTenantAccess()) return true;
 
             var userBranchId = GetUserBranchId();
+            var userCompanyId = GetUserCompanyId();
             if (userBranchId == null) return false;
 
             var order = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == orderId);
             if (order == null) return false;
 
-            return order.BranchId == userBranchId;
+            if (order.BranchId != userBranchId) return false;
+            if (userCompanyId.HasValue && order.CompanyId.HasValue && order.CompanyId != userCompanyId)
+                return false;
+            return true;
         }
 
         // GET: Order
@@ -133,6 +142,14 @@ namespace RestBar.Controllers
                 Console.WriteLine("🔍 [OrderController] Index() - Iniciando carga de órdenes...");
 
                 var orders = await _orderService.GetAllAsync();
+                if (!HasGlobalTenantAccess())
+                {
+                    var bid = GetUserBranchId();
+                    var cid = GetUserCompanyId();
+                    orders = orders.Where(o =>
+                        (!bid.HasValue || o.BranchId == bid) &&
+                        (!cid.HasValue || o.CompanyId == null || o.CompanyId == cid));
+                }
                 ViewBag.Tables = await _tableService.GetTablesForViewBagAsync();
                 ViewBag.Customers = await _customerService.GetAllAsync();
                 ViewBag.Products = await _productService.GetActiveProductsForViewBagAsync();
@@ -174,6 +191,9 @@ namespace RestBar.Controllers
             {
                 return NotFound();
             }
+
+            if (!await OrderBelongsToUserBranchAsync(id.Value))
+                return NotFound();
 
             return View(order);
         }
@@ -219,6 +239,9 @@ namespace RestBar.Controllers
             {
                 return NotFound();
             }
+
+            if (!await OrderBelongsToUserBranchAsync(id.Value))
+                return NotFound();
 
             ViewBag.Tables = await _tableService.GetTablesForViewBagAsync();
             ViewBag.Customers = await _customerService.GetAllAsync();
@@ -1387,6 +1410,9 @@ namespace RestBar.Controllers
                 {
                     return NotFound(new { success = false, error = "Orden no encontrada" }); // P2-FIX-06
                 }
+
+                if (!await OrderBelongsToUserBranchAsync(guidOrderId))
+                    return NotFound(new { success = false, error = "Orden no encontrada" });
                 
                 var order = await _orderService.GetOrderWithDetailsAsync(guidOrderId);
                 

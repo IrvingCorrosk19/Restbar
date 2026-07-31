@@ -403,7 +403,7 @@ namespace RestBar.Services
                 {
                     ["ProductName"] = product.Name,
                     ["CurrentStock"] = currentStock.ToString(),
-                    ["MinimumStock"] = "0", // TODO: Agregar campo MinStock al modelo Product
+                    ["MinimumStock"] = (product.MinStock ?? 0).ToString(),
                     ["ProductId"] = product.Id.ToString()
                 };
 

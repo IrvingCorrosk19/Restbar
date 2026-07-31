@@ -1,261 +1,250 @@
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RestBar.Hubs;
+using RestBar.Infrastructure.Foundation;
 using RestBar.Models;
-using System.Threading.Tasks;
 
-namespace RestBar.Services
+namespace RestBar.Services;
+
+public class OrderHubService : IOrderHubService
 {
-    public class OrderHubService : IOrderHubService
+    private readonly IHubContext<OrderHub> _hubContext;
+    private readonly RestBarContext _db;
+    private readonly ITenantScopeAccessor _tenant;
+    private readonly ILogger<OrderHubService> _logger;
+
+    public OrderHubService(
+        IHubContext<OrderHub> hubContext,
+        RestBarContext db,
+        ITenantScopeAccessor tenant,
+        ILogger<OrderHubService> logger)
     {
-        private readonly IHubContext<OrderHub> _hubContext;
-        private readonly ILogger<OrderHubService> _logger;
+        _hubContext = hubContext;
+        _db = db;
+        _tenant = tenant;
+        _logger = logger;
+    }
 
-        public OrderHubService(IHubContext<OrderHub> hubContext, ILogger<OrderHubService> logger)
+    public async Task NotifyOrderStatusChanged(Guid orderId, OrderStatus newStatus)
+    {
+        await _hubContext.Clients.Group($"order_{orderId}")
+            .SendAsync("OrderStatusChanged", orderId, newStatus.ToString());
+    }
+
+    public async Task NotifyOrderItemStatusChanged(Guid orderId, Guid orderItemId, OrderItemStatus newStatus)
+    {
+        var data = new
         {
-            _hubContext = hubContext;
-            _logger = logger;
+            OrderId = orderId,
+            ItemId = orderItemId,
+            Status = newStatus.ToString(),
+            Message = newStatus == OrderItemStatus.Cancelled
+                ? "🗑️ Item eliminado de la orden"
+                : $"✅ Item actualizado a {newStatus}",
+            Type = newStatus == OrderItemStatus.Cancelled ? "item_deleted" : "item_updated",
+            Timestamp = DateTime.UtcNow
+        };
+
+        await _hubContext.Clients.Group($"order_{orderId}").SendAsync("OrderItemStatusChanged", data);
+
+        var companyId = await ResolveOrderCompanyAsync(orderId);
+        if (companyId is Guid cid)
+        {
+            await _hubContext.Clients.Group(SignalRTenantGroups.Kitchen(cid)).SendAsync("OrderItemStatusChanged", data);
+            if (newStatus == OrderItemStatus.Cancelled)
+                await _hubContext.Clients.Group(SignalRTenantGroups.Orders(cid)).SendAsync("OrderItemStatusChanged", data);
         }
+    }
 
-        public async Task NotifyOrderStatusChanged(Guid orderId, OrderStatus newStatus)
-        {
-            _logger.LogInformation("[SignalR] NotifyOrderStatusChanged - OrderId: {OrderId}, Status: {Status}", orderId, newStatus);
-            await _hubContext.Clients.Group($"order_{orderId}")
-                .SendAsync("OrderStatusChanged", orderId, newStatus.ToString());
-        }
-
-        public async Task NotifyOrderItemStatusChanged(Guid orderId, Guid orderItemId, OrderItemStatus newStatus)
-        {
-            try
+    public async Task NotifyOrderItemUpdated(Guid orderId, Guid orderItemId, Guid productId, string productName, string newStatus, string timestamp)
+    {
+        await _hubContext.Clients.Group($"order_{orderId}")
+            .SendAsync("OrderItemUpdated", new
             {
-                _logger.LogDebug("[SignalR] NotifyOrderItemStatusChanged - OrderId: {OrderId}, ItemId: {ItemId}, Status: {Status}",
-                    orderId, orderItemId, newStatus);
+                ItemId = orderItemId,
+                ProductId = productId,
+                ProductName = productName,
+                NewStatus = newStatus,
+                Timestamp = timestamp
+            });
+    }
 
-                var data = new
-                {
-                    OrderId = orderId,
-                    ItemId = orderItemId,
-                    Status = newStatus.ToString(),
-                    Message = newStatus == OrderItemStatus.Cancelled
-                        ? "🗑️ Item eliminado de la orden"
-                        : $"✅ Item actualizado a {newStatus}",
-                    Type = newStatus == OrderItemStatus.Cancelled ? "item_deleted" : "item_updated",
-                    Timestamp = DateTime.UtcNow
-                };
+    public async Task NotifyNewOrder(Guid orderId, string tableNumber)
+    {
+        var data = new
+        {
+            OrderId = orderId,
+            TableNumber = tableNumber,
+            Message = $"🆕 Nueva orden recibida para Mesa {tableNumber}",
+            Type = "new_order",
+            Timestamp = DateTime.UtcNow
+        };
 
-                // Notificar al grupo específico de la orden
-                await _hubContext.Clients.Group($"order_{orderId}")
-                    .SendAsync("OrderItemStatusChanged", data);
+        var companyId = await ResolveOrderCompanyAsync(orderId);
+        if (companyId is Guid cid)
+        {
+            await _hubContext.Clients.Group(SignalRTenantGroups.Kitchen(cid)).SendAsync("NewOrder", data);
+            await _hubContext.Clients.Group(SignalRTenantGroups.Orders(cid)).SendAsync("NewOrder", data);
+        }
+        else
+            _logger.LogWarning("[SignalR] NotifyNewOrder sin CompanyId — no se difunde a kitchen/orders. OrderId={OrderId}", orderId);
+    }
 
-                // Notificar al grupo legacy "kitchen" (broadcast general a todas las estaciones)
-                await _hubContext.Clients.Group("kitchen")
-                    .SendAsync("OrderItemStatusChanged", data);
+    public async Task NotifyOrderCancelled(Guid orderId)
+    {
+        await _hubContext.Clients.Group($"order_{orderId}").SendAsync("OrderCancelled", orderId);
+    }
 
-                // Si el item se cancela, notificar también a Order/Index
-                if (newStatus == OrderItemStatus.Cancelled)
-                {
-                    await _hubContext.Clients.Group("orders")
-                        .SendAsync("OrderItemStatusChanged", data);
-                }
+    public async Task NotifyOrderCompleted(Guid orderId, string tableNumber)
+    {
+        var data = new
+        {
+            OrderId = orderId,
+            TableNumber = tableNumber,
+            Message = $"✅ Orden completada para Mesa {tableNumber}",
+            Type = "order_completed",
+            Timestamp = DateTime.UtcNow
+        };
 
-                _logger.LogDebug("[SignalR] NotifyOrderItemStatusChanged - notificación enviada a order_{OrderId} + kitchen", orderId);
-            }
-            catch (Exception ex)
+        await _hubContext.Clients.Group($"order_{orderId}").SendAsync("OrderCompleted", data);
+        var companyId = await ResolveOrderCompanyAsync(orderId);
+        if (companyId is Guid cid)
+        {
+            await _hubContext.Clients.Group(SignalRTenantGroups.Kitchen(cid)).SendAsync("OrderCompleted", data);
+            await _hubContext.Clients.Group(SignalRTenantGroups.Orders(cid)).SendAsync("OrderCompleted", data);
+        }
+    }
+
+    public async Task NotifyTableStatusChanged(Guid tableId, string newStatus)
+    {
+        var message = newStatus switch
+        {
+            "EnPreparacion" => "👨‍🍳 Mesa cambió a EN PREPARACIÓN - Cocina trabajando",
+            "ParaPago" => "💰 Mesa cambió a PARA PAGO - Lista para cobrar",
+            "Ocupada" => "👥 Mesa cambió a OCUPADA - Clientes atendidos",
+            "Disponible" => "✅ Mesa cambió a DISPONIBLE - Libre para nuevos clientes",
+            "Servida" => "🍽️ Mesa cambió a SERVIDA - Pedido entregado",
+            _ => $"🔄 Mesa cambió de estado a {newStatus}"
+        };
+
+        var data = new
+        {
+            TableId = tableId,
+            NewStatus = newStatus,
+            Message = message,
+            Type = "table_status_changed",
+            Timestamp = DateTime.UtcNow
+        };
+
+        await _hubContext.Clients.Group($"table_{tableId}").SendAsync("TableStatusChanged", data);
+
+        var companyId = await ResolveTableCompanyAsync(tableId);
+        if (companyId is Guid cid)
+        {
+            await _hubContext.Clients.Group(SignalRTenantGroups.TableAll(cid)).SendAsync("TableStatusChanged", data);
+            await _hubContext.Clients.Group(SignalRTenantGroups.Orders(cid)).SendAsync("TableStatusChanged", data);
+            await _hubContext.Clients.Group(SignalRTenantGroups.Kitchen(cid)).SendAsync("TableStatusChanged", data);
+        }
+    }
+
+    public async Task NotifyKitchenUpdate()
+    {
+        var companyId = _tenant.Current.CompanyId;
+        if (companyId is Guid cid)
+            await _hubContext.Clients.Group(SignalRTenantGroups.Kitchen(cid)).SendAsync("KitchenUpdate");
+        else
+            _logger.LogWarning("[SignalR] NotifyKitchenUpdate sin CompanyId en scope — omitido");
+    }
+
+    public async Task NotifyStationUpdate(string stationType)
+    {
+        var companyId = _tenant.Current.CompanyId;
+        if (companyId is null)
+        {
+            await NotifyKitchenUpdate();
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(stationType))
+        {
+            await NotifyKitchenUpdate();
+            return;
+        }
+
+        await _hubContext.Clients.Group(SignalRTenantGroups.Station(companyId.Value, stationType))
+            .SendAsync("KitchenUpdate");
+    }
+
+    public async Task NotifyPaymentProcessed(Guid orderId, decimal amount, string method, bool isFullyPaid)
+    {
+        await _hubContext.Clients.Group($"order_{orderId}")
+            .SendAsync("PaymentProcessed", orderId, amount, method, isFullyPaid);
+    }
+
+    public async Task NotifyStockUpdated(Guid productId, string productName, decimal newStock)
+    {
+        var companyId = await ResolveProductCompanyAsync(productId) ?? _tenant.Current.CompanyId;
+        if (companyId is null) return;
+        await _hubContext.Clients.Group(SignalRTenantGroups.Stock(companyId.Value))
+            .SendAsync("StockUpdated", new
             {
-                _logger.LogError(ex, "[SignalR] NotifyOrderItemStatusChanged - error para OrderId: {OrderId}, ItemId: {ItemId}",
-                    orderId, orderItemId);
-                throw;
-            }
-        }
+                ProductId = productId,
+                ProductName = productName,
+                NewStock = newStock,
+                Timestamp = DateTime.UtcNow
+            });
+    }
 
-        public async Task NotifyOrderItemUpdated(Guid orderId, Guid orderItemId, Guid productId, string productName, string newStatus, string timestamp)
-        {
-            await _hubContext.Clients.Group($"order_{orderId}")
-                .SendAsync("OrderItemUpdated", new
-                {
-                    ItemId = orderItemId,
-                    ProductId = productId,
-                    ProductName = productName,
-                    NewStatus = newStatus,
-                    Timestamp = timestamp
-                });
-        }
-
-        public async Task NotifyNewOrder(Guid orderId, string tableNumber)
-        {
-            try
+    public async Task NotifyStockReduced(Guid productId, string productName, decimal oldStock, decimal newStock, decimal quantityReduced)
+    {
+        var companyId = await ResolveProductCompanyAsync(productId) ?? _tenant.Current.CompanyId;
+        if (companyId is null) return;
+        await _hubContext.Clients.Group(SignalRTenantGroups.Stock(companyId.Value))
+            .SendAsync("StockReduced", new
             {
-                _logger.LogInformation("[SignalR] NotifyNewOrder - OrderId: {OrderId}, Mesa: {TableNumber}", orderId, tableNumber);
+                ProductId = productId,
+                ProductName = productName,
+                OldStock = oldStock,
+                NewStock = newStock,
+                QuantityReduced = quantityReduced,
+                Timestamp = DateTime.UtcNow
+            });
+    }
 
-                var data = new
-                {
-                    OrderId = orderId,
-                    TableNumber = tableNumber,
-                    Message = $"🆕 Nueva orden recibida para Mesa {tableNumber}",
-                    Type = "new_order",
-                    Timestamp = DateTime.UtcNow
-                };
+    public async Task NotifyCashSessionChanged(Guid sessionId, Guid registerId, string status)
+    {
+        var payload = new { SessionId = sessionId, RegisterId = registerId, Status = status, Timestamp = DateTime.UtcNow };
+        await _hubContext.Clients.Group($"cash_register_{registerId}").SendAsync("CashSessionChanged", payload);
+        var companyId = await ResolveRegisterCompanyAsync(registerId) ?? _tenant.Current.CompanyId;
+        if (companyId is Guid cid)
+            await _hubContext.Clients.Group(SignalRTenantGroups.CashDashboard(cid)).SendAsync("CashSessionChanged", payload);
+    }
 
-                // Notificar al grupo legacy "kitchen" — recibido por todas las vistas de estación (aún unidas a "kitchen")
-                await _hubContext.Clients.Group("kitchen")
-                    .SendAsync("NewOrder", data);
+    public async Task NotifyCashMovement(Guid sessionId, Guid registerId, string movementType, decimal amount)
+    {
+        var payload = new { SessionId = sessionId, RegisterId = registerId, MovementType = movementType, Amount = amount, Timestamp = DateTime.UtcNow };
+        await _hubContext.Clients.Group($"cash_register_{registerId}").SendAsync("CashMovement", payload);
+        var companyId = await ResolveRegisterCompanyAsync(registerId) ?? _tenant.Current.CompanyId;
+        if (companyId is Guid cid)
+            await _hubContext.Clients.Group(SignalRTenantGroups.CashDashboard(cid)).SendAsync("CashMovement", payload);
+    }
 
-                // Notificar al grupo de órdenes (Order/Index)
-                await _hubContext.Clients.Group("orders")
-                    .SendAsync("NewOrder", data);
+    private async Task<Guid?> ResolveOrderCompanyAsync(Guid orderId) =>
+        await _db.Orders.AsNoTracking().Where(o => o.Id == orderId).Select(o => o.CompanyId).FirstOrDefaultAsync();
 
-                _logger.LogDebug("[SignalR] NotifyNewOrder - enviado a grupos 'kitchen' y 'orders'");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[SignalR] NotifyNewOrder - error para OrderId: {OrderId}", orderId);
-                throw;
-            }
-        }
+    private async Task<Guid?> ResolveTableCompanyAsync(Guid tableId) =>
+        await _db.Tables.AsNoTracking().Where(t => t.Id == tableId).Select(t => t.CompanyId).FirstOrDefaultAsync();
 
-        public async Task NotifyOrderCancelled(Guid orderId)
-        {
-            await _hubContext.Clients.Group($"order_{orderId}")
-                .SendAsync("OrderCancelled", orderId);
-        }
+    private async Task<Guid?> ResolveProductCompanyAsync(Guid productId) =>
+        await _db.Products.AsNoTracking().Where(p => p.Id == productId).Select(p => p.CompanyId).FirstOrDefaultAsync();
 
-        public async Task NotifyOrderCompleted(Guid orderId, string tableNumber)
-        {
-            try
-            {
-                _logger.LogInformation("[SignalR] NotifyOrderCompleted - OrderId: {OrderId}, Mesa: {TableNumber}", orderId, tableNumber);
-
-                var data = new
-                {
-                    OrderId = orderId,
-                    TableNumber = tableNumber,
-                    Message = $"✅ Orden completada para Mesa {tableNumber}",
-                    Type = "order_completed",
-                    Timestamp = DateTime.UtcNow
-                };
-
-                await _hubContext.Clients.Group("kitchen").SendAsync("OrderCompleted", data);
-                await _hubContext.Clients.Group("orders").SendAsync("OrderCompleted", data);
-                await _hubContext.Clients.Group($"order_{orderId}").SendAsync("OrderCompleted", data);
-
-                _logger.LogDebug("[SignalR] NotifyOrderCompleted - enviado a kitchen, orders, order_{OrderId}", orderId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[SignalR] NotifyOrderCompleted - error para OrderId: {OrderId}", orderId);
-                throw;
-            }
-        }
-
-        public async Task NotifyTableStatusChanged(Guid tableId, string newStatus)
-        {
-            try
-            {
-                _logger.LogInformation("[SignalR] NotifyTableStatusChanged - TableId: {TableId}, Status: {Status}", tableId, newStatus);
-
-                var message = newStatus switch
-                {
-                    "EnPreparacion" => $"👨‍🍳 Mesa cambió a EN PREPARACIÓN - Cocina trabajando",
-                    "ParaPago"      => $"💰 Mesa cambió a PARA PAGO - Lista para cobrar",
-                    "Ocupada"       => $"👥 Mesa cambió a OCUPADA - Clientes atendidos",
-                    "Disponible"    => $"✅ Mesa cambió a DISPONIBLE - Libre para nuevos clientes",
-                    "Servida"       => $"🍽️ Mesa cambió a SERVIDA - Pedido entregado",
-                    _               => $"🔄 Mesa cambió de estado a {newStatus}"
-                };
-
-                var data = new
-                {
-                    TableId = tableId,
-                    NewStatus = newStatus,
-                    Message = message,
-                    Type = "table_status_changed",
-                    Timestamp = DateTime.UtcNow
-                };
-
-                await _hubContext.Clients.Group($"table_{tableId}").SendAsync("TableStatusChanged", data);
-                await _hubContext.Clients.Group("table_all").SendAsync("TableStatusChanged", data);
-                await _hubContext.Clients.Group("orders").SendAsync("TableStatusChanged", data);
-                await _hubContext.Clients.Group("kitchen").SendAsync("TableStatusChanged", data);
-
-                _logger.LogDebug("[SignalR] NotifyTableStatusChanged - enviado a table_{TableId}, table_all, orders, kitchen", tableId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[SignalR] NotifyTableStatusChanged - error para TableId: {TableId}", tableId);
-                throw;
-            }
-        }
-
-        public async Task NotifyKitchenUpdate()
-        {
-            // Difusión general: llega a cualquier estación unida al grupo "kitchen"
-            await _hubContext.Clients.Group("kitchen").SendAsync("KitchenUpdate");
-        }
-
-        /// <summary>
-        /// Envía evento "KitchenUpdate" al grupo específico de la estación indicada
-        /// (ej. "station_kitchen", "station_bar"). Usar cuando se conoce el tipo de
-        /// estación del ítem actualizado, para evitar refrescos innecesarios en otras estaciones.
-        /// </summary>
-        public async Task NotifyStationUpdate(string stationType)
-        {
-            if (string.IsNullOrWhiteSpace(stationType))
-            {
-                // Sin tipo de estación conocido → broadcast al grupo legacy "kitchen"
-                await NotifyKitchenUpdate();
-                return;
-            }
-
-            var groupName = $"station_{stationType.ToLower().Trim()}";
-            _logger.LogDebug("[SignalR] NotifyStationUpdate - enviando KitchenUpdate a grupo '{GroupName}'", groupName);
-            await _hubContext.Clients.Group(groupName).SendAsync("KitchenUpdate");
-        }
-
-        public async Task NotifyPaymentProcessed(Guid orderId, decimal amount, string method, bool isFullyPaid)
-        {
-            await _hubContext.Clients.Group($"order_{orderId}")
-                .SendAsync("PaymentProcessed", orderId, amount, method, isFullyPaid);
-        }
-
-        // Notificaciones de stock
-        public async Task NotifyStockUpdated(Guid productId, string productName, decimal newStock)
-        {
-            await _hubContext.Clients.Group("stock_updates")
-                .SendAsync("StockUpdated", new
-                {
-                    ProductId = productId,
-                    ProductName = productName,
-                    NewStock = newStock,
-                    Timestamp = DateTime.UtcNow
-                });
-        }
-
-        public async Task NotifyStockReduced(Guid productId, string productName, decimal oldStock, decimal newStock, decimal quantityReduced)
-        {
-            await _hubContext.Clients.Group("stock_updates")
-                .SendAsync("StockReduced", new
-                {
-                    ProductId = productId,
-                    ProductName = productName,
-                    OldStock = oldStock,
-                    NewStock = newStock,
-                    QuantityReduced = quantityReduced,
-                    Timestamp = DateTime.UtcNow
-                });
-        }
-
-        public async Task NotifyCashSessionChanged(Guid sessionId, Guid registerId, string status)
-        {
-            var payload = new { SessionId = sessionId, RegisterId = registerId, Status = status, Timestamp = DateTime.UtcNow };
-            await _hubContext.Clients.Group($"cash_register_{registerId}").SendAsync("CashSessionChanged", payload);
-            await _hubContext.Clients.Group("cash_dashboard").SendAsync("CashSessionChanged", payload);
-        }
-
-        public async Task NotifyCashMovement(Guid sessionId, Guid registerId, string movementType, decimal amount)
-        {
-            var payload = new { SessionId = sessionId, RegisterId = registerId, MovementType = movementType, Amount = amount, Timestamp = DateTime.UtcNow };
-            await _hubContext.Clients.Group($"cash_register_{registerId}").SendAsync("CashMovement", payload);
-            await _hubContext.Clients.Group("cash_dashboard").SendAsync("CashMovement", payload);
-        }
+    private async Task<Guid?> ResolveRegisterCompanyAsync(Guid registerId)
+    {
+        var row = await _db.CashRegisters.AsNoTracking()
+            .Where(r => r.Id == registerId)
+            .Select(r => new { r.CompanyId })
+            .FirstOrDefaultAsync();
+        return row == null || row.CompanyId == Guid.Empty ? null : row.CompanyId;
     }
 }

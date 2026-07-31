@@ -1,3 +1,6 @@
+using System.Net;
+using System.Text;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using RestBar.Interfaces;
@@ -222,7 +225,7 @@ namespace RestBar.Controllers
             }
         }
 
-        // ✅ Exportar reporte a PDF
+        // HTML imprimible (guardar como PDF) — mismo enfoque que AdvancedReports / Analytics
         [HttpGet]
         public async Task<IActionResult> ExportPdf(DateTime? startDate, DateTime? endDate, Guid? branchId)
         {
@@ -236,9 +239,9 @@ namespace RestBar.Controllers
                 };
 
                 var report = await _salesReportService.GetCompleteSalesReportAsync(filters);
-
-                // TODO: Implementar generación de PDF
-                return Json(new { success = true, message = "Exportación a PDF en desarrollo" });
+                var html = BuildSalesReportHtml(report, filters);
+                var bytes = Encoding.UTF8.GetBytes(html);
+                return File(bytes, "text/html; charset=utf-8", $"ventas_{filters.StartDate:yyyyMMdd}_{filters.EndDate:yyyyMMdd}_print.html");
             }
             catch (Exception ex)
             {
@@ -247,7 +250,6 @@ namespace RestBar.Controllers
             }
         }
 
-        // ✅ Exportar reporte a Excel
         [HttpGet]
         public async Task<IActionResult> ExportExcel(DateTime? startDate, DateTime? endDate, Guid? branchId)
         {
@@ -261,15 +263,92 @@ namespace RestBar.Controllers
                 };
 
                 var report = await _salesReportService.GetCompleteSalesReportAsync(filters);
-
-                // TODO: Implementar generación de Excel
-                return Json(new { success = true, message = "Exportación a Excel en desarrollo" });
+                var bytes = BuildSalesReportExcel(report, filters);
+                return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    $"ventas_{filters.StartDate:yyyyMMdd}_{filters.EndDate:yyyyMMdd}.xlsx");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[ReportsController] Error exportando Excel");
                 return Json(new { success = false, message = "Error exportando Excel" });
             }
+        }
+
+        private static string BuildSalesReportHtml(SalesReportViewModel report, ReportFilters filters)
+        {
+            var sb = new StringBuilder();
+            sb.Append("<!doctype html><html><head><meta charset='utf-8'><title>Reporte de ventas</title>");
+            sb.Append("<style>body{font-family:Segoe UI,Arial,sans-serif;font-size:12px;margin:24px}table{border-collapse:collapse;width:100%;margin-bottom:16px}th,td{border:1px solid #ccc;padding:4px}th{background:#eee}@media print{.no-print{display:none}}</style></head><body>");
+            sb.Append("<h1>Reporte de ventas</h1><p>")
+              .Append(WebUtility.HtmlEncode($"{filters.StartDate:d} — {filters.EndDate:d}"))
+              .Append(" · Generado ").Append(DateTime.UtcNow.ToString("u")).Append("</p>");
+            sb.Append("<p class='no-print'><button onclick='window.print()'>Imprimir / Guardar como PDF</button></p>");
+            sb.Append("<h2>Métricas</h2><table><tr><th>Ingresos</th><th>Órdenes</th><th>Ticket promedio</th><th>Descuentos</th><th>Neto</th></tr><tr>");
+            sb.Append($"<td>{report.Metrics.TotalRevenue:N2}</td><td>{report.Metrics.TotalOrders}</td><td>{report.Metrics.AverageTicket:N2}</td><td>{report.Metrics.TotalDiscounts:N2}</td><td>{report.Metrics.NetRevenue:N2}</td></tr></table>");
+            sb.Append("<h2>Ventas diarias</h2><table><tr><th>Fecha</th><th>Ingresos</th><th>Órdenes</th><th>Items</th></tr>");
+            foreach (var d in report.DailySales)
+                sb.Append($"<tr><td>{d.Date:d}</td><td>{d.Revenue:N2}</td><td>{d.Orders}</td><td>{d.Items}</td></tr>");
+            sb.Append("</table><h2>Top productos</h2><table><tr><th>#</th><th>Producto</th><th>Cantidad</th><th>Ingresos</th></tr>");
+            foreach (var p in report.TopProducts)
+                sb.Append($"<tr><td>{p.Rank}</td><td>{WebUtility.HtmlEncode(p.ProductName)}</td><td>{p.QuantitySold}</td><td>{p.Revenue:N2}</td></tr>");
+            sb.Append("</table></body></html>");
+            return sb.ToString();
+        }
+
+        private static byte[] BuildSalesReportExcel(SalesReportViewModel report, ReportFilters filters)
+        {
+            using var wb = new XLWorkbook();
+            var summary = wb.Worksheets.Add("Resumen");
+            summary.Cell(1, 1).Value = "Reporte de ventas";
+            summary.Cell(2, 1).Value = "Periodo";
+            summary.Cell(2, 2).Value = $"{filters.StartDate:d} — {filters.EndDate:d}";
+            summary.Cell(3, 1).Value = "Ingresos";
+            summary.Cell(3, 2).Value = report.Metrics.TotalRevenue;
+            summary.Cell(4, 1).Value = "Órdenes";
+            summary.Cell(4, 2).Value = report.Metrics.TotalOrders;
+            summary.Cell(5, 1).Value = "Ticket promedio";
+            summary.Cell(5, 2).Value = report.Metrics.AverageTicket;
+            summary.Cell(6, 1).Value = "Descuentos";
+            summary.Cell(6, 2).Value = report.Metrics.TotalDiscounts;
+            summary.Cell(7, 1).Value = "Neto";
+            summary.Cell(7, 2).Value = report.Metrics.NetRevenue;
+            summary.Columns().AdjustToContents();
+
+            var daily = wb.Worksheets.Add("Diario");
+            daily.Cell(1, 1).Value = "Fecha";
+            daily.Cell(1, 2).Value = "Ingresos";
+            daily.Cell(1, 3).Value = "Órdenes";
+            daily.Cell(1, 4).Value = "Items";
+            for (var i = 0; i < report.DailySales.Count; i++)
+            {
+                var d = report.DailySales[i];
+                daily.Cell(i + 2, 1).Value = d.Date;
+                daily.Cell(i + 2, 2).Value = d.Revenue;
+                daily.Cell(i + 2, 3).Value = d.Orders;
+                daily.Cell(i + 2, 4).Value = d.Items;
+            }
+            daily.Columns().AdjustToContents();
+
+            var products = wb.Worksheets.Add("TopProductos");
+            products.Cell(1, 1).Value = "Rank";
+            products.Cell(1, 2).Value = "Producto";
+            products.Cell(1, 3).Value = "Categoría";
+            products.Cell(1, 4).Value = "Cantidad";
+            products.Cell(1, 5).Value = "Ingresos";
+            for (var i = 0; i < report.TopProducts.Count; i++)
+            {
+                var p = report.TopProducts[i];
+                products.Cell(i + 2, 1).Value = p.Rank;
+                products.Cell(i + 2, 2).Value = p.ProductName;
+                products.Cell(i + 2, 3).Value = p.CategoryName;
+                products.Cell(i + 2, 4).Value = p.QuantitySold;
+                products.Cell(i + 2, 5).Value = p.Revenue;
+            }
+            products.Columns().AdjustToContents();
+
+            using var ms = new MemoryStream();
+            wb.SaveAs(ms);
+            return ms.ToArray();
         }
     }
 } 

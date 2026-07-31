@@ -1,0 +1,45 @@
+@model RestBar.Models.TaxRate
+@{
+    ViewData["Title"] = "Nuevo Impuesto";
+    Layout = "_Layout";
+}
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between mb-3">
+        <h2>Nuevo Impuesto</h2>
+        <a class="btn btn-secondary" asp-action="TaxRates">Volver</a>
+    </div>
+
+    <form asp-action="CreateTaxRate" method="post" class="card card-body">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label">Nombre</label>
+            <input asp-for="Name" class="form-control" required />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Description" class="form-label">Descripción</label>
+            <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Rate" class="form-label">Tasa (%)</label>
+            <input asp-for="Rate" class="form-control" type="number" step="0.01" min="0" />
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="TaxCode" class="form-label">Código fiscal</label>
+            <input asp-for="TaxCode" class="form-control" maxlength="20" />
+        </div>
+
+        <div class="form-check mb-3">
+            <input asp-for="IsActive" class="form-check-input" type="checkbox" checked />
+            <label asp-for="IsActive" class="form-check-label">Activo</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Guardar</button>
+    </form>
+</div>

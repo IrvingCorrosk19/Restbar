@@ -3,10 +3,13 @@ using Microsoft.AspNetCore.Authorization;
 using RestBar.Interfaces;
 using RestBar.Models;
 using RestBar.ViewModel;
+using ClosedXML.Excel;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Collections.Generic; // Added for List
+using System.Collections.Generic;
+using System.Text;
+using System.Net;
 
 namespace RestBar.Controllers
 {
@@ -561,14 +564,34 @@ namespace RestBar.Controllers
                     Pagador = p.PayerName ?? "N/A"
                 }).ToList();
 
-                // For now, return JSON. In a real implementation, you'd use a library like EPPlus or ClosedXML
-                // to create Excel files, or iTextSharp for PDFs
-                return Json(new
+                using var wb = new XLWorkbook();
+                var ws = wb.Worksheets.Add("Pagos");
+                ws.Cell(1, 1).Value = "ID";
+                ws.Cell(1, 2).Value = "Orden";
+                ws.Cell(1, 3).Value = "Mesa";
+                ws.Cell(1, 4).Value = "Monto";
+                ws.Cell(1, 5).Value = "Método";
+                ws.Cell(1, 6).Value = "Estado";
+                ws.Cell(1, 7).Value = "Fecha";
+                ws.Cell(1, 8).Value = "Pagador";
+                for (var i = 0; i < exportData.Count; i++)
                 {
-                    success = true,
-                    message = "Exportación completada",
-                    data = exportData
-                });
+                    var row = exportData[i];
+                    ws.Cell(i + 2, 1).Value = row.ID;
+                    ws.Cell(i + 2, 2).Value = row.Orden;
+                    ws.Cell(i + 2, 3).Value = row.Mesa;
+                    ws.Cell(i + 2, 4).Value = row.Monto;
+                    ws.Cell(i + 2, 5).Value = row.Método;
+                    ws.Cell(i + 2, 6).Value = row.Estado;
+                    ws.Cell(i + 2, 7).Value = row.Fecha;
+                    ws.Cell(i + 2, 8).Value = row.Pagador;
+                }
+                ws.Columns().AdjustToContents();
+                using var ms = new MemoryStream();
+                wb.SaveAs(ms);
+                return File(ms.ToArray(),
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    $"pagos_{DateTime.Now:yyyyMMdd}.xlsx");
             }
             catch (Exception ex)
             {
@@ -617,32 +640,21 @@ namespace RestBar.Controllers
                     .Select(g => new { Method = g.Key, Count = g.Count(), Amount = g.Sum(p => p.Amount) })
                     .ToList();
 
-                var reportData = new
-                {
-                    title = reportTitle,
-                    period = $"{startDate:dd/MM/yyyy} - {endDate.AddDays(-1):dd/MM/yyyy}",
-                    totalRevenue = totalRevenue,
-                    totalPayments = totalPayments,
-                    paymentMethods = paymentMethods,
-                    payments = payments.Select(p => new
-                    {
-                        orderNumber = p.Order?.OrderNumber ?? "N/A",
-                        tableNumber = p.Order?.Table?.TableNumber ?? "N/A",
-                        amount = p.Amount,
-                        method = p.Method,
-                        status = p.Status,
-                        createdAt = p.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
-                        payerName = p.PayerName ?? "N/A"
-                    }).ToList()
-                };
-
-                // For now, return JSON. In a real implementation, you'd generate PDF using iTextSharp
-                return Json(new
-                {
-                    success = true,
-                    message = "Reporte generado exitosamente",
-                    data = reportData
-                });
+                var sb = new StringBuilder();
+                sb.Append("<!doctype html><html><head><meta charset='utf-8'><title>")
+                  .Append(WebUtility.HtmlEncode(reportTitle))
+                  .Append("</title><style>body{font-family:Segoe UI,Arial,sans-serif;font-size:12px;margin:24px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:4px}th{background:#eee}@media print{.no-print{display:none}}</style></head><body>");
+                sb.Append("<h1>").Append(WebUtility.HtmlEncode(reportTitle)).Append("</h1>");
+                sb.Append($"<p>Periodo: {startDate:dd/MM/yyyy} — {endDate.AddDays(-1):dd/MM/yyyy}<br>Total: {totalRevenue:N2} · Pagos: {totalPayments}</p>");
+                sb.Append("<p class='no-print'><button onclick='window.print()'>Imprimir / Guardar como PDF</button></p>");
+                sb.Append("<h2>Por método</h2><table><tr><th>Método</th><th>Cantidad</th><th>Monto</th></tr>");
+                foreach (var m in paymentMethods)
+                    sb.Append($"<tr><td>{WebUtility.HtmlEncode(m.Method)}</td><td>{m.Count}</td><td>{m.Amount:N2}</td></tr>");
+                sb.Append("</table><h2>Detalle</h2><table><tr><th>Orden</th><th>Mesa</th><th>Monto</th><th>Método</th><th>Estado</th><th>Fecha</th></tr>");
+                foreach (var p in payments)
+                    sb.Append($"<tr><td>{WebUtility.HtmlEncode(p.Order?.OrderNumber ?? "N/A")}</td><td>{WebUtility.HtmlEncode(p.Order?.Table?.TableNumber ?? "N/A")}</td><td>{p.Amount:N2}</td><td>{WebUtility.HtmlEncode(p.Method)}</td><td>{WebUtility.HtmlEncode(p.Status)}</td><td>{p.CreatedAt:dd/MM/yyyy HH:mm}</td></tr>");
+                sb.Append("</table></body></html>");
+                return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/html; charset=utf-8", $"reporte_pagos_{type}_{DateTime.Now:yyyyMMdd}_print.html");
             }
             catch (Exception ex)
             {

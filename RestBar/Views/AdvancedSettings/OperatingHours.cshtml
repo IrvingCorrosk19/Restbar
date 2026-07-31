@@ -1,0 +1,45 @@
+@model IEnumerable<RestBar.Models.OperatingHours>
+@{
+    ViewData["Title"] = "Horarios de Operación";
+    Layout = "_Layout";
+}
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between mb-3">
+        <h2>Horarios de Operación</h2>
+        <a class="btn btn-primary" asp-action="CreateOperatingHours">Nuevo horario</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Día</th>
+                <th>Apertura</th>
+                <th>Cierre</th>
+                <th>Abierto</th>
+                <th>Notas</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var h in Model)
+        {
+            <tr>
+                <td>@h.DayOfWeek</td>
+                <td>@(h.OpenTime?.ToString(@"hh\:mm") ?? "-")</td>
+                <td>@(h.CloseTime?.ToString(@"hh\:mm") ?? "-")</td>
+                <td>@(h.IsOpen ? "Sí" : "No")</td>
+                <td>@(h.Notes ?? "-")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

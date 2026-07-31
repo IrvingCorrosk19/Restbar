@@ -1,0 +1,47 @@
+@model IEnumerable<RestBar.Models.Currency>
+@{
+    ViewData["Title"] = "Monedas";
+    Layout = "_Layout";
+}
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between mb-3">
+        <h2>Monedas</h2>
+        <a class="btn btn-primary" asp-action="CreateCurrency">Nueva moneda</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Símbolo</th>
+                <th>Tasa</th>
+                <th>Predeterminada</th>
+                <th>Activa</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var c in Model)
+        {
+            <tr>
+                <td>@c.Code</td>
+                <td>@c.Name</td>
+                <td>@(c.Symbol ?? "-")</td>
+                <td>@c.ExchangeRate.ToString("F4")</td>
+                <td>@(c.IsDefault ? "Sí" : "No")</td>
+                <td>@(c.IsActive ? "Sí" : "No")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

@@ -230,10 +230,7 @@
 @section Scripts {
     <script>
         function viewCompany(companyId) {
-            // Aquí podrías cargar los detalles de la compañía via AJAX
-            console.log('Ver compañía:', companyId);
-            // Por ahora, solo mostramos un mensaje
-            alert('Función de ver detalles en desarrollo');
+            window.location.href = '@Url.Action("EditCompany", "SuperAdmin")' + '?id=' + companyId;
         }
 
         function editCompany(companyId) {

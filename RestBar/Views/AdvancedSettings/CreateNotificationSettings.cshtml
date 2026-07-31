@@ -1,0 +1,41 @@
+@model RestBar.Models.NotificationSettings
+@{
+    ViewData["Title"] = "Nueva Notificación";
+    Layout = "_Layout";
+}
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between mb-3">
+        <h2>Nueva Configuración de Notificación</h2>
+        <a class="btn btn-secondary" asp-action="NotificationSettings">Volver</a>
+    </div>
+
+    <form asp-action="CreateNotificationSettings" method="post" class="card card-body">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="NotificationType" class="form-label">Tipo de notificación</label>
+            <input asp-for="NotificationType" class="form-control" required maxlength="100" placeholder="Email, SMS, Push..." />
+            <span asp-validation-for="NotificationType" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Description" class="form-label">Descripción</label>
+            <textarea asp-for="Description" class="form-control" rows="2" maxlength="200"></textarea>
+        </div>
+
+        <div class="form-check mb-3">
+            <input asp-for="IsEnabled" class="form-check-input" type="checkbox" checked />
+            <label asp-for="IsEnabled" class="form-check-label">Habilitada</label>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Configuration" class="form-label">Configuración (JSON)</label>
+            <textarea asp-for="Configuration" class="form-control" rows="4" maxlength="500" placeholder='{"endpoint":"..."}'></textarea>
+            <div class="form-text">Configuración opcional en formato JSON.</div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Guardar</button>
+    </form>
+</div>

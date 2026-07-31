@@ -1,0 +1,43 @@
+@model IEnumerable<RestBar.Models.NotificationSettings>
+@{
+    ViewData["Title"] = "Notificaciones";
+    Layout = "_Layout";
+}
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between mb-3">
+        <h2>Configuración de Notificaciones</h2>
+        <a class="btn btn-primary" asp-action="CreateNotificationSettings">Nueva configuración</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Tipo</th>
+                <th>Descripción</th>
+                <th>Habilitada</th>
+                <th>Configuración</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var n in Model)
+        {
+            <tr>
+                <td>@n.NotificationType</td>
+                <td>@(n.Description ?? "-")</td>
+                <td>@(n.IsEnabled ? "Sí" : "No")</td>
+                <td>@(string.IsNullOrEmpty(n.Configuration) ? "-" : (n.Configuration.Length > 50 ? n.Configuration.Substring(0, 50) + "..." : n.Configuration))</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,53 @@
+@model IEnumerable<RestBar.Models.DiscountPolicy>
+@{
+    ViewData["Title"] = "Políticas de Descuento";
+    Layout = "_Layout";
+}
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between mb-3">
+        <h2>Políticas de Descuento</h2>
+        <a class="btn btn-primary" asp-action="CreateDiscountPolicy">Nueva política</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>% Descuento</th>
+                <th>Máximo</th>
+                <th>Mínimo pedido</th>
+                <th>Requiere aprobación</th>
+                <th>Desde</th>
+                <th>Hasta</th>
+                <th>Activa</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var d in Model)
+        {
+            <tr>
+                <td>@d.Name</td>
+                <td>@(d.Description ?? "-")</td>
+                <td>@d.DiscountPercentage.ToString("F2")%</td>
+                <td>@(d.MaximumDiscountAmount?.ToString("F2") ?? "-")</td>
+                <td>@(d.MinimumOrderAmount?.ToString("F2") ?? "-")</td>
+                <td>@(d.RequiresApproval ? "Sí" : "No")</td>
+                <td>@(d.ValidFromTime?.ToString(@"hh\:mm") ?? "-")</td>
+                <td>@(d.ValidUntilTime?.ToString(@"hh\:mm") ?? "-")</td>
+                <td>@(d.IsActive ? "Sí" : "No")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

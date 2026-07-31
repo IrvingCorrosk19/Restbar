@@ -59,6 +59,10 @@
                                     <li><a class="dropdown-item" asp-controller="Category" asp-action="Index"><i class="fas fa-tags"></i> Categorías</a></li>
                                     <li><a class="dropdown-item" asp-controller="Station" asp-action="Index"><i class="fas fa-fire"></i> Estaciones</a></li>
                                     <li><a class="dropdown-item" asp-controller="Product" asp-action="Index"><i class="fas fa-box"></i> Productos</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Modifier" asp-action="Index"><i class="fas fa-puzzle-piece"></i> Modificadores</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Customer" asp-action="Index"><i class="fas fa-users"></i> Clientes</a></li>
+                                    <li><a class="dropdown-item" asp-controller="AdvancedSettings" asp-action="Index"><i class="fas fa-sliders-h"></i> Ajustes avanzados</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Email" asp-action="Index"><i class="fas fa-envelope"></i> Email</a></li>
                                 </ul>
                             </li>
                             <li class="nav-item dropdown">
@@ -66,6 +70,8 @@
                                     <i class="fas fa-clipboard-list"></i> <span>Operaciones</span>
                                 </a>
                                 <ul class="dropdown-menu dark-dropdown" aria-labelledby="operationsDropdown">
+                                    <li><a class="dropdown-item" asp-controller="BusinessRules" asp-action="Index"><i class="fas fa-project-diagram"></i> Business Rules</a></li>
+                                    <li><a class="dropdown-item" asp-controller="DecisionIntelligence" asp-action="Cockpit"><i class="fas fa-lightbulb"></i> Decision Intelligence</a></li>
                                     <li><a class="dropdown-item" asp-controller="ExecutiveCommandCenter" asp-action="Index"><i class="fas fa-brain"></i> Command Center</a></li>
                                     <li><a class="dropdown-item" asp-controller="ExecutiveAnalytics" asp-action="Index"><i class="fas fa-chart-line"></i> Centro Ejecutivo</a></li>
                                     <li><a class="dropdown-item" asp-controller="BiNative" asp-action="Index"><i class="fas fa-database"></i> BI Nativo (API)</a></li>
@@ -73,6 +79,7 @@
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" asp-controller="Order" asp-action="Index" asp-route-returnUrl="@Url.Action("Index", "Home")"><i class="fas fa-shopping-cart"></i> Órdenes</a></li>
                                     <li><a class="dropdown-item" asp-controller="Order" asp-action="StationOrders" asp-route-stationType="kitchen" asp-route-returnUrl="@Url.Action("Index", "Home")"><i class="fas fa-fire"></i> Cocina</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Shift" asp-action="Index"><i class="fas fa-clock"></i> Turnos</a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" asp-controller="CashSession" asp-action="Dashboard"><i class="fas fa-cash-register"></i> Caja</a></li>
                                     <li><a class="dropdown-item" asp-controller="CashRegister" asp-action="Index"><i class="fas fa-store-alt"></i> Cajas registradoras</a></li>

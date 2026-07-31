@@ -37,6 +37,25 @@ public class CashSessionController : Controller
     private IActionResult? Disabled() =>
         !_flags.EnableCashModule ? View("ModuleDisabled") : null;
 
+    private bool CanAccessCashSession(CashSession session)
+    {
+        var role = User.FindFirst("UserRole")?.Value;
+        if (string.Equals(role, "superadmin", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var companyId = Guid.TryParse(User.FindFirst("CompanyId")?.Value, out var cid) ? cid : (Guid?)null;
+        var branchId = Guid.TryParse(User.FindFirst("BranchId")?.Value, out var bid) ? bid : (Guid?)null;
+
+        if (companyId.HasValue && session.CompanyId != companyId.Value)
+            return false;
+        if (branchId.HasValue && session.BranchId != branchId.Value)
+            return false;
+        // Fail closed for non-superadmin without claims
+        if (!companyId.HasValue && !branchId.HasValue)
+            return false;
+        return true;
+    }
+
     public async Task<IActionResult> Dashboard()
     {
         if (Disabled() is { } d) return d;
@@ -138,7 +157,7 @@ public class CashSessionController : Controller
     {
         if (Disabled() is { } d) return d;
         var session = await _sessions.GetByIdAsync(id);
-        if (session == null)
+        if (session == null || !CanAccessCashSession(session))
             return NotFound();
 
         ViewBag.ExpectedCash = await _reconciliation.GetExpectedCashAsync(id);
@@ -151,6 +170,9 @@ public class CashSessionController : Controller
     public async Task<IActionResult> StartClose(Guid id)
     {
         if (Disabled() is { } d) return d;
+        var existing = await _sessions.GetByIdAsync(id);
+        if (existing == null || !CanAccessCashSession(existing))
+            return NotFound();
         try
         {
             var userId = Guid.Parse(User.FindFirst("UserId")!.Value);
@@ -169,7 +191,7 @@ public class CashSessionController : Controller
     {
         if (Disabled() is { } d) return d;
         var session = await _sessions.GetByIdAsync(id);
-        if (session == null)
+        if (session == null || !CanAccessCashSession(session))
             return NotFound();
 
         ViewBag.ExpectedCash = await _reconciliation.GetExpectedCashAsync(id);
@@ -191,7 +213,7 @@ public class CashSessionController : Controller
     {
         if (Disabled() is { } d) return d;
         var session = await _sessions.GetByIdAsync(id);
-        if (session == null)
+        if (session == null || !CanAccessCashSession(session))
             return NotFound();
         return View(session);
     }

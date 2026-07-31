@@ -1,0 +1,88 @@
+@model IEnumerable<RestBar.Models.EmailTemplate>
+@{
+    ViewData["Title"] = "Correo Electrónico";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var emailEnabled = ViewBag.EmailEnabled as bool? ?? false;
+}
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Correo Electrónico</h2>
+        <div>
+            <span class="badge @(emailEnabled ? "bg-success" : "bg-secondary") me-2">
+                SMTP @(emailEnabled ? "Habilitado" : "Deshabilitado")
+            </span>
+            <button type="button" class="btn btn-outline-primary" id="btnTestConnection">
+                <i class="fas fa-plug me-1"></i> Probar conexión
+            </button>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    @Html.AntiForgeryToken()
+    <div id="testResult" class="alert d-none" role="alert"></div>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Asunto</th>
+                <th>Categoría</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var t in Model)
+        {
+            <tr>
+                <td>@t.Name</td>
+                <td>@t.Subject</td>
+                <td>@(t.Category ?? "-")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+
+    @if (!Model.Any())
+    {
+        <p class="text-muted">No hay plantillas de correo registradas.</p>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('btnTestConnection').addEventListener('click', async function () {
+            var btn = this;
+            var result = document.getElementById('testResult');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Probando...';
+
+            try {
+                var response = await fetch('@Url.Action("TestConnection", "Email")', {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    }
+                });
+                var data = await response.json();
+                result.classList.remove('d-none', 'alert-success', 'alert-danger');
+                result.classList.add(data.success ? 'alert-success' : 'alert-danger');
+                result.textContent = data.message || (data.success ? 'Conexión exitosa' : 'Error de conexión');
+            } catch (err) {
+                result.classList.remove('d-none', 'alert-success');
+                result.classList.add('alert-danger');
+                result.textContent = 'Error al probar la conexión';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-plug me-1"></i> Probar conexión';
+            }
+        });
+    </script>
+}

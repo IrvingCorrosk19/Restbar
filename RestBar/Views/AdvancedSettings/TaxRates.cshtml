@@ -1,0 +1,45 @@
+@model IEnumerable<RestBar.Models.TaxRate>
+@{
+    ViewData["Title"] = "Impuestos";
+    Layout = "_Layout";
+}
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between mb-3">
+        <h2>Impuestos</h2>
+        <a class="btn btn-primary" asp-action="CreateTaxRate">Nuevo impuesto</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Tasa (%)</th>
+                <th>Código</th>
+                <th>Activo</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var t in Model)
+        {
+            <tr>
+                <td>@t.Name</td>
+                <td>@(t.Description ?? "-")</td>
+                <td>@t.Rate.ToString("F2")</td>
+                <td>@(t.TaxCode ?? "-")</td>
+                <td>@(t.IsActive ? "Sí" : "No")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

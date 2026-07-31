@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using RestBar.Interfaces;
 using RestBar.Models;
 using System.Security.Cryptography;
@@ -18,14 +19,16 @@ namespace RestBar.Controllers
         private readonly RestBarContext _context;
         private readonly ILogger<AuthController> _logger;
         private readonly IWebHostEnvironment _env;
+        private readonly IMemoryCache _cache;
 
-        public AuthController(IAuthService authService, IEmailService emailService, RestBarContext context, ILogger<AuthController> logger, IWebHostEnvironment env)
+        public AuthController(IAuthService authService, IEmailService emailService, RestBarContext context, ILogger<AuthController> logger, IWebHostEnvironment env, IMemoryCache cache)
         {
             _authService = authService;
             _emailService = emailService;
             _context = context;
             _logger = logger;
             _env = env;
+            _cache = cache;
         }
 
         // GET: /Auth/Login
@@ -271,13 +274,9 @@ namespace RestBar.Controllers
                     return View();
                 }
 
-                // Generar token de recuperación
+                // Token en cache — NO sobrescribir PasswordHash (bug histórico)
                 var resetToken = GenerateResetToken();
-                
-                // Guardar token temporalmente (en producción usar una tabla de tokens o cache)
-                // Por ahora, guardar en una propiedad del usuario temporalmente
-                user.PasswordHash = $"RESET_TOKEN:{resetToken}:{DateTime.UtcNow.AddMinutes(30):O}"; // Temporal - usar tabla dedicada
-                await _context.SaveChangesAsync();
+                _cache.Set(ResetCacheKey(email), resetToken, TimeSpan.FromMinutes(30));
 
                 // Enviar email de recuperación
                 var emailSent = await _emailService.SendPasswordRecoveryAsync(user, resetToken);
@@ -351,28 +350,17 @@ namespace RestBar.Controllers
                     return RedirectToAction("ForgotPassword");
                 }
 
-                // Verificar token (simplificado - en producción usar tabla dedicada)
-                if (!user.PasswordHash!.StartsWith("RESET_TOKEN:") || !user.PasswordHash.Contains(token))
+                if (!_cache.TryGetValue(ResetCacheKey(email), out string? cachedToken) ||
+                    !string.Equals(cachedToken, token, StringComparison.Ordinal))
                 {
                     TempData["Error"] = "Token inválido o expirado";
                     return RedirectToAction("ForgotPassword");
                 }
 
-                // Extraer fecha de expiración
-                var parts = user.PasswordHash.Split(':');
-                if (parts.Length >= 4 && DateTime.TryParse(parts[3], out var expirationDate))
-                {
-                    if (DateTime.UtcNow > expirationDate)
-                    {
-                        TempData["Error"] = "El token ha expirado. Por favor, solicita uno nuevo.";
-                        return RedirectToAction("ForgotPassword");
-                    }
-                }
-
-                // Actualizar contraseña usando el mismo método que AuthService
                 var passwordHash = HashPassword(newPassword);
                 user.PasswordHash = passwordHash;
                 await _context.SaveChangesAsync();
+                _cache.Remove(ResetCacheKey(email));
 
                 Console.WriteLine($"✅ [AuthController] ResetPassword() - Contraseña actualizada exitosamente");
                 TempData["Message"] = "Tu contraseña ha sido actualizada exitosamente. Puedes iniciar sesión ahora.";
@@ -398,6 +386,8 @@ namespace RestBar.Controllers
             }
             return Convert.ToBase64String(bytes).Replace("+", "-").Replace("/", "_").Replace("=", "");
         }
+
+        private static string ResetCacheKey(string email) => $"pwd-reset:{email.Trim().ToLowerInvariant()}";
 
         private string HashPassword(string password)
             => RestBar.Services.AuthService.HashPasswordBcrypt(password);

@@ -103,12 +103,21 @@ test.describe('Inventory Index — functional browser', () => {
     await expect(page.locator('#consumptionReport')).not.toContainText(/Selecciona filtros/i, { timeout: 10000 });
   });
 
-  test('INV-06 export shows upcoming / does not 500', async ({ page }) => {
+  test('INV-06 export downloads CSV / does not 500', async ({ page }) => {
     await loginAsAdmin(page);
     await page.goto('/Inventory', { waitUntil: 'domcontentloaded' });
+    const downloadPromise = page.waitForEvent('download', { timeout: 10000 }).catch(() => null);
     await page.getByRole('button', { name: /Exportar/i }).click();
-    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('.swal2-title')).toContainText(/Próximamente/i);
+    const download = await downloadPromise;
+    if (download) {
+      expect(download.suggestedFilename()).toMatch(/consumo_inventario_.*\.csv/i);
+    } else {
+      // Sin datos previos: puede avisar warning, nunca "Próximamente"
+      const dialog = page.getByRole('dialog');
+      if (await dialog.isVisible().catch(() => false)) {
+        await expect(page.locator('.swal2-title')).not.toContainText(/Próximamente/i);
+      }
+    }
   });
 
   test('INV-07 unauthorized redirect when logged out', async ({ page }) => {

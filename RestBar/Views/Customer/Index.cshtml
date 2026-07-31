@@ -1,0 +1,64 @@
+@model IEnumerable<RestBar.Models.Customer>
+@{
+    ViewData["Title"] = "Clientes";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-3">
+    <h2 class="mb-3">Clientes</h2>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <div class="card mb-4">
+        <div class="card-header">Nuevo cliente</div>
+        <div class="card-body">
+            <form asp-action="Create" method="post" class="row g-3">
+                @Html.AntiForgeryToken()
+                <div class="col-md-3">
+                    <label class="form-label">Nombre completo</label>
+                    <input type="text" name="FullName" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Correo</label>
+                    <input type="email" name="Email" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Teléfono</label>
+                    <input type="text" name="Phone" class="form-control" />
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Crear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>Teléfono</th>
+                <th>Puntos de lealtad</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var c in Model)
+        {
+            <tr>
+                <td>@(c.FullName ?? "-")</td>
+                <td>@(c.Email ?? "-")</td>
+                <td>@(c.Phone ?? "-")</td>
+                <td>@(c.LoyaltyPoints?.ToString() ?? "0")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

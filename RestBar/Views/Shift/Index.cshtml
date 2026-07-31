@@ -1,0 +1,98 @@
+@{
+    ViewData["Title"] = "Turnos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var recentShifts = ViewBag.RecentShifts as IEnumerable<RestBar.Models.Shift>;
+}
+
+<div class="container mt-3">
+    <h2 class="mb-3">Gestión de Turnos</h2>
+
+    <div id="shiftStatus" class="alert alert-info mb-3">
+        <i class="fas fa-spinner fa-spin me-2"></i> Consultando estado del turno...
+    </div>
+
+    <div class="mb-4">
+        <button type="button" class="btn btn-success me-2" id="btnStart">
+            <i class="fas fa-play me-1"></i> Iniciar turno
+        </button>
+        <button type="button" class="btn btn-danger" id="btnEnd">
+            <i class="fas fa-stop me-1"></i> Finalizar turno
+        </button>
+    </div>
+
+    @if (recentShifts != null && recentShifts.Any())
+    {
+        <h5>Turnos recientes</h5>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var s in recentShifts)
+            {
+                <tr>
+                    <td>@s.StartedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@(s.EndedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                    <td>@(s.IsActive ? "Activo" : "Finalizado")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        var statusEl = document.getElementById('shiftStatus');
+
+        function showStatus(message, type) {
+            statusEl.className = 'alert alert-' + type + ' mb-3';
+            statusEl.innerHTML = message;
+        }
+
+        async function loadStatus() {
+            try {
+                var response = await fetch('@Url.Action("Status", "Shift")');
+                if (response.ok) {
+                    var data = await response.json();
+                    if (data.isActive) {
+                        showStatus('<i class="fas fa-check-circle me-2"></i> Turno activo desde ' + (data.startedAt || ''), 'success');
+                    } else {
+                        showStatus('<i class="fas fa-info-circle me-2"></i> No hay turno activo', 'secondary');
+                    }
+                    return;
+                }
+            } catch (e) { /* Status endpoint may not exist */ }
+            showStatus('<i class="fas fa-info-circle me-2"></i> Use los botones para iniciar o finalizar su turno', 'info');
+        }
+
+        async function postShift(url) {
+            try {
+                var response = await fetch(url, { method: 'POST' });
+                var data = await response.json();
+                if (data.success) {
+                    showStatus('<i class="fas fa-check-circle me-2"></i> ' + (data.message || 'Operación exitosa'), 'success');
+                    setTimeout(loadStatus, 500);
+                } else {
+                    showStatus('<i class="fas fa-exclamation-triangle me-2"></i> ' + (data.message || 'Error en la operación'), 'danger');
+                }
+            } catch (e) {
+                showStatus('<i class="fas fa-exclamation-triangle me-2"></i> Error de conexión', 'danger');
+            }
+        }
+
+        document.getElementById('btnStart').addEventListener('click', function () {
+            postShift('@Url.Action("Start", "Shift")');
+        });
+
+        document.getElementById('btnEnd').addEventListener('click', function () {
+            postShift('@Url.Action("End", "Shift")');
+        });
+
+        loadStatus();
+    </script>
+}

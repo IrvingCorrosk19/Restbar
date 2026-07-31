@@ -1,0 +1,51 @@
+@model RestBar.Models.Currency
+@{
+    ViewData["Title"] = "Nueva Moneda";
+    Layout = "_Layout";
+}
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between mb-3">
+        <h2>Nueva Moneda</h2>
+        <a class="btn btn-secondary" asp-action="Currencies">Volver</a>
+    </div>
+
+    <form asp-action="CreateCurrency" method="post" class="card card-body">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label">Nombre</label>
+            <input asp-for="Name" class="form-control" required />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Code" class="form-label">Código</label>
+            <input asp-for="Code" class="form-control" required maxlength="10" placeholder="USD" />
+            <span asp-validation-for="Code" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Symbol" class="form-label">Símbolo</label>
+            <input asp-for="Symbol" class="form-control" maxlength="10" placeholder="$" />
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="ExchangeRate" class="form-label">Tasa de cambio</label>
+            <input asp-for="ExchangeRate" class="form-control" type="number" step="0.0001" min="0" />
+        </div>
+
+        <div class="form-check mb-3">
+            <input asp-for="IsDefault" class="form-check-input" type="checkbox" />
+            <label asp-for="IsDefault" class="form-check-label">Moneda predeterminada</label>
+        </div>
+
+        <div class="form-check mb-3">
+            <input asp-for="IsActive" class="form-check-input" type="checkbox" checked />
+            <label asp-for="IsActive" class="form-check-label">Activa</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Guardar</button>
+    </form>
+</div>

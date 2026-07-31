@@ -12,6 +12,37 @@ public class ShiftController : Controller
 
     public ShiftController(RestBarContext context) => _context = context;
 
+    [HttpGet]
+    public async Task<IActionResult> Index()
+    {
+        var userId = Guid.Parse(User.FindFirst("UserId")!.Value);
+        var active = await _context.Shifts.AsNoTracking()
+            .FirstOrDefaultAsync(s => s.UserId == userId && s.IsActive);
+        ViewBag.ActiveShift = active;
+        ViewBag.RecentShifts = await _context.Shifts.AsNoTracking()
+            .Where(s => s.UserId == userId)
+            .OrderByDescending(s => s.StartedAt)
+            .Take(20)
+            .ToListAsync();
+        return View();
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Status()
+    {
+        var userId = Guid.Parse(User.FindFirst("UserId")!.Value);
+        var shift = await _context.Shifts.AsNoTracking()
+            .FirstOrDefaultAsync(s => s.UserId == userId && s.IsActive);
+        return Json(new
+        {
+            success = true,
+            isActive = shift != null,
+            active = shift != null,
+            shiftId = shift?.Id,
+            startedAt = shift?.StartedAt
+        });
+    }
+
     [HttpPost]
     public async Task<IActionResult> Start()
     {

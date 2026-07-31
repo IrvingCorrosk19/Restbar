@@ -1,0 +1,49 @@
+@model IEnumerable<RestBar.Models.BackupSettings>
+@{
+    ViewData["Title"] = "Respaldos";
+    Layout = "_Layout";
+}
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between mb-3">
+        <h2>Configuración de Respaldos</h2>
+        <a class="btn btn-primary" asp-action="CreateBackupSettings">Nueva configuración</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Tipo</th>
+                <th>Descripción</th>
+                <th>Ruta</th>
+                <th>Habilitado</th>
+                <th>Retención (días)</th>
+                <th>Programación</th>
+                <th>Último respaldo</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var b in Model)
+        {
+            <tr>
+                <td>@b.BackupType</td>
+                <td>@(b.Description ?? "-")</td>
+                <td>@(b.BackupPath ?? "-")</td>
+                <td>@(b.IsEnabled ? "Sí" : "No")</td>
+                <td>@(b.RetentionDays?.ToString() ?? "-")</td>
+                <td>@(b.Schedule ?? "-")</td>
+                <td>@(b.LastBackupDate?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
