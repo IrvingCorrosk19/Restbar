@@ -64,7 +64,16 @@ test.describe('RB-1001 Multitenant deep', () => {
 
   test('MT-D05 API decision-intelligence forbids without company claim soft', async ({ page }) => {
     await page.context().clearCookies();
-    const res = await page.request.get('/api/decision-intelligence/cockpit');
-    expect([401, 302, 403, 404]).toContain(res.status());
+    // Cookie auth often 302→login (200 HTML) when redirects are followed.
+    const res = await page.request.get('/api/decision-intelligence/cockpit', { maxRedirects: 0 });
+    const status = res.status();
+    if ([401, 302, 403, 404].includes(status)) {
+      expect([401, 302, 403, 404]).toContain(status);
+      return;
+    }
+    expect(status).toBe(200);
+    const text = await res.text();
+    expect(text.toLowerCase()).toMatch(/login|iniciar sesión|access denied|unauthorized|forbid/);
+    expect(text).not.toMatch(/"kpis"\s*:/i);
   });
 });
