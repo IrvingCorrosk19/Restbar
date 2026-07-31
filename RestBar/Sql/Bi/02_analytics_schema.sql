@@ -128,7 +128,7 @@ LANGUAGE sql STABLE AS $$
       AND l.order_status = 'Completed'
       AND l.closed_at >= p_start AND l.closed_at < p_end
     GROUP BY c.id, c.name
-    ORDER BY revenue DESC;
+    ORDER BY 4 DESC;
 $$;
 
 CREATE OR REPLACE FUNCTION analytics.sp_sales_by_payment(
@@ -399,7 +399,7 @@ LANGUAGE sql STABLE AS $$
     WHERE t.company_id = p_company_id
       AND (t.branch_id IS NULL OR t.branch_id = p_branch_id)
     GROUP BY t.id, t.table_number
-    ORDER BY revenue DESC;
+    ORDER BY 4 DESC;
 $$;
 
 CREATE OR REPLACE FUNCTION analytics.sp_sales_by_branch(
@@ -451,6 +451,6 @@ LANGUAGE sql STABLE AS $$
     LEFT JOIN suppliers s ON s.id = h.supplier_id
     GROUP BY h.product_id, p.name, h.supplier_id, s.name
     HAVING COUNT(*) >= 2
-    ORDER BY pct_change DESC NULLS LAST
+    ORDER BY 7 DESC NULLS LAST
     LIMIT 200;
 $$;
