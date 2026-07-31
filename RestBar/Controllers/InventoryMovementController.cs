@@ -93,23 +93,47 @@ public class InventoryMovementController : Controller
 
     private async Task<IActionResult> AdjustStock(MovementDto dto, InventoryMovementType type, bool add)
     {
-        if (dto.ProductId == Guid.Empty || dto.Quantity == 0)
-            return BadRequest(new { success = false, message = "Producto y cantidad requeridos" });
+        try
+        {
+            if (dto == null || dto.ProductId == Guid.Empty)
+                return BadRequest(new { success = false, message = "Producto requerido" });
+            if (dto.Quantity == 0)
+                return BadRequest(new { success = false, message = "Cantidad requerida" });
+            if (type == InventoryMovementType.Purchase && dto.Quantity < 0)
+                return BadRequest(new { success = false, message = "Cantidad de compra debe ser positiva" });
 
-        var qty = Math.Abs(dto.Quantity);
-        var before = await _productService.GetAvailableStockAsync(dto.ProductId, dto.BranchId);
+            var productExists = await _context.Products.AsNoTracking().AnyAsync(p => p.Id == dto.ProductId);
+            if (!productExists)
+                return NotFound(new { success = false, message = "Producto no encontrado" });
 
-        if (add)
-            await _productService.RestoreStockAsync(dto.ProductId, qty, dto.StationId, dto.BranchId);
-        else
-            await _productService.ReduceStockAsync(dto.ProductId, qty, dto.StationId, dto.BranchId);
+            var qty = Math.Abs(dto.Quantity);
+            var before = await _productService.GetAvailableStockAsync(dto.ProductId, dto.BranchId);
 
-        var after = await _productService.GetAvailableStockAsync(dto.ProductId, dto.BranchId);
-        var userId = Guid.TryParse(User.FindFirst("UserId")?.Value, out var uid) ? uid : (Guid?)null;
+            if (add)
+                await _productService.RestoreStockAsync(dto.ProductId, qty, dto.StationId, dto.BranchId);
+            else
+                await _productService.ReduceStockAsync(dto.ProductId, qty, dto.StationId, dto.BranchId);
 
-        await _inventoryOps.LogMovementAsync(dto.ProductId, type, add ? qty : -qty, before, after,
-            dto.StationId, dto.BranchId, null, userId, null, dto.Reason, dto.Reference);
+            var after = await _productService.GetAvailableStockAsync(dto.ProductId, dto.BranchId);
+            var userId = Guid.TryParse(User.FindFirst("UserId")?.Value, out var uid) ? uid : (Guid?)null;
+            var companyId = Guid.TryParse(User.FindFirst("CompanyId")?.Value, out var cid) ? cid : (Guid?)null;
 
-        return Json(new { success = true, stockAfter = after });
+            await _inventoryOps.LogMovementAsync(dto.ProductId, type, add ? qty : -qty, before, after,
+                dto.StationId, dto.BranchId, companyId, userId, null, dto.Reason, dto.Reference);
+
+            return Json(new { success = true, stockAfter = after });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(400, new { success = false, message = ex.Message });
+        }
     }
 }
