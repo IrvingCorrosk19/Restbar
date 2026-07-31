@@ -139,6 +139,9 @@ builder.Services.AddAuthorization(options =>
     
     // Políticas para área de reportes
     options.AddPolicy("ReportAccess", policy => policy.RequireRole("admin", "manager", "accountant"));
+    options.AddPolicy("AnalyticsView", policy => policy.RequireRole("admin", "manager", "accountant", "supervisor"));
+    options.AddPolicy("AnalyticsExport", policy => policy.RequireRole("admin", "manager", "accountant"));
+    options.AddPolicy("AnalyticsCrossBranch", policy => policy.RequireRole("admin"));
     
     // Políticas para área de contabilidad
     options.AddPolicy("AccountingAccess", policy => policy.RequireRole("admin", "manager", "accountant"));

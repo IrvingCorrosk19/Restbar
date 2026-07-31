@@ -23,6 +23,19 @@ namespace RestBar.Controllers
             return View();
         }
 
+        private Guid? ResolveBranchId(Guid? requested)
+        {
+            var claimBranch = User.FindFirst("BranchId")?.Value;
+            if (!Guid.TryParse(claimBranch, out var userBranch))
+                return requested;
+
+            // Non-admins cannot query another branch
+            if (!User.IsInRole("admin"))
+                return userBranch;
+
+            return requested ?? userBranch;
+        }
+
         // ✅ Reporte completo de ventas
         [HttpGet]
         public async Task<IActionResult> SalesReport(DateTime? startDate, DateTime? endDate, Guid? branchId, Guid? userId, Guid? categoryId)
@@ -33,7 +46,7 @@ namespace RestBar.Controllers
                 {
                     StartDate = startDate ?? DateTime.Today.AddDays(-30),
                     EndDate = endDate ?? DateTime.Today,
-                    BranchId = branchId,
+                    BranchId = ResolveBranchId(branchId),
                     UserId = userId,
                     CategoryId = categoryId
                 };
@@ -59,7 +72,7 @@ namespace RestBar.Controllers
                 {
                     StartDate = startDate,
                     EndDate = endDate,
-                    BranchId = branchId
+                    BranchId = ResolveBranchId(branchId)
                 };
 
                 var metrics = await _salesReportService.GetSalesMetricsAsync(filters);
@@ -82,7 +95,7 @@ namespace RestBar.Controllers
                 {
                     StartDate = startDate,
                     EndDate = endDate,
-                    BranchId = branchId
+                    BranchId = ResolveBranchId(branchId)
                 };
 
                 var dailySales = await _salesReportService.GetDailySalesAsync(filters);
@@ -105,7 +118,7 @@ namespace RestBar.Controllers
                 {
                     StartDate = startDate,
                     EndDate = endDate,
-                    BranchId = branchId
+                    BranchId = ResolveBranchId(branchId)
                 };
 
                 var topProducts = await _salesReportService.GetTopProductsAsync(filters);
@@ -128,7 +141,7 @@ namespace RestBar.Controllers
                 {
                     StartDate = startDate,
                     EndDate = endDate,
-                    BranchId = branchId
+                    BranchId = ResolveBranchId(branchId)
                 };
 
                 var categorySales = await _salesReportService.GetCategorySalesAsync(filters);
@@ -151,7 +164,7 @@ namespace RestBar.Controllers
                 {
                     StartDate = startDate,
                     EndDate = endDate,
-                    BranchId = branchId
+                    BranchId = ResolveBranchId(branchId)
                 };
 
                 var employeeSales = await _salesReportService.GetEmployeeSalesAsync(filters);
@@ -196,7 +209,7 @@ namespace RestBar.Controllers
                 {
                     StartDate = startDate,
                     EndDate = endDate,
-                    BranchId = branchId
+                    BranchId = ResolveBranchId(branchId)
                 };
 
                 var discounts = await _salesReportService.GetDiscountsAsync(filters);
@@ -219,7 +232,7 @@ namespace RestBar.Controllers
                 {
                     StartDate = startDate ?? DateTime.Today.AddDays(-30),
                     EndDate = endDate ?? DateTime.Today,
-                    BranchId = branchId
+                    BranchId = ResolveBranchId(branchId)
                 };
 
                 var report = await _salesReportService.GetCompleteSalesReportAsync(filters);
@@ -244,7 +257,7 @@ namespace RestBar.Controllers
                 {
                     StartDate = startDate ?? DateTime.Today.AddDays(-30),
                     EndDate = endDate ?? DateTime.Today,
-                    BranchId = branchId
+                    BranchId = ResolveBranchId(branchId)
                 };
 
                 var report = await _salesReportService.GetCompleteSalesReportAsync(filters);

@@ -24,11 +24,14 @@ namespace RestBar.Services
         {
             try
             {
-                var orders = await _context.Orders
+                var ordersQuery = _context.Orders
                     .Include(o => o.OrderItems)
                     .Where(o => o.Status == OrderStatus.Completed && 
-                               o.ClosedAt >= filters.StartDate && o.ClosedAt <= filters.EndDate)
-                    .ToListAsync();
+                               o.ClosedAt >= filters.StartDate && o.ClosedAt <= filters.EndDate);
+                if (filters.BranchId.HasValue)
+                    ordersQuery = ordersQuery.Where(o => o.BranchId == filters.BranchId.Value);
+
+                var orders = await ordersQuery.ToListAsync();
 
                 var totalRevenue = orders.Sum(o => o.TotalAmount ?? 0);
                 var totalCost = await CalculateTotalCostAsync(filters);
@@ -598,6 +601,14 @@ namespace RestBar.Services
                 var averageOrderTime = completedOrdersWithTime.Any() 
                     ? completedOrdersWithTime.Average(o => (o.ClosedAt!.Value - o.OpenedAt!.Value).TotalMinutes)
                     : 0;
+
+                var prepSamples = orders
+                    .SelectMany(o => o.OrderItems)
+                    .Where(oi => oi.SentAt.HasValue && oi.PreparedAt.HasValue && oi.PreparedAt >= oi.SentAt)
+                    .Select(oi => (oi.PreparedAt!.Value - oi.SentAt!.Value).TotalMinutes)
+                    .ToList();
+
+                var averagePrepTime = prepSamples.Count > 0 ? prepSamples.Average() : 0;
                 
                 var report = new OperationalAnalysisReport
                 {
@@ -605,7 +616,7 @@ namespace RestBar.Services
                     CompletedOrders = completedOrders,
                     CancelledOrders = cancelledOrders,
                     AverageOrderTime = (decimal)averageOrderTime,
-                    AveragePreparationTime = 0,
+                    AveragePreparationTime = (decimal)averagePrepTime,
                     StationPerformance = await GetStationPerformanceAsync(filters),
                     TableUtilization = await GetTableUtilizationAsync(filters),
                     PeakHours = new List<PeakHours>()
@@ -663,16 +674,33 @@ namespace RestBar.Services
                     orderItemsQuery = orderItemsQuery.Where(oi => oi.Order.CompanyId == companyId.Value);
                 }
                 
-                var stationStats = await orderItemsQuery
-                    .GroupBy(oi => oi.PreparedByStationId!.Value)
+                var orderItems = await orderItemsQuery
+                    .Select(oi => new
+                    {
+                        StationId = oi.PreparedByStationId!.Value,
+                        oi.OrderId,
+                        oi.Quantity,
+                        oi.UnitPrice,
+                        oi.SentAt,
+                        oi.PreparedAt
+                    })
+                    .ToListAsync();
+
+                var stationStats = orderItems
+                    .GroupBy(oi => oi.StationId)
                     .Select(g => new
                     {
                         StationId = g.Key,
                         ItemsProcessed = g.Count(),
                         OrdersProcessed = g.Select(oi => oi.OrderId).Distinct().Count(),
-                        Revenue = g.Sum(oi => oi.Quantity * oi.UnitPrice)
+                        Revenue = g.Sum(oi => oi.Quantity * oi.UnitPrice),
+                        AvgPrep = g
+                            .Where(oi => oi.SentAt.HasValue && oi.PreparedAt.HasValue && oi.PreparedAt >= oi.SentAt)
+                            .Select(oi => (oi.PreparedAt!.Value - oi.SentAt!.Value).TotalMinutes)
+                            .DefaultIfEmpty()
+                            .Average()
                     })
-                    .ToListAsync();
+                    .ToList();
                 
                 var performanceList = new List<StationPerformance>();
                 
@@ -682,14 +710,17 @@ namespace RestBar.Services
                     
                     if (stats != null)
                     {
+                        var hasPrep = orderItems.Any(oi =>
+                            oi.StationId == station.Id &&
+                            oi.SentAt.HasValue && oi.PreparedAt.HasValue && oi.PreparedAt >= oi.SentAt);
                         performanceList.Add(new StationPerformance
                         {
                             StationId = station.Id,
                             StationName = station.Name,
                             OrdersProcessed = stats.OrdersProcessed,
                             ItemsProcessed = stats.ItemsProcessed,
-                            AveragePreparationTime = 0,
-                            Efficiency = stats.OrdersProcessed > 0 ? (stats.ItemsProcessed / stats.OrdersProcessed) : 0,
+                            AveragePreparationTime = hasPrep ? (decimal)stats.AvgPrep : 0,
+                            Efficiency = stats.OrdersProcessed > 0 ? (stats.ItemsProcessed / (decimal)stats.OrdersProcessed) : 0,
                             PeakHour = 0,
                             Revenue = stats.Revenue
                         });

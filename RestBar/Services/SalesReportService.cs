@@ -413,6 +413,12 @@ namespace RestBar.Services
             if (!string.IsNullOrEmpty(filters.OrderStatus))
                 query = query.Where(o => o.Status.ToString() == filters.OrderStatus);
 
+            if (filters.BranchId.HasValue)
+                query = query.Where(o => o.BranchId == filters.BranchId.Value);
+
+            if (filters.UserId.HasValue)
+                query = query.Where(o => o.UserId == filters.UserId.Value);
+
             return query;
         }
 
@@ -432,6 +438,9 @@ namespace RestBar.Services
 
                 if (filters.EndDate.HasValue)
                     query = query.Where(oi => oi.Order.ClosedAt <= filters.EndDate.Value);
+
+                if (filters.BranchId.HasValue)
+                    query = query.Where(oi => oi.Order.BranchId == filters.BranchId.Value);
 
                 return await query
                     .Where(oi => oi.Order.Status == OrderStatus.Completed)

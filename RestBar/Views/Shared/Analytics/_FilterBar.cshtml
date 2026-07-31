@@ -1,0 +1,58 @@
+<div class="analytics-filters d-flex flex-wrap gap-2 align-items-center">
+    <select class="form-select form-select-sm" style="width:auto" data-af="period">
+        <option value="today">Hoy</option>
+        <option value="yesterday">Ayer</option>
+        <option value="last_7">Últimos 7 días</option>
+        <option value="last_30" selected>Últimos 30 días</option>
+        <option value="last_90">Últimos 90 días</option>
+        <option value="this_month">Este mes</option>
+        <option value="last_month">Mes anterior</option>
+        <option value="this_year">Este año</option>
+        <option value="custom">Personalizado</option>
+    </select>
+    <input type="date" class="form-control form-control-sm" style="width:auto" data-af="start" disabled />
+    <input type="date" class="form-control form-control-sm" style="width:auto" data-af="end" disabled />
+    <div class="form-check form-check-inline m-0">
+        <input class="form-check-input" type="checkbox" id="afCompare" data-af="compare" checked>
+        <label class="form-check-label small" for="afCompare">Comparar</label>
+    </div>
+    <button type="button" class="btn btn-sm btn-primary" data-af="apply">Aplicar</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-af="clear">Limpiar</button>
+</div>
+<script>
+window.AnalyticsFilters = window.AnalyticsFilters || {
+  qs() {
+    const period = document.querySelector('[data-af=period]')?.value || 'last_30';
+    const p = new URLSearchParams();
+    p.set('period', period);
+    if (period === 'custom') {
+      const s = document.querySelector('[data-af=start]')?.value;
+      const e = document.querySelector('[data-af=end]')?.value;
+      if (s) p.set('start', s);
+      if (e) p.set('end', e);
+    }
+    if (document.querySelector('[data-af=compare]')?.checked) p.set('compare', 'true');
+    return p.toString();
+  },
+  bind(onApply) {
+    const period = document.querySelector('[data-af=period]');
+    const sync = () => {
+      const custom = period.value === 'custom';
+      document.querySelector('[data-af=start]').disabled = !custom;
+      document.querySelector('[data-af=end]').disabled = !custom;
+    };
+    period?.addEventListener('change', sync);
+    sync();
+    document.querySelector('[data-af=apply]')?.addEventListener('click', () => onApply && onApply());
+    document.querySelector('[data-af=clear]')?.addEventListener('click', () => {
+      period.value = 'last_30';
+      document.querySelector('[data-af=compare]').checked = true;
+      sync();
+      onApply && onApply();
+    });
+    const saved = sessionStorage.getItem('analytics.period');
+    if (saved) { period.value = saved; sync(); }
+    period?.addEventListener('change', () => sessionStorage.setItem('analytics.period', period.value));
+  }
+};
+</script>

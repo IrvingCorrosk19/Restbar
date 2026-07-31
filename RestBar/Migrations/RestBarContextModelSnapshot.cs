@@ -2509,6 +2509,9 @@ namespace RestBar.Migrations
                     b.HasIndex("CompanyId", "CreatedAt")
                         .HasDatabaseName("IX_inv_mov_company_created");
 
+                    b.HasIndex("BranchId", "CreatedAt")
+                        .HasDatabaseName("IX_inv_mov_branch_created");
+
                     b.HasIndex("ProductId", "CreatedAt")
                         .HasDatabaseName("IX_inv_mov_product_created");
 
@@ -2930,6 +2933,10 @@ namespace RestBar.Migrations
 
                     b.HasIndex("BranchId", "CreatedAt")
                         .HasDatabaseName("IX_orders_branch_created");
+
+                    b.HasIndex("BranchId", "ClosedAt")
+                        .HasDatabaseName("IX_orders_branch_closed")
+                        .HasFilter("closed_at IS NOT NULL");
 
                     b.HasIndex("TableId", "Status")
                         .HasDatabaseName("IX_orders_table_status");

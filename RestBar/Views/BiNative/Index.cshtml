@@ -1,0 +1,157 @@
+@{
+    ViewData["Title"] = "BI Nativo";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="container-fluid mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div>
+            <h2 class="mb-0">Business Intelligence Nativo</h2>
+            <small class="text-muted">RB-025 · PostgreSQL analytical functions · sin Power BI</small>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <input type="date" id="biStart" class="form-control form-control-sm" />
+            <input type="date" id="biEnd" class="form-control form-control-sm" />
+            <button class="btn btn-sm btn-primary" id="biRefresh">Actualizar</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="window.print()">Imprimir</button>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3" id="kpiCards">
+        <div class="col-md-3"><div class="card p-3"><small>Ventas</small><h4 id="kRevenue">—</h4><small id="kOrders" class="text-muted"></small></div></div>
+        <div class="col-md-3"><div class="card p-3"><small>Ticket promedio</small><h4 id="kTicket">—</h4></div></div>
+        <div class="col-md-3"><div class="card p-3"><small>Margen bruto est.</small><h4 id="kMargin">—</h4></div></div>
+        <div class="col-md-3"><div class="card p-3"><small>Merma / Stock bajo / PO abiertas</small><h4 id="kOps">—</h4></div></div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                    <span>Ventas por hora</span>
+                    <button class="btn btn-sm btn-outline-secondary" data-export="hourly">CSV</button>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartHourly" height="140"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                    <span>Top productos</span>
+                    <input class="form-control form-control-sm w-50" id="prodSearch" placeholder="Buscar..." />
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0" id="tblProducts">
+                            <thead><tr><th>Producto</th><th class="text-end">Qty</th><th class="text-end">Ventas</th><th class="text-end">Margen est.</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header">Módulos nativos existentes</div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><a href="/ExecutiveCommandCenter">Executive Command Center</a></li>
+                    <li class="list-group-item"><a href="/Reports">Reportes de ventas</a></li>
+                    <li class="list-group-item"><a href="/AdvancedReports">Reportes avanzados</a></li>
+                    <li class="list-group-item"><a href="/FoodCostDashboard">Food Cost</a></li>
+                    <li class="list-group-item"><a href="/ProcurementDashboard">Compras</a></li>
+                    <li class="list-group-item"><a href="/CashReport/ZReport">Caja Z</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">APIs PostgreSQL (JSON)</div>
+                <div class="card-body small" id="apiLinks"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(() => {
+  const qs = () => {
+    const s = document.getElementById('biStart').value;
+    const e = document.getElementById('biEnd').value;
+    const p = new URLSearchParams();
+    if (s) p.set('start', s);
+    if (e) p.set('end', e);
+    const q = p.toString();
+    return q ? ('?' + q) : '';
+  };
+  const money = v => (v == null ? '—' : Number(v).toLocaleString(undefined, { style: 'currency', currency: 'USD' }));
+  let hourlyChart = null;
+  let topProducts = [];
+
+  async function load() {
+    const q = qs();
+    const [exec, hourly, products] = await Promise.all([
+      fetch('/BiNative/Executive' + q).then(r => r.json()),
+      fetch('/BiNative/HourlySales' + q).then(r => r.json()),
+      fetch('/BiNative/TopProducts' + q + (q ? '&' : '?') + 'limit=25').then(r => r.json())
+    ]);
+    document.getElementById('kRevenue').textContent = money(exec?.revenue);
+    document.getElementById('kOrders').textContent = (exec?.ordersCompleted ?? 0) + ' órdenes · merma ' + money(exec?.wasteCost);
+    document.getElementById('kTicket').textContent = money(exec?.avgTicket);
+    document.getElementById('kMargin').textContent = (exec?.grossMarginPct != null ? Number(exec.grossMarginPct).toFixed(1) + '%' : '—');
+    document.getElementById('kOps').textContent = `${money(exec?.wasteCost)} / ${exec?.lowStockCount ?? 0} / ${exec?.openPoCount ?? 0}`;
+
+    const labels = [...Array(24).keys()].map(h => String(h).padStart(2, '0'));
+    const map = Object.fromEntries((hourly || []).map(x => [x.saleHour, x.revenue]));
+    const data = labels.map((_, h) => map[h] || 0);
+    const ctx = document.getElementById('chartHourly');
+    if (hourlyChart) hourlyChart.destroy();
+    hourlyChart = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'Revenue', data, backgroundColor: 'rgba(13,110,253,.55)' }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+
+    topProducts = products || [];
+    renderProducts();
+  }
+
+  function renderProducts() {
+    const term = (document.getElementById('prodSearch').value || '').toLowerCase();
+    const rows = topProducts.filter(p => !term || (p.productName || '').toLowerCase().includes(term));
+    const tb = document.querySelector('#tblProducts tbody');
+    tb.innerHTML = rows.map(p => `<tr>
+      <td>${p.productName}</td>
+      <td class="text-end">${Number(p.qtySold).toFixed(2)}</td>
+      <td class="text-end">${money(p.revenue)}</td>
+      <td class="text-end">${money(p.marginEstimate)}</td>
+    </tr>`).join('') || '<tr><td colspan="4" class="text-muted p-3">Sin datos en el rango</td></tr>';
+  }
+
+  document.getElementById('prodSearch').addEventListener('input', renderProducts);
+  document.getElementById('biRefresh').addEventListener('click', load);
+
+  const end = new Date();
+  const start = new Date(); start.setDate(end.getDate() - 30);
+  document.getElementById('biEnd').value = end.toISOString().slice(0,10);
+  document.getElementById('biStart').value = start.toISOString().slice(0,10);
+
+  const apis = ['Executive','SalesSummary','HourlySales','TopProducts','WaiterPerformance','StationPerformance','CashSummary','InventoryHealth','FoodCostSummary','TopWaste','PurchaseAnalysis','SupplierAnalysis','Profitability','BranchComparison'];
+  document.getElementById('apiLinks').innerHTML = apis.map(a => `<a class="me-2" href="/BiNative/${a}">${a}</a>`).join(' · ');
+
+  document.querySelector('[data-export=hourly]').addEventListener('click', async () => {
+    const rows = await fetch('/BiNative/HourlySales' + qs()).then(r => r.json());
+    const csv = 'hour,orders,revenue\n' + (rows||[]).map(r => `${r.saleHour},${r.orderCount},${r.revenue}`).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'hourly_sales.csv'; a.click();
+  });
+
+  load().catch(err => console.error(err));
+})();
+</script>
+}

@@ -66,6 +66,8 @@
                                 </a>
                                 <ul class="dropdown-menu dark-dropdown" aria-labelledby="operationsDropdown">
                                     <li><a class="dropdown-item" asp-controller="ExecutiveCommandCenter" asp-action="Index"><i class="fas fa-brain"></i> Command Center</a></li>
+                                    <li><a class="dropdown-item" asp-controller="ExecutiveAnalytics" asp-action="Index"><i class="fas fa-chart-line"></i> Centro Ejecutivo</a></li>
+                                    <li><a class="dropdown-item" asp-controller="BiNative" asp-action="Index"><i class="fas fa-database"></i> BI Nativo (API)</a></li>
                                     <li><a class="dropdown-item" asp-controller="Copilot" asp-action="Index"><i class="fas fa-user-tie"></i> Director Operativo</a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" asp-controller="Order" asp-action="Index" asp-route-returnUrl="@Url.Action("Index", "Home")"><i class="fas fa-shopping-cart"></i> Órdenes</a></li>

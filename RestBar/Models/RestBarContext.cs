@@ -1708,6 +1708,9 @@ public partial class RestBarContext : DbContext
                 .HasDatabaseName("IX_orders_table_status");
             entity.HasIndex(e => new { e.BranchId, e.CreatedAt })
                 .HasDatabaseName("IX_orders_branch_created");
+            entity.HasIndex(e => new { e.BranchId, e.ClosedAt })
+                .HasDatabaseName("IX_orders_branch_closed")
+                .HasFilter("closed_at IS NOT NULL");
         });
 
         modelBuilder.Entity<OrderItem>(entity =>
@@ -1744,6 +1747,8 @@ public partial class RestBarContext : DbContext
                 .HasDatabaseName("IX_inv_mov_product_created");
             entity.HasIndex(e => new { e.CompanyId, e.CreatedAt })
                 .HasDatabaseName("IX_inv_mov_company_created");
+            entity.HasIndex(e => new { e.BranchId, e.CreatedAt })
+                .HasDatabaseName("IX_inv_mov_branch_created");
         });
 
         modelBuilder.Entity<Shift>(entity =>
