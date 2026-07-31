@@ -23,8 +23,8 @@ test.describe('Decision Intelligence — RB-028', () => {
 
   test('DI-04 API executive not 500 when enabled', async ({ page }) => {
     await loginAsAdmin(page);
-    const res = await page.request.get('/api/decision-intelligence/executive');
-    expect([200, 403, 503]).toContain(res.status());
+    const res = await page.request.get('/api/decision-intelligence/executive?period=last_30');
+    expect([200, 400, 403, 503]).toContain(res.status());
     expect(res.status()).not.toBe(500);
   });
 

@@ -23,8 +23,22 @@ public sealed class AnalyticsScopeService : IAnalyticsScopeService
             cross = true;
         }
 
-        var (start, end) = AnalyticsPeriodHelper.Resolve(req.Period, req.Start, req.End, DateTime.UtcNow);
-        if (end <= start) throw new ArgumentException("End must be after Start");
+        var (start, end) = AnalyticsPeriodHelper.Resolve(
+            string.IsNullOrWhiteSpace(req.Period) ? "last_30" : req.Period,
+            req.Start,
+            req.End,
+            DateTime.UtcNow);
+        if (end <= start)
+        {
+            // Never hard-fail executive/DI calls on bad client ranges — clamp to a valid day window.
+            start = end.AddDays(-1);
+            if (end <= start)
+            {
+                var today = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
+                start = today.AddDays(-30);
+                end = today.AddDays(1);
+            }
+        }
 
         DateTime? cStart = null, cEnd = null;
         if (req.Compare)

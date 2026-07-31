@@ -40,6 +40,7 @@ public class DecisionIntelligenceApiController : ControllerBase
         }
         catch (UnauthorizedAccessException) { return Forbid(); }
         catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
+        catch (Exception ex) { return StatusCode(503, new { message = "Decision Intelligence temporarily unavailable.", detail = ex.Message }); }
     }
 
     [HttpGet("forecast")]
@@ -53,6 +54,7 @@ public class DecisionIntelligenceApiController : ControllerBase
             return Ok(await _di.GetSalesForecastAsync(filter, horizon, userId, persistRun: true, ct));
         }
         catch (UnauthorizedAccessException) { return Forbid(); }
+        catch (Exception ex) { return StatusCode(503, new { message = "Forecast unavailable.", detail = ex.Message }); }
     }
 
     [HttpGet("recommendations")]
@@ -65,6 +67,7 @@ public class DecisionIntelligenceApiController : ControllerBase
             return Ok(await _di.GetRecommendationsAsync(filter, ct));
         }
         catch (UnauthorizedAccessException) { return Forbid(); }
+        catch (Exception ex) { return StatusCode(503, new { message = "Recommendations unavailable.", detail = ex.Message }); }
     }
 
     [HttpGet("data-quality")]

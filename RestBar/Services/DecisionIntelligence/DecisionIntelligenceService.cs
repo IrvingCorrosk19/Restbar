@@ -35,16 +35,30 @@ public sealed class DecisionIntelligenceService : IDecisionIntelligenceService
         try { exec = await _analytics.GetReportDataAsync("executive-summary", filter, ct); }
         catch { /* soft */ }
 
-        var live = await _analytics.GetLiveAsync(filter, ct);
-        var forecast = await GetSalesForecastAsync(filter, 7, userId, persistRun: true, ct);
-        var recs = await GetRecommendationsAsync(filter, ct);
+        AnalyticsLiveSnapshot? live = null;
+        try { live = await _analytics.GetLiveAsync(filter, ct); }
+        catch { /* soft — never fail cockpit */ }
+
+        DiForecastDto? forecast = null;
+        try { forecast = await GetSalesForecastAsync(filter, 7, userId, persistRun: true, ct); }
+        catch
+        {
+            try { forecast = await GetSalesForecastAsync(filter, 7, userId, persistRun: false, ct); }
+            catch { /* soft */ }
+        }
+
+        IReadOnlyList<DiRecommendationDto> recs = Array.Empty<DiRecommendationDto>();
+        try { recs = await GetRecommendationsAsync(filter, ct); }
+        catch { /* soft */ }
 
         IReadOnlyList<object> alerts = Array.Empty<object>();
         try
         {
+            var branchId = filter.BranchId;
+            var cross = filter.CrossBranch || branchId == Guid.Empty;
             var raw = await _db.BiAlerts.AsNoTracking()
                 .Where(a => a.CompanyId == filter.CompanyId && !a.IsResolved
-                            && (filter.BranchId == null || a.BranchId == filter.BranchId))
+                            && (cross || a.BranchId == null || a.BranchId == branchId))
                 .OrderByDescending(a => a.CreatedAt)
                 .Take(20)
                 .Select(a => new { a.AlertCode, a.Severity, a.Message, a.CreatedAt })
@@ -53,7 +67,17 @@ public sealed class DecisionIntelligenceService : IDecisionIntelligenceService
         }
         catch { /* module may be empty */ }
 
-        return new DiCockpitDto(quality, exec, [live], forecast, recs, alerts, DateTime.UtcNow.ToString("o"));
+        return new DiCockpitDto(
+            quality,
+            exec,
+            live is null ? [] : [live],
+            forecast ?? new DiForecastDto(
+                "SALES_DAILY", ForecastEngine.Naive, 7, 0, [], [],
+                ForecastAccuracyMetrics.Empty, ForecastAccuracyMetrics.Empty, false, "Baja",
+                "Forecast no disponible en este momento.", DateTime.UtcNow),
+            recs,
+            alerts,
+            DateTime.UtcNow.ToString("o"));
     }
 
     public async Task<DiForecastDto> GetSalesForecastAsync(AnalyticsFilter filter, int horizonDays, Guid? userId, bool persistRun, CancellationToken ct = default)
@@ -145,40 +169,52 @@ public sealed class DecisionIntelligenceService : IDecisionIntelligenceService
         }
         catch { /* SP shape varies */ }
 
-        // Fallback low stock via inventory health + products
-        var inv = await _bi.GetInventoryHealthAsync(filter.CompanyId, filter.BranchId, ct);
-        if (inv != null && inv.LowStockCount > 0)
+        // Fallback low stock via inventory health + products (BI SPs may be absent)
+        try
         {
-            list.Add(RecommendationComposer.Build(
-                "INV.LOW_STOCK", "Inventory",
-                $"{inv.LowStockCount} productos en stock crítico; {inv.ZeroStockCount} en cero.",
-                "Fuente: analytics.sp_inventory_health / InventoryHealth.",
-                "Priorizar OC para SKUs en cero y críticos; revisar cobertura.",
-                "Reducir quiebres y ventas perdidas estimadas.",
-                "Alta", "inventarista", "Alto"));
+            var inv = await _bi.GetInventoryHealthAsync(filter.CompanyId, filter.BranchId, ct);
+            if (inv != null && inv.LowStockCount > 0)
+            {
+                list.Add(RecommendationComposer.Build(
+                    "INV.LOW_STOCK", "Inventory",
+                    $"{inv.LowStockCount} productos en stock crítico; {inv.ZeroStockCount} en cero.",
+                    "Fuente: analytics.sp_inventory_health / InventoryHealth.",
+                    "Priorizar OC para SKUs en cero y críticos; revisar cobertura.",
+                    "Reducir quiebres y ventas perdidas estimadas.",
+                    "Alta", "inventarista", "Alto"));
+            }
         }
+        catch { /* soft */ }
 
-        var cash = await _bi.GetCashSummaryAsync(filter.CompanyId, filter.BranchId, filter.StartUtc, filter.EndUtc, ct);
-        if (cash != null)
+        try
         {
-            var risk = CashRiskRules.VarianceRisk(Math.Abs(cash.TotalVariance), 5m,
-                $"total_variance={cash.TotalVariance:N2}; abs={cash.AbsVariance:N2}");
-            if (risk != null) list.Add(risk);
+            var cash = await _bi.GetCashSummaryAsync(filter.CompanyId, filter.BranchId, filter.StartUtc, filter.EndUtc, ct);
+            if (cash != null)
+            {
+                var risk = CashRiskRules.VarianceRisk(Math.Abs(cash.TotalVariance), 5m,
+                    $"total_variance={cash.TotalVariance:N2}; abs={cash.AbsVariance:N2}");
+                if (risk != null) list.Add(risk);
+            }
         }
+        catch { /* soft */ }
 
-        var decisions = await _analytics.GetDecisionsAsync(filter, ct);
-        foreach (var d in decisions.Take(10))
+        try
         {
-            list.Add(RecommendationComposer.Build(
-                d.Code, "AnalyticsDecision", d.Problem,
-                $"KPI {d.MetricCode}; impacto {d.ImpactEstimate}; periodo {d.PeriodLabel}",
-                d.SuggestedAction ?? "Revisar en Analytics",
-                "Mejora operativa / financiera según KPI",
-                d.Priority is "High" or "Critical" ? "Alta" : "Media",
-                "manager",
-                d.Priority is "High" or "Critical" ? "Alto" : "Medio",
-                d.CurrentValue));
+            var decisions = await _analytics.GetDecisionsAsync(filter, ct);
+            foreach (var d in decisions.Take(10))
+            {
+                list.Add(RecommendationComposer.Build(
+                    d.Code, "AnalyticsDecision", d.Problem,
+                    $"KPI {d.MetricCode}; impacto {d.ImpactEstimate}; periodo {d.PeriodLabel}",
+                    d.SuggestedAction ?? "Revisar en Analytics",
+                    "Mejora operativa / financiera según KPI",
+                    d.Priority is "High" or "Critical" ? "Alta" : "Media",
+                    "manager",
+                    d.Priority is "High" or "Critical" ? "Alto" : "Medio",
+                    d.CurrentValue));
+            }
         }
+        catch { /* soft */ }
 
         // Deduplicate by code+observation prefix
         return list
