@@ -31,6 +31,7 @@ El umbral absoluto **WORLD CLASS 100/100 CERTIFIED** no se declara. La evidencia
 - `Helpers/TenantScope.cs` — resolución company/branch desde claims; admin global valida pertenencia a compañía.
 - `AdvancedReportsController`, `ReportsController`, `InventoryMovementController`, `ProductController` (stock APIs), `StockTransferController`, `CashMovementController`, `UserController`, `UserManagementController` — dejan de confiar en `branchId`/`companyId` de cliente cruzando tenant.
 - `BranchService.GetAllAsync` / `GetByIdAsync` — filtro por `CompanyId` del claim (superadmin exento).
+- `UserService.GetAllAsync` / `GetByIdAsync` — filtro por compañía y sucursal según rol/claims.
 
 ### Performance N+1 — CORREGIDO
 - `ProductService.ReduceStockAsync` / `RestoreStockAsync` — `persist` opcional; batch en caller.
