@@ -116,6 +116,7 @@ module.exports = {
   ADMIN,
   loginAsAdmin,
   generateTotp,
+  completeMfaIfNeeded,
   collectConsoleErrors,
   significantConsoleErrors,
   expectNoHttp500,

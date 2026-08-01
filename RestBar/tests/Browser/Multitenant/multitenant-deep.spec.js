@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { loginAsAdmin } = require('../helpers/auth');
+const { loginAsAdmin, completeMfaIfNeeded } = require('../helpers/auth');
 
 /**
  * RB-1001 Multitenant isolation — deep IDOR / cross-company soft suite.
@@ -11,7 +11,9 @@ async function tryLogin(page, email, password = '123456') {
   await page.locator('input[name="email"]').fill(email);
   await page.locator('input[name="password"]').fill(password);
   await page.locator('button.btn-login').click();
-  await page.waitForTimeout(2000);
+  await page.waitForURL(url => !url.pathname.includes('/Auth/Login') || url.pathname.includes('Mfa'), { timeout: 30000 }).catch(() => {});
+  await completeMfaIfNeeded(page);
+  await page.waitForTimeout(500);
   return !page.url().includes('/Auth/Login');
 }
 

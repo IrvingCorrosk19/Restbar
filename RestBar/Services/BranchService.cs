@@ -13,21 +13,43 @@ namespace RestBar.Services
 
         public async Task<IEnumerable<Branch>> GetAllAsync()
         {
-            return await _context.Branches
+            var query = _context.Branches
                 .Include(b => b.Company)
                 .Include(b => b.Areas)
                 .Include(b => b.Users)
-                .ToListAsync();
+                .AsQueryable();
+
+            var user = _httpContextAccessor?.HttpContext?.User;
+            var role = user?.FindFirst("UserRole")?.Value;
+            if (!string.Equals(role, "superadmin", StringComparison.OrdinalIgnoreCase)
+                && Guid.TryParse(user?.FindFirst("CompanyId")?.Value, out var companyId))
+            {
+                query = query.Where(b => b.CompanyId == companyId);
+            }
+
+            return await query.ToListAsync();
         }
 
         public async Task<Branch?> GetByIdAsync(Guid id)
         {
-            return await _context.Branches
+            var branch = await _context.Branches
                 .Include(b => b.Company)
                 .Include(b => b.Areas)
                 .Include(b => b.Users)
-
                 .FirstOrDefaultAsync(b => b.Id == id);
+
+            if (branch == null) return null;
+
+            var user = _httpContextAccessor?.HttpContext?.User;
+            var role = user?.FindFirst("UserRole")?.Value;
+            if (!string.Equals(role, "superadmin", StringComparison.OrdinalIgnoreCase)
+                && Guid.TryParse(user?.FindFirst("CompanyId")?.Value, out var companyId)
+                && branch.CompanyId != companyId)
+            {
+                return null;
+            }
+
+            return branch;
         }
 
         public async Task<Branch> CreateAsync(Branch branch)

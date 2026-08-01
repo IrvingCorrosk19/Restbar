@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { loginAsAdmin } = require('../helpers/auth');
+const { loginAsAdmin, completeMfaIfNeeded } = require('../helpers/auth');
 
 test.describe('Multitenant · isolation smoke', () => {
   test('MT-01 Login binds company claim (admin session)', async ({ page }) => {
@@ -17,7 +17,9 @@ test.describe('Multitenant · isolation smoke', () => {
     await page.locator('input[name="email"]').fill('admin@costa.restbar.com');
     await page.locator('input[name="password"]').fill('123456');
     await page.locator('button.btn-login').click();
-    await page.waitForTimeout(2000);
+    await page.waitForURL(url => !url.pathname.includes('/Auth/Login') || url.pathname.includes('Mfa'), { timeout: 30000 }).catch(() => {});
+    await completeMfaIfNeeded(page);
+    await page.waitForTimeout(500);
     const url = page.url();
     if (url.includes('/Auth/Login')) {
       test.skip(true, 'admin@costa.restbar.com not seeded in this DB');
