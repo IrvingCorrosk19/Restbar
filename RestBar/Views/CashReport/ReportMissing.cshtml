@@ -1,0 +1,14 @@
+@{
+    ViewData["Title"] = "Cash Report";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var msg = ViewBag.Message as string ?? "Sesión de caja no encontrada o no autorizada.";
+}
+<div class="container mt-4">
+    <h2>Reporte de caja</h2>
+    <div class="alert alert-warning" role="alert">
+        @msg
+    </div>
+    <p>
+        <a class="btn btn-primary" href="/CashSession/Dashboard">Ir al Dashboard de Caja</a>
+    </p>
+</div>

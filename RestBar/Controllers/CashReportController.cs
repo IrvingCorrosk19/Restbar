@@ -33,9 +33,18 @@ public class CashReportController : Controller
         if (!_flags.EnableCashModule)
             return View("ModuleDisabled");
 
+        if (sessionId == Guid.Empty)
+        {
+            ViewBag.Message = "Indique una sesión de caja válida para generar el Z Report (Cierre).";
+            return View("ReportMissing");
+        }
+
         var session = await _context.CashSessions.AsNoTracking().FirstOrDefaultAsync(s => s.Id == sessionId);
         if (session == null || !UserCanAccessCashSession(session))
-            return NotFound();
+        {
+            ViewBag.Message = "Sesión de caja no encontrada o no autorizada para este Z Report.";
+            return View("ReportMissing");
+        }
 
         var report = await _context.CashZReports.AsNoTracking()
             .FirstOrDefaultAsync(z => z.CashSessionId == sessionId);
@@ -55,9 +64,18 @@ public class CashReportController : Controller
         if (!_flags.EnableCashModule)
             return View("ModuleDisabled");
 
+        if (sessionId == Guid.Empty)
+        {
+            ViewBag.Message = "Indique una sesión de caja válida para el X Report.";
+            return View("ReportMissing");
+        }
+
         var session = await _context.CashSessions.AsNoTracking().FirstOrDefaultAsync(s => s.Id == sessionId);
         if (session == null || !UserCanAccessCashSession(session))
-            return NotFound();
+        {
+            ViewBag.Message = "Sesión de caja no encontrada o no autorizada para este X Report.";
+            return View("ReportMissing");
+        }
 
         ViewBag.Report = await _reports.GenerateXReportAsync(sessionId);
         return View();

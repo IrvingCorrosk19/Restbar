@@ -1,25 +1,16 @@
-# 25 — GLOBAL REGRESSION REPORT (Tab Browser)
+﻿# 25 — GLOBAL REGRESSION REPORT
 
-**Dominio:** Full chromium-desktop Playwright suite  
-**Pack fecha:** 2026-08-01  
-**Build:** Release deploy `871abc7`
+**Corrida:** 2026-08-01 · VPS · chromium-desktop  
+**Resultado bruto:** **165 passed / 1 failed / 1 skipped** (16.5m)
 
-| ID | Escenario | Estado | Notas |
-|----|-----------|--------|-------|
-| E2E-REG-01 | Full chromium-desktop regression | **IN PROGRESS** | Re-run global en curso (2026-08-01) |
-| Prior baseline chromium-desktop | 161 PASS / 1 skip / 0 FAIL | Referencia (2026-08-01) | Baseline previo al cierre de este pack |
-| E2ETab suite | 5/5 PASS | **PASS** | Tras rate-limit fix (BUG-E2E-001) |
-| Unit RestBar.Tests | ~98 pass | Referencia histórica | Cash SM, PO, FC, Forecast, BI, TenantScope, SignalR |
+## FAIL
 
-## Log / evidencia
+| Test | Severidad | Estado |
+|------|-----------|--------|
+| CASH-Z-01 ZReport page | P2 | FIXED en código (ReportMissing UX) — pendiente retest |
 
-- E2ETab: `e2e-tab-retest.log` → 5 passed  
-- Global: `global-regression.log` (IN PROGRESS)  
-- No declarar PASS global hasta completar re-run sin FAIL
+## PASS parcial
 
-## Gaps vs mandato
+Incluye suite E2ETab + Smoke/Auth/Orders/… sin nuevos P0.
 
-- Firefox / WebKit no parte del cert primario aún  
-- Global regression debe cerrar sin FAIL para elevar veredicto REGRESSION
-
-**Veredicto dominio Regression:** IN PROGRESS (baseline histórico limpio; re-run no cerrado).
+Log: `global-regression.log`
