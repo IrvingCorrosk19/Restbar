@@ -19,16 +19,44 @@ namespace RestBar.Services
 
         public async Task<IEnumerable<User>> GetAllAsync()
         {
-            return await _context.Users
+            var query = _context.Users
                 .Include(u => u.Branch)
-                .ToListAsync();
+                .AsQueryable();
+
+            var user = _httpContextAccessor?.HttpContext?.User;
+            var role = user?.FindFirst("UserRole")?.Value;
+            if (!string.Equals(role, "superadmin", StringComparison.OrdinalIgnoreCase))
+            {
+                if (Guid.TryParse(user?.FindFirst("CompanyId")?.Value, out var companyId))
+                    query = query.Where(u => u.Branch != null && u.Branch.CompanyId == companyId);
+                if (!string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase)
+                    && Guid.TryParse(user?.FindFirst("BranchId")?.Value, out var branchId))
+                    query = query.Where(u => u.BranchId == branchId);
+                else if (string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase)
+                    && Guid.TryParse(user?.FindFirst("BranchId")?.Value, out var adminBranch))
+                    query = query.Where(u => u.BranchId == adminBranch);
+            }
+
+            return await query.ToListAsync();
         }
 
         public async Task<User?> GetByIdAsync(Guid id)
         {
-            return await _context.Users
+            var entity = await _context.Users
                 .Include(u => u.Branch)
                 .FirstOrDefaultAsync(u => u.Id == id);
+            if (entity == null) return null;
+
+            var user = _httpContextAccessor?.HttpContext?.User;
+            var role = user?.FindFirst("UserRole")?.Value;
+            if (!string.Equals(role, "superadmin", StringComparison.OrdinalIgnoreCase)
+                && Guid.TryParse(user?.FindFirst("CompanyId")?.Value, out var companyId)
+                && entity.Branch?.CompanyId != companyId)
+            {
+                return null;
+            }
+
+            return entity;
         }
 
         public async Task<User> CreateAsync(User user)
