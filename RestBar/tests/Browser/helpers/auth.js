@@ -41,11 +41,21 @@ function generateTotp(secret, windowOffset = 0) {
 async function completeMfaIfNeeded(page) {
   const path = new URL(page.url()).pathname;
   if (path.includes('/Auth/MfaChallenge')) {
-    await page.locator('input[name="code"]').fill(generateTotp(ADMIN.mfaSecret));
-    await page.locator('button.btn-login, button[type="submit"]').first().click({ noWaitAfter: true });
-    await page.waitForURL(url => !url.pathname.includes('/Auth/MfaChallenge') && !url.pathname.includes('/Auth/Login'), {
-      timeout: 60000,
-    });
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      await page.locator('input[name="code"]').fill(generateTotp(ADMIN.mfaSecret));
+      await page.locator('button.btn-login, button[type="submit"]').first().click({ noWaitAfter: true });
+      try {
+        await page.waitForURL(
+          (url) => !url.pathname.includes('/Auth/MfaChallenge') && !url.pathname.includes('/Auth/Login'),
+          { timeout: 25000 }
+        );
+        return;
+      } catch (err) {
+        if (attempt === 3) throw err;
+        await page.waitForTimeout(2000 * attempt);
+        if (!page.url().includes('/Auth/MfaChallenge')) return;
+      }
+    }
     return;
   }
   if (path.includes('/Auth/MfaSetup')) {

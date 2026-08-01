@@ -43,17 +43,16 @@ CultureInfo.DefaultThreadCurrentUICulture = panamaCulture;
 // Agregar SignalR
 builder.Services.AddSignalR();
 
-// ✅ SEGURIDAD: Rate limiting para endpoints de autenticación
-// Producción: 5 req/min. Desarrollo: límite alto para certificación/pruebas.
+// Rate limiting auth: Production 60/min (multi-caja + MFA). Development 500/min.
 var isDevelopment = builder.Environment.IsDevelopment();
 builder.Services.AddRateLimiter(options =>
 {
     options.AddFixedWindowLimiter("auth_endpoints", limiterOptions =>
     {
-        limiterOptions.PermitLimit = isDevelopment ? 500 : 5;
+        limiterOptions.PermitLimit = isDevelopment ? 500 : 60;
         limiterOptions.Window = TimeSpan.FromSeconds(60);
         limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        limiterOptions.QueueLimit = 0;
+        limiterOptions.QueueLimit = isDevelopment ? 0 : 10;
     });
 
     // Respuesta cuando se supera el límite
