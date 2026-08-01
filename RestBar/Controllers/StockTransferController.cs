@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using RestBar.Helpers;
 using RestBar.Interfaces;
 using RestBar.Models;
 
@@ -31,10 +32,15 @@ public class StockTransferController : Controller
     [HttpGet]
     public async Task<IActionResult> Index()
     {
-        var transfers = await _context.StockTransfers
+        var companyId = TenantScope.CompanyId(User);
+        var query = _context.StockTransfers.AsNoTracking()
             .Include(t => t.Product)
             .Include(t => t.FromStation)
             .Include(t => t.ToStation)
+            .AsQueryable();
+        if (companyId.HasValue)
+            query = query.Where(t => t.CompanyId == companyId.Value);
+        var transfers = await query
             .OrderByDescending(t => t.RequestedAt)
             .Take(100)
             .ToListAsync();
@@ -45,7 +51,8 @@ public class StockTransferController : Controller
     public async Task<IActionResult> Request([FromBody] TransferRequestDto dto)
     {
         var userId = Guid.TryParse(User.FindFirst("UserId")?.Value, out var uid) ? uid : (Guid?)null;
-        var companyId = Guid.TryParse(User.FindFirst("CompanyId")?.Value, out var cid) ? cid : (Guid?)null;
+        var companyId = TenantScope.CompanyId(User);
+        var branchId = await TenantScope.ResolveBranchIdAsync(_context, User, dto.BranchId);
 
         var transfer = new StockTransfer
         {
@@ -54,7 +61,7 @@ public class StockTransferController : Controller
             FromStationId = dto.FromStationId,
             ToStationId = dto.ToStationId,
             Quantity = dto.Quantity,
-            BranchId = dto.BranchId,
+            BranchId = branchId,
             CompanyId = companyId,
             Status = StockTransferStatus.Pending,
             RequestedByUserId = userId,
@@ -68,8 +75,9 @@ public class StockTransferController : Controller
     [HttpPost]
     public async Task<IActionResult> Approve(Guid id)
     {
+        var companyId = TenantScope.CompanyId(User);
         var transfer = await _context.StockTransfers.FindAsync(id);
-        if (transfer == null)
+        if (transfer == null || (companyId.HasValue && transfer.CompanyId != companyId))
             return NotFound(new { success = false, message = "Transferencia no encontrada" });
 
         if (transfer.Status != StockTransferStatus.Pending)
@@ -92,8 +100,9 @@ public class StockTransferController : Controller
     [HttpPost]
     public async Task<IActionResult> Reject(Guid id, [FromBody] RejectDto? dto)
     {
+        var companyId = TenantScope.CompanyId(User);
         var transfer = await _context.StockTransfers.FindAsync(id);
-        if (transfer == null)
+        if (transfer == null || (companyId.HasValue && transfer.CompanyId != companyId))
             return NotFound(new { success = false, message = "Transferencia no encontrada" });
 
         if (transfer.Status != StockTransferStatus.Pending)

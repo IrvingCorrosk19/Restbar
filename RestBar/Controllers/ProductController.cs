@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using RestBar.ViewModel;
 using RestBar.Interfaces;
+using RestBar.Helpers;
 
 namespace RestBar.Controllers
 {
@@ -505,17 +506,13 @@ namespace RestBar.Controllers
         {
             try
             {
-                Console.WriteLine($"🔍 [ProductController] GetAvailableStock() - ProductId: {productId}, BranchId: {branchId}");
-                
+                branchId = await TenantScope.ResolveBranchIdAsync(_context, User, branchId);
                 var stock = await _productService.GetAvailableStockAsync(productId, branchId);
-                
-                Console.WriteLine($"✅ [ProductController] GetAvailableStock() - Stock disponible: {stock}");
                 return Json(new { success = true, stock = stock, isUnlimited = stock == -1 });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ [ProductController] GetAvailableStock() - Error: {ex.Message}");
-                Console.WriteLine($"🔍 [ProductController] GetAvailableStock() - StackTrace: {ex.StackTrace}");
+                _logger.LogError(ex, "[ProductController] GetAvailableStock");
                 return Json(new { success = false, message = ex.Message });
             }
         }
@@ -528,17 +525,13 @@ namespace RestBar.Controllers
         {
             try
             {
-                Console.WriteLine($"🔍 [ProductController] GetStockInStation() - ProductId: {productId}, StationId: {stationId}, BranchId: {branchId}");
-                
+                branchId = await TenantScope.ResolveBranchIdAsync(_context, User, branchId);
                 var stock = await _productService.GetStockInStationAsync(productId, stationId, branchId);
-                
-                Console.WriteLine($"✅ [ProductController] GetStockInStation() - Stock en estación: {stock}");
                 return Json(new { success = true, stock = stock });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ [ProductController] GetStockInStation() - Error: {ex.Message}");
-                Console.WriteLine($"🔍 [ProductController] GetStockInStation() - StackTrace: {ex.StackTrace}");
+                _logger.LogError(ex, "[ProductController] GetStockInStation");
                 return Json(new { success = false, message = ex.Message });
             }
         }
@@ -551,23 +544,19 @@ namespace RestBar.Controllers
         {
             try
             {
-                Console.WriteLine($"🔍 [ProductController] CheckStockAvailability() - ProductId: {productId}, Quantity: {quantity}, BranchId: {branchId}");
-                
+                branchId = await TenantScope.ResolveBranchIdAsync(_context, User, branchId);
                 var hasStock = await _productService.HasStockAvailableAsync(productId, quantity, branchId);
                 var availableStock = await _productService.GetAvailableStockAsync(productId, branchId);
-                
-                Console.WriteLine($"✅ [ProductController] CheckStockAvailability() - HasStock: {hasStock}, AvailableStock: {availableStock}");
-                return Json(new { 
-                    success = true, 
-                    hasStock = hasStock, 
+                return Json(new {
+                    success = true,
+                    hasStock = hasStock,
                     availableStock = availableStock,
                     isUnlimited = availableStock == -1
                 });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ [ProductController] CheckStockAvailability() - Error: {ex.Message}");
-                Console.WriteLine($"🔍 [ProductController] CheckStockAvailability() - StackTrace: {ex.StackTrace}");
+                _logger.LogError(ex, "[ProductController] CheckStockAvailability");
                 return Json(new { success = false, message = ex.Message });
             }
         }
@@ -580,31 +569,26 @@ namespace RestBar.Controllers
         {
             try
             {
-                Console.WriteLine($"🔍 [ProductController] FindBestStation() - ProductId: {productId}, RequiredQuantity: {requiredQuantity}, BranchId: {branchId}");
-                
+                branchId = await TenantScope.ResolveBranchIdAsync(_context, User, branchId);
                 var stationId = await _productService.FindBestStationForProductAsync(productId, requiredQuantity, branchId);
-                
+
                 if (stationId.HasValue)
                 {
                     var station = await _stationService.GetStationByIdAsync(stationId.Value);
                     var stockInStation = await _productService.GetStockInStationAsync(productId, stationId.Value, branchId);
-                    
-                    Console.WriteLine($"✅ [ProductController] FindBestStation() - Estación encontrada: {station?.Name}, Stock: {stockInStation}");
-                    return Json(new { 
-                        success = true, 
+                    return Json(new {
+                        success = true,
                         stationId = stationId.Value,
                         stationName = station?.Name,
                         stockInStation = stockInStation
                     });
                 }
-                
-                Console.WriteLine($"⚠️ [ProductController] FindBestStation() - No se encontró estación adecuada");
+
                 return Json(new { success = false, message = "No hay estación disponible con stock suficiente" });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ [ProductController] FindBestStation() - Error: {ex.Message}");
-                Console.WriteLine($"🔍 [ProductController] FindBestStation() - StackTrace: {ex.StackTrace}");
+                _logger.LogError(ex, "[ProductController] FindBestStation");
                 return Json(new { success = false, message = ex.Message });
             }
         }

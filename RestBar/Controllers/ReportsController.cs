@@ -3,7 +3,10 @@ using System.Text;
 using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using RestBar.Helpers;
 using RestBar.Interfaces;
+using RestBar.Models;
 using RestBar.ViewModels;
 using System.Security.Claims;
 
@@ -13,11 +16,13 @@ namespace RestBar.Controllers
     public class ReportsController : Controller
     {
         private readonly ISalesReportService _salesReportService;
+        private readonly RestBarContext _db;
         private readonly ILogger<ReportsController> _logger;
 
-        public ReportsController(ISalesReportService salesReportService, ILogger<ReportsController> logger)
+        public ReportsController(ISalesReportService salesReportService, RestBarContext db, ILogger<ReportsController> logger)
         {
             _salesReportService = salesReportService;
+            _db = db;
             _logger = logger;
         }
 
@@ -26,18 +31,8 @@ namespace RestBar.Controllers
             return View();
         }
 
-        private Guid? ResolveBranchId(Guid? requested)
-        {
-            var claimBranch = User.FindFirst("BranchId")?.Value;
-            if (!Guid.TryParse(claimBranch, out var userBranch))
-                return requested;
-
-            // Non-admins cannot query another branch
-            if (!User.IsInRole("admin"))
-                return userBranch;
-
-            return requested ?? userBranch;
-        }
+        private async Task<Guid?> ResolveBranchIdAsync(Guid? requested) =>
+            await TenantScope.ResolveBranchIdAsync(_db, User, requested);
 
         // ✅ Reporte completo de ventas
         [HttpGet]
@@ -49,7 +44,7 @@ namespace RestBar.Controllers
                 {
                     StartDate = startDate ?? DateTime.Today.AddDays(-30),
                     EndDate = endDate ?? DateTime.Today,
-                    BranchId = ResolveBranchId(branchId),
+                    BranchId = await ResolveBranchIdAsync(branchId),
                     UserId = userId,
                     CategoryId = categoryId
                 };
@@ -75,7 +70,7 @@ namespace RestBar.Controllers
                 {
                     StartDate = startDate,
                     EndDate = endDate,
-                    BranchId = ResolveBranchId(branchId)
+                    BranchId = await ResolveBranchIdAsync(branchId)
                 };
 
                 var metrics = await _salesReportService.GetSalesMetricsAsync(filters);
@@ -98,7 +93,7 @@ namespace RestBar.Controllers
                 {
                     StartDate = startDate,
                     EndDate = endDate,
-                    BranchId = ResolveBranchId(branchId)
+                    BranchId = await ResolveBranchIdAsync(branchId)
                 };
 
                 var dailySales = await _salesReportService.GetDailySalesAsync(filters);
@@ -121,7 +116,7 @@ namespace RestBar.Controllers
                 {
                     StartDate = startDate,
                     EndDate = endDate,
-                    BranchId = ResolveBranchId(branchId)
+                    BranchId = await ResolveBranchIdAsync(branchId)
                 };
 
                 var topProducts = await _salesReportService.GetTopProductsAsync(filters);
@@ -144,7 +139,7 @@ namespace RestBar.Controllers
                 {
                     StartDate = startDate,
                     EndDate = endDate,
-                    BranchId = ResolveBranchId(branchId)
+                    BranchId = await ResolveBranchIdAsync(branchId)
                 };
 
                 var categorySales = await _salesReportService.GetCategorySalesAsync(filters);
@@ -167,7 +162,7 @@ namespace RestBar.Controllers
                 {
                     StartDate = startDate,
                     EndDate = endDate,
-                    BranchId = ResolveBranchId(branchId)
+                    BranchId = await ResolveBranchIdAsync(branchId)
                 };
 
                 var employeeSales = await _salesReportService.GetEmployeeSalesAsync(filters);
@@ -212,7 +207,7 @@ namespace RestBar.Controllers
                 {
                     StartDate = startDate,
                     EndDate = endDate,
-                    BranchId = ResolveBranchId(branchId)
+                    BranchId = await ResolveBranchIdAsync(branchId)
                 };
 
                 var discounts = await _salesReportService.GetDiscountsAsync(filters);
@@ -235,7 +230,7 @@ namespace RestBar.Controllers
                 {
                     StartDate = startDate ?? DateTime.Today.AddDays(-30),
                     EndDate = endDate ?? DateTime.Today,
-                    BranchId = ResolveBranchId(branchId)
+                    BranchId = await ResolveBranchIdAsync(branchId)
                 };
 
                 var report = await _salesReportService.GetCompleteSalesReportAsync(filters);
@@ -259,7 +254,7 @@ namespace RestBar.Controllers
                 {
                     StartDate = startDate ?? DateTime.Today.AddDays(-30),
                     EndDate = endDate ?? DateTime.Today,
-                    BranchId = ResolveBranchId(branchId)
+                    BranchId = await ResolveBranchIdAsync(branchId)
                 };
 
                 var report = await _salesReportService.GetCompleteSalesReportAsync(filters);

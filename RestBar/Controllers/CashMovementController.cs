@@ -35,6 +35,11 @@ public class CashMovementController : ControllerBase
         if (!_flags.EnableCashModule)
             return NotFound(new { message = "Cash module disabled" });
 
+        var session = await _sessions.GetByIdAsync(sessionId);
+        if (session == null) return NotFound();
+        if (!await UserCanAccessCashSessionAsync(session))
+            return Forbid();
+
         var items = await _movements.GetSessionMovementsAsync(sessionId);
         return Ok(items);
     }
@@ -46,6 +51,11 @@ public class CashMovementController : ControllerBase
     {
         if (!_flags.EnableCashModule)
             return NotFound(new { message = "Cash module disabled" });
+
+        var session = await _sessions.GetByIdAsync(dto.SessionId);
+        if (session == null) return NotFound();
+        if (!await UserCanAccessCashSessionAsync(session))
+            return Forbid();
 
         var userId = Guid.Parse(User.FindFirst("UserId")!.Value);
         var movement = await _movements.RecordMovementAsync(new CashMovementRequest(
@@ -64,6 +74,8 @@ public class CashMovementController : ControllerBase
         var session = await _sessions.GetByIdAsync(dto.SessionId);
         if (session == null)
             return NotFound();
+        if (!await UserCanAccessCashSessionAsync(session))
+            return Forbid();
 
         if (await _approvals.RequiresDualApprovalAsync(dto.SessionId, CashApprovalType.LargePaidOut, dto.Amount))
         {
@@ -76,5 +88,26 @@ public class CashMovementController : ControllerBase
             dto.SessionId, CashMovementType.PaidOut, CashMovementDirection.Out,
             dto.Amount, userId, ReasonCode: dto.ReasonCode, Comments: dto.Comments));
         return Ok(movement);
+    }
+
+    private Task<bool> UserCanAccessCashSessionAsync(CashSession session)
+    {
+        var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value
+                   ?? User.FindFirst("UserRole")?.Value;
+        if (string.Equals(role, "superadmin", StringComparison.OrdinalIgnoreCase))
+            return Task.FromResult(true);
+
+        var companyOk = Guid.TryParse(User.FindFirst("CompanyId")?.Value, out var companyId)
+                        && session.CompanyId == companyId;
+        if (!companyOk) return Task.FromResult(false);
+
+        if (string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase)
+            && !Guid.TryParse(User.FindFirst("BranchId")?.Value, out _))
+            return Task.FromResult(true);
+
+        if (Guid.TryParse(User.FindFirst("BranchId")?.Value, out var branchId))
+            return Task.FromResult(session.BranchId == branchId);
+
+        return Task.FromResult(false);
     }
 }

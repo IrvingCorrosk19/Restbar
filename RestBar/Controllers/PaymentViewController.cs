@@ -178,37 +178,29 @@ namespace RestBar.Controllers
                     .OrderByDescending(x => x.amount)
                     .ToList();
 
-                // Daily sales for current week
+                // Daily + monthly from one range load (elimina 13 round-trips)
                 var weekStart = today.AddDays(-(int)today.DayOfWeek);
+                var weekEnd = weekStart.AddDays(7);
+                var sixMonthStart = new DateTime(today.AddMonths(-5).Year, today.AddMonths(-5).Month, 1);
+                var rangePayments = (await _paymentService.GetPaymentsByDateRangeAsync(sixMonthStart, weekEnd)).ToList();
+
                 var dailySales = new List<object>();
                 for (int i = 0; i < 7; i++)
                 {
                     var date = weekStart.AddDays(i);
-                    var dayPayments = (await _paymentService.GetPaymentsByDateRangeAsync(date, date.AddDays(1))).ToList();
-                    var dayTotal = dayPayments.Sum(p => p.Amount);
-                    
-                    dailySales.Add(new
-                    {
-                        date = date.ToString("ddd"),
-                        amount = dayTotal
-                    });
+                    var next = date.AddDays(1);
+                    var dayTotal = rangePayments.Where(p => p.PaidAt >= date && p.PaidAt < next).Sum(p => p.Amount);
+                    dailySales.Add(new { date = date.ToString("ddd"), amount = dayTotal });
                 }
 
-                // Monthly performance (last 6 months)
                 var monthlyPerformance = new List<object>();
                 for (int i = 5; i >= 0; i--)
                 {
                     var month = today.AddMonths(-i);
                     var monthStartDate = new DateTime(month.Year, month.Month, 1);
                     var monthEndDate = monthStartDate.AddMonths(1);
-                    var monthPayments = (await _paymentService.GetPaymentsByDateRangeAsync(monthStartDate, monthEndDate)).ToList();
-                    var monthTotal = monthPayments.Sum(p => p.Amount);
-                    
-                    monthlyPerformance.Add(new
-                    {
-                        month = month.ToString("MMM"),
-                        amount = monthTotal
-                    });
+                    var monthTotal = rangePayments.Where(p => p.PaidAt >= monthStartDate && p.PaidAt < monthEndDate).Sum(p => p.Amount);
+                    monthlyPerformance.Add(new { month = month.ToString("MMM"), amount = monthTotal });
                 }
 
                 return Json(new

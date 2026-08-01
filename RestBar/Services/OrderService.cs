@@ -544,21 +544,21 @@ namespace RestBar.Services
 
             try
             {
+                var productIds = items.Select(i => i.ProductId).Distinct().ToList();
+                var products = await _context.Products.AsNoTracking()
+                    .Where(p => productIds.Contains(p.Id))
+                    .ToDictionaryAsync(p => p.Id);
+
                 foreach (var itemDto in items)
                 {
-                    var product = await _productService.GetByIdAsync(itemDto.ProductId);
-                    if (product == null)
+                    if (!products.TryGetValue(itemDto.ProductId, out var product))
                         continue;
 
                     if (product.Price == null || product.Price <= 0)
                         throw new InvalidOperationException($"El producto '{product.Name}' no tiene precio configurado.");
 
-
-
                     if (!string.IsNullOrEmpty(itemDto.Notes) && itemDto.Notes.Length > 200)
                         throw new InvalidOperationException("El comentario no puede superar los 200 caracteres.");
-
-
 
                     var unitPrice = await _priceSchedule.GetEffectiveUnitPriceAsync(
                         itemDto.ProductId, order.CompanyId);
@@ -571,12 +571,10 @@ namespace RestBar.Services
                         UnitPrice = unitPrice,
                         Discount = itemDto.Discount ?? 0,
                         Notes = itemDto.Notes,
-                        // ✅ NUEVO: Establecer campos multi-tenant desde la orden
                         CompanyId = order.CompanyId,
                         BranchId = order.BranchId
                     };
                     
-                    // ✅ NUEVO: Establecer campos de auditoría usando BaseTrackingService
                     SetCreatedTracking(newItem);
                     
                     order.OrderItems.Add(newItem);

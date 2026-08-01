@@ -72,11 +72,25 @@ namespace RestBar.Controllers
                     return View();
                 }
 
+                var privileged = user.Role is UserRole.superadmin or UserRole.admin or UserRole.manager or UserRole.supervisor;
+                if (privileged && user.MfaEnabled && !string.IsNullOrEmpty(user.MfaSecret))
+                {
+                    var pendingKey = $"mfa_pending_{Guid.NewGuid():N}";
+                    _cache.Set(pendingKey, user.Id, TimeSpan.FromMinutes(5));
+                    TempData["MfaPendingKey"] = pendingKey;
+                    TempData["ReturnUrl"] = returnUrl;
+                    return RedirectToAction(nameof(MfaChallenge));
+                }
+
                 var claimsPrincipal = await _authService.GetClaimsPrincipalAsync(user);
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, claimsPrincipal);
 
                 _logger.LogInformation("[AuthController] Login exitoso. Email: {Email}, Rol: {Role}",
                     email, user.Role);
+
+                // Privileged roles without MFA are forced to enroll before using the console.
+                if (privileged && !user.MfaEnabled)
+                    return RedirectToAction(nameof(MfaSetup));
 
                 // Redirigir según el rol
                 if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
@@ -103,6 +117,101 @@ namespace RestBar.Controllers
                 ViewData["ReturnUrl"] = returnUrl;
                 return View();
             }
+        }
+
+        [AllowAnonymous]
+        [HttpGet]
+        public IActionResult MfaChallenge()
+        {
+            if (TempData["MfaPendingKey"] == null)
+                return RedirectToAction(nameof(Login));
+            TempData.Keep("MfaPendingKey");
+            TempData.Keep("ReturnUrl");
+            return View();
+        }
+
+        [AllowAnonymous]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth_endpoints")]
+        public async Task<IActionResult> MfaChallenge(string code)
+        {
+            var pendingKey = TempData["MfaPendingKey"] as string;
+            var returnUrl = TempData["ReturnUrl"] as string;
+            if (string.IsNullOrEmpty(pendingKey) || !_cache.TryGetValue(pendingKey, out Guid userId))
+            {
+                ModelState.AddModelError("", "Sesión MFA expirada. Inicie sesión de nuevo.");
+                return RedirectToAction(nameof(Login));
+            }
+
+            var user = await _context.Users
+                .Include(u => u.Branch).ThenInclude(b => b!.Company)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null || !user.MfaEnabled || string.IsNullOrEmpty(user.MfaSecret)
+                || !Helpers.TotpHelper.VerifyCode(user.MfaSecret, code ?? ""))
+            {
+                TempData["MfaPendingKey"] = pendingKey;
+                TempData["ReturnUrl"] = returnUrl;
+                _cache.Set(pendingKey, userId, TimeSpan.FromMinutes(5));
+                ModelState.AddModelError("", "Código MFA inválido");
+                return View();
+            }
+
+            _cache.Remove(pendingKey);
+            var claimsPrincipal = await _authService.GetClaimsPrincipalAsync(user);
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, claimsPrincipal);
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+            return RedirectToAction("Index", GetControllerByRole(user.Role));
+        }
+
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> MfaSetup()
+        {
+            var userId = Guid.Parse(User.FindFirst("UserId")!.Value);
+            var user = await _context.Users.FirstAsync(u => u.Id == userId);
+            if (user.MfaEnabled && !string.IsNullOrEmpty(user.MfaSecret))
+                return RedirectToAction("Index", "Home");
+
+            var secret = Helpers.TotpHelper.GenerateSecret();
+            TempData["MfaSetupSecret"] = secret;
+            ViewBag.Secret = secret;
+            ViewBag.Uri = Helpers.TotpHelper.GetProvisioningUri(user.Email, secret);
+            ViewBag.Email = user.Email;
+            return View();
+        }
+
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MfaSetup(string code)
+        {
+            var secret = TempData["MfaSetupSecret"] as string;
+            if (string.IsNullOrEmpty(secret))
+                return RedirectToAction(nameof(MfaSetup));
+
+            if (!Helpers.TotpHelper.VerifyCode(secret, code ?? ""))
+            {
+                TempData["MfaSetupSecret"] = secret;
+                ViewBag.Secret = secret;
+                ViewBag.Uri = Helpers.TotpHelper.GetProvisioningUri(User.Identity?.Name ?? "user", secret);
+                ModelState.AddModelError("", "Código inválido. Escanee de nuevo e intente.");
+                return View();
+            }
+
+            var userId = Guid.Parse(User.FindFirst("UserId")!.Value);
+            var user = await _context.Users
+                .Include(u => u.Branch).ThenInclude(b => b!.Company)
+                .FirstAsync(u => u.Id == userId);
+            user.MfaEnabled = true;
+            user.MfaSecret = secret;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            var claimsPrincipal = await _authService.GetClaimsPrincipalAsync(user);
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, claimsPrincipal);
+            TempData["Success"] = "MFA activado.";
+            return RedirectToAction("Index", "Home");
         }
 
         // POST: /Auth/Logout

@@ -467,6 +467,7 @@ app.UseSession();
 // Configurar middleware de autenticación (orden importante)
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<MfaEnrollmentMiddleware>();
 
 // ✅ NUEVO: Agregar middlewares de auditoría y manejo de errores (después de autenticación)
 app.UseAuditLogging();

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using RestBar.Helpers;
 using RestBar.Interfaces;
 using RestBar.Models;
 
@@ -35,8 +36,13 @@ public class InventoryMovementController : Controller
         var query = _context.InventoryMovements.AsNoTracking()
             .Where(m => m.CreatedAt >= start && m.CreatedAt < endExclusive);
 
-        if (branchId.HasValue)
-            query = query.Where(m => m.BranchId == branchId);
+        var companyId = TenantScope.CompanyId(User);
+        if (companyId.HasValue)
+            query = query.Where(m => m.CompanyId == companyId.Value);
+
+        var resolvedBranch = await TenantScope.ResolveBranchIdAsync(_context, User, branchId);
+        if (resolvedBranch.HasValue)
+            query = query.Where(m => m.BranchId == resolvedBranch);
 
         var movements = await query
             .OrderByDescending(m => m.CreatedAt)
@@ -107,19 +113,20 @@ public class InventoryMovementController : Controller
                 return NotFound(new { success = false, message = "Producto no encontrado" });
 
             var qty = Math.Abs(dto.Quantity);
-            var before = await _productService.GetAvailableStockAsync(dto.ProductId, dto.BranchId);
+            var branchId = await TenantScope.ResolveBranchIdAsync(_context, User, dto.BranchId);
+            var companyId = TenantScope.CompanyId(User);
+            var before = await _productService.GetAvailableStockAsync(dto.ProductId, branchId);
 
             if (add)
-                await _productService.RestoreStockAsync(dto.ProductId, qty, dto.StationId, dto.BranchId);
+                await _productService.RestoreStockAsync(dto.ProductId, qty, dto.StationId, branchId);
             else
-                await _productService.ReduceStockAsync(dto.ProductId, qty, dto.StationId, dto.BranchId);
+                await _productService.ReduceStockAsync(dto.ProductId, qty, dto.StationId, branchId);
 
-            var after = await _productService.GetAvailableStockAsync(dto.ProductId, dto.BranchId);
+            var after = await _productService.GetAvailableStockAsync(dto.ProductId, branchId);
             var userId = Guid.TryParse(User.FindFirst("UserId")?.Value, out var uid) ? uid : (Guid?)null;
-            var companyId = Guid.TryParse(User.FindFirst("CompanyId")?.Value, out var cid) ? cid : (Guid?)null;
 
             await _inventoryOps.LogMovementAsync(dto.ProductId, type, add ? qty : -qty, before, after,
-                dto.StationId, dto.BranchId, companyId, userId, null, dto.Reason, dto.Reference);
+                dto.StationId, branchId, companyId, userId, null, dto.Reason, dto.Reference);
 
             return Json(new { success = true, stockAfter = after });
         }

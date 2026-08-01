@@ -190,6 +190,10 @@ public partial class RestBarContext : DbContext
                 .HasDefaultValue(true)
                 .HasColumnName("is_active");
             entity.Property(e => e.PasswordHash).HasColumnName("password_hash");
+            entity.Property(e => e.MfaEnabled)
+                .HasDefaultValue(false)
+                .HasColumnName("mfa_enabled");
+            entity.Property(e => e.MfaSecret).HasColumnName("mfa_secret");
             entity.Property(e => e.Role)
                 .HasColumnType("user_role_enum")
                 .HasColumnName("role");

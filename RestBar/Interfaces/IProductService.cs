@@ -47,12 +47,12 @@ namespace RestBar.Interfaces
         /// <summary>
         /// Reduce el stock de un producto (global o por estación)
         /// </summary>
-        Task<bool> ReduceStockAsync(Guid productId, decimal quantity, Guid? stationId = null, Guid? branchId = null);
+        Task<bool> ReduceStockAsync(Guid productId, decimal quantity, Guid? stationId = null, Guid? branchId = null, bool persist = true);
 
         /// <summary>
         /// Restaura stock de un producto (al cancelar una orden)
         /// </summary>
-        Task<bool> RestoreStockAsync(Guid productId, decimal quantity, Guid? stationId = null, Guid? branchId = null);
+        Task<bool> RestoreStockAsync(Guid productId, decimal quantity, Guid? stationId = null, Guid? branchId = null, bool persist = true);
 
         /// <summary>
         /// Verifica si un producto tiene stock suficiente

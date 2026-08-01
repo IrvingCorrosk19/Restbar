@@ -911,25 +911,34 @@ namespace RestBar.Services
                     })
                     .ToList();
                 
-                // Calcular rotación de inventario
+                // Rotación: una query agrupada (elimina N+1 SumAsync por producto)
                 var startDate = filters.StartDate ?? DateTime.Today.AddDays(-30);
                 var endDate = filters.EndDate ?? DateTime.Today;
-                
+                var tracked = products.Where(p => p.TrackInventory).ToList();
+                var trackedIds = tracked.Select(p => p.Id).ToList();
+                var soldByProduct = trackedIds.Count == 0
+                    ? new Dictionary<Guid, decimal>()
+                    : await _context.OrderItems
+                        .AsNoTracking()
+                        .Where(oi => oi.ProductId != null
+                                   && trackedIds.Contains(oi.ProductId.Value)
+                                   && oi.Order != null
+                                   && oi.Order.Status == OrderStatus.Completed
+                                   && oi.Order.ClosedAt >= startDate
+                                   && oi.Order.ClosedAt <= endDate)
+                        .GroupBy(oi => oi.ProductId!.Value)
+                        .Select(g => new { ProductId = g.Key, Qty = g.Sum(x => x.Quantity) })
+                        .ToDictionaryAsync(x => x.ProductId, x => x.Qty);
+
                 var turnoverData = new List<InventoryTurnover>();
-                foreach (var product in products.Where(p => p.TrackInventory))
+                foreach (var product in tracked)
                 {
-                    var soldQuantity = await _context.OrderItems
-                        .Where(oi => oi.ProductId == product.Id &&
-                                   oi.Order.Status == OrderStatus.Completed &&
-                                   oi.Order.ClosedAt >= startDate &&
-                                   oi.Order.ClosedAt <= endDate)
-                        .SumAsync(oi => (decimal?)oi.Quantity) ?? 0;
-                    
-                    var averageStock = product.Stock ?? 0; // Stock actual como aproximación
+                    var soldQuantity = soldByProduct.TryGetValue(product.Id, out var sq) ? sq : 0m;
+                    var averageStock = product.Stock ?? 0;
                     var turnoverRate = averageStock > 0 ? soldQuantity / averageStock : 0;
                     var daysToSell = turnoverRate > 0 ? (int)(30 / turnoverRate) : 999;
                     var efficiency = turnoverRate >= 2 ? "High" : turnoverRate >= 1 ? "Medium" : "Low";
-                    
+
                     turnoverData.Add(new InventoryTurnover
                     {
                         ProductId = product.Id,

@@ -443,7 +443,7 @@ namespace RestBar.Services
         /// <summary>
         /// Reduce el stock de un producto (global o por estación).
         /// </summary>
-        public async Task<bool> ReduceStockAsync(Guid productId, decimal quantity, Guid? stationId = null, Guid? branchId = null)
+        public async Task<bool> ReduceStockAsync(Guid productId, decimal quantity, Guid? stationId = null, Guid? branchId = null, bool persist = true)
         {
             try
             {
@@ -526,7 +526,8 @@ namespace RestBar.Services
                     }
                 }
 
-                await _context.SaveChangesAsync();
+                if (persist)
+                    await _context.SaveChangesAsync();
                 _logger.LogInformation("[ProductService] ReduceStockAsync - stock reducido exitosamente para {ProductName}", product.Name);
                 return true;
             }
@@ -540,7 +541,7 @@ namespace RestBar.Services
         /// <summary>
         /// Restaura stock de un producto (al cancelar una orden).
         /// </summary>
-        public async Task<bool> RestoreStockAsync(Guid productId, decimal quantity, Guid? stationId = null, Guid? branchId = null)
+        public async Task<bool> RestoreStockAsync(Guid productId, decimal quantity, Guid? stationId = null, Guid? branchId = null, bool persist = true)
         {
             try
             {
@@ -589,7 +590,8 @@ namespace RestBar.Services
                         product.Name, prevStock, product.Stock);
                 }
 
-                await _context.SaveChangesAsync();
+                if (persist)
+                    await _context.SaveChangesAsync();
                 _logger.LogInformation("[ProductService] RestoreStockAsync - stock restaurado exitosamente para {ProductName}", product.Name);
                 return true;
             }

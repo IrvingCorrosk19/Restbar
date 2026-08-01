@@ -1,0 +1,52 @@
+@{
+    Layout = "~/Views/Shared/_LoginLayout.cshtml";
+    ViewData["Title"] = "Activar MFA";
+    var secret = ViewBag.Secret as string ?? "";
+    var uri = ViewBag.Uri as string ?? "";
+    var email = ViewBag.Email as string ?? "";
+}
+
+<div class="login-form">
+    <div class="form-title">
+        <h2>Activar autenticación MFA</h2>
+        <p>Los roles privilegiados requieren MFA. Escanea el secreto con Google Authenticator, Authy u otro TOTP.</p>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger" role="alert">
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <div>@error.ErrorMessage</div>
+            }
+        </div>
+    }
+
+    <div class="alert alert-info text-start" role="status">
+        <p class="mb-1"><strong>Cuenta:</strong> @email</p>
+        <p class="mb-1"><strong>Secreto (Base32):</strong></p>
+        <code style="word-break:break-all;user-select:all;">@secret</code>
+        <p class="mt-2 mb-0 small">URI: <code style="word-break:break-all;font-size:0.75rem;">@uri</code></p>
+    </div>
+
+    <form method="post" asp-action="MfaSetup" asp-controller="Auth" autocomplete="off">
+        @Html.AntiForgeryToken()
+        <div class="form-group">
+            <i class="fas fa-key"></i>
+            <input type="text"
+                   name="code"
+                   class="form-control"
+                   placeholder="Código de verificación"
+                   inputmode="numeric"
+                   pattern="[0-9]{6}"
+                   maxlength="6"
+                   required
+                   autofocus
+                   autocomplete="one-time-code"
+                   aria-label="Código TOTP de confirmación" />
+        </div>
+        <button type="submit" class="btn btn-login">
+            Activar MFA
+        </button>
+    </form>
+</div>

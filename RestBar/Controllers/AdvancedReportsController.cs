@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using RestBar.Interfaces;
+using RestBar.Models;
 using RestBar.ViewModels;
 using System.Security.Claims;
 
@@ -10,12 +12,59 @@ namespace RestBar.Controllers
     public class AdvancedReportsController : Controller
     {
         private readonly IAdvancedReportsService _advancedReportsService;
+        private readonly RestBarContext _db;
         private readonly ILogger<AdvancedReportsController> _logger;
 
-        public AdvancedReportsController(IAdvancedReportsService advancedReportsService, ILogger<AdvancedReportsController> logger)
+        public AdvancedReportsController(
+            IAdvancedReportsService advancedReportsService,
+            RestBarContext db,
+            ILogger<AdvancedReportsController> logger)
         {
             _advancedReportsService = advancedReportsService;
+            _db = db;
             _logger = logger;
+        }
+
+        private Guid? ClaimCompanyId() =>
+            Guid.TryParse(User.FindFirst("CompanyId")?.Value, out var id) ? id : null;
+
+        private Guid? ClaimBranchId() =>
+            Guid.TryParse(User.FindFirst("BranchId")?.Value, out var id) ? id : null;
+
+        private bool HasGlobalTenantAccess()
+        {
+            var role = User.FindFirst(ClaimTypes.Role)?.Value ?? User.FindFirst("UserRole")?.Value;
+            if (string.Equals(role, "superadmin", StringComparison.OrdinalIgnoreCase)) return true;
+            return string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase) && ClaimBranchId() == null;
+        }
+
+        /// <summary>Never trust client branchId across tenants. Force claim branch unless global admin and branch belongs to company.</summary>
+        private async Task<Guid?> ResolveBranchIdAsync(Guid? requestedBranchId)
+        {
+            var companyId = ClaimCompanyId();
+            var claimBranch = ClaimBranchId();
+
+            if (!HasGlobalTenantAccess())
+                return claimBranch;
+
+            if (!requestedBranchId.HasValue || requestedBranchId == Guid.Empty)
+                return claimBranch;
+
+            if (companyId == null) return null;
+
+            var ok = await _db.Branches.AsNoTracking()
+                .AnyAsync(b => b.Id == requestedBranchId.Value && b.CompanyId == companyId.Value);
+            return ok ? requestedBranchId : claimBranch;
+        }
+
+        private async Task<ReportFilters> BuildFiltersAsync(DateTime? startDate, DateTime? endDate, Guid? branchId)
+        {
+            return new ReportFilters
+            {
+                StartDate = startDate ?? DateTime.Today.AddDays(-30),
+                EndDate = endDate ?? DateTime.Today,
+                BranchId = await ResolveBranchIdAsync(branchId)
+            };
         }
 
         public IActionResult Index()
@@ -28,14 +77,8 @@ namespace RestBar.Controllers
         {
             try
             {
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
-                    EndDate = endDate ?? DateTime.Today,
-                    BranchId = branchId
-                };
-
-                var report = await _advancedReportsService.GetProfitabilityAnalysisAsync(filters);
+                var report = await _advancedReportsService.GetProfitabilityAnalysisAsync(
+                    await BuildFiltersAsync(startDate, endDate, branchId));
                 return View(report);
             }
             catch (Exception ex)
@@ -50,11 +93,8 @@ namespace RestBar.Controllers
         {
             try
             {
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
-                    EndDate = endDate ?? DateTime.Today
-                };
+                var filters = await BuildFiltersAsync(startDate, endDate, null);
+                filters.StartDate = startDate ?? DateTime.Today.AddDays(-30);
 
                 var profitability = await _advancedReportsService.GetProductProfitabilityAsync(filters);
                 return Json(new { success = true, data = profitability });
@@ -71,11 +111,8 @@ namespace RestBar.Controllers
         {
             try
             {
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
-                    EndDate = endDate ?? DateTime.Today
-                };
+                var filters = await BuildFiltersAsync(startDate, endDate, null);
+                filters.StartDate = startDate ?? DateTime.Today.AddDays(-30);
 
                 var profitability = await _advancedReportsService.GetCategoryProfitabilityAsync(filters);
                 return Json(new { success = true, data = profitability });
@@ -92,12 +129,7 @@ namespace RestBar.Controllers
         {
             try
             {
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
-                    EndDate = endDate ?? DateTime.Today,
-                    BranchId = branchId
-                };
+                var filters = await BuildFiltersAsync(startDate, endDate, branchId);
 
                 var report = await _advancedReportsService.GetSalesAnalysisAsync(filters);
                 return View(report);
@@ -114,12 +146,9 @@ namespace RestBar.Controllers
         {
             try
             {
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
-                    EndDate = endDate ?? DateTime.Today,
-                    TopN = topCount ?? 10
-                };
+                var filters = await BuildFiltersAsync(startDate, endDate, null);
+                filters.StartDate = startDate ?? DateTime.Today.AddDays(-30);
+                filters.TopN = topCount ?? 10;
 
                 var topProducts = await _advancedReportsService.GetTopSellingProductsAsync(filters);
                 return Json(new { success = true, data = topProducts });
@@ -136,12 +165,9 @@ namespace RestBar.Controllers
         {
             try
             {
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
-                    EndDate = endDate ?? DateTime.Today,
-                    TopN = topCount ?? 10
-                };
+                var filters = await BuildFiltersAsync(startDate, endDate, null);
+                filters.StartDate = startDate ?? DateTime.Today.AddDays(-30);
+                filters.TopN = topCount ?? 10;
 
                 var topCategories = await _advancedReportsService.GetTopSellingCategoriesAsync(filters);
                 return Json(new { success = true, data = topCategories });
@@ -158,11 +184,8 @@ namespace RestBar.Controllers
         {
             try
             {
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-90),
-                    EndDate = endDate ?? DateTime.Today
-                };
+                var filters = await BuildFiltersAsync(startDate, endDate, null);
+                filters.StartDate = startDate ?? DateTime.Today.AddDays(-90);
 
                 var report = await _advancedReportsService.GetCustomerAnalysisAsync(filters);
                 return View(report);
@@ -179,11 +202,8 @@ namespace RestBar.Controllers
         {
             try
             {
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-90),
-                    EndDate = endDate ?? DateTime.Today
-                };
+                var filters = await BuildFiltersAsync(startDate, endDate, null);
+                filters.StartDate = startDate ?? DateTime.Today.AddDays(-90);
 
                 var topCustomers = await _advancedReportsService.GetTopCustomersAsync(filters);
                 return Json(new { success = true, data = topCustomers });
@@ -200,11 +220,8 @@ namespace RestBar.Controllers
         {
             try
             {
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-90),
-                    EndDate = endDate ?? DateTime.Today
-                };
+                var filters = await BuildFiltersAsync(startDate, endDate, null);
+                filters.StartDate = startDate ?? DateTime.Today.AddDays(-90);
 
                 var segments = await _advancedReportsService.GetCustomerSegmentsAsync(filters);
                 return Json(new { success = true, data = segments });
@@ -221,11 +238,8 @@ namespace RestBar.Controllers
         {
             try
             {
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
-                    EndDate = endDate ?? DateTime.Today
-                };
+                var filters = await BuildFiltersAsync(startDate, endDate, null);
+                filters.StartDate = startDate ?? DateTime.Today.AddDays(-30);
 
                 var report = await _advancedReportsService.GetOperationalAnalysisAsync(filters);
                 return View(report);
@@ -242,11 +256,8 @@ namespace RestBar.Controllers
         {
             try
             {
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
-                    EndDate = endDate ?? DateTime.Today
-                };
+                var filters = await BuildFiltersAsync(startDate, endDate, null);
+                filters.StartDate = startDate ?? DateTime.Today.AddDays(-30);
 
                 var performance = await _advancedReportsService.GetStationPerformanceAsync(filters);
                 return Json(new { success = true, data = performance });
@@ -263,11 +274,8 @@ namespace RestBar.Controllers
         {
             try
             {
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
-                    EndDate = endDate ?? DateTime.Today
-                };
+                var filters = await BuildFiltersAsync(startDate, endDate, null);
+                filters.StartDate = startDate ?? DateTime.Today.AddDays(-30);
 
                 var utilization = await _advancedReportsService.GetTableUtilizationAsync(filters);
                 return Json(new { success = true, data = utilization });
@@ -284,12 +292,7 @@ namespace RestBar.Controllers
         {
             try
             {
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
-                    EndDate = endDate ?? DateTime.Today,
-                    BranchId = branchId
-                };
+                var filters = await BuildFiltersAsync(startDate, endDate, branchId);
 
                 var report = await _advancedReportsService.GetInventoryAnalysisAsync(filters);
                 return View(report);
@@ -309,12 +312,7 @@ namespace RestBar.Controllers
                 Console.WriteLine("🔍 [AdvancedReportsController] GetInventoryAnalysis() - Iniciando...");
                 Console.WriteLine($"📋 [AdvancedReportsController] GetInventoryAnalysis() - Parámetros: startDate={startDate}, endDate={endDate}, branchId={branchId}");
                 
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
-                    EndDate = endDate ?? DateTime.Today,
-                    BranchId = branchId
-                };
+                var filters = await BuildFiltersAsync(startDate, endDate, branchId);
 
                 Console.WriteLine($"📋 [AdvancedReportsController] GetInventoryAnalysis() - Filtros aplicados: StartDate={filters.StartDate}, EndDate={filters.EndDate}");
 
@@ -338,12 +336,7 @@ namespace RestBar.Controllers
         {
             try
             {
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
-                    EndDate = endDate ?? DateTime.Today,
-                    BranchId = branchId
-                };
+                var filters = await BuildFiltersAsync(startDate, endDate, branchId);
 
                 var report = await _advancedReportsService.GetSupplierAnalysisAsync(filters);
                 return View(report);
@@ -360,12 +353,7 @@ namespace RestBar.Controllers
         {
             try
             {
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
-                    EndDate = endDate ?? DateTime.Today,
-                    BranchId = branchId
-                };
+                var filters = await BuildFiltersAsync(startDate, endDate, branchId);
 
                 var report = await _advancedReportsService.GetSupplierAnalysisAsync(filters);
                 return Json(new { success = true, data = report });
@@ -382,12 +370,8 @@ namespace RestBar.Controllers
         {
             try
             {
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-90),
-                    EndDate = endDate ?? DateTime.Today,
-                    BranchId = branchId
-                };
+                var filters = await BuildFiltersAsync(startDate, endDate, branchId);
+                filters.StartDate = startDate ?? DateTime.Today.AddDays(-90);
 
                 var report = await _advancedReportsService.GetTrendAnalysisAsync(filters);
                 return View(report);
@@ -404,12 +388,8 @@ namespace RestBar.Controllers
         {
             try
             {
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-90),
-                    EndDate = endDate ?? DateTime.Today,
-                    BranchId = branchId
-                };
+                var filters = await BuildFiltersAsync(startDate, endDate, branchId);
+                filters.StartDate = startDate ?? DateTime.Today.AddDays(-90);
 
                 var report = await _advancedReportsService.GetTrendAnalysisAsync(filters);
                 return Json(new { success = true, data = report });
@@ -426,12 +406,7 @@ namespace RestBar.Controllers
         {
             try
             {
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
-                    EndDate = endDate ?? DateTime.Today,
-                    BranchId = branchId
-                };
+                var filters = await BuildFiltersAsync(startDate, endDate, branchId);
 
                 var report = await _advancedReportsService.GetAuditReportAsync(filters);
                 return View(report);
@@ -448,12 +423,7 @@ namespace RestBar.Controllers
         {
             try
             {
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
-                    EndDate = endDate ?? DateTime.Today,
-                    BranchId = branchId
-                };
+                var filters = await BuildFiltersAsync(startDate, endDate, branchId);
 
                 var report = await _advancedReportsService.GetAuditReportAsync(filters);
                 return Json(new { success = true, data = report });
@@ -501,12 +471,7 @@ namespace RestBar.Controllers
         {
             try
             {
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
-                    EndDate = endDate ?? DateTime.Today,
-                    BranchId = branchId
-                };
+                var filters = await BuildFiltersAsync(startDate, endDate, branchId);
 
                 // HTML imprimible (guardar como PDF desde el navegador) — mismo enfoque que Executive Analytics.
                 var htmlBytes = await _advancedReportsService.ExportAdvancedReportToPdfAsync(reportType, filters);
@@ -524,12 +489,7 @@ namespace RestBar.Controllers
         {
             try
             {
-                var filters = new ReportFilters
-                {
-                    StartDate = startDate ?? DateTime.Today.AddDays(-30),
-                    EndDate = endDate ?? DateTime.Today,
-                    BranchId = branchId
-                };
+                var filters = await BuildFiltersAsync(startDate, endDate, branchId);
 
                 var excelBytes = await _advancedReportsService.ExportAdvancedReportToExcelAsync(reportType, filters);
                 return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"reporte_{reportType}_{DateTime.Now:yyyyMMdd}.xlsx");

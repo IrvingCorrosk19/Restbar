@@ -47,24 +47,29 @@ public class InventoryOperationsService : IInventoryOperationsService
 
         if (recipe != null && recipe.Lines.Count > 0)
         {
+            var notifications = new List<(Guid ProductId, Guid? StationId, Guid? BranchId, decimal After, decimal Before, decimal Qty)>();
             foreach (var line in recipe.Lines)
             {
                 var ingredientQty = ComputeRecipeIngredientQty(line.Quantity, quantity, line.WastePercent, recipe.YieldPercent);
                 var ingredientStation = line.StationId ?? stationId;
                 var stockBefore = await _productService.GetStockInStationAsync(line.IngredientProductId, ingredientStation ?? Guid.Empty, branchId);
-                await _productService.ReduceStockAsync(line.IngredientProductId, ingredientQty, ingredientStation, branchId);
+                await _productService.ReduceStockAsync(line.IngredientProductId, ingredientQty, ingredientStation, branchId, persist: false);
                 var stockAfter = await _productService.GetStockInStationAsync(line.IngredientProductId, ingredientStation ?? Guid.Empty, branchId);
-                await LogMovementAsync(line.IngredientProductId, InventoryMovementType.Sale, -ingredientQty, stockBefore, stockAfter, ingredientStation, branchId, companyId, userId, orderId, $"Consumo receta {recipe.Name} (waste/yield)", productId.ToString());
-                await NotifyStock(line.IngredientProductId, ingredientStation, branchId, stockAfter, stockBefore, ingredientQty);
+                AddMovement(line.IngredientProductId, InventoryMovementType.Sale, -ingredientQty, stockBefore, stockAfter, ingredientStation, branchId, companyId, userId, orderId, $"Consumo receta {recipe.Name} (waste/yield)", productId.ToString());
+                notifications.Add((line.IngredientProductId, ingredientStation, branchId, stockAfter, stockBefore, ingredientQty));
             }
+            await _context.SaveChangesAsync();
+            foreach (var n in notifications)
+                await NotifyStock(n.ProductId, n.StationId, n.BranchId, n.After, n.Before, n.Qty);
             _logger.LogInformation("[InventoryOps] Receta aplicada para producto {ProductId}, {LineCount} ingredientes (waste/yield)", productId, recipe.Lines.Count);
             return;
         }
 
         var before = await _productService.GetAvailableStockAsync(productId, branchId);
-        await _productService.ReduceStockAsync(productId, quantity, stationId, branchId);
+        await _productService.ReduceStockAsync(productId, quantity, stationId, branchId, persist: false);
         var after = await _productService.GetAvailableStockAsync(productId, branchId);
-        await LogMovementAsync(productId, InventoryMovementType.Sale, -quantity, before, after, stationId, branchId, companyId, userId, orderId, "Venta directa", null);
+        AddMovement(productId, InventoryMovementType.Sale, -quantity, before, after, stationId, branchId, companyId, userId, orderId, "Venta directa", null);
+        await _context.SaveChangesAsync();
         await NotifyStock(productId, stationId, branchId, after, before, quantity);
     }
 
@@ -76,23 +81,28 @@ public class InventoryOperationsService : IInventoryOperationsService
 
         if (recipe != null && recipe.Lines.Count > 0)
         {
+            var notifications = new List<(Guid ProductId, Guid? StationId, Guid? BranchId, decimal After, decimal Before, decimal Qty)>();
             foreach (var line in recipe.Lines)
             {
                 var ingredientQty = ComputeRecipeIngredientQty(line.Quantity, quantity, line.WastePercent, recipe.YieldPercent);
                 var ingredientStation = line.StationId ?? stationId;
                 var stockBefore = await _productService.GetStockInStationAsync(line.IngredientProductId, ingredientStation ?? Guid.Empty, branchId);
-                await _productService.RestoreStockAsync(line.IngredientProductId, ingredientQty, ingredientStation, branchId);
+                await _productService.RestoreStockAsync(line.IngredientProductId, ingredientQty, ingredientStation, branchId, persist: false);
                 var stockAfter = await _productService.GetStockInStationAsync(line.IngredientProductId, ingredientStation ?? Guid.Empty, branchId);
-                await LogMovementAsync(line.IngredientProductId, InventoryMovementType.CancelRestore, ingredientQty, stockBefore, stockAfter, ingredientStation, branchId, companyId, userId, orderId, $"Cancel consumo receta {recipe.Name}", productId.ToString());
-                await NotifyStock(line.IngredientProductId, ingredientStation, branchId, stockAfter, stockBefore, ingredientQty);
+                AddMovement(line.IngredientProductId, InventoryMovementType.CancelRestore, ingredientQty, stockBefore, stockAfter, ingredientStation, branchId, companyId, userId, orderId, $"Cancel consumo receta {recipe.Name}", productId.ToString());
+                notifications.Add((line.IngredientProductId, ingredientStation, branchId, stockAfter, stockBefore, ingredientQty));
             }
+            await _context.SaveChangesAsync();
+            foreach (var n in notifications)
+                await NotifyStock(n.ProductId, n.StationId, n.BranchId, n.After, n.Before, n.Qty);
             return;
         }
 
         var before = await _productService.GetAvailableStockAsync(productId, branchId);
-        await _productService.RestoreStockAsync(productId, quantity, stationId, branchId);
+        await _productService.RestoreStockAsync(productId, quantity, stationId, branchId, persist: false);
         var after = await _productService.GetAvailableStockAsync(productId, branchId);
-        await LogMovementAsync(productId, InventoryMovementType.CancelRestore, quantity, before, after, stationId, branchId, companyId, userId, orderId, "Cancelación", null);
+        AddMovement(productId, InventoryMovementType.CancelRestore, quantity, before, after, stationId, branchId, companyId, userId, orderId, "Cancelación", null);
+        await _context.SaveChangesAsync();
         await NotifyStock(productId, stationId, branchId, after, before, quantity);
     }
 
@@ -105,12 +115,12 @@ public class InventoryOperationsService : IInventoryOperationsService
         if (stockFrom < quantity)
             throw new InvalidOperationException($"Stock insuficiente en estación origen. Disponible: {stockFrom}");
 
-        await _productService.ReduceStockAsync(productId, quantity, fromStationId, branchId);
+        await _productService.ReduceStockAsync(productId, quantity, fromStationId, branchId, persist: false);
         var fromAfter = await _productService.GetStockInStationAsync(productId, fromStationId, branchId);
         await LogMovementAsync(productId, InventoryMovementType.TransferOut, -quantity, stockFrom, fromAfter, fromStationId, branchId, companyId, userId, null, reason, toStationId.ToString());
 
         var stockTo = await _productService.GetStockInStationAsync(productId, toStationId, branchId);
-        await _productService.RestoreStockAsync(productId, quantity, toStationId, branchId);
+        await _productService.RestoreStockAsync(productId, quantity, toStationId, branchId, persist: false);
         var toAfter = await _productService.GetStockInStationAsync(productId, toStationId, branchId);
         await LogMovementAsync(productId, InventoryMovementType.TransferIn, quantity, stockTo, toAfter, toStationId, branchId, companyId, userId, null, reason, fromStationId.ToString());
 
@@ -119,6 +129,13 @@ public class InventoryOperationsService : IInventoryOperationsService
     }
 
     public async Task<InventoryMovement> LogMovementAsync(Guid productId, InventoryMovementType type, decimal quantity, decimal stockBefore, decimal stockAfter, Guid? stationId, Guid? branchId, Guid? companyId, Guid? userId, Guid? orderId, string? reason, string? reference)
+    {
+        var movement = AddMovement(productId, type, quantity, stockBefore, stockAfter, stationId, branchId, companyId, userId, orderId, reason, reference);
+        await _context.SaveChangesAsync();
+        return movement;
+    }
+
+    private InventoryMovement AddMovement(Guid productId, InventoryMovementType type, decimal quantity, decimal stockBefore, decimal stockAfter, Guid? stationId, Guid? branchId, Guid? companyId, Guid? userId, Guid? orderId, string? reason, string? reference)
     {
         var movement = new InventoryMovement
         {
@@ -138,7 +155,6 @@ public class InventoryOperationsService : IInventoryOperationsService
             CreatedAt = DateTime.UtcNow
         };
         _context.InventoryMovements.Add(movement);
-        await _context.SaveChangesAsync();
         return movement;
     }
 

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using RestBar.Helpers;
 using RestBar.Models;
 using System.Security.Cryptography;
 using System.Text;
@@ -228,20 +229,21 @@ namespace RestBar.Controllers
         {
             try
             {
-                Console.WriteLine($"🔍 [UserManagementController] GetBranchesByCompany() - Obteniendo sucursales para compañía: {companyId}");
+                var claimCompany = TenantScope.CompanyId(User);
+                var role = User.FindFirst("UserRole")?.Value;
+                var isSuper = string.Equals(role, "superadmin", StringComparison.OrdinalIgnoreCase);
+                if (!isSuper && claimCompany.HasValue && claimCompany.Value != companyId)
+                    return Json(new List<object>());
 
                 var branches = await _context.Branches
                     .Where(b => b.CompanyId == companyId && b.IsActive)
                     .Select(b => new { b.Id, b.Name })
                     .ToListAsync();
 
-                Console.WriteLine($"✅ [UserManagementController] GetBranchesByCompany() - {branches.Count} sucursales encontradas");
-
                 return Json(branches);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ [UserManagementController] GetBranchesByCompany() - Error: {ex.Message}");
                 _logger.LogError(ex, "[UserManagementController] Error en GetBranchesByCompany");
                 return Json(new List<object>());
             }

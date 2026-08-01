@@ -19,6 +19,12 @@ public partial class User : ITrackableEntity
 
     public bool IsActive { get; set; } = true;
 
+    /// <summary>TOTP MFA enabled for privileged access.</summary>
+    public bool MfaEnabled { get; set; }
+
+    /// <summary>Base32 TOTP secret (never expose in APIs/logs).</summary>
+    public string? MfaSecret { get; set; }
+
     // ✅ CAMPOS DE AUDITORÍA ESTANDARIZADOS
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

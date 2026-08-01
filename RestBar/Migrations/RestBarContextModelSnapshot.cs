@@ -5232,6 +5232,16 @@ namespace RestBar.Migrations
                         .HasDefaultValue(true)
                         .HasColumnName("is_active");
 
+                    b.Property<bool>("MfaEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("mfa_enabled");
+
+                    b.Property<string>("MfaSecret")
+                        .HasColumnType("text")
+                        .HasColumnName("mfa_secret");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text")

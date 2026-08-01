@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using RestBar.Helpers;
 using RestBar.Interfaces;
 using RestBar.Models;
 
@@ -71,19 +72,16 @@ namespace RestBar.Controllers
                 Console.WriteLine($"[UserController] GetUsers - Iniciando método");
                 
                 var users = await _userService.GetAllAsync();
+                var companyId = TenantScope.CompanyId(User);
+                var claimBranch = TenantScope.BranchId(User);
+                if (companyId.HasValue)
+                    users = users.Where(u => u.Branch?.CompanyId == companyId.Value || (u.BranchId == null && claimBranch == null));
+                if (!TenantScope.HasGlobalTenantAccess(User) && claimBranch.HasValue)
+                    users = users.Where(u => u.BranchId == claimBranch.Value);
 
-                // Debug: Log para verificar el tipo de datos
-                Console.WriteLine($"[UserController] GetUsers - Tipo de users: {users?.GetType()}");
-                Console.WriteLine($"[UserController] GetUsers - Count: {users?.Count()}");
-                Console.WriteLine($"[UserController] GetUsers - Users es null: {users == null}");
-                Console.WriteLine($"[UserController] GetUsers - Obteniendo sucursales");
-
-                // Obtener sucursales para el mapeo
                 var branches = await _branchService.GetAllAsync();
-                Console.WriteLine($"[UserController] GetUsers - Tipo de branches: {branches?.GetType()}");
-                Console.WriteLine($"[UserController] GetUsers - Branches count: {branches?.Count()}");
-                Console.WriteLine($"[UserController] GetUsers - Branches es null: {branches == null}");
-                Console.WriteLine($"[UserController] GetUsers - Mapeando datos");
+                if (companyId.HasValue)
+                    branches = branches.Where(b => b.CompanyId == companyId.Value);
 
                 // Aplicar filtros
                 if (!string.IsNullOrEmpty(searchTerm))
@@ -99,9 +97,17 @@ namespace RestBar.Controllers
                     users = users.Where(u => u.Role.ToString() == role);
                 }
 
+                var resolvedBranch = branchId;
                 if (branchId.HasValue)
                 {
-                    users = users.Where(u => u.BranchId == branchId.Value);
+                    if (!TenantScope.HasGlobalTenantAccess(User))
+                        resolvedBranch = claimBranch;
+                    else if (companyId.HasValue && !branches.Any(b => b.Id == branchId.Value))
+                        resolvedBranch = claimBranch;
+                }
+                if (resolvedBranch.HasValue)
+                {
+                    users = users.Where(u => u.BranchId == resolvedBranch.Value);
                 }
 
                 if (isActive.HasValue)
@@ -422,50 +428,27 @@ namespace RestBar.Controllers
         [Authorize] // Menos restrictivo - cualquier usuario autenticado
         public async Task<IActionResult> GetBranches(Guid? companyId = null, Guid? branchId = null)
         {
-            // Removemos la validación restrictiva para datos de referencia
-            // var permissionCheck = await CheckUserManagementPermissionAsync();
-            // if (permissionCheck != null) return permissionCheck;
-
             try
             {
-                Console.WriteLine($"[UserController] GetBranches - Iniciando método");
-                Console.WriteLine($"[UserController] GetBranches - CompanyId filtro: {companyId}");
-                Console.WriteLine($"[UserController] GetBranches - BranchId filtro: {branchId}");
-                
+                var claimCompany = TenantScope.ResolveCompanyId(User, companyId);
+                var claimBranch = TenantScope.BranchId(User);
                 var branches = await _branchService.GetAllAsync();
-                
-                // Si se especifica un branchId específico, buscar solo esa sucursal
-                if (branchId.HasValue)
-                {
-                    branches = branches.Where(b => b.Id == branchId.Value);
-                    Console.WriteLine($"[UserController] GetBranches - Filtrando por sucursal específica: {branchId}");
-                }
-                // Filtrar por compañía si se especifica (solo si no se está buscando una sucursal específica)
-                else if (companyId.HasValue)
-                {
-                    branches = branches.Where(b => b.CompanyId == companyId.Value);
-                    Console.WriteLine($"[UserController] GetBranches - Filtrando por compañía: {companyId}");
-                }
-                
-                // Debug: Log para verificar el tipo de datos
-                Console.WriteLine($"[UserController] GetBranches - Tipo de branches: {branches?.GetType()}");
-                Console.WriteLine($"[UserController] GetBranches - Count: {branches?.Count()}");
-                Console.WriteLine($"[UserController] GetBranches - Branches es null: {branches == null}");
-                Console.WriteLine($"[UserController] GetBranches - Mapeando datos");
-                
-                // Convertir a array simple para evitar referencias circulares
-                var data = branches?.Select(b => new {
+
+                if (claimCompany.HasValue)
+                    branches = branches.Where(b => b.CompanyId == claimCompany.Value);
+
+                if (!TenantScope.HasGlobalTenantAccess(User) && claimBranch.HasValue)
+                    branches = branches.Where(b => b.Id == claimBranch.Value);
+                else if (branchId.HasValue)
+                    branches = branches.Where(b => b.Id == branchId.Value && (!claimCompany.HasValue || b.CompanyId == claimCompany.Value));
+
+                var data = branches.Select(b => new {
                     id = b.Id,
                     name = b.Name,
                     companyId = b.CompanyId,
                     companyName = b.Company?.Name
-                }).ToArray() ?? new object[0];
-                
-                Console.WriteLine($"[UserController] GetBranches - Tipo de data: {data?.GetType()}");
-                Console.WriteLine($"[UserController] GetBranches - Data count: {data?.Length}");
-                Console.WriteLine($"[UserController] GetBranches - Data es null: {data == null}");
-                Console.WriteLine($"[UserController] GetBranches - Devolviendo respuesta exitosa con {data?.Length} sucursales");
-                
+                }).ToArray();
+
                 return Json(new { success = true, data = data });
             }
             catch (Exception ex)
