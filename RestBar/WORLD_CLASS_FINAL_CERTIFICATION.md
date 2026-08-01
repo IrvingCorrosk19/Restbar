@@ -2,7 +2,7 @@
 
 **Mandato:** RESTBAR RB-ULTIMATE — Absolute Zero Excuses Final Certification  
 **Fecha (UTC):** 2026-08-01  
-**Commit certificado en VPS:** `2609697`  
+**Commit certificado en VPS:** `4a7459d` (incluye `2609697` MFA/IDOR/N+1 + Branch/User tenant scope)  
 **Ambiente:** `http://164.68.99.83:8084` (Docker `restbar_web` + `restbar_postgres`)
 
 ---
