@@ -35,7 +35,7 @@ test.describe('E2E Tab · Multitenant isolated contexts', () => {
       expect(text).not.toContain('Npgsql.PostgresException');
       bodies.push({ email: s.email, text });
       await s.page.screenshot({
-        path: path.join(EVIDENCE, 'E2E-MT-05', `${s.email.split('@')[0]}.png`),
+        path: path.join(EVIDENCE, 'E2E-MT-05', `${s.email.replace(/[@.]/g, '_')}.png`),
         fullPage: true,
       });
     }

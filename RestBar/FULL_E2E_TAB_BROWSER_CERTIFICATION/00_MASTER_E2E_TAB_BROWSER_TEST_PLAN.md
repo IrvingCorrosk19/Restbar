@@ -180,7 +180,19 @@ Ver mandato usuario § CRITERIOS OBLIGATORIOS. Resumen:
 
 | Fecha | Acción | Resultado |
 |-------|--------|-----------|
-| 2026-08-01 | Plan maestro + discovery 01–03 creados | DONE |
-| — | Ejecución Tab Browser | PENDING |
+| 2026-08-01 | Plan maestro + discovery 01–05 | DONE |
+| 2026-08-01 | E2ETab multi-context specs + evidencia | DONE |
+| 2026-08-01 | BUG-E2E-001 rate limit auth 5→60 | FIXED / RETEST PASS |
+| 2026-08-01 | E2ETab retest | **5/5 PASS** |
+| 2026-08-01 | Global chromium-desktop regression | IN PROGRESS |
 
-*Actualizar esta sección y la matriz §4 en cada corrida.*
+### Matriz §4 actualizada (casos Tab nuevos)
+
+| ID | Estado |
+|----|--------|
+| E2E-AUTH-03 | PASS |
+| E2E-MT-02 | PASS |
+| E2E-MT-05 | PASS (retest) |
+| E2E-POS-01 | PASS |
+| E2E-POS-02 | PASS |
+| E2E-REG-01 | IN PROGRESS |
