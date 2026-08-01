@@ -469,6 +469,7 @@ namespace RestBar.ViewModels
     {
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
+        public Guid? CompanyId { get; set; }
         public Guid? BranchId { get; set; }
         public Guid? CategoryId { get; set; }
         public Guid? ProductId { get; set; }

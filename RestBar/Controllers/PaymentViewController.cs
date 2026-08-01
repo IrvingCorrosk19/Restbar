@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using RestBar.Helpers;
 using RestBar.Interfaces;
 using RestBar.Models;
 using RestBar.ViewModel;
@@ -380,6 +382,9 @@ namespace RestBar.Controllers
         {
             try
             {
+                if (!await OrderAccessibleAsync(orderId))
+                    return Json(new { success = false, message = "No autorizado" });
+
                 var order = await _orderService.GetOrderWithDetailsAsync(orderId);
                 if (order == null)
                 {
@@ -429,6 +434,9 @@ namespace RestBar.Controllers
         {
             try
             {
+                if (!await OrderAccessibleAsync(orderId))
+                    return Json(new { success = false, message = "No autorizado" });
+
                 var order = await _orderService.GetOrderWithDetailsAsync(orderId);
                 if (order == null)
                 {
@@ -656,6 +664,30 @@ namespace RestBar.Controllers
                     message = ex.Message
                 });
             }
+        }
+
+        private async Task<bool> OrderAccessibleAsync(Guid orderId)
+        {
+            var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value
+                       ?? User.FindFirst("UserRole")?.Value;
+            if (string.Equals(role, "superadmin", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            var order = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == orderId);
+            if (order == null) return false;
+
+            if (Guid.TryParse(User.FindFirst("CompanyId")?.Value, out var companyId)
+                && order.CompanyId.HasValue && order.CompanyId != companyId)
+                return false;
+
+            if (string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase)
+                && !Guid.TryParse(User.FindFirst("BranchId")?.Value, out _))
+                return true;
+
+            if (Guid.TryParse(User.FindFirst("BranchId")?.Value, out var branchId))
+                return order.BranchId == branchId;
+
+            return false;
         }
 
         private DateTime GetStartDate(string filter)

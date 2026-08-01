@@ -33,6 +33,10 @@ public class CashReportController : Controller
         if (!_flags.EnableCashModule)
             return View("ModuleDisabled");
 
+        var session = await _context.CashSessions.AsNoTracking().FirstOrDefaultAsync(s => s.Id == sessionId);
+        if (session == null || !UserCanAccessCashSession(session))
+            return NotFound();
+
         var report = await _context.CashZReports.AsNoTracking()
             .FirstOrDefaultAsync(z => z.CashSessionId == sessionId);
 
@@ -51,6 +55,10 @@ public class CashReportController : Controller
         if (!_flags.EnableCashModule)
             return View("ModuleDisabled");
 
+        var session = await _context.CashSessions.AsNoTracking().FirstOrDefaultAsync(s => s.Id == sessionId);
+        if (session == null || !UserCanAccessCashSession(session))
+            return NotFound();
+
         ViewBag.Report = await _reports.GenerateXReportAsync(sessionId);
         return View();
     }
@@ -61,7 +69,32 @@ public class CashReportController : Controller
         if (!_flags.EnableCashModule)
             return NotFound(new { message = "Cash module disabled" });
 
+        var session = await _context.CashSessions.AsNoTracking().FirstOrDefaultAsync(s => s.Id == sessionId);
+        if (session == null || !UserCanAccessCashSession(session))
+            return NotFound(new { message = "Session not found" });
+
         var ok = await _integrity.VerifyMovementChainAsync(sessionId);
         return Ok(new { sessionId, integrityOk = ok });
+    }
+
+    private bool UserCanAccessCashSession(CashSession session)
+    {
+        var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value
+                   ?? User.FindFirst("UserRole")?.Value;
+        if (string.Equals(role, "superadmin", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var companyOk = Guid.TryParse(User.FindFirst("CompanyId")?.Value, out var companyId)
+                        && session.CompanyId == companyId;
+        if (!companyOk) return false;
+
+        if (string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase)
+            && !Guid.TryParse(User.FindFirst("BranchId")?.Value, out _))
+            return true;
+
+        if (Guid.TryParse(User.FindFirst("BranchId")?.Value, out var branchId))
+            return session.BranchId == branchId;
+
+        return false;
     }
 }

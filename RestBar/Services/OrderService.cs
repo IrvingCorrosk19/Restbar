@@ -2445,53 +2445,40 @@ namespace RestBar.Services
             }
         }
         
-        // ✅ NUEVO: Generar número de orden único
         private async Task<string> GenerateOrderNumberAsync(Guid? companyId)
         {
             try
             {
-                Console.WriteLine($"🔍 [OrderService] GenerateOrderNumberAsync() - Generando número de orden...");
-                
-                // Obtener el último número de orden para esta compañía
-                int lastOrderNumber = 0;
-                
-                var query = _context.Orders.AsQueryable();
-                
-                // Si hay CompanyId, filtrar por compañía
-                if (companyId.HasValue)
+                for (var attempt = 0; attempt < 8; attempt++)
                 {
-                    query = query.Where(o => o.CompanyId == companyId.Value);
-                    Console.WriteLine($"🔍 [OrderService] GenerateOrderNumberAsync() - Filtrando por CompanyId: {companyId.Value}");
+                    var query = _context.Orders.AsNoTracking().AsQueryable();
+                    if (companyId.HasValue)
+                        query = query.Where(o => o.CompanyId == companyId.Value);
+
+                    var lastOrder = await query
+                        .Where(o => !string.IsNullOrEmpty(o.OrderNumber) &&
+                                    o.OrderNumber!.All(char.IsDigit))
+                        .OrderByDescending(o => o.OrderNumber)
+                        .Select(o => o.OrderNumber)
+                        .FirstOrDefaultAsync();
+
+                    var lastOrderNumber = 0;
+                    if (!string.IsNullOrEmpty(lastOrder) && int.TryParse(lastOrder, out var parsedNumber))
+                        lastOrderNumber = parsedNumber;
+
+                    var candidate = (lastOrderNumber + 1 + attempt).ToString().PadLeft(6, '0');
+                    var exists = await _context.Orders.AsNoTracking().AnyAsync(o =>
+                        o.CompanyId == companyId && o.OrderNumber == candidate);
+                    if (!exists)
+                        return candidate;
                 }
-                
-                // Obtener el último OrderNumber numérico
-                var lastOrder = await query
-                    .Where(o => !string.IsNullOrEmpty(o.OrderNumber) && 
-                                o.OrderNumber.All(char.IsDigit))
-                    .OrderByDescending(o => o.OrderNumber)
-                    .FirstOrDefaultAsync();
-                
-                if (lastOrder != null && int.TryParse(lastOrder.OrderNumber, out var parsedNumber))
-                {
-                    lastOrderNumber = parsedNumber;
-                    Console.WriteLine($"🔍 [OrderService] GenerateOrderNumberAsync() - Último número encontrado: {lastOrderNumber}");
-                }
-                
-                // Incrementar y generar nuevo número
-                var newOrderNumber = (lastOrderNumber + 1).ToString().PadLeft(6, '0');
-                Console.WriteLine($"✅ [OrderService] GenerateOrderNumberAsync() - Nuevo número generado: {newOrderNumber}");
-                
-                return newOrderNumber;
+
+                return DateTime.UtcNow.ToString("yyyyMMddHHmmss");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ [OrderService] GenerateOrderNumberAsync() - Error: {ex.Message}");
-                Console.WriteLine($"🔍 [OrderService] GenerateOrderNumberAsync() - StackTrace: {ex.StackTrace}");
-                
-                // Fallback: usar timestamp como número de orden
-                var fallbackNumber = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
-                Console.WriteLine($"⚠️ [OrderService] GenerateOrderNumberAsync() - Usando número de fallback: {fallbackNumber}");
-                return fallbackNumber;
+                _logger.LogError(ex, "[OrderService] GenerateOrderNumberAsync failed");
+                return DateTime.UtcNow.ToString("yyyyMMddHHmmss");
             }
         }
 

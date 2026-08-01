@@ -1882,6 +1882,9 @@ namespace RestBar.Controllers
                     return BadRequest(new { success = false, message = "OrderId inválido" });
                 }
 
+                if (!await OrderBelongsToUserBranchAsync(orderId))
+                    return StatusCode(403, new { success = false, message = "No autorizado para esta orden" });
+
                 // Obtener la orden con sus pagos usando el servicio
                 var order = await _orderService.GetOrderWithPaymentsAsync(orderId);
 

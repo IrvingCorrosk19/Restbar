@@ -447,6 +447,9 @@ namespace RestBar.Controllers
         {
             try
             {
+                if (!await OrderAccessibleAsync(orderId))
+                    return StatusCode(403, new { success = false, message = "No autorizado para esta orden" });
+
                 var payments = await _paymentService.GetByOrderIdAsync(orderId);
                 var response = payments.Select(p => new PaymentResponseDto
                 {
@@ -477,16 +480,15 @@ namespace RestBar.Controllers
         {
             try
             {
-                Console.WriteLine($"[PaymentController] VoidPayment endpoint llamado");
-                Console.WriteLine($"[PaymentController] paymentId: {paymentId}");
-                
-                // ✅ NUEVO: Obtener pago antes de anular para notificaciones
                 var payment = await _paymentService.GetPaymentWithSplitsAsync(paymentId);
                 if (payment == null)
                 {
                     return NotFound(new { error = "Pago no encontrado" });
                 }
-                
+
+                if (!payment.OrderId.HasValue || !await OrderAccessibleAsync(payment.OrderId.Value))
+                    return StatusCode(403, new { success = false, message = "No autorizado para este pago" });
+
                 var orderId = payment.OrderId;
                 
                 await _paymentService.VoidPaymentAsync(paymentId);
@@ -551,6 +553,30 @@ namespace RestBar.Controllers
             public decimal? Amount { get; set; }
             public string? Reason { get; set; }
             public Guid? SupervisorId { get; set; }
+        }
+
+        private async Task<bool> OrderAccessibleAsync(Guid orderId)
+        {
+            var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value
+                       ?? User.FindFirst("UserRole")?.Value;
+            if (string.Equals(role, "superadmin", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            var order = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == orderId);
+            if (order == null) return false;
+
+            if (Guid.TryParse(User.FindFirst("CompanyId")?.Value, out var companyId)
+                && order.CompanyId.HasValue && order.CompanyId != companyId)
+                return false;
+
+            if (string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase)
+                && !Guid.TryParse(User.FindFirst("BranchId")?.Value, out _))
+                return true;
+
+            if (Guid.TryParse(User.FindFirst("BranchId")?.Value, out var branchId))
+                return order.BranchId == branchId;
+
+            return false;
         }
 
         [HttpPost("refund")]

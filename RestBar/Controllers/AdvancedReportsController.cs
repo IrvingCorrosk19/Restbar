@@ -63,6 +63,7 @@ namespace RestBar.Controllers
             {
                 StartDate = startDate ?? DateTime.Today.AddDays(-30),
                 EndDate = endDate ?? DateTime.Today,
+                CompanyId = ClaimCompanyId(),
                 BranchId = await ResolveBranchIdAsync(branchId)
             };
         }

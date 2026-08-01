@@ -1,0 +1,16 @@
+{
+  "name": "RestBar POS",
+  "short_name": "RestBar",
+  "start_url": "/Order",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#c45c26",
+  "description": "RestBar point of sale with offline order queue",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}

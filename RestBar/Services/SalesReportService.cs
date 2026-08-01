@@ -413,6 +413,9 @@ namespace RestBar.Services
             if (!string.IsNullOrEmpty(filters.OrderStatus))
                 query = query.Where(o => o.Status.ToString() == filters.OrderStatus);
 
+            if (filters.CompanyId.HasValue)
+                query = query.Where(o => o.CompanyId == filters.CompanyId.Value);
+
             if (filters.BranchId.HasValue)
                 query = query.Where(o => o.BranchId == filters.BranchId.Value);
 
@@ -441,6 +444,9 @@ namespace RestBar.Services
 
                 if (filters.BranchId.HasValue)
                     query = query.Where(oi => oi.Order.BranchId == filters.BranchId.Value);
+
+                if (filters.CompanyId.HasValue)
+                    query = query.Where(oi => oi.Order.CompanyId == filters.CompanyId.Value);
 
                 return await query
                     .Where(oi => oi.Order.Status == OrderStatus.Completed)

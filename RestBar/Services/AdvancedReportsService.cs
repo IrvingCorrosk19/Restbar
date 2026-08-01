@@ -23,17 +23,51 @@ namespace RestBar.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
+        private Guid? ClaimCompanyId()
+        {
+            var user = _httpContextAccessor.HttpContext?.User;
+            if (Guid.TryParse(user?.FindFirst("CompanyId")?.Value, out var id)) return id;
+            return null;
+        }
+
+        private Guid? EffectiveCompanyId(ReportFilters filters) => filters.CompanyId ?? ClaimCompanyId();
+
+        private IQueryable<OrderItem> ScopeCompletedOrderItems(IQueryable<OrderItem> q, ReportFilters filters)
+        {
+            q = q.Where(oi => oi.Order.Status == OrderStatus.Completed &&
+                                       oi.Order.ClosedAt >= filters.StartDate &&
+                                       oi.Order.ClosedAt <= filters.EndDate &&
+                                       (filters.CompanyId == null || oi.Order.CompanyId == filters.CompanyId) &&
+                                       (filters.BranchId == null || oi.Order.BranchId == filters.BranchId));
+            var companyId = EffectiveCompanyId(filters);
+            if (companyId.HasValue)
+                q = q.Where(oi => oi.Order.CompanyId == companyId.Value);
+            if (filters.BranchId.HasValue)
+                q = q.Where(oi => oi.Order.BranchId == filters.BranchId.Value);
+            return q;
+        }
+
+        private IQueryable<Order> ScopeOrders(IQueryable<Order> ordersQuery, ReportFilters filters)
+        {
+            var companyId = EffectiveCompanyId(filters);
+            if (companyId.HasValue)
+                ordersQuery = ordersQuery.Where(o => o.CompanyId == companyId.Value);
+            if (filters.BranchId.HasValue)
+                ordersQuery = ordersQuery.Where(o => o.BranchId == filters.BranchId.Value);
+            return ordersQuery;
+        }
+
         // ===== ANÁLISIS DE RENTABILIDAD =====
         public async Task<ProfitabilityAnalysis> GetProfitabilityAnalysisAsync(ReportFilters filters)
         {
             try
             {
-                var ordersQuery = _context.Orders
-                    .Include(o => o.OrderItems)
-                    .Where(o => o.Status == OrderStatus.Completed && 
-                               o.ClosedAt >= filters.StartDate && o.ClosedAt <= filters.EndDate);
-                if (filters.BranchId.HasValue)
-                    ordersQuery = ordersQuery.Where(o => o.BranchId == filters.BranchId.Value);
+                var ordersQuery = ScopeOrders(
+                    _context.Orders
+                        .Include(o => o.OrderItems)
+                        .Where(o => o.Status == OrderStatus.Completed &&
+                                    o.ClosedAt >= filters.StartDate && o.ClosedAt <= filters.EndDate),
+                    filters);
 
                 var orders = await ordersQuery.ToListAsync();
 
@@ -80,13 +114,17 @@ namespace RestBar.Services
                             .Where(oi => oi.ProductId == p.Id && 
                                        oi.Order.Status == OrderStatus.Completed &&
                                        oi.Order.ClosedAt >= filters.StartDate && 
-                                       oi.Order.ClosedAt <= filters.EndDate)
+                                       oi.Order.ClosedAt <= filters.EndDate &&
+                                       (filters.CompanyId == null || oi.Order.CompanyId == filters.CompanyId) &&
+                                       (filters.BranchId == null || oi.Order.BranchId == filters.BranchId))
                             .Sum(oi => oi.Quantity * oi.UnitPrice),
                         Cost = _context.OrderItems
                             .Where(oi => oi.ProductId == p.Id && 
                                        oi.Order.Status == OrderStatus.Completed &&
                                        oi.Order.ClosedAt >= filters.StartDate && 
-                                       oi.Order.ClosedAt <= filters.EndDate)
+                                       oi.Order.ClosedAt <= filters.EndDate &&
+                                       (filters.CompanyId == null || oi.Order.CompanyId == filters.CompanyId) &&
+                                       (filters.BranchId == null || oi.Order.BranchId == filters.BranchId))
                             .Sum(oi => oi.Quantity * (p.Cost ?? 0)),
                         Profit = 0,
                         ProfitMargin = 0,
@@ -94,7 +132,9 @@ namespace RestBar.Services
                             .Where(oi => oi.ProductId == p.Id && 
                                        oi.Order.Status == OrderStatus.Completed &&
                                        oi.Order.ClosedAt >= filters.StartDate && 
-                                       oi.Order.ClosedAt <= filters.EndDate)
+                                       oi.Order.ClosedAt <= filters.EndDate &&
+                                       (filters.CompanyId == null || oi.Order.CompanyId == filters.CompanyId) &&
+                                       (filters.BranchId == null || oi.Order.BranchId == filters.BranchId))
                             .Sum(oi => (int)oi.Quantity),
                         AveragePrice = 0,
                         AverageCost = p.Cost ?? 0
@@ -132,13 +172,17 @@ namespace RestBar.Services
                             .Where(oi => oi.Product.CategoryId == c.Id && 
                                        oi.Order.Status == OrderStatus.Completed &&
                                        oi.Order.ClosedAt >= filters.StartDate && 
-                                       oi.Order.ClosedAt <= filters.EndDate)
+                                       oi.Order.ClosedAt <= filters.EndDate &&
+                                       (filters.CompanyId == null || oi.Order.CompanyId == filters.CompanyId) &&
+                                       (filters.BranchId == null || oi.Order.BranchId == filters.BranchId))
                             .Sum(oi => oi.Quantity * oi.UnitPrice),
                         Cost = _context.OrderItems
                             .Where(oi => oi.Product.CategoryId == c.Id && 
                                        oi.Order.Status == OrderStatus.Completed &&
                                        oi.Order.ClosedAt >= filters.StartDate && 
-                                       oi.Order.ClosedAt <= filters.EndDate)
+                                       oi.Order.ClosedAt <= filters.EndDate &&
+                                       (filters.CompanyId == null || oi.Order.CompanyId == filters.CompanyId) &&
+                                       (filters.BranchId == null || oi.Order.BranchId == filters.BranchId))
                             .Sum(oi => oi.Quantity * (oi.Product.Cost ?? 0)),
                         Profit = 0,
                         ProfitMargin = 0,
@@ -147,7 +191,9 @@ namespace RestBar.Services
                             .Where(oi => oi.Product.CategoryId == c.Id && 
                                        oi.Order.Status == OrderStatus.Completed &&
                                        oi.Order.ClosedAt >= filters.StartDate && 
-                                       oi.Order.ClosedAt <= filters.EndDate)
+                                       oi.Order.ClosedAt <= filters.EndDate &&
+                                       (filters.CompanyId == null || oi.Order.CompanyId == filters.CompanyId) &&
+                                       (filters.BranchId == null || oi.Order.BranchId == filters.BranchId))
                             .Sum(oi => (int)oi.Quantity)
                     })
                     .ToListAsync();
@@ -173,11 +219,12 @@ namespace RestBar.Services
         {
             try
             {
-                var orders = await _context.Orders
-                    .Include(o => o.OrderItems)
-                    .Where(o => o.Status == OrderStatus.Completed && 
-                               o.ClosedAt >= filters.StartDate && o.ClosedAt <= filters.EndDate)
-                    .ToListAsync();
+                var orders = await ScopeOrders(
+                    _context.Orders
+                        .Include(o => o.OrderItems)
+                        .Where(o => o.Status == OrderStatus.Completed &&
+                                    o.ClosedAt >= filters.StartDate && o.ClosedAt <= filters.EndDate),
+                    filters).ToListAsync();
 
                 var totalSales = orders.Sum(o => o.TotalAmount ?? 0);
                 var totalOrders = orders.Count;
@@ -222,13 +269,17 @@ namespace RestBar.Services
                             .Where(oi => oi.ProductId == p.Id && 
                                        oi.Order.Status == OrderStatus.Completed &&
                                        oi.Order.ClosedAt >= filters.StartDate && 
-                                       oi.Order.ClosedAt <= filters.EndDate)
+                                       oi.Order.ClosedAt <= filters.EndDate &&
+                                       (filters.CompanyId == null || oi.Order.CompanyId == filters.CompanyId) &&
+                                       (filters.BranchId == null || oi.Order.BranchId == filters.BranchId))
                             .Sum(oi => (int)oi.Quantity),
                         Revenue = _context.OrderItems
                             .Where(oi => oi.ProductId == p.Id && 
                                        oi.Order.Status == OrderStatus.Completed &&
                                        oi.Order.ClosedAt >= filters.StartDate && 
-                                       oi.Order.ClosedAt <= filters.EndDate)
+                                       oi.Order.ClosedAt <= filters.EndDate &&
+                                       (filters.CompanyId == null || oi.Order.CompanyId == filters.CompanyId) &&
+                                       (filters.BranchId == null || oi.Order.BranchId == filters.BranchId))
                             .Sum(oi => oi.Quantity * oi.UnitPrice),
                         AveragePrice = 0,
                         Profit = 0,
@@ -271,13 +322,17 @@ namespace RestBar.Services
                             .Where(oi => oi.Product.CategoryId == c.Id && 
                                        oi.Order.Status == OrderStatus.Completed &&
                                        oi.Order.ClosedAt >= filters.StartDate && 
-                                       oi.Order.ClosedAt <= filters.EndDate)
+                                       oi.Order.ClosedAt <= filters.EndDate &&
+                                       (filters.CompanyId == null || oi.Order.CompanyId == filters.CompanyId) &&
+                                       (filters.BranchId == null || oi.Order.BranchId == filters.BranchId))
                             .Sum(oi => (int)oi.Quantity),
                         Revenue = _context.OrderItems
                             .Where(oi => oi.Product.CategoryId == c.Id && 
                                        oi.Order.Status == OrderStatus.Completed &&
                                        oi.Order.ClosedAt >= filters.StartDate && 
-                                       oi.Order.ClosedAt <= filters.EndDate)
+                                       oi.Order.ClosedAt <= filters.EndDate &&
+                                       (filters.CompanyId == null || oi.Order.CompanyId == filters.CompanyId) &&
+                                       (filters.BranchId == null || oi.Order.BranchId == filters.BranchId))
                             .Sum(oi => oi.Quantity * oi.UnitPrice),
                         Profit = 0,
                         ProfitMargin = 0,
@@ -1379,10 +1434,7 @@ namespace RestBar.Services
         {
             try
             {
-                var totalCost = await _context.OrderItems
-                    .Where(oi => oi.Order.Status == OrderStatus.Completed &&
-                               oi.Order.ClosedAt >= filters.StartDate && 
-                               oi.Order.ClosedAt <= filters.EndDate)
+                var totalCost = await ScopeCompletedOrderItems(_context.OrderItems, filters)
                     .SumAsync(oi => oi.Quantity * (oi.Product.Cost ?? 0));
 
                 return totalCost;

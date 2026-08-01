@@ -1,0 +1,45 @@
+using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace RestBar.Migrations;
+
+public partial class RbUltimateUniqueOrderNumber : Migration
+{
+    protected override void Up(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.Sql(@"
+-- Deduplicate OrderNumber within company before unique index (keep newest by OpenedAt).
+WITH ranked AS (
+  SELECT ""Id"",
+         ROW_NUMBER() OVER (
+           PARTITION BY ""CompanyId"", ""OrderNumber""
+           ORDER BY ""OpenedAt"" DESC NULLS LAST, ""Id"" DESC
+         ) AS rn
+  FROM public.orders
+  WHERE ""OrderNumber"" IS NOT NULL AND ""CompanyId"" IS NOT NULL
+)
+UPDATE public.orders o
+SET ""OrderNumber"" = o.""OrderNumber"" || '-' || SUBSTRING(o.""Id""::text, 1, 8)
+FROM ranked r
+WHERE o.""Id"" = r.""Id"" AND r.rn > 1;
+
+DROP INDEX IF EXISTS IX_orders_company_order_number;
+
+CREATE UNIQUE INDEX IF NOT EXISTS UX_orders_company_ordernumber
+    ON public.orders (""CompanyId"", ""OrderNumber"")
+    WHERE ""CompanyId"" IS NOT NULL AND ""OrderNumber"" IS NOT NULL;
+
+ANALYZE public.orders;
+");
+    }
+
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.Sql(@"
+DROP INDEX IF EXISTS UX_orders_company_ordernumber;
+CREATE INDEX IF NOT EXISTS IX_orders_company_order_number
+    ON public.orders (""CompanyId"", ""OrderNumber"");
+");
+    }
+}
