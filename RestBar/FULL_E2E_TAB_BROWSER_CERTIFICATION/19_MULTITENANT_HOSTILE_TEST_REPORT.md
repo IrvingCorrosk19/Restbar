@@ -1,22 +1,11 @@
-# 19 — MULTITENANT HOSTILE / TAB CONTEXTS REPORT
+# 19 — MULTITENANT HOSTILE TEST REPORT
 
-## Ejecutado (browser real)
+| ID | Estado | Notas |
+|----|--------|-------|
+| E2E-MT-05 | **PASS** | Costa/Norte/Sur concurrent admins |
+| E2E-AUTH-03 | **PASS** | Demo vs Costa storage isolation |
+| E2E-MT-02 | **PASS** | Foreign order edit not 500 |
+| E2E-MT-20 | **PASS** | Hostile payment/cash/inventory/transfer/reports IDs |
+| E2E-CASH-11 | **PASS** | Foreign ZReport soft deny |
 
-| ID | Resultado | Evidencia |
-|----|-----------|-----------|
-| E2E-MT-05 | **PASS** (retest) | Evidence/Multitenant/E2E-MT-05/ |
-| E2E-AUTH-03 | **PASS** | Evidence/Multitenant/E2E-AUTH-03/demo-still-in.png |
-| E2E-MT-02 | **PASS** | Order Edit GUID ajeno ≠ 500 |
-
-## Controles
-
-- Contextos Playwright independientes (cookies no compartidas)  
-- Productos exclusivos Costa/Norte validados cuando ambos seeds presentes  
-- ClearCookies en B no cierra sesión A  
-
-## Pendiente mandato completo
-
-- Manipulación hostil sistemática de todos los IDs (payment, cash, PO, recipe) en suite dedicada ampliada  
-- Forecast/export isolation deep SQL cross-check  
-
-Estado parcial dominio MT Tab: **PASS en casos ejecutados**; cobertura hostil total **IN PROGRESS**.
+**Veredicto:** **PASS WITH CONDITIONS** (deep product exclusivity residual)

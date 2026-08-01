@@ -2,8 +2,9 @@
 
 **Programa:** RestBar FULL E2E Tab Browser Certification  
 **Fecha plan:** 2026-08-01  
+**Cierre ejecución:** 2026-08-01 — **PASS WITH CONDITIONS** (`29_FINAL_FUNCTIONAL_CERTIFICATION.md`)  
 **Ambiente objetivo:** VPS `http://164.68.99.83:8084` (+ local `RESTBAR_BASE_URL`)  
-**Fuente de verdad:** este documento (actualizar estados en cada ejecución)
+**Fuente de verdad:** este documento + `29_*` (estados cerrados en ejecución global 179 PASS / 1 skip)
 
 ---
 

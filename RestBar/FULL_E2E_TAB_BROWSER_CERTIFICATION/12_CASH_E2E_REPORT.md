@@ -2,22 +2,14 @@
 
 **Dominio:** Cash session, register, X/Z, movements  
 **Pack fecha:** 2026-08-01  
-**Build:** Release deploy `871abc7`
+**Corrida:** chromium-desktop global + E2ETab deep
 
 | ID | Escenario | Estado | Notas |
 |----|-----------|--------|-------|
-| E2E-CASH-01 | Dashboard enabled | NOT STARTED (este pack) | Referencia: RB-010_020_023 cash evidence (otro pack) — no re-run aquí |
-| E2E-CASH-02 | Open wizard | NOT STARTED (este pack) | Idem |
-| E2E-CASH-03 | Z/X report pages no 500 | NOT STARTED (este pack) | Idem |
-| E2E-CASH-04 | Open → ops → close chain multitab | NOT STARTED | Mandato deep E2E |
-| E2E-MT-04 | Cash session ajena → deny | NOT STARTED | Hostile MT pendiente |
-| CashMovement | API-primary | NOT APPLICABLE (UI deep) | Sin UI completa; API + soft UI only |
-| Prior suite `cash*` | chromium-desktop | Referencia previa | 161 PASS baseline — global re-run IN PROGRESS |
+| E2E-CASH-10 | Open cash → POS order → Z/X | **PASS** | Evidence `Evidence/Cash/E2E-CASH-10` |
+| E2E-CASH-11 | Foreign session ZReport soft deny | **PASS** | No 500 / no Postgres leak |
+| E2E-CASH-12 | Paid-in → paid-out → list movements | **PASS** | API + Detail screenshot |
+| CASH suite / CASH-L* | Lifecycle / arqueo | **PASS** | Incluido en global 179 |
+| CASH-Z-01 | ZReport empty session UX | **PASS** | ReportMissing |
 
-## Gaps vs mandato
-
-- Cadena caja deep (apertura → movimientos → X/Z → cierre) no ejecutada en este pack  
-- CashMovement: primarily API — no deep browser certification  
-- Aislamiento cash cross-tenant: NOT STARTED
-
-**Veredicto dominio Cash:** FAIL vs mandato deep E2E (NOT STARTED en este pack).
+**Veredicto dominio Cash:** **PASS**

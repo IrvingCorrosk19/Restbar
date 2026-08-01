@@ -1,0 +1,204 @@
+
+Running 180 tests using 1 worker
+
+(node:59840) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/180] [chromium-desktop] › Administration\admin.spec.js:9:3 › Administration · plan ADM-* › ADM-01 Company Index
+[2/180] [chromium-desktop] › Administration\admin.spec.js:18:3 › Administration · plan ADM-* › ADM-02 Branch Index
+[3/180] [chromium-desktop] › Administration\admin.spec.js:24:3 › Administration · plan ADM-* › ADM-03 UserManagement
+[4/180] [chromium-desktop] › Administration\admin.spec.js:29:3 › Administration · plan ADM-* › ADM-04 SuperAdmin denied for admin (or loads if super)
+[5/180] [chromium-desktop] › Administration\admin.spec.js:37:3 › Administration · plan ADM-* › ADM-05 Category Index
+[6/180] [chromium-desktop] › Administration\admin.spec.js:41:3 › Administration · plan ADM-* › ADM-06 AdvancedSettings Index
+[7/180] [chromium-desktop] › Administration\admin.spec.js:46:3 › Administration · plan ADM-* › ADM-07 Audit Index
+[8/180] [chromium-desktop] › Administration\admin.spec.js:51:3 › Administration · plan ADM-* › ADM-08 Email Index graceful
+[9/180] [chromium-desktop] › Administration\admin.spec.js:56:3 › Administration · plan ADM-* › COP-01 Copilot ModuleDisabled or page
+[10/180] [chromium-desktop] › Analytics\analytics.spec.js:17:3 › RB-025 Executive Analytics › AN-01 Centro Ejecutivo loads
+[11/180] [chromium-desktop] › Analytics\analytics.spec.js:31:3 › RB-025 Executive Analytics › AN-02 Live KPIs endpoint returns JSON
+[12/180] [chromium-desktop] › Analytics\analytics.spec.js:39:3 › RB-025 Executive Analytics › AN-03 Period tabs load data
+[13/180] [chromium-desktop] › Analytics\analytics.spec.js:50:3 › RB-025 Executive Analytics › AN-04 Report shell + ReportData for catalog keys
+[14/180] [chromium-desktop] › Analytics\analytics.spec.js:59:3 › RB-025 Executive Analytics › AN-05 Export CSV + XLSX
+[15/180] [chromium-desktop] › Analytics\analytics.spec.js:70:3 › RB-025 Executive Analytics › AN-06 Unauthenticated redirects
+[16/180] [chromium-desktop] › Authentication\auth-extended.spec.js:5:3 › Auth extended · plan AUTH-* › AUTH-01 Invalid login stays on login
+[17/180] [chromium-desktop] › Authentication\auth-extended.spec.js:14:3 › Auth extended · plan AUTH-* › AUTH-02 Logout returns to login
+[18/180] [chromium-desktop] › Authentication\auth-extended.spec.js:28:3 › Auth extended · plan AUTH-* › AUTH-03 ForgotPassword reachable
+[19/180] [chromium-desktop] › Authentication\auth-extended.spec.js:34:3 › Auth extended · plan AUTH-* › AUTH-04 Profile page
+[20/180] [chromium-desktop] › Authentication\auth-extended.spec.js:41:3 › Auth extended · plan AUTH-* › AUTH-05 Two contexts isolated sessions
+[21/180] [chromium-desktop] › BusinessRules\business-rules.spec.js:5:3 › Business Rules — RB-029 › BR-01 index loads or module disabled (no 500)
+[22/180] [chromium-desktop] › BusinessRules\business-rules.spec.js:11:3 › Business Rules — RB-029 › BR-02 templates page soft
+[23/180] [chromium-desktop] › BusinessRules\business-rules.spec.js:17:3 › Business Rules — RB-029 › BR-03 API templates
+[24/180] [chromium-desktop] › BusinessRules\business-rules.spec.js:24:3 › Business Rules — RB-029 › BR-04 API list
+[25/180] [chromium-desktop] › Cash\cash-extended.spec.js:6:3 › Cash operations extended › CASH-X01 module enabled dashboard
+[26/180] [chromium-desktop] › Cash\cash-extended.spec.js:15:3 › Cash operations extended › CASH-X02 open wizard and open or already open
+[27/180] [chromium-desktop] › Cash\cash-extended.spec.js:24:3 › Cash operations extended › CASH-X03 registers page
+[28/180] [chromium-desktop] › Cash\cash-extended.spec.js:30:3 › Cash operations extended › CASH-X04 double open is rejected or handled
+[29/180] [chromium-desktop] › Cash\cash-extended.spec.js:51:3 › Cash operations extended › CASH-X05 paid-in negative still not 500
+[30/180] [chromium-desktop] › Cash\cash-reports.spec.js:9:3 › Cash reports · plan CASH-Z / CASH-XREP › CASH-Z-01 ZReport page
+[31/180] [chromium-desktop] › Cash\cash-reports.spec.js:16:3 › Cash reports · plan CASH-Z / CASH-XREP › CASH-XREP-01 XReport page
+[32/180] [chromium-desktop] › Cash\cash.spec.js:9:3 › RB-010 Cash Management › CASH-01 Dashboard loads when module enabled
+[33/180] [chromium-desktop] › Cash\cash.spec.js:20:3 › RB-010 Cash Management › CASH-02 Open wizard shows register select
+[34/180] [chromium-desktop] › Cash\cash.spec.js:28:3 › RB-010 Cash Management › CASH-03 Open session happy path or validation
+[35/180] [chromium-desktop] › Cash\cash.spec.js:42:3 › RB-010 Cash Management › CASH-04 Cash registers index
+[36/180] [chromium-desktop] › Cash\cash.spec.js:49:3 › RB-010 Cash Management › CASH-05 Paid-in API requires session (negative)
+[37/180] [chromium-desktop] › Cash\cash.spec.js:57:3 › RB-010 Cash Management › CASH-06 Verify chain endpoint no 500
+[38/180] [chromium-desktop] › Cash\cash.spec.js:62:3 › RB-010 Cash Management › CASH-07 Responsive dashboard tablet/mobile viewport already covered by project
+[39/180] [chromium-desktop] › DecisionIntelligence\decision-intelligence.spec.js:5:3 › Decision Intelligence — RB-028 › DI-01 cockpit loads or shows module disabled (no 500)
+[40/180] [chromium-desktop] › DecisionIntelligence\decision-intelligence.spec.js:12:3 › Decision Intelligence — RB-028 › DI-02 forecast page soft
+[41/180] [chromium-desktop] › DecisionIntelligence\decision-intelligence.spec.js:18:3 › Decision Intelligence — RB-028 › DI-03 recommendations page soft
+[42/180] [chromium-desktop] › DecisionIntelligence\decision-intelligence.spec.js:24:3 › Decision Intelligence — RB-028 › DI-04 API executive not 500 when enabled
+[43/180] [chromium-desktop] › DecisionIntelligence\decision-intelligence.spec.js:31:3 › Decision Intelligence — RB-028 › DI-05 data-quality API
+[44/180] [chromium-desktop] › DecisionIntelligence\decision-intelligence.spec.js:41:3 › Decision Intelligence — RB-028 › DI-06 simulation does not 500
+[45/180] [chromium-desktop] › E2ETab\deep-modules.spec.js:17:3 › E2E Tab · Cash + Payment chain › E2E-CASH-10 open cash then POS order then payment summary
+[46/180] [chromium-desktop] › E2ETab\deep-modules.spec.js:53:3 › E2E Tab · Cash + Payment chain › E2E-CASH-12 paid-in then paid-out then list movements
+[47/180] [chromium-desktop] › E2ETab\deep-modules.spec.js:80:3 › E2E Tab · Cash + Payment chain › E2E-CASH-11 foreign session ZReport denied soft
+[48/180] [chromium-desktop] › E2ETab\deep-modules.spec.js:91:3 › E2E Tab · Cash + Payment chain › E2E-PAY-10 payment dashboard and void API soft
+[49/180] [chromium-desktop] › E2ETab\deep-modules.spec.js:106:3 › E2E Tab · Inventory + Procurement + FoodCost › E2E-INV-10 inventory index + movements API scoped
+[50/180] [chromium-desktop] › E2ETab\deep-modules.spec.js:123:3 › E2E Tab · Inventory + Procurement + FoodCost › E2E-PO-10 supplier + procurement + PO list
+[51/180] [chromium-desktop] › E2ETab\deep-modules.spec.js:134:3 › E2E Tab · Inventory + Procurement + FoodCost › E2E-FC-10 food cost dashboard + recipes + menu eng
+[52/180] [chromium-desktop] › E2ETab\deep-modules.spec.js:147:3 › E2E Tab · BI + Admin + RBAC + Hostile › E2E-BI-10 executive analytics + DI + reports + advanced
+[53/180] [chromium-desktop] › E2ETab\deep-modules.spec.js:168:3 › E2E Tab · BI + Admin + RBAC + Hostile › E2E-ADM-10 company branch area table station user
+[54/180] [chromium-desktop] › E2ETab\deep-modules.spec.js:194:3 › E2E Tab · BI + Admin + RBAC + Hostile › E2E-RBAC-10 waiter chef cashier contexts soft
+[55/180] [chromium-desktop] › E2ETab\deep-modules.spec.js:218:3 › E2E Tab · BI + Admin + RBAC + Hostile › E2E-MT-20 hostile IDs payment cash inventory transfer
+[56/180] [chromium-desktop] › E2ETab\deep-modules.spec.js:237:3 › E2E Tab · BI + Admin + RBAC + Hostile › E2E-UX-10 responsive POS + cash mobile viewport
+[57/180] [chromium-desktop] › E2ETab\deep-modules.spec.js:254:3 › E2E Tab · BI + Admin + RBAC + Hostile › E2E-AUTH-10 logout clears protected route
+[58/180] [chromium-desktop] › E2ETab\multitenant-contexts.spec.js:12:3 › E2E Tab · Multitenant isolated contexts › E2E-MT-05 three tenant admins concurrent isolated sessions
+[59/180] [chromium-desktop] › E2ETab\multitenant-contexts.spec.js:61:3 › E2E Tab · Multitenant isolated contexts › E2E-AUTH-03 demo vs costa contexts do not share storage
+[60/180] [chromium-desktop] › E2ETab\multitenant-contexts.spec.js:95:3 › E2E Tab · POS smoke under isolated admin › E2E-POS-01 isolated context open table add product
+[61/180] [chromium-desktop] › E2ETab\pos-kds-multitab.spec.js:12:3 › E2E Tab · POS + KDS multitab › E2E-POS-02 waiter POS tab + kitchen KDS tab same tenant isolated contexts
+[62/180] [chromium-desktop] › E2ETab\pos-kds-multitab.spec.js:58:3 › E2E Tab · POS + KDS multitab › E2E-MT-02 foreign order edit not 500 across context
+[63/180] [chromium-desktop] › Floors\floors.spec.js:6:3 › Floors / Areas › FLR-01 Areas index loads
+[64/180] [chromium-desktop] › Floors\floors.spec.js:13:3 › Floors / Areas › FLR-02 POS tables expose area metadata
+[65/180] [chromium-desktop] › Floors\floors.spec.js:27:3 › Floors / Areas › FLR-03 filter Todas visible on POS
+[66/180] [chromium-desktop] › Floors\floors.spec.js:33:3 › Floors / Areas › FLR-04 exit POS after browsing tables preserves Home
+[67/180] [chromium-desktop] › FoodCost\foodcost.spec.js:9:3 › RB-023 Food Cost › FC-01 Food Cost dashboard
+[68/180] [chromium-desktop] › FoodCost\foodcost.spec.js:19:3 › RB-023 Food Cost › FC-02 Menu Engineering page
+[69/180] [chromium-desktop] › FoodCost\foodcost.spec.js:25:3 › RB-023 Food Cost › FC-03 Recipes index
+[70/180] [chromium-desktop] › FoodCost\foodcost.spec.js:31:3 › RB-023 Food Cost › FC-04 Recipe cost link if products exist
+[71/180] [chromium-desktop] › FoodCost\foodcost.spec.js:44:3 › RB-023 Food Cost › FC-05 PlateCost API no 500 for empty guid
+[72/180] [chromium-desktop] › Inventory\inventory-enterprise.spec.js:5:3 › Inventory enterprise — RB-024 › INV-E01 enterprise snapshot endpoint
+[73/180] [chromium-desktop] › Inventory\inventory-enterprise.spec.js:17:3 › Inventory enterprise — RB-024 › INV-E02 transfer reject invalid id soft
+[74/180] [chromium-desktop] › Inventory\inventory-enterprise.spec.js:25:3 › Inventory enterprise — RB-024 › INV-E03 movement purchase negative amount not 500
+[75/180] [chromium-desktop] › Inventory\inventory-enterprise.spec.js:40:3 › Inventory enterprise — RB-024 › INV-E04 adjustment invalid product soft
+[76/180] [chromium-desktop] › Inventory\inventory-enterprise.spec.js:53:3 › Inventory enterprise — RB-024 › INV-E05 inventory index + snapshot no console crash
+[77/180] [chromium-desktop] › Inventory\inventory-order-impact.spec.js:6:3 › Inventory impact from orders › INV-ORD-01 inventory page still works after kitchen send
+[78/180] [chromium-desktop] › Inventory\inventory-order-impact.spec.js:20:3 › Inventory impact from orders › INV-ORD-02 GetInventoryData after order activity
+[79/180] [chromium-desktop] › Inventory\inventory.spec.js:5:3 › Inventory Index — functional browser › INV-01 page loads after login (no 500)
+[80/180] [chromium-desktop] › Inventory\inventory.spec.js:15:3 › Inventory Index — functional browser › INV-02 dashboard card navigates to Inventory
+[81/180] [chromium-desktop] › Inventory\inventory.spec.js:25:3 › Inventory Index — functional browser › INV-03 low-stock alerts API + UI settle
+[82/180] [chromium-desktop] › Inventory\inventory.spec.js:47:3 › Inventory Index — functional browser › INV-04 support APIs respond 200 with success
+[83/180] [chromium-desktop] › Inventory\inventory.spec.js:67:3 › Inventory Index — functional browser › INV-05 consumption report filters visible + generate
+[84/180] [chromium-desktop] › Inventory\inventory.spec.js:106:3 › Inventory Index — functional browser › INV-06 export downloads CSV / does not 500
+[85/180] [chromium-desktop] › Inventory\inventory.spec.js:123:3 › Inventory Index — functional browser › INV-07 unauthorized redirect when logged out
+[86/180] [chromium-desktop] › Inventory\inventory.spec.js:131:3 › Inventory Index — functional browser › INV-08 no significant console errors on Index load
+[87/180] [chromium-desktop] › Kitchen\kitchen.spec.js:6:3 › Kitchen KDS › KDS-01 kitchen board loads
+[88/180] [chromium-desktop] › Kitchen\kitchen.spec.js:13:3 › Kitchen KDS › KDS-02 bar board loads
+[89/180] [chromium-desktop] › Kitchen\kitchen.spec.js:19:3 › Kitchen KDS › KDS-03 send then open kitchen does not 500
+[90/180] [chromium-desktop] › Kitchen\kitchen.spec.js:31:3 › Kitchen KDS › KDS-04 kitchen API current
+[91/180] [chromium-desktop] › Multitenant\multitenant-deep.spec.js:21:3 › RB-1001 Multitenant deep › MT-D01 default admin session has no PostgresException
+[92/180] [chromium-desktop] › Multitenant\multitenant-deep.spec.js:28:3 › RB-1001 Multitenant deep › MT-D02 order edit foreign guid is not 500
+[93/180] [chromium-desktop] › Multitenant\multitenant-deep.spec.js:35:3 › RB-1001 Multitenant deep › MT-D03 customer index scoped (no exception)
+[94/180] [chromium-desktop] › Multitenant\multitenant-deep.spec.js:41:3 › RB-1001 Multitenant deep › MT-D04 cross-company login costa vs norte product exclusivity
+[95/180] [chromium-desktop] › Multitenant\multitenant-deep.spec.js:67:3 › RB-1001 Multitenant deep › MT-D05 API decision-intelligence forbids without company claim soft
+[96/180] [chromium-desktop] › Multitenant\multitenant.spec.js:5:3 › Multitenant · isolation smoke › MT-01 Login binds company claim (admin session)
+[97/180] [chromium-desktop] › Multitenant\multitenant.spec.js:15:3 › Multitenant · isolation smoke › MT-02 Cross-company admin login if seeded
+[98/180] [chromium-desktop] › Operations\ops-deep.spec.js:13:3 › Cash lifecycle — close / arqueo / movements › CASH-L01 active session detail reachable
+[99/180] [chromium-desktop] › Operations\ops-deep.spec.js:27:3 › Cash lifecycle — close / arqueo / movements › CASH-L02 arqueo page for session no 500
+[100/180] [chromium-desktop] › Operations\ops-deep.spec.js:43:3 › Cash lifecycle — close / arqueo / movements › CASH-L03 start-close then abort preserves session
+[101/180] [chromium-desktop] › Operations\ops-deep.spec.js:68:3 › Cash lifecycle — close / arqueo / movements › CASH-L04 paid-in API with real session
+[102/180] [chromium-desktop] › Operations\ops-deep.spec.js:80:3 › Order ops deep — cancel / split / transfer › OPS-01 CancelOrderItem rejects empty soft
+[103/180] [chromium-desktop] › Operations\ops-deep.spec.js:93:3 › Order ops deep — cancel / split / transfer › OPS-02 Split payment payload validation
+[104/180] [chromium-desktop] › Operations\ops-deep.spec.js:110:3 › Order ops deep — cancel / split / transfer › OPS-03 MoveToTable after send does not 500
+[105/180] [chromium-desktop] › Orders\concurrency.spec.js:6:3 › Concurrency · waiter + kitchen contexts · POS-CONC-01 › POS-CONC-01 Waiter and kitchen separate contexts
+[106/180] [chromium-desktop] › Orders\orders-e2e.spec.js:6:3 › Orders E2E — floor / table / kitchen › ORD-E2E-01 select table add product send kitchen
+[107/180] [chromium-desktop] › Orders\orders-e2e.spec.js:22:3 › Orders E2E — floor / table / kitchen › ORD-E2E-02 KDS receives and can mark ready
+[108/180] [chromium-desktop] › Orders\orders-e2e.spec.js:34:3 › Orders E2E — floor / table / kitchen › ORD-E2E-03 StationOrders pages no 500
+[109/180] [chromium-desktop] › Orders\orders-e2e.spec.js:44:3 › Orders E2E — floor / table / kitchen › ORD-E2E-04 tables API returns data
+[110/180] [chromium-desktop] › Orders\orders-e2e.spec.js:53:3 › Orders E2E — floor / table / kitchen › ORD-E2E-05 MoveToTable API validation
+[111/180] [chromium-desktop] › Orders\orders-navigation.spec.js:5:3 › Orders POS — navigation exit › ORD-NAV-01 POS chrome shows Volver and Inicio
+[112/180] [chromium-desktop] › Orders\orders-navigation.spec.js:15:3 › Orders POS — navigation exit › ORD-NAV-02 Inicio returns to Home without trap
+[113/180] [chromium-desktop] › Orders\orders-navigation.spec.js:25:3 › Orders POS — navigation exit › ORD-NAV-03 Volver exits to safe returnUrl
+[114/180] [chromium-desktop] › Orders\orders-navigation.spec.js:34:3 › Orders POS — navigation exit › ORD-NAV-04 open redirect returnUrl is rejected
+[115/180] [chromium-desktop] › Orders\orders-navigation.spec.js:42:3 › Orders POS — navigation exit › ORD-NAV-05 KDS Dashboard link uses tag helper / Home
+[116/180] [chromium-desktop] › Orders\orders-navigation.spec.js:51:3 › Orders POS — navigation exit › ORD-NAV-06 Home Pedidos card enters POS with chrome
+[117/180] [chromium-desktop] › Payments\payments.spec.js:6:3 › Payments › PAY-01 PaymentView page loads
+[118/180] [chromium-desktop] › Payments\payments.spec.js:12:3 › Payments › PAY-02 partial API rejects empty order
+[119/180] [chromium-desktop] › Payments\payments.spec.js:26:3 › Payments › PAY-03 POS send-to-kitchen control present after items
+[120/180] [chromium-desktop] › Payments\payments.spec.js:34:3 › Payments › PAY-04 send kitchen then payment summary endpoint shape
+[121/180] [chromium-desktop] › Performance\performance.spec.js:18:5 › Performance · page load P95 budget › PERF-CashDashboard < 2000ms DOMContentLoaded
+[chromium-desktop] › Performance\performance.spec.js:18:5 › Performance · page load P95 budget › PERF-CashDashboard < 2000ms DOMContentLoaded
+PERF CashDashboard: 314ms (target P95 < 2000)
+
+[122/180] [chromium-desktop] › Performance\performance.spec.js:18:5 › Performance · page load P95 budget › PERF-Procurement < 2000ms DOMContentLoaded
+[chromium-desktop] › Performance\performance.spec.js:18:5 › Performance · page load P95 budget › PERF-Procurement < 2000ms DOMContentLoaded
+PERF Procurement: 356ms (target P95 < 2000)
+
+[123/180] [chromium-desktop] › Performance\performance.spec.js:18:5 › Performance · page load P95 budget › PERF-FoodCost < 2000ms DOMContentLoaded
+[chromium-desktop] › Performance\performance.spec.js:18:5 › Performance · page load P95 budget › PERF-FoodCost < 2000ms DOMContentLoaded
+PERF FoodCost: 680ms (target P95 < 2000)
+
+[124/180] [chromium-desktop] › Performance\performance.spec.js:18:5 › Performance · page load P95 budget › PERF-CommandCenter < 2000ms DOMContentLoaded
+[chromium-desktop] › Performance\performance.spec.js:18:5 › Performance · page load P95 budget › PERF-CommandCenter < 2000ms DOMContentLoaded
+PERF CommandCenter: 336ms (target P95 < 2000)
+
+[125/180] [chromium-desktop] › Performance\performance.spec.js:18:5 › Performance · page load P95 budget › PERF-Orders < 2000ms DOMContentLoaded
+[chromium-desktop] › Performance\performance.spec.js:18:5 › Performance · page load P95 budget › PERF-Orders < 2000ms DOMContentLoaded
+PERF Orders: 1337ms (target P95 < 2000)
+
+[126/180] [chromium-desktop] › Procurement\procurement.spec.js:9:3 › RB-020 Procurement › PO-01 Supplier index loads
+[127/180] [chromium-desktop] › Procurement\procurement.spec.js:18:3 › RB-020 Procurement › PO-02 Procurement dashboard
+[128/180] [chromium-desktop] › Procurement\procurement.spec.js:24:3 › RB-020 Procurement › PO-03 Purchase order list
+[129/180] [chromium-desktop] › Procurement\procurement.spec.js:31:3 › RB-020 Procurement › PO-04 Create PO wizard renders
+[130/180] [chromium-desktop] › Procurement\procurement.spec.js:39:3 › RB-020 Procurement › PO-05 Create PO rejects empty product (negative)
+[131/180] [chromium-desktop] › Procurement\procurement.spec.js:53:3 › RB-020 Procurement › PO-06 GetSuppliers JSON when enabled
+[132/180] [chromium-desktop] › Regression\order-cash-negatives.spec.js:6:3 › Negatives / integrity › NEG-01 SendToKitchen empty items fails softly
+[133/180] [chromium-desktop] › Regression\order-cash-negatives.spec.js:14:3 › Negatives / integrity › NEG-02 foreign order payment summary
+[134/180] [chromium-desktop] › Regression\order-cash-negatives.spec.js:20:3 › Negatives / integrity › NEG-03 cancel item invalid ids
+[135/180] [chromium-desktop] › Regression\order-cash-negatives.spec.js:32:3 › Negatives / integrity › NEG-04 POS with product then home no crash
+[136/180] [chromium-desktop] › Regression\regression.spec.js:9:3 › Regression · Core POS › REG-01 Order index
+[137/180] [chromium-desktop] › Regression\regression.spec.js:15:3 › Regression · Core POS › REG-02 Kitchen station orders
+[138/180] [chromium-desktop] › Regression\regression.spec.js:21:3 › Regression · Core POS › REG-03 Product index
+[139/180] [chromium-desktop] › Regression\regression.spec.js:26:3 › Regression · Core POS › REG-04 Inventory index
+[140/180] [chromium-desktop] › Regression\regression.spec.js:32:3 › Regression · Core POS › REG-05 Command Center
+[141/180] [chromium-desktop] › Regression\regression.spec.js:38:3 › Regression · Core POS › REG-06 Logout path exists
+[142/180] [chromium-desktop] › Reports\reports.spec.js:9:3 › Reports & Exports · plan RPT-* › RPT-01 Reports Index
+[143/180] [chromium-desktop] › Reports\reports.spec.js:14:3 › Reports & Exports · plan RPT-* › RPT-02 AdvancedReports Index
+[144/180] [chromium-desktop] › Reports\reports.spec.js:20:3 › Reports & Exports · plan RPT-* › RPT-03 AdvancedReports Export Excel non-empty
+[145/180] [chromium-desktop] › Reports\reports.spec.js:27:3 › Reports & Exports · plan RPT-* › RPT-04 Reports ExportPdf stub is not 500
+[146/180] [chromium-desktop] › Reports\reports.spec.js:32:3 › Reports & Exports · plan RPT-* › BI-01 BiNative Index
+[147/180] [chromium-desktop] › Reports\reports.spec.js:36:3 › Reports & Exports · plan RPT-* › ECC-01 Command Center Index
+[148/180] [chromium-desktop] › Responsive\responsive.spec.js:6:3 › Responsive POS / Cash › RSP-01 POS chrome on mobile viewport
+[149/180] [chromium-desktop] › Responsive\responsive.spec.js:14:3 › Responsive POS / Cash › RSP-02 POS chrome on tablet viewport
+[150/180] [chromium-desktop] › Responsive\responsive.spec.js:22:3 › Responsive POS / Cash › RSP-03 Cash dashboard mobile
+[151/180] [chromium-desktop] › Security\a11y-and-idor.spec.js:5:3 › A11Y smoke · plan A11Y-01 › A11Y-01 Login form has labels and focusable controls
+[152/180] [chromium-desktop] › Security\a11y-and-idor.spec.js:20:3 › Multitenant IDOR soft · MT-IDOR-01 › MT-IDOR-01 Random guid order detail does not 500
+[153/180] [chromium-desktop] › Security\security.spec.js:5:3 › Security · AuthZ gates › SEC-01 Anonymous CashSession → login
+[154/180] [chromium-desktop] › Security\security.spec.js:10:3 › Security · AuthZ gates › SEC-02 Anonymous Supplier → login
+[155/180] [chromium-desktop] › Security\security.spec.js:15:3 › Security · AuthZ gates › SEC-03 Anonymous FoodCost → login
+[156/180] [chromium-desktop] › Security\security.spec.js:20:3 › Security · AuthZ gates › SEC-04 Anonymous paid-out API not 500
+[157/180] [chromium-desktop] › Security\security.spec.js:28:3 › Security · AuthZ gates › SEC-05 Admin can open Cash after login
+[158/180] [chromium-desktop] › Shifts\shifts.spec.js:5:3 › Shifts / users operational › SHF-01 Users page loads
+[159/180] [chromium-desktop] › Shifts\shifts.spec.js:11:3 › Shifts / users operational › SHF-02 User assignments page
+[160/180] [chromium-desktop] › Shifts\shifts.spec.js:17:3 › Shifts / users operational › SHF-03 Cash session survives navigation
+[161/180] [chromium-desktop] › Smoke\feature-flags.spec.js:9:3 › Feature Flags · modules enabled in Development › FF-01 Cash not ModuleDisabled
+[162/180] [chromium-desktop] › Smoke\feature-flags.spec.js:14:3 › Feature Flags · modules enabled in Development › FF-02 Purchasing not ModuleDisabled
+[163/180] [chromium-desktop] › Smoke\feature-flags.spec.js:19:3 › Feature Flags · modules enabled in Development › FF-03 FoodCost not ModuleDisabled
+[164/180] [chromium-desktop] › Smoke\smoke.spec.js:5:3 › Smoke · Auth + Shell › SMK-01 Login admin succeeds
+[165/180] [chromium-desktop] › Smoke\smoke.spec.js:11:3 › Smoke · Auth + Shell › SMK-02 Unauthenticated protected route redirects to login
+[166/180] [chromium-desktop] › Smoke\smoke.spec.js:16:3 › Smoke · Auth + Shell › SMK-03 Orders index loads after login (regression shell)
+[167/180] [chromium-desktop] › Stations\stations.spec.js:5:3 › Stations / KDS routing surfaces › STN-01 Stations index loads
+[168/180] [chromium-desktop] › Stations\stations.spec.js:11:3 › Stations / KDS routing surfaces › STN-02 GetStations API
+[169/180] [chromium-desktop] › Stations\stations.spec.js:21:3 › Stations / KDS routing surfaces › STN-03 kitchen and bar KDS load independently
+[170/180] [chromium-desktop] › Stations\stations.spec.js:29:3 › Stations / KDS routing surfaces › STN-04 Stations list usable for routing
+[171/180] [chromium-desktop] › Stations\stations.spec.js:39:3 › Stations / KDS routing surfaces › STN-05 UpdateItemStatus rejects empty payload
+[172/180] [chromium-desktop] › Tables\tables.spec.js:6:3 › Tables › TBL-01 Tables management page
+[173/180] [chromium-desktop] › Tables\tables.spec.js:12:3 › Tables › TBL-02 POS lists multiple tables
+[174/180] [chromium-desktop] › Tables\tables.spec.js:18:3 › Tables › TBL-03 select table enables order surface
+[175/180] [chromium-desktop] › Tables\tables.spec.js:26:3 › Tables › TBL-04 GetActiveTables no 500
+[176/180] [chromium-desktop] › Waiters\waiters.spec.js:13:3 › Waiters / RBAC smoke › WTR-01 admin can open POS
+[177/180] [chromium-desktop] › Waiters\waiters.spec.js:20:3 › Waiters / RBAC smoke › WTR-02 mesero login or skip
+[178/180] [chromium-desktop] › Waiters\waiters.spec.js:29:3 › Waiters / RBAC smoke › WTR-03 cajero login cash access or skip
+[179/180] [chromium-desktop] › Waiters\waiters.spec.js:38:3 › Waiters / RBAC smoke › WTR-04 chef KDS access or skip
+[180/180] [chromium-desktop] › Waiters\waiters.spec.js:47:3 › Waiters / RBAC smoke › WTR-05 logout clears order access
+  1 skipped
+  179 passed (18.2m)
