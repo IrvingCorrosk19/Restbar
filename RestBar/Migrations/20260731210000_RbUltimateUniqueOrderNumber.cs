@@ -14,7 +14,7 @@ WITH ranked AS (
   SELECT id,
          ROW_NUMBER() OVER (
            PARTITION BY ""CompanyId"", ""OrderNumber""
-           ORDER BY ""OpenedAt"" DESC NULLS LAST, id DESC
+           ORDER BY opened_at DESC NULLS LAST, id DESC
          ) AS rn
   FROM public.orders
   WHERE ""OrderNumber"" IS NOT NULL AND ""CompanyId"" IS NOT NULL
