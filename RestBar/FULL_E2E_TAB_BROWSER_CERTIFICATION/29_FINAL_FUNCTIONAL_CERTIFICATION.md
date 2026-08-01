@@ -36,7 +36,7 @@ Deep E2E cash / inventory / procurement / food-cost / BI chains and full hostile
 | RBAC / SOD | **FAIL** | NOT STARTED |
 | RESPONSIVE / A11Y | **FAIL** | NOT STARTED este pack |
 | DATA INTEGRITY | **FAIL** | Deep chains NOT STARTED |
-| GLOBAL REGRESSION | **IN PROGRESS** | Re-run not closed |
+| GLOBAL REGRESSION | **PASS WITH CONDITIONS** | 165 pass + CASH-Z retest PASS; 1 skip preexistente; deep E2E chains aún incompletas |
 | FINANCIAL / INVENTORY / REPORT (mandate) | **FAIL** | Deep E2E not executed this pack |
 
 ---
