@@ -11,18 +11,18 @@ public partial class RbUltimateUniqueOrderNumber : Migration
         migrationBuilder.Sql(@"
 -- Deduplicate OrderNumber within company before unique index (keep newest by OpenedAt).
 WITH ranked AS (
-  SELECT ""Id"",
+  SELECT id,
          ROW_NUMBER() OVER (
            PARTITION BY ""CompanyId"", ""OrderNumber""
-           ORDER BY ""OpenedAt"" DESC NULLS LAST, ""Id"" DESC
+           ORDER BY ""OpenedAt"" DESC NULLS LAST, id DESC
          ) AS rn
   FROM public.orders
   WHERE ""OrderNumber"" IS NOT NULL AND ""CompanyId"" IS NOT NULL
 )
 UPDATE public.orders o
-SET ""OrderNumber"" = o.""OrderNumber"" || '-' || SUBSTRING(o.""Id""::text, 1, 8)
+SET ""OrderNumber"" = o.""OrderNumber"" || '-' || SUBSTRING(o.id::text, 1, 8)
 FROM ranked r
-WHERE o.""Id"" = r.""Id"" AND r.rn > 1;
+WHERE o.id = r.id AND r.rn > 1;
 
 DROP INDEX IF EXISTS IX_orders_company_order_number;
 
