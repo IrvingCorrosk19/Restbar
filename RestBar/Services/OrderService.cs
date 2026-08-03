@@ -1111,54 +1111,45 @@ namespace RestBar.Services
                 .Where(oi => oi.Status != OrderItemStatus.Cancelled)
                 .ToList();
 
-            using (var transaction = await _context.Database.BeginTransactionAsync())
+            await Helpers.DbTransactionHelper.ExecuteInTransactionAsync(_context, async () =>
             {
-                try
+                var orderPayments = await _context.Payments
+                    .Where(p => p.OrderId == orderId && !p.IsVoided)
+                    .ToListAsync();
+                foreach (var payment in orderPayments)
+                    payment.IsVoided = true;
+
+                order.Status = OrderStatus.Cancelled;
+                order.ClosedAt = DateTime.UtcNow;
+                order.Version++;
+
+                foreach (var item in itemsToRestore)
+                    item.Status = OrderItemStatus.Cancelled;
+
+                var productNames = string.Join(", ", order.OrderItems.Select(oi => oi.Product?.Name ?? "Producto"));
+                _context.OrderCancellationLogs.Add(new OrderCancellationLog
                 {
-                    var orderPayments = await _context.Payments
-                        .Where(p => p.OrderId == orderId && !p.IsVoided)
-                        .ToListAsync();
-                    foreach (var payment in orderPayments)
-                        payment.IsVoided = true;
+                    Id = Guid.NewGuid(),
+                    OrderId = orderId,
+                    UserId = userId,
+                    SupervisorId = supervisorId,
+                    Reason = reason ?? "Cancelación por usuario",
+                    Date = DateTime.UtcNow,
+                    Products = productNames
+                });
 
-                    order.Status = OrderStatus.Cancelled;
-                    order.ClosedAt = DateTime.UtcNow;
-                    order.Version++;
-
-                    foreach (var item in itemsToRestore)
-                        item.Status = OrderItemStatus.Cancelled;
-
-                    var productNames = string.Join(", ", order.OrderItems.Select(oi => oi.Product?.Name ?? "Producto"));
-                    _context.OrderCancellationLogs.Add(new OrderCancellationLog
-                    {
-                        Id = Guid.NewGuid(),
-                        OrderId = orderId,
-                        UserId = userId,
-                        SupervisorId = supervisorId,
-                        Reason = reason ?? "Cancelación por usuario",
-                        Date = DateTime.UtcNow,
-                        Products = productNames
-                    });
-
-                    if (order.Table != null)
-                    {
-                        var activeOrdersForTable = await _context.Orders
-                            .Where(o => o.TableId == order.TableId && o.Id != orderId &&
-                                o.Status != OrderStatus.Cancelled && o.Status != OrderStatus.Completed)
-                            .CountAsync();
-                        if (activeOrdersForTable == 0)
-                            order.Table.Status = TableStatus.Disponible;
-                    }
-
-                    await _context.SaveChangesAsync();
-                    await transaction.CommitAsync();
-                }
-                catch
+                if (order.Table != null)
                 {
-                    await transaction.RollbackAsync();
-                    throw;
+                    var activeOrdersForTable = await _context.Orders
+                        .Where(o => o.TableId == order.TableId && o.Id != orderId &&
+                            o.Status != OrderStatus.Cancelled && o.Status != OrderStatus.Completed)
+                        .CountAsync();
+                    if (activeOrdersForTable == 0)
+                        order.Table.Status = TableStatus.Disponible;
                 }
-            }
+
+                await _context.SaveChangesAsync();
+            });
 
             foreach (var item in itemsToRestore)
             {
@@ -2311,10 +2302,11 @@ namespace RestBar.Services
         // ✅ NUEVO: Cancelar item de orden
         public async Task CancelOrderItemAsync(Guid orderId, Guid itemId, Guid? userId = null, string? userRole = null, Guid? supervisorId = null)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
+            OrderItem? orderItem = null;
+
+            await Helpers.DbTransactionHelper.ExecuteInTransactionAsync(_context, async () =>
             {
-                var orderItem = await _context.OrderItems
+                orderItem = await _context.OrderItems
                     .Include(oi => oi.Order)
                         .ThenInclude(o => o.Branch)
                     .Include(oi => oi.Product)
@@ -2339,37 +2331,34 @@ namespace RestBar.Services
                 orderItem.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
+            });
 
-                if (orderItem.ProductId.HasValue && orderItem.ProductId != Guid.Empty)
+            if (orderItem?.ProductId.HasValue == true && orderItem.ProductId != Guid.Empty)
+            {
+                try
                 {
-                    try
-                    {
-                        await _inventoryOps.RestoreInventoryForCancelAsync(
-                            orderItem.ProductId.Value,
-                            orderItem.Quantity,
-                            orderItem.PreparedByStationId,
-                            orderItem.Order?.BranchId,
-                            orderItem.Order?.CompanyId,
-                            orderId,
-                            supervisorId ?? userId);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "[OrderService] No se pudo restaurar stock para item {ItemId}", itemId);
-                    }
+                    await _inventoryOps.RestoreInventoryForCancelAsync(
+                        orderItem.ProductId.Value,
+                        orderItem.Quantity,
+                        orderItem.PreparedByStationId,
+                        orderItem.Order?.BranchId,
+                        orderItem.Order?.CompanyId,
+                        orderId,
+                        supervisorId ?? userId);
                 }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "[OrderService] No se pudo restaurar stock para item {ItemId}", itemId);
+                }
+            }
 
+            if (orderItem != null)
+            {
                 await _loggingService.LogOrderActivityAsync(
                     AuditAction.DELETE.ToString(),
                     $"Ítem cancelado: {orderItem.Product?.Name}",
                     orderId,
                     newValues: new { itemId, supervisorId, userId, userRole });
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
             }
         }
 

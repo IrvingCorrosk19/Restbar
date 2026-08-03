@@ -156,9 +156,8 @@ namespace RestBar.Services
 
         public async Task VoidPaymentAsync(Guid id)
         {
-            // FIX: Una única transacción ACID — antes había doble SaveChanges sin transacción
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
+            // FIX: Una única transacción ACID — compatible con EnableRetryOnFailure
+            await Helpers.DbTransactionHelper.ExecuteInTransactionAsync(_context, async () =>
             {
                 var payment = await _context.Payments
                     .Include(p => p.Order)
@@ -208,19 +207,12 @@ namespace RestBar.Services
 
                 order.Version++;
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
+            });
         }
 
         public async Task<PaymentRefund> RefundPaymentAsync(Guid paymentId, decimal? amount, string? reason, Guid? processedByUserId, Guid? approvedByUserId)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
+            return await Helpers.DbTransactionHelper.ExecuteInTransactionAsync(_context, async () =>
             {
                 var payment = await _context.Payments
                     .Include(p => p.Order)
@@ -269,14 +261,8 @@ namespace RestBar.Services
                 if (_cashPaymentHook != null)
                     await _cashPaymentHook.OnRefundCompletedAsync(refund, payment, CancellationToken.None);
 
-                await transaction.CommitAsync();
                 return refund;
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
+            });
         }
 
         public async Task<IEnumerable<Payment>> GetVoidedPaymentsAsync()

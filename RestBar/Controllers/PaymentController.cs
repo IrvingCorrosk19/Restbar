@@ -118,11 +118,13 @@ namespace RestBar.Controllers
                         return BadRequest(new { success = false, message = "La suma de los pagos divididos debe ser igual al monto total" });
                 }
 
-                Payment createdPayment;
-                bool isFullyPaid;
+                Payment? createdPayment = null;
+                bool isFullyPaid = false;
+                IActionResult? earlyResult = null;
                 var processedByUserId = Guid.TryParse(User.FindFirst("UserId")?.Value, out var cashierId) ? cashierId : (Guid?)null;
-                using (var transaction = await _context.Database.BeginTransactionAsync())
+                await Helpers.DbTransactionHelper.ExecuteWithStrategyAsync(_context, async () =>
                 {
+                    await using var transaction = await _context.Database.BeginTransactionAsync();
                     try
                     {
                         // IDEMPOTENCY CHECK: si el cliente reintenta con la misma key, devolver pago existente
@@ -158,7 +160,8 @@ namespace RestBar.Controllers
                                         Method = sp.Method!
                                     }).ToList() ?? new List<SplitPaymentResponseDto>()
                                 };
-                                return Ok(new { success = true, isDuplicate = true, isFullyPaid = false, message = "Pago ya registrado (idempotente)", payment = idempotentResponse });
+                                earlyResult = Ok(new { success = true, isDuplicate = true, isFullyPaid = false, message = "Pago ya registrado (idempotente)", payment = idempotentResponse });
+                                return;
                             }
                         }
 
@@ -175,14 +178,16 @@ namespace RestBar.Controllers
                         if (remainingAmount <= 0)
                         {
                             await transaction.RollbackAsync();
-                            return BadRequest(new { success = false, message = "La orden ya está pagada por completo" });
+                            earlyResult = BadRequest(new { success = false, message = "La orden ya está pagada por completo" });
+                            return;
                         }
 
                         // SOBREPAGO: eliminada tolerancia +0.01m — comparación exacta
                         if (request.Amount > remainingAmount)
                         {
                             await transaction.RollbackAsync();
-                            return BadRequest(new { success = false, message = $"El monto excede el saldo pendiente. Saldo: ${remainingAmount:F2}" });
+                            earlyResult = BadRequest(new { success = false, message = $"El monto excede el saldo pendiente. Saldo: ${remainingAmount:F2}" });
+                            return;
                         }
 
                         var payment = new Payment
@@ -303,7 +308,13 @@ namespace RestBar.Controllers
                         await transaction.RollbackAsync();
                         throw;
                     }
-                }
+                });
+
+                if (earlyResult != null)
+                    return earlyResult;
+
+                if (createdPayment == null)
+                    return StatusCode(500, new { success = false, message = "No se pudo registrar el pago" });
 
                 // Notificaciones fuera de la transacción (no críticas para consistencia)
                 if (isFullyPaid)
