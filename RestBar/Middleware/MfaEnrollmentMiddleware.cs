@@ -3,7 +3,7 @@ using RestBar.Models;
 
 namespace RestBar.Middleware;
 
-/// <summary>Forces privileged users without MFA enrollment to complete /Auth/MfaSetup.</summary>
+/// <summary>Forces privileged users without MFA enrollment to complete /Auth/MfaSetup when FeatureFlags:RequireMfa is true.</summary>
 public class MfaEnrollmentMiddleware
 {
     private static readonly HashSet<string> Privileged = new(StringComparer.OrdinalIgnoreCase)
@@ -15,8 +15,14 @@ public class MfaEnrollmentMiddleware
 
     public MfaEnrollmentMiddleware(RequestDelegate next) => _next = next;
 
-    public async Task InvokeAsync(HttpContext context, RestBarContext db)
+    public async Task InvokeAsync(HttpContext context, RestBarContext db, IConfiguration config)
     {
+        if (!config.GetValue("FeatureFlags:RequireMfa", false))
+        {
+            await _next(context);
+            return;
+        }
+
         var path = context.Request.Path.Value ?? "";
         if (context.User.Identity?.IsAuthenticated != true
             || path.StartsWith("/Auth/MfaSetup", StringComparison.OrdinalIgnoreCase)

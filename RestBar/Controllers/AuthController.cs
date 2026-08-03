@@ -20,8 +20,9 @@ namespace RestBar.Controllers
         private readonly ILogger<AuthController> _logger;
         private readonly IWebHostEnvironment _env;
         private readonly IMemoryCache _cache;
+        private readonly IConfiguration _config;
 
-        public AuthController(IAuthService authService, IEmailService emailService, RestBarContext context, ILogger<AuthController> logger, IWebHostEnvironment env, IMemoryCache cache)
+        public AuthController(IAuthService authService, IEmailService emailService, RestBarContext context, ILogger<AuthController> logger, IWebHostEnvironment env, IMemoryCache cache, IConfiguration config)
         {
             _authService = authService;
             _emailService = emailService;
@@ -29,7 +30,10 @@ namespace RestBar.Controllers
             _logger = logger;
             _env = env;
             _cache = cache;
+            _config = config;
         }
+
+        private bool RequireMfa => _config.GetValue("FeatureFlags:RequireMfa", false);
 
         // GET: /Auth/Login
         [AllowAnonymous]
@@ -73,7 +77,7 @@ namespace RestBar.Controllers
                 }
 
                 var privileged = user.Role is UserRole.superadmin or UserRole.admin or UserRole.manager or UserRole.supervisor;
-                if (privileged && user.MfaEnabled && !string.IsNullOrEmpty(user.MfaSecret))
+                if (RequireMfa && privileged && user.MfaEnabled && !string.IsNullOrEmpty(user.MfaSecret))
                 {
                     var pendingKey = $"mfa_pending_{Guid.NewGuid():N}";
                     _cache.Set(pendingKey, user.Id, TimeSpan.FromMinutes(5));
@@ -89,7 +93,7 @@ namespace RestBar.Controllers
                     email, user.Role);
 
                 // Privileged roles without MFA are forced to enroll before using the console.
-                if (privileged && !user.MfaEnabled)
+                if (RequireMfa && privileged && !user.MfaEnabled)
                     return RedirectToAction(nameof(MfaSetup));
 
                 // Redirigir según el rol
